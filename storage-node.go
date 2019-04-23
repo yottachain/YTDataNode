@@ -2,11 +2,14 @@ package node
 
 import (
 	"fmt"
-	"yottachain/ytfs-p2p-host"
 	"yottachain/ytfs-util"
+
+	"github.com/yottachain/P2PHost"
 
 	"github.com/libp2p/go-libp2p-peer"
 
+	ci "github.com/libp2p/go-libp2p-crypto"
+	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTFS"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
 )
@@ -38,9 +41,19 @@ func (sn *storageNode) GetBP(bpid int32) peer.ID {
 }
 
 // NewStorageNode 创建存储节点
-func NewStorageNode() (StorageNode, error) {
+func NewStorageNode(pkstring string) (StorageNode, error) {
+
+	pkbytes, err := base58.Decode(pkstring)
+	if err != nil {
+		return nil, fmt.Errorf("Bad private key string")
+	}
+	pk, err := ci.UnmarshalSecp256k1PrivateKey(pkbytes[1:33])
+	if err != nil {
+		return nil, fmt.Errorf("Bad format of private key")
+	}
+
 	sn := &storageNode{}
-	h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), nil)
+	h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	sn.host = h
 	opts := ytfsOpts.DefaultOptions()

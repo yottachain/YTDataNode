@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"yottachain/ytfs-storage-node"
+
+	"github.com/yottachain/YTDataNode"
 
 	"github.com/spf13/cobra"
 )
@@ -12,11 +13,13 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-		sn, err := node.NewStorageNode()
+		sn, err := node.NewStorageNode(args[0])
 		if err != nil {
 			panic("YTFS init fail")
 		}
+		fmt.Println("pk:", args[0])
 		fmt.Println("YTFS init success")
+		fmt.Println("node ID", sn.Host().ID().Pretty())
 		fmt.Println("Wait request")
 		sn.Service()
 		ctx := context.Background()

@@ -5,7 +5,7 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
-	host "yottachain/ytfs-p2p-host"
+	host "github.com/yottachain/P2PHost"
 
 	"github.com/golang/protobuf/proto"
 

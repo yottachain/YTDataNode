@@ -3,8 +3,10 @@ package node
 import (
 	"bytes"
 	"encoding/binary"
-	"yottachain/ytfs-p2p-host"
-	"yottachain/ytfs-storage-node/message"
+	"fmt"
+
+	"github.com/yottachain/P2PHost"
+	"github.com/yottachain/YTDataNode/message"
 
 	"github.com/yottachain/YTFS"
 )
@@ -17,6 +19,7 @@ func (sn *storageNode) Service() {
 		msgData := data.Content[2:]
 		var msgType int
 		binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
+		fmt.Println("收到消息", msgType)
 		switch msgType {
 		case message.MsgIDUploadShardRequest:
 			wh := WriteHandler{sn}

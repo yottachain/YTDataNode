@@ -2,8 +2,10 @@ package node
 
 import (
 	"fmt"
-	host "yottachain/ytfs-p2p-host"
-	"yottachain/ytfs-storage-node/message"
+
+	host "github.com/yottachain/P2PHost"
+
+	"github.com/yottachain/YTDataNode/message"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/yottachain/YTFS/common"
@@ -49,6 +51,7 @@ func (wh *WriteHandler) getResponseCode(msg message.UploadShardRequest) int32 {
 		fmt.Println(fmt.Errorf("Write data slice fail:%s", err))
 		return 101
 	}
+	fmt.Println("return msg", 0)
 	return 0
 }
 
@@ -73,5 +76,6 @@ func (dh *DownloadHandler) GetHandler(msgData []byte) []byte {
 	if err != nil {
 		fmt.Println("Marshar response data fail:", err)
 	}
+	fmt.Println("return msg", 0)
 	return resp
 }
