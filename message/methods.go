@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
+
 	host "github.com/yottachain/P2PHost"
 
 	"github.com/golang/protobuf/proto"
@@ -14,8 +15,9 @@ import (
 
 // VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
 func (req *UploadShardRequest) VerifyVHF(data []byte) bool {
-	sha3 := crypto.SHA3_256.New()
-	return bytes.Equal(sha3.Sum(data), req.VHF[:])
+	sha := crypto.SHA256.New()
+	sha.Write(data)
+	return bytes.Equal(sha.Sum(nil), req.VHF[:])
 }
 
 // VerifyBPSIGN 验证上传请求BP签名
@@ -45,5 +47,11 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID peer.ID,
 func (req *UploadShardRequest) GetResponseToClientByCode(code int32) ([]byte, error) {
 	var res UploadShard2CResponse
 	res.RES = code
-	return proto.Marshal(&res)
+	resBuf := bytes.NewBuffer([]byte{})
+	resData, err := proto.Marshal(&res)
+	if err != nil {
+		return nil, err
+	}
+	resBuf.Write(resData)
+	return append(msgTypeInt(MsgIDUploadShard2CResponse).Bytes(), resBuf.Bytes()...), nil
 }

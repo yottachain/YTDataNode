@@ -60,6 +60,7 @@ func NewStorageNode(pkstring string) (StorageNode, error) {
 	yp := util.GetYTFSPath()
 	for index, storage := range opts.Storages {
 		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
+		storage.StorageVolume = 1024 * 1024 * 1024
 		opts.Storages[index] = storage
 	}
 	ys, err := ytfs.Open(yp, opts)

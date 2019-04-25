@@ -1,4 +1,0 @@
-package node
-
-func main() {
-}

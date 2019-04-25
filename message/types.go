@@ -1,5 +1,10 @@
 package message
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 const (
 	// MsgIDUploadShardRequest 上传分片消息
 	MsgIDUploadShardRequest = 0xcb05
@@ -11,3 +16,11 @@ const (
 	MsgIDDownloadShardRequest  = 0x1757
 	MsgIDDownloadShardResponse = 0x7a56
 )
+
+type msgTypeInt int16
+
+func (mt msgTypeInt) Bytes() []byte {
+	buf := bytes.NewBuffer([]byte{})
+	binary.Write(buf, binary.BigEndian, mt)
+	return buf.Bytes()
+}

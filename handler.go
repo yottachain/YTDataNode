@@ -3,8 +3,6 @@ package node
 import (
 	"fmt"
 
-	host "github.com/yottachain/P2PHost"
-
 	"github.com/yottachain/YTDataNode/message"
 
 	"github.com/golang/protobuf/proto"
@@ -30,14 +28,14 @@ func (wh *WriteHandler) GetHandler(msgData []byte) []byte {
 
 func (wh *WriteHandler) getResponseCode(msg message.UploadShardRequest) int32 {
 	// 1. 验证BP签名
-	if ok, err := msg.VerifyBPSIGN(
-		// 获取BP公钥
-		host.PubKey(wh.Host().Peerstore().PubKey(wh.GetBP(msg.BPDID))),
-		wh.Host().ID().Pretty(),
-	); err != nil || ok == false {
-		fmt.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
-		return 100
-	}
+	// if ok, err := msg.VerifyBPSIGN(
+	// 	// 获取BP公钥
+	// 	host.PubKey(wh.Host().Peerstore().PubKey(wh.GetBP(msg.BPDID))),
+	// 	wh.Host().ID().Pretty(),
+	// ); err != nil || ok == false {
+	// 	fmt.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
+	// 	return 100
+	// }
 	// 2. 验证数据Hash
 	if msg.VerifyVHF(msg.DAT) == false {
 		fmt.Println(fmt.Errorf("Verify VHF fail"))

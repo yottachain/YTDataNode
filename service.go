@@ -14,10 +14,11 @@ import (
 type ytfsDisk *ytfs.YTFS
 
 func (sn *storageNode) Service() {
-	sn.host.RegisterHandler("message", func(data host.Msg) []byte {
-		msgTypeBuf := bytes.NewBuffer(data.Content[0:2])
+	sn.host.RegisterHandler("/node/0.0.1", func(data host.Msg) []byte {
+		msgTypeBuf := bytes.NewBuffer([]byte{0, 0})
+		msgTypeBuf.Write(data.Content[0:2])
 		msgData := data.Content[2:]
-		var msgType int
+		var msgType int32
 		binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
 		fmt.Println("收到消息", msgType)
 		switch msgType {
