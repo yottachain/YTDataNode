@@ -20,6 +20,13 @@ func (req *UploadShardRequest) VerifyVHF(data []byte) bool {
 	return bytes.Equal(sha.Sum(nil), req.VHF[:])
 }
 
+// VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
+func (req *DownloadShardRequest) VerifyVHF(data []byte) bool {
+	sha := crypto.SHA256.New()
+	sha.Write(data)
+	return bytes.Equal(sha.Sum(nil), req.VHF[:])
+}
+
 // VerifyBPSIGN 验证上传请求BP签名
 func (req *UploadShardRequest) VerifyBPSIGN(pubkey host.PubKey, nodeid string) (bool, error) {
 	buf := bytes.NewBuffer([]byte{})
@@ -35,23 +42,26 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID peer.ID,
 	res.RES = code
 	res.VHF = req.VHF
 	res.VBI = req.VBI
+	res.SHARDID = req.SHARDID
 	bts, err := privkey.Sign([]byte(fmt.Sprintf("%s%d", nodeID.Pretty(), req.VBI)))
 	if err != nil {
 		return nil, fmt.Errorf("Make response data fail:%s", err)
 	}
 	res.USERSIGN = bts
-	return proto.Marshal(&res)
+	resdata, err := proto.Marshal(&res)
+	if err != nil {
+		return nil, err
+	}
+	return append(MsgIDUploadShardResponse.Bytes(), resdata...), nil
 }
 
 // GetResponseToClientByCode 生成客户端返回消息
 func (req *UploadShardRequest) GetResponseToClientByCode(code int32) ([]byte, error) {
 	var res UploadShard2CResponse
 	res.RES = code
-	resBuf := bytes.NewBuffer([]byte{})
 	resData, err := proto.Marshal(&res)
 	if err != nil {
 		return nil, err
 	}
-	resBuf.Write(resData)
-	return append(msgTypeInt(MsgIDUploadShard2CResponse).Bytes(), resBuf.Bytes()...), nil
+	return append(MsgIDUploadShard2CResponse.Bytes(), resData...), nil
 }

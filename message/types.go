@@ -7,20 +7,23 @@ import (
 
 const (
 	// MsgIDUploadShardRequest 上传分片消息
-	MsgIDUploadShardRequest = 0xcb05
+	MsgIDUploadShardRequest msgType = 0xcb05
 	// MsgIDUploadShardResponse 上传分片消息返回
-	MsgIDUploadShardResponse = 0x870b
+	MsgIDUploadShardResponse msgType = 0x870b
 	// MsgIDVoidResponse 空返回
-	MsgIDVoidResponse          = 0xe64f
-	MsgIDUploadShard2CResponse = 0x1978
-	MsgIDDownloadShardRequest  = 0x1757
-	MsgIDDownloadShardResponse = 0x7a56
+	MsgIDVoidResponse          msgType = 0xe64f
+	MsgIDUploadShard2CResponse msgType = 0x1978
+	MsgIDDownloadShardRequest  msgType = 0x1757
+	MsgIDDownloadShardResponse msgType = 0x7a56
 )
 
-type msgTypeInt int16
+type msgType int32
 
-func (mt msgTypeInt) Bytes() []byte {
+func (mt msgType) Bytes() []byte {
 	buf := bytes.NewBuffer([]byte{})
-	binary.Write(buf, binary.BigEndian, mt)
+	binary.Write(buf, binary.BigEndian, int16(mt))
 	return buf.Bytes()
+}
+func (mt msgType) Value() int32 {
+	return int32(mt)
 }

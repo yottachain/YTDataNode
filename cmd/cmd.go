@@ -15,7 +15,7 @@ var daemonCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		sn, err := node.NewStorageNode(args[0])
 		if err != nil {
-			panic("YTFS init fail")
+			fmt.Println("ytfs-disk init fail", err)
 		}
 		fmt.Println("pk:", args[0])
 		fmt.Println("YTFS init success")

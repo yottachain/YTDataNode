@@ -61,8 +61,10 @@ func NewStorageNode(pkstring string) (StorageNode, error) {
 	for index, storage := range opts.Storages {
 		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
 		storage.StorageVolume = 1024 * 1024 * 1024
+		storage.DataBlockSize = 1 << 14
 		opts.Storages[index] = storage
 	}
+	opts.DataBlockSize = 1 << 14
 	ys, err := ytfs.Open(yp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("YTFS storage init faile")
@@ -70,6 +72,9 @@ func NewStorageNode(pkstring string) (StorageNode, error) {
 	sn.ytfs = ys
 	if err != nil {
 		return nil, err
+	}
+	sn.bplist = []peer.ID{
+		"16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi",
 	}
 	return sn, nil
 }
