@@ -15,6 +15,10 @@ const (
 	MsgIDUploadShard2CResponse msgType = 0x1978
 	MsgIDDownloadShardRequest  msgType = 0x1757
 	MsgIDDownloadShardResponse msgType = 0x7a56
+	MsgIDNodeRegReq            msgType = 0x12aa
+	MsgIDNodeRegResp           msgType = 0xfb92
+	MsgIDStatusRepReq          msgType = 0xc9a9
+	MsgIDStatusRepResp         msgType = 0xfa09
 )
 
 type msgType int32

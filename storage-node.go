@@ -4,31 +4,32 @@ import (
 	"fmt"
 	"yottachain/ytfs-util"
 
-	"github.com/yottachain/P2PHost"
+	"github.com/yottachain/YTDataNode/host"
+
+	// "github.com/yottachain/P2PHost"
 
 	"github.com/libp2p/go-libp2p-peer"
 
-	ci "github.com/libp2p/go-libp2p-crypto"
-	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTFS"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
 )
 
 // StorageNode 存储节点接口
 type StorageNode interface {
-	Host() host.Host
+	Host() *host.Host
 	YTFS() *ytfs.YTFS
 	GetBP(bpid int32) peer.ID
 	Service()
 }
 
 type storageNode struct {
-	host   host.Host
+	host   *host.Host
 	ytfs   *ytfs.YTFS
 	bplist []peer.ID
+	pk     string
 }
 
-func (sn *storageNode) Host() host.Host {
+func (sn *storageNode) Host() *host.Host {
 	return sn.host
 }
 
@@ -42,20 +43,21 @@ func (sn *storageNode) GetBP(bpid int32) peer.ID {
 
 // NewStorageNode 创建存储节点
 func NewStorageNode(pkstring string) (StorageNode, error) {
-
-	pkbytes, err := base58.Decode(pkstring)
-	if err != nil {
-		return nil, fmt.Errorf("Bad private key string")
-	}
-	pk, err := ci.UnmarshalSecp256k1PrivateKey(pkbytes[1:33])
-	if err != nil {
-		return nil, fmt.Errorf("Bad format of private key")
-	}
+	// pkbytes, err := base58.Decode(pkstring)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Bad private key string")
+	// }
+	// pk, err := ci.UnmarshalSecp256k1PrivateKey(pkbytes[1:33])
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Bad format of private key")
+	// }
 
 	sn := &storageNode{}
-	h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
+	sn.pk = pkstring
+	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
-	sn.host = h
+	sn.host = host.NewP2PHost()
+	sn.host.SetPrivKey(pkstring)
 	opts := ytfsOpts.DefaultOptions()
 	yp := util.GetYTFSPath()
 	for index, storage := range opts.Storages {

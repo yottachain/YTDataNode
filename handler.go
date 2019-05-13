@@ -20,6 +20,8 @@ type WriteHandler struct {
 func (wh *WriteHandler) GetHandler(msgData []byte) []byte {
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
+	fmt.Println("超级节点签名:", msg.GetBPDSIGN())
+	fmt.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
 	res2client, err := msg.GetResponseToClientByCode(resCode)
 	if err != nil {
@@ -32,7 +34,7 @@ func (wh *WriteHandler) GetHandler(msgData []byte) []byte {
 	if err != nil {
 		fmt.Println("Get res code 2 bp fail:", err)
 	}
-	if err = wh.Host().Connect("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
+	if err = wh.Host().ConnectAddrStrings("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
 		"/ip4/172.21.0.13/tcp/9999",
 		"/ip4/152.136.11.202/tcp/9999",
 	}); err != nil {
