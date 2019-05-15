@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"yottachain/ytfs-util"
 
+	"github.com/yottachain/YTDataNode/config"
+
 	"github.com/yottachain/YTDataNode/host"
 
 	// "github.com/yottachain/P2PHost"
@@ -11,7 +13,6 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 
 	"github.com/yottachain/YTFS"
-	ytfsOpts "github.com/yottachain/YTFS/opt"
 )
 
 // StorageNode 存储节点接口
@@ -20,17 +21,21 @@ type StorageNode interface {
 	YTFS() *ytfs.YTFS
 	GetBP(bpid int32) peer.ID
 	Service()
+	Config() *config.Config
 }
 
 type storageNode struct {
 	host   *host.Host
 	ytfs   *ytfs.YTFS
 	bplist []peer.ID
-	pk     string
+	config *config.Config
 }
 
 func (sn *storageNode) Host() *host.Host {
 	return sn.host
+}
+func (sn *storageNode) Config() *config.Config {
+	return sn.config
 }
 
 func (sn *storageNode) YTFS() *ytfs.YTFS {
@@ -42,7 +47,7 @@ func (sn *storageNode) GetBP(bpid int32) peer.ID {
 }
 
 // NewStorageNode 创建存储节点
-func NewStorageNode(pkstring string) (StorageNode, error) {
+func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	// pkbytes, err := base58.Decode(pkstring)
 	// if err != nil {
 	// 	return nil, fmt.Errorf("Bad private key string")
@@ -53,21 +58,13 @@ func NewStorageNode(pkstring string) (StorageNode, error) {
 	// }
 
 	sn := &storageNode{}
-	sn.pk = pkstring
+	sn.config = cfg
 	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	sn.host = host.NewP2PHost()
-	sn.host.SetPrivKey(pkstring)
-	opts := ytfsOpts.DefaultOptions()
+	sn.host.SetPrivKey(sn.config.PrivKey())
 	yp := util.GetYTFSPath()
-	for index, storage := range opts.Storages {
-		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
-		storage.StorageVolume = 1024 * 1024 * 1024
-		storage.DataBlockSize = 1 << 14
-		opts.Storages[index] = storage
-	}
-	opts.DataBlockSize = 1 << 14
-	ys, err := ytfs.Open(yp, opts)
+	ys, err := ytfs.Open(yp, cfg.Options)
 	if err != nil {
 		return nil, fmt.Errorf("YTFS storage init faile")
 	}

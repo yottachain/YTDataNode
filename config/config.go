@@ -21,48 +21,33 @@ type Config struct {
 	ID         string `json:"ID"`
 	privKey    ci.PrivKey
 	BPList     []peerInfo `json:"BPList"`
-	YTFSConfig *ytfsOpts.Options
+	ListenAddr string     `json:"ListenAddr"`
+	APIListen  string     `json:"APIListen"`
+	*ytfsOpts.Options
 }
 
 // DefaultYTFSOptions default config
 func DefaultYTFSOptions() *ytfsOpts.Options {
-	const GB = 1024 * 1024 * 1024
 	yp := util.GetYTFSPath()
-	config := &ytfsOpts.Options{
-		YTFSTag: "ytfs default setting",
-		Storages: []ytfsOpts.StorageOptions{
-			{
-				StorageName:   fmt.Sprintf("%s-storage-1", yp),
-				StorageType:   0,
-				ReadOnly:      false,
-				SyncPeriod:    1,
-				StorageVolume: GB * 10,
-				DataBlockSize: 1 << 14,
-			},
-			{
-				StorageName:   fmt.Sprintf("%s-storage-2", yp),
-				StorageType:   0,
-				ReadOnly:      false,
-				SyncPeriod:    1,
-				StorageVolume: GB * 10,
-				DataBlockSize: 1 << 14,
-			},
-		},
-		ReadOnly:       false,
-		SyncPeriod:     1,
-		IndexTableCols: 0,
-		IndexTableRows: 1 << 13,
-		DataBlockSize:  1 << 14, // Just save HashLen for test.
-		TotalVolumn:    2 << 30, // 1G
+	opts := ytfsOpts.DefaultOptions()
+	for index, storage := range opts.Storages {
+		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
+		storage.StorageVolume = 1024 * 1024 * 1024
+		storage.DataBlockSize = 1 << 14
+		opts.Storages[index] = storage
 	}
-	return config
+	opts.DataBlockSize = 1 << 14
+	return opts
 }
 
 // NewConfig ..
 func NewConfig() *Config {
 	cfg := new(Config)
-	cfg.YTFSConfig = DefaultYTFSOptions()
+	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
+	cfg.APIListen = ":9002"
+	cfg.Options = DefaultYTFSOptions()
 	cfg.privKey, _ = util.RandomIdentity()
+	cfg.BPList = make([]peerInfo, 0)
 	return cfg
 }
 
@@ -110,4 +95,9 @@ func ReadConfig() (*Config, error) {
 	}
 	cfg.privKey = privk
 	return &cfg, nil
+}
+
+// PrivKey ..
+func (cfg *Config) PrivKey() ci.PrivKey {
+	return cfg.privKey
 }

@@ -56,7 +56,7 @@ func (sn *storageNode) Service() {
 func Register(sn *storageNode) {
 	var msg message.NodeRegReq
 	msg.Nodeid = sn.Host().ID().Pretty()
-	msg.Owner = sn.pk
+	msg.Owner = sn.Host().ID().Pretty()
 	msg.Addrs = sn.Host().AddrStrings()
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
 

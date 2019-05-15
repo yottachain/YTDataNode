@@ -25,7 +25,7 @@ func init() {
 	})
 	// ytfs配置
 	handler.HandleAPI("node/config", func(rw *ResponseWriter, rq *http.Request) {
-		rw.WriteJSON(srv.sn.YTFS().Meta())
+		rw.WriteJSON(srv.sn.Config())
 	})
 	// 查询收入
 	handler.HandleAPI("node/income", func(rw *ResponseWriter, rq *http.Request) {
@@ -46,7 +46,7 @@ func init() {
 		const GB = 1024 * 1024 * 1024
 		// 未实现查询，先返回mock数据
 		res := new(Res)
-		res.Total = GB * 20
+		res.Total = srv.sn.YTFS().Meta().YtfsSize
 		res.Used = rand.Uint64() % res.Total
 		res.Unused = res.Total - res.Used
 		rw.WriteJSON(res)

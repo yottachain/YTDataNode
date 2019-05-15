@@ -27,7 +27,7 @@ func GetYTFSPath() string {
 
 // GetConfigPath 获取当前用户配置文件路径
 func GetConfigPath() string {
-	return GetYTFSPath() + "/config.json"
+	return GetYTFSPath() + "/node-config.json"
 }
 
 // PathExists 判断文件是否存在

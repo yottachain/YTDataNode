@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 
 	"github.com/libp2p/go-libp2p-peer"
-	"github.com/mr-tron/base58"
 	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libp2p "github.com/libp2p/go-libp2p"
@@ -38,15 +37,7 @@ func (h *Host) PrivKey() ci.PrivKey {
 }
 
 // SetPrivKey 设置私钥
-func (h *Host) SetPrivKey(pkstring string) error {
-	pkbytes, err := base58.Decode(pkstring)
-	if err != nil {
-		return fmt.Errorf("Bad private key string")
-	}
-	pk, err := ci.UnmarshalSecp256k1PrivateKey(pkbytes[1:33])
-	if err != nil {
-		return fmt.Errorf("Bad format of private key")
-	}
+func (h *Host) SetPrivKey(pk ci.PrivKey) error {
 	h.privKey = pk
 	return nil
 }
