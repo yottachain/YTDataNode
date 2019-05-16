@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 	"yottachain/ytfs-util"
 
 	"github.com/multiformats/go-multiaddr"
@@ -28,11 +29,60 @@ type StorageNode interface {
 	Config() *config.Config
 }
 
+type AddrsManager struct {
+	addrs      []multiaddr.Multiaddr
+	updateTime time.Time
+	ttl        time.Duration
+	sn         StorageNode
+}
+
+// UpdateAddrs 更新地址列表
+func (am *AddrsManager) UpdateAddrs() {
+	am.addrs = am.sn.Host().Addrs()
+	resp, err := http.Get("http://39.97.41.155/self-ip")
+	if err != nil {
+		fmt.Println("get public ip fail")
+	} else {
+		pubip, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("get public ip fail:", err)
+		}
+		addr := fmt.Sprintf("/ip4/%s/tcp/9001", pubip)
+		addr = strings.Replace(addr, "\n", "", -1)
+		pubma, err := multiaddr.NewMultiaddr(addr)
+		if err != nil {
+			fmt.Println("fomate public ip fail:", err, addr)
+		} else {
+			am.addrs = append(am.addrs, pubma)
+			am.updateTime = time.Now()
+		}
+		am.updateTime = time.Now()
+	}
+}
+
+// GetAddrs 获取地址列表
+func (am *AddrsManager) GetAddrs() []multiaddr.Multiaddr {
+	if am.addrs == nil || am.ttl < time.Now().Sub(am.updateTime) {
+		am.UpdateAddrs()
+	}
+	return am.addrs
+}
+
+// GetAddStrings 获取地址看列表字符串数组
+func (am *AddrsManager) GetAddStrings() []string {
+	addrs := am.GetAddrs()
+	addrstrings := make([]string, len(addrs))
+	for k, v := range addrs {
+		addrstrings[k] = v.String()
+	}
+	return addrstrings
+}
+
 type storageNode struct {
-	host   *host.Host
-	ytfs   *ytfs.YTFS
-	config *config.Config
-	addrs  []multiaddr.Multiaddr
+	host         *host.Host
+	ytfs         *ytfs.YTFS
+	config       *config.Config
+	addrsmanager *AddrsManager
 }
 
 func (sn *storageNode) Host() *host.Host {
@@ -53,32 +103,7 @@ func (sn *storageNode) GetBP() int {
 	return int(bpindex)
 }
 func (sn *storageNode) Addrs() []string {
-	if sn.addrs == nil {
-		addrs := sn.host.Addrs()
-		resp, err := http.Get("http://39.97.41.155/self-ip")
-		if err != nil {
-			fmt.Println("get public ip fail")
-		} else {
-			pubip, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println("get public ip fail:", err)
-			}
-			addr := fmt.Sprintf("/ip4/%s/tcp/9001", pubip)
-			addr = strings.Replace(addr, "\n", "", -1)
-			pubma, err := multiaddr.NewMultiaddr(addr)
-			if err != nil {
-				fmt.Println("fomate public ip fail:", err, addr)
-			} else {
-				addrs = append(addrs, pubma)
-			}
-		}
-		sn.addrs = addrs
-	}
-	addrstrings := make([]string, len(sn.addrs))
-	for k, v := range sn.addrs {
-		addrstrings[k] = v.String()
-	}
-	return addrstrings
+	return sn.addrsmanager.GetAddStrings()
 }
 
 // NewStorageNode 创建存储节点
@@ -94,6 +119,12 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 
 	sn := &storageNode{}
 	sn.config = cfg
+	sn.addrsmanager = &AddrsManager{
+		nil,
+		time.Now(),
+		time.Second * 10,
+		sn,
+	}
 	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	sn.host = host.NewP2PHost()
