@@ -39,15 +39,15 @@ func Daemon() {
 	if err != nil {
 		fmt.Println("node daemon fail", err)
 	}
-	err = sn.Host().ConnectAddrStrings("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
-		"/ip4/172.21.0.13/tcp/9999",
-		"/ip4/152.136.11.202/tcp/9999",
-	})
-	if err != nil {
-		fmt.Println("Add addr fail", err)
-	}
+	// err = sn.Host().ConnectAddrStrings("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
+	// 	"/ip4/172.21.0.13/tcp/9999",
+	// 	"/ip4/152.136.11.202/tcp/9999",
+	// })
+	// if err != nil {
+	// 	fmt.Println("Add addr fail", err)
+	// }
 	fmt.Println("YTFS daemon success")
-	for k, v := range sn.Host().Addrs() {
+	for k, v := range sn.Addrs() {
 		fmt.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 	}
 	srv := api.NewHTTPServer(sn)

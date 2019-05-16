@@ -27,6 +27,10 @@ func init() {
 	handler.HandleAPI("node/config", func(rw *ResponseWriter, rq *http.Request) {
 		rw.WriteJSON(srv.sn.Config())
 	})
+	// addres
+	handler.HandleAPI("node/address", func(rw *ResponseWriter, rq *http.Request) {
+		rw.WriteJSON(srv.sn.Addrs())
+	})
 	// 查询收入
 	handler.HandleAPI("node/income", func(rw *ResponseWriter, rq *http.Request) {
 		type Res struct {

@@ -2,7 +2,12 @@ package node
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"yottachain/ytfs-util"
+
+	"github.com/multiformats/go-multiaddr"
 
 	"github.com/yottachain/YTDataNode/config"
 
@@ -10,16 +15,15 @@ import (
 
 	// "github.com/yottachain/P2PHost"
 
-	"github.com/libp2p/go-libp2p-peer"
-
 	"github.com/yottachain/YTFS"
 )
 
 // StorageNode 存储节点接口
 type StorageNode interface {
+	Addrs() []string
 	Host() *host.Host
 	YTFS() *ytfs.YTFS
-	GetBP(bpid int32) peer.ID
+	GetBP() int
 	Service()
 	Config() *config.Config
 }
@@ -27,8 +31,8 @@ type StorageNode interface {
 type storageNode struct {
 	host   *host.Host
 	ytfs   *ytfs.YTFS
-	bplist []peer.ID
 	config *config.Config
+	addrs  []multiaddr.Multiaddr
 }
 
 func (sn *storageNode) Host() *host.Host {
@@ -42,8 +46,39 @@ func (sn *storageNode) YTFS() *ytfs.YTFS {
 	return sn.ytfs
 }
 
-func (sn *storageNode) GetBP(bpid int32) peer.ID {
-	return sn.bplist[bpid]
+func (sn *storageNode) GetBP() int {
+	id := sn.Host().ID().Pretty()
+	bpnum := byte(len(sn.Config().BPList))
+	bpindex := id[len(id)-1] % bpnum
+	return int(bpindex)
+}
+func (sn *storageNode) Addrs() []string {
+	if sn.addrs == nil {
+		addrs := sn.host.Addrs()
+		resp, err := http.Get("http://39.97.41.155/self-ip")
+		if err != nil {
+			fmt.Println("get public ip fail")
+		} else {
+			pubip, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println("get public ip fail:", err)
+			}
+			addr := fmt.Sprintf("/ip4/%s/tcp/9001", pubip)
+			addr = strings.Replace(addr, "\n", "", -1)
+			pubma, err := multiaddr.NewMultiaddr(addr)
+			if err != nil {
+				fmt.Println("fomate public ip fail:", err, addr)
+			} else {
+				addrs = append(addrs, pubma)
+			}
+		}
+		sn.addrs = addrs
+	}
+	addrstrings := make([]string, len(sn.addrs))
+	for k, v := range sn.addrs {
+		addrstrings[k] = v.String()
+	}
+	return addrstrings
 }
 
 // NewStorageNode 创建存储节点
@@ -72,8 +107,6 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	sn.bplist = []peer.ID{
-		"16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi",
-	}
+
 	return sn, nil
 }

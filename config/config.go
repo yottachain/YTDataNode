@@ -14,6 +14,8 @@ import (
 )
 
 type peerInfo struct {
+	ID    string
+	Addrs []string
 }
 
 // Config 配置
@@ -23,6 +25,7 @@ type Config struct {
 	BPList     []peerInfo `json:"BPList"`
 	ListenAddr string     `json:"ListenAddr"`
 	APIListen  string     `json:"APIListen"`
+	IndexID    uint32     `json:"IndexID"`
 	*ytfsOpts.Options
 }
 
@@ -47,7 +50,26 @@ func NewConfig() *Config {
 	cfg.APIListen = ":9002"
 	cfg.Options = DefaultYTFSOptions()
 	cfg.privKey, _ = util.RandomIdentity()
-	cfg.BPList = make([]peerInfo, 0)
+	cfg.BPList = []peerInfo{
+		peerInfo{
+			"16Uiu2HAkyHhwuzkR6fRhKbhUBVMySBKKtLCRkReYTJQEyfCkPSfN",
+			[]string{
+				"/ip4/152.136.16.118/tcp/9999",
+			},
+		},
+		peerInfo{
+			"16Uiu2HAm9fBJNUzSD5V9aFJQQHbxE3rPsTiyrYk7vju18JCf3xm8",
+			[]string{
+				"/ip4/152.136.17.115/tcp/9999",
+			},
+		},
+		peerInfo{
+			"16Uiu2HAkwNCD9HSH5hh36LmzgLjRcQiQFpT9spwspaAM5AH3rqA9",
+			[]string{
+				"/ip4/152.136.18.185/tcp/9999",
+			},
+		},
+	}
 	return cfg
 }
 

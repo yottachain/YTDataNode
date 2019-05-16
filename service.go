@@ -22,6 +22,7 @@ func (sn *storageNode) Service() {
 	sn.host.HandleMessage("/node/0.0.1", func(data *host.MsgStream) {
 		fmt.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
 		info := sn.Host().Peerstore().PeerInfo(data.Conn().RemotePeer())
+
 		for i, addr := range info.Addrs {
 			fmt.Printf("远程地址:[%d]: %s", i, addr.String())
 		}
@@ -47,7 +48,7 @@ func (sn *storageNode) Service() {
 	go func() {
 		for {
 			Report(sn)
-			time.Sleep(time.Second * 30)
+			time.Sleep(time.Second * 60)
 		}
 	}()
 }
@@ -57,20 +58,18 @@ func Register(sn *storageNode) {
 	var msg message.NodeRegReq
 	msg.Nodeid = sn.Host().ID().Pretty()
 	msg.Owner = sn.Host().ID().Pretty()
-	msg.Addrs = sn.Host().AddrStrings()
+	msg.Addrs = sn.Addrs()
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
-
-	// if err := sn.Host().Connect("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
-	// 	"/ip4/172.21.0.13/tcp/9999",
-	// 	"/ip4/152.136.11.202/tcp/9999",
-	// }); err != nil {
-	// 	fmt.Println("Connect bp fail", err)
-	// }
+	bp := sn.Config().BPList[sn.GetBP()]
+	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
+		fmt.Println("Connect bp fail", err)
+	}
 	msgBytes, err := proto.Marshal(&msg)
 	if err != nil {
 		fmt.Println("Formate msg fail:", err)
 	}
-	stm, err := sn.host.NewMsgStream(context.Background(), "16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", "/node/0.0.1")
+	fmt.Println("sn index:", sn.GetBP())
+	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
 	if err != nil {
 		fmt.Println("Create MsgStream fail:", err)
 	} else {
@@ -80,16 +79,43 @@ func Register(sn *storageNode) {
 		} else {
 			var resMsg message.NodeRegResp
 			proto.Unmarshal(res[2:], &resMsg)
-			fmt.Printf("Reg success, distribution space %d\n", resMsg.AssignedSpace)
+			sn.Config().IndexID = resMsg.Id
+			sn.Config().Save()
+
+			fmt.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
 		}
 	}
 }
 
 // Report 上报状态
 func Report(sn *storageNode) {
-	// var msg message.StatusRepReq
-	// for i, addr := range sn.Host().Addrs() {
-	// 	fmt.Printf("addrs[%d]:%s\n", i, addr)
-	// }
+	var msg message.StatusRepReq
+	bp := sn.Config().BPList[sn.GetBP()]
+	msg.Addrs = sn.Addrs()
+	msg.Cpu = 0
+	msg.Memory = 0
+	msg.Id = sn.Config().IndexID
+	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
+	msg.UsedSpace = 0
+	resData, err := proto.Marshal(&msg)
+	if err != nil {
+		fmt.Println("send report msg fail:", err)
+	}
+	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
+		fmt.Println("Connect bp fail", err)
+	}
+	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
+	if err != nil {
+		fmt.Println("Create MsgStream fail:", err)
+	} else {
+		res, err := stm.SendMsgGetResponse(append(message.MsgIDStatusRepReq.Bytes(), resData...))
+		if err != nil {
+			fmt.Println("Send report msg fail:", err)
+		} else {
+			var resMsg message.StatusRepResp
+			proto.Unmarshal(res[2:], &resMsg)
 
+			fmt.Printf("report info success: %d\n", resMsg.ProductiveSpace)
+		}
+	}
 }

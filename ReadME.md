@@ -9,7 +9,12 @@ ytf矿机存储节点
 # 编译
 make build
 # 使用示例
-./out/linux-amd64-0.0.1/ytfs-node daemon 5JB7HxBrsDYtMrjJUsJ5WLdJRK3KJUrPHD6eBphVYPrXoxcqLtd
+1. 初始化节点
+./out/linux-amd64-0.0.1/ytfs-node init
+2. 修改node-config.json bplist 
+vim ~/YTFS/node-config.json 
+3. 启动
+./out/linux-amd64-0.0.1/ytfs-node daemon
 ```
 
 restful接口

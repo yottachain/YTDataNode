@@ -24,23 +24,21 @@ func (wh *WriteHandler) GetHandler(msgData []byte) []byte {
 	fmt.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
 	res2client, err := msg.GetResponseToClientByCode(resCode)
+	bp := wh.Config().BPList[msg.BPDID]
 	if err != nil {
 		fmt.Println("Get res code 2 client fail:", err)
 	}
-	res2bp, err := msg.GetResponseToBPByCode(resCode, "16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", wh.Host().PrivKey())
+	res2bp, err := msg.GetResponseToBPByCode(resCode, bp.ID, wh.Host().PrivKey())
 	if err != nil {
 		fmt.Println("Get res code fail:", err)
 	}
 	if err != nil {
 		fmt.Println("Get res code 2 bp fail:", err)
 	}
-	if err = wh.Host().ConnectAddrStrings("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
-		"/ip4/172.21.0.13/tcp/9999",
-		"/ip4/152.136.11.202/tcp/9999",
-	}); err != nil {
+	if err = wh.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		fmt.Println("Connect bp fail", err)
 	}
-	wh.Host().SendMsg("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", "/node/0.0.1", res2bp)
+	wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
 	fmt.Println("return client")
 	defer func() {
 		err := recover()
