@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/yottachain/YTDataNode/host"
@@ -57,7 +58,8 @@ func (sn *storageNode) Service() {
 func Register(sn *storageNode) {
 	var msg message.NodeRegReq
 	msg.Nodeid = sn.Host().ID().Pretty()
-	msg.Owner = sn.Host().ID().Pretty()
+	msg.Owner = os.Getenv("owner")
+	fmt.Println("owner:", msg.Owner)
 	msg.Addrs = sn.Addrs()
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
 	bp := sn.Config().BPList[sn.GetBP()]
@@ -83,6 +85,7 @@ func Register(sn *storageNode) {
 			sn.Config().Save()
 
 			fmt.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
+			fmt.Println(msg.Nodeid, msg.Owner, msg.Addrs, msg.MaxDataSpace)
 		}
 	}
 }
