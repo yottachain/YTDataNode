@@ -85,7 +85,6 @@ func Register(sn *storageNode) {
 			sn.Config().Save()
 
 			fmt.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
-			fmt.Println(msg.Nodeid, msg.Owner, msg.Addrs, msg.MaxDataSpace)
 		}
 	}
 }
@@ -95,12 +94,13 @@ func Report(sn *storageNode) {
 	var msg message.StatusRepReq
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
-	msg.Cpu = 0
-	msg.Memory = 0
+	msg.Cpu = sn.Runtime().AvCPU
+	msg.Memory = sn.Runtime().Mem
 	msg.Id = sn.Config().IndexID
-	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
-	msg.UsedSpace = 0
+	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
+	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
 	resData, err := proto.Marshal(&msg)
+	fmt.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
 		fmt.Println("send report msg fail:", err)
 	}
@@ -121,4 +121,5 @@ func Report(sn *storageNode) {
 			fmt.Printf("report info success: %d\n", resMsg.ProductiveSpace)
 		}
 	}
+
 }

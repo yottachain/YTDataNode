@@ -8,4 +8,5 @@ MAINFILE=./cmd/cmd.go
 DIRNAME=${OUTDIR}/${OS}-${ARCH}-${VERSION}
 FULLNAME=${DIRNAME}/${FILENAME}
 
-GOOS=$OS GOARCH=$ARCH go build -o ${FULLNAME} ${MAINFILE}
+# GOOS=$OS GOARCH=$ARCH go build -o ${FULLNAME} ${MAINFILE}
+docker run -i --rm -v $GOPATH:/go -w /go/src/github.com/yottachain/YTDataNode/ golang go build -o ${FULLNAME} ${MAINFILE}

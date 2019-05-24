@@ -1,7 +1,6 @@
 package api
 
 import (
-	"math/rand"
 	"net/http"
 )
 
@@ -51,7 +50,7 @@ func init() {
 		// 未实现查询，先返回mock数据
 		res := new(Res)
 		res.Total = srv.sn.YTFS().Meta().YtfsSize
-		res.Used = rand.Uint64() % res.Total
+		res.Used = srv.sn.YTFS().Len()
 		res.Unused = res.Total - res.Used
 		rw.WriteJSON(res)
 	})

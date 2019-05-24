@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
-	"yottachain/ytfs-util"
+
+	"github.com/yottachain/YTDataNode/util"
+
+	"github.com/shirou/gopsutil/mem"
 
 	"github.com/multiformats/go-multiaddr"
+	"github.com/shirou/gopsutil/cpu"
 
 	"github.com/yottachain/YTDataNode/config"
 
@@ -27,8 +32,10 @@ type StorageNode interface {
 	GetBP() int
 	Service()
 	Config() *config.Config
+	Runtime() RuntimeStatus
 }
 
+// AddrsManager 地址管理器
 type AddrsManager struct {
 	addrs      []multiaddr.Multiaddr
 	updateTime time.Time
@@ -47,7 +54,11 @@ func (am *AddrsManager) UpdateAddrs() {
 		if err != nil {
 			fmt.Println("get public ip fail:", err)
 		}
-		addr := fmt.Sprintf("/ip4/%s/tcp/9001", pubip)
+		port, ok := os.LookupEnv("nat_port")
+		if ok == false {
+			port = "9001"
+		}
+		addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
 		addr = strings.Replace(addr, "\n", "", -1)
 		pubma, err := multiaddr.NewMultiaddr(addr)
 		if err != nil {
@@ -78,11 +89,45 @@ func (am *AddrsManager) GetAddStrings() []string {
 	return addrstrings
 }
 
+// RuntimeStatus 运行时状态
+type RuntimeStatus struct {
+	CPU   []uint32
+	AvCPU uint32
+	Mem   uint32
+}
+
+// NewRuntimeStatus 创建状态管理器
+func NewRuntimeStatus() *RuntimeStatus {
+	return new(RuntimeStatus)
+}
+
+// Update 刷新
+func (rs *RuntimeStatus) Update() RuntimeStatus {
+	cpupercent, _ := cpu.Percent(0, true)
+	var cpupint32 = make([]uint32, len(cpupercent))
+	var sumcpu uint32
+	for k, v := range cpupercent {
+		cpupint32[k] = uint32(v)
+		sumcpu = sumcpu + cpupint32[k]
+	}
+	m, _ := mem.VirtualMemory()
+	rs.Mem = uint32(m.UsedPercent)
+	rs.CPU = cpupint32
+	rs.AvCPU = sumcpu / uint32(len(cpupercent))
+	fmt.Println("cupsum:", sumcpu, len(cpupercent))
+	return *rs
+}
+
 type storageNode struct {
-	host         *host.Host
-	ytfs         *ytfs.YTFS
-	config       *config.Config
-	addrsmanager *AddrsManager
+	host          *host.Host
+	ytfs          *ytfs.YTFS
+	config        *config.Config
+	addrsmanager  *AddrsManager
+	runtimeStatus RuntimeStatus
+}
+
+func (sn *storageNode) Runtime() RuntimeStatus {
+	return sn.runtimeStatus.Update()
 }
 
 func (sn *storageNode) Host() *host.Host {

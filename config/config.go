@@ -35,11 +35,12 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts := ytfsOpts.DefaultOptions()
 	for index, storage := range opts.Storages {
 		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
-		storage.StorageVolume = 1024 * 1024 * 1024
+		storage.StorageVolume = (2 << 30) * 10
 		storage.DataBlockSize = 1 << 14
 		opts.Storages[index] = storage
 	}
 	opts.DataBlockSize = 1 << 14
+	opts.TotalVolumn = (2 << 30) * 10 * 2
 	return opts
 }
 
