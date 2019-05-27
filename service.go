@@ -83,7 +83,7 @@ func Register(sn *storageNode) {
 			proto.Unmarshal(res[2:], &resMsg)
 			sn.Config().IndexID = resMsg.Id
 			sn.Config().Save()
-
+			sn.owner.BuySpace = resMsg.AssignedSpace
 			fmt.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
 		}
 	}
@@ -117,7 +117,7 @@ func Report(sn *storageNode) {
 		} else {
 			var resMsg message.StatusRepResp
 			proto.Unmarshal(res[2:], &resMsg)
-
+			sn.owner.BuySpace = resMsg.ProductiveSpace
 			fmt.Printf("report info success: %d\n", resMsg.ProductiveSpace)
 		}
 	}

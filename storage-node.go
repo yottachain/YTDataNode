@@ -33,6 +33,14 @@ type StorageNode interface {
 	Service()
 	Config() *config.Config
 	Runtime() RuntimeStatus
+	Owner() *Owner
+}
+
+// Owner 归属信息
+type Owner struct {
+	ID       string
+	BuySpace uint64
+	HDD      uint64
 }
 
 // AddrsManager 地址管理器
@@ -124,6 +132,11 @@ type storageNode struct {
 	config        *config.Config
 	addrsmanager  *AddrsManager
 	runtimeStatus RuntimeStatus
+	owner         *Owner
+}
+
+func (sn *storageNode) Owner() *Owner {
+	return sn.owner
 }
 
 func (sn *storageNode) Runtime() RuntimeStatus {
@@ -164,6 +177,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 
 	sn := &storageNode{}
 	sn.config = cfg
+	sn.owner = new(Owner)
 	sn.addrsmanager = &AddrsManager{
 		nil,
 		time.Now(),
