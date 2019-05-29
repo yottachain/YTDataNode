@@ -24,6 +24,17 @@ func Init() error {
 	return nil
 }
 
+// NewID 创建新的id
+func NewID() (string, int) {
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		fmt.Println("read config fail:", err)
+	}
+	cfg.NewKey()
+	cfg.Save()
+	return cfg.ID, cfg.GetBPIndex()
+}
+
 // Daemon 启动守护进程
 func Daemon() {
 	ctx := context.Background()

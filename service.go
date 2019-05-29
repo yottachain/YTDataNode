@@ -62,6 +62,7 @@ func Register(sn *storageNode) {
 	fmt.Println("owner:", msg.Owner)
 	msg.Addrs = sn.Addrs()
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
+
 	bp := sn.Config().BPList[sn.GetBP()]
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		fmt.Println("Connect bp fail", err)

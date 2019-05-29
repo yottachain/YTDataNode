@@ -54,11 +54,28 @@ var initCmd = &cobra.Command{
 	},
 }
 
+var idCmd = &cobra.Command{
+	Use:   "id",
+	Short: "ID api",
+}
+
+var newIDCmd = &cobra.Command{
+	Use:   "new",
+	Short: "create new id",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, index := commander.NewID()
+		fmt.Println("create new id success")
+		fmt.Printf("id:%s sn:%d\n", id, index)
+	},
+}
+
 func main() {
 	RootCommand := &cobra.Command{
 		Short: "ytfs storage node",
 	}
+	idCmd.AddCommand(newIDCmd)
 	RootCommand.AddCommand(initCmd)
 	RootCommand.AddCommand(daemonCmd)
+	RootCommand.AddCommand(idCmd)
 	RootCommand.Execute()
 }

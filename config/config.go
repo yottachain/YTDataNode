@@ -96,6 +96,25 @@ func (cfg *Config) Save() error {
 	return ioutil.WriteFile(cfgPath, data, os.ModePerm)
 }
 
+// NewKey 创建新的key
+func (cfg *Config) NewKey() error {
+	cfg.privKey, _ = util.RandomIdentity()
+	id, err := peer.IDFromPrivateKey(cfg.privKey)
+	if err != nil {
+		return err
+	}
+	cfg.ID = id.Pretty()
+	return nil
+}
+
+// GetBPIndex 返回bpindex
+func (cfg *Config) GetBPIndex() int {
+	id := cfg.ID
+	bpnum := byte(len(cfg.BPList))
+	bpindex := id[len(id)-1] % bpnum
+	return int(bpindex)
+}
+
 // ReadConfig 读配置
 func ReadConfig() (*Config, error) {
 	var cfg Config

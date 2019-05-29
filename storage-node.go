@@ -155,10 +155,7 @@ func (sn *storageNode) YTFS() *ytfs.YTFS {
 }
 
 func (sn *storageNode) GetBP() int {
-	id := sn.Host().ID().Pretty()
-	bpnum := byte(len(sn.Config().BPList))
-	bpindex := id[len(id)-1] % bpnum
-	return int(bpindex)
+	return sn.Config().GetBPIndex()
 }
 func (sn *storageNode) Addrs() []string {
 	return sn.addrsmanager.GetAddStrings()
