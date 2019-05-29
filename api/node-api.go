@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -42,9 +43,10 @@ func init() {
 	// 查询硬盘使用状况
 	handler.HandleAPI("ytfs/state", func(rw *ResponseWriter, rq *http.Request) {
 		type Res struct {
-			Used   uint64 `json:"Used"`
-			Unused uint64 `json:"Unused"`
-			Total  uint64 `json:"Total"`
+			Used         uint64 `json:"Used"`
+			Unused       uint64 `json:"Unused"`
+			Total        uint64 `json:"Total"`
+			ProductSpace uint64 `json:"ProductSpace"`
 		}
 		const GB = 1024 * 1024 * 1024
 		// 未实现查询，先返回mock数据
@@ -52,6 +54,8 @@ func init() {
 		res.Total = srv.sn.YTFS().Meta().YtfsSize
 		res.Used = srv.sn.YTFS().Len()
 		res.Unused = res.Total - res.Used
+		res.ProductSpace = srv.sn.Owner().BuySpace * uint64(srv.sn.YTFS().Meta().DataBlockSize)
+		fmt.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
 		rw.WriteJSON(res)
 	})
 }
