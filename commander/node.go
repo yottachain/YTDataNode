@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/yottachain/YTDataNode"
+	node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/util"

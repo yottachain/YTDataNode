@@ -14,7 +14,7 @@ import (
 
 	"github.com/yottachain/YTDataNode/message"
 
-	"github.com/yottachain/YTFS"
+	ytfs "github.com/yottachain/YTFS"
 )
 
 type ytfsDisk *ytfs.YTFS
@@ -28,19 +28,25 @@ func (sn *storageNode) Service() {
 			fmt.Printf("远程地址:[%d]: %s", i, addr.String())
 		}
 		content := data.Content()
-		msgTypeBuf := bytes.NewBuffer([]byte{})
-		msgTypeBuf.Write(append([]byte{0, 0}, content[0:2]...))
-		msgData := content[2:]
-		var msgType int32
-		binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
-		fmt.Println("收到消息", msgType)
-		switch int32(msgType) {
-		case message.MsgIDUploadShardRequest.Value():
-			wh := WriteHandler{sn}
-			data.SendMsgClose(wh.GetHandler(msgData))
-		case message.MsgIDDownloadShardRequest.Value():
-			dh := DownloadHandler{sn}
-			data.SendMsgClose(dh.GetHandler(msgData))
+		if len(content) > 2 {
+			msgTypeBuf := bytes.NewBuffer([]byte{})
+			msgTypeBuf.Write(append([]byte{0, 0}, content[0:2]...))
+			msgData := content[2:]
+			var msgType int32
+			binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
+			fmt.Println("收到消息", msgType)
+			switch int32(msgType) {
+			case message.MsgIDUploadShardRequest.Value():
+				wh := WriteHandler{sn}
+				data.SendMsgClose(wh.GetHandler(msgData))
+			case message.MsgIDDownloadShardRequest.Value():
+				dh := DownloadHandler{sn}
+				data.SendMsgClose(dh.GetHandler(msgData))
+			}
+		} else {
+			data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
+			fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
+
 		}
 
 	})

@@ -21,7 +21,7 @@ import (
 
 	// "github.com/yottachain/P2PHost"
 
-	"github.com/yottachain/YTFS"
+	ytfs "github.com/yottachain/YTFS"
 )
 
 // StorageNode 存储节点接口
@@ -66,6 +66,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
+		fmt.Printf("[debug %s]: env: %s ok %b", time.Now().String(), port, ok)
 		addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
 		addr = strings.Replace(addr, "\n", "", -1)
 		pubma, err := multiaddr.NewMultiaddr(addr)

@@ -52,7 +52,7 @@ func init() {
 		// 未实现查询，先返回mock数据
 		res := new(Res)
 		res.Total = srv.sn.YTFS().Meta().YtfsSize
-		res.Used = srv.sn.YTFS().Len()
+		res.Used = srv.sn.YTFS().Len() * uint64(srv.sn.YTFS().Meta().DataBlockSize)
 		res.Unused = res.Total - res.Used
 		res.ProductSpace = srv.sn.Owner().BuySpace * uint64(srv.sn.YTFS().Meta().DataBlockSize)
 		fmt.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
