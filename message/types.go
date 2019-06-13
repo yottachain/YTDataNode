@@ -19,9 +19,13 @@ const (
 	MsgIDNodeRegResp           msgType = 0xfb92
 	MsgIDStatusRepReq          msgType = 0xc9a9
 	MsgIDStatusRepResp         msgType = 0xfa09
+	MsgIDTaskDescript          msgType = 0xd761
+	MsgIDTaskOPResult          msgType = 0x16f3
 )
 
 type msgType int32
+
+
 
 func (mt msgType) Bytes() []byte {
 	buf := bytes.NewBuffer([]byte{})

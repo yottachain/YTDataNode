@@ -16,8 +16,8 @@ type WriteHandler struct {
 	StorageNode
 }
 
-// GetHandler 获取回调处理函数
-func (wh *WriteHandler) GetHandler(msgData []byte) []byte {
+// Handle 获取回调处理函数
+func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
 	fmt.Println("超级节点签名:", msg.GetBPDSIGN())
@@ -84,8 +84,8 @@ type DownloadHandler struct {
 	StorageNode
 }
 
-// GetHandler 获取处理器
-func (dh *DownloadHandler) GetHandler(msgData []byte) []byte {
+// Handle 获取处理器
+func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	var msg message.DownloadShardRequest
 	var indexKey [32]byte
 	proto.Unmarshal(msgData, &msg)

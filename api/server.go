@@ -3,7 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/yottachain/YTDataNode"
+	node "github.com/yottachain/YTDataNode"
+	"github.com/yottachain/YTDataNode/instance"
 )
 
 // Server api服务
@@ -13,16 +14,16 @@ type Server struct {
 }
 
 // NewHTTPServer 创建http api服务器
-func NewHTTPServer(sn node.StorageNode) *Server {
+func NewHTTPServer() *Server {
 	var srv Server
 	srv.Server = new(http.Server)
-	srv.sn = sn
+	srv.sn = instance.GetStorageNode()
 	return &srv
 }
 
 // Daemon 启动http服务
-func (srv *Server) Daemon(address string) error {
-	srv.Addr = address
+func (srv *Server) Daemon() error {
+	srv.Addr = srv.sn.Config().APIListen
 	srv.Handler = NewAPIHandler(srv)
 	return srv.ListenAndServe()
 }

@@ -71,3 +71,21 @@ message StatusRepResp {
    uint64 productiveSpace=1;                 
 }
 
+message P2PLocation{
+    string nodeId=1;
+    repeated string addrs=2;
+}
+
+message TaskDescription{
+    int64 id = 1; 
+    repeated bytes dataHash=2;
+    repeated bytes parityHash=3;
+    repeated P2PLocation locations=4;
+    repeated int32 recoverId=5;
+}
+
+message TaskOpResult{
+    int64 id = 1; 
+    int32 RES=2;
+}
+

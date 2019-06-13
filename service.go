@@ -19,38 +19,107 @@ import (
 
 type ytfsDisk *ytfs.YTFS
 
-func (sn *storageNode) Service() {
-	sn.host.HandleMessage("/node/0.0.1", func(data *host.MsgStream) {
-		fmt.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
-		info := sn.Host().Peerstore().PeerInfo(data.Conn().RemotePeer())
+type handlerFunc func(msgData []byte) []byte
 
-		for i, addr := range info.Addrs {
-			fmt.Printf("远程地址:[%d]: %s", i, addr.String())
-		}
-		content := data.Content()
-		if len(content) > 2 {
-			msgTypeBuf := bytes.NewBuffer([]byte{})
-			msgTypeBuf.Write(append([]byte{0, 0}, content[0:2]...))
-			msgData := content[2:]
-			var msgType int32
-			binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
-			fmt.Println("收到消息", msgType)
-			switch int32(msgType) {
-			case message.MsgIDUploadShardRequest.Value():
-				wh := WriteHandler{sn}
-				data.SendMsgClose(wh.GetHandler(msgData))
-			case message.MsgIDDownloadShardRequest.Value():
-				dh := DownloadHandler{sn}
-				data.SendMsgClose(dh.GetHandler(msgData))
+// HandlerMap 消息处理器列表
+type HandlerMap map[int32]handlerFunc
+
+// HandlerManager 消息处理管理
+type HandlerManager struct {
+	sn      *storageNode
+	handler map[string]HandlerMap
+}
+
+// RegitsterHandler 注册消息处理器
+func (hm *HandlerManager) RegitsterHandler(protocol string, msgType int32, handler handlerFunc) {
+	if hm.handler == nil {
+		hm.handler = make(map[string]HandlerMap)
+	}
+	if hm.handler[protocol] == nil {
+		hm.handler[protocol] = make(HandlerMap)
+	}
+	if hm.handler[protocol][msgType] == nil {
+		hm.handler[protocol][msgType] = handler
+	}
+}
+
+// Service 启动服务
+func (hm *HandlerManager) Service() {
+	for protocol, hmp := range hm.handler {
+		hm.sn.host.HandleMessage(protocol, func(data *host.MsgStream) {
+			fmt.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
+			info := hm.sn.Host().Peerstore().PeerInfo(data.Conn().RemotePeer())
+
+			for i, addr := range info.Addrs {
+				fmt.Printf("远程地址:[%d]: %s", i, addr.String())
 			}
-		} else {
-			data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
-			fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
+			content := data.Content()
+			msgType, msgData, err := hm.ParseMsg(content)
+			if err != nil {
+				data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
+				fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
+			} else {
+				data.SendMsg(hmp[msgType](msgData))
+			}
+		})
+	}
+}
 
-		}
+// ParseMsg 启动服务
+func (hm *HandlerManager) ParseMsg(content []byte) (int32, []byte, error) {
+	if len(content) < 2 {
+		return 0, nil, fmt.Errorf("msg error")
+	}
+	msgTypeBuf := bytes.NewBuffer([]byte{})
+	msgTypeBuf.Write(append([]byte{0, 0}, content[0:2]...))
+	var msgType int32
+	binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
+	return msgType, content[2:], nil
+}
 
-	})
+func (sn *storageNode) Service() {
+	// sn.host.HandleMessage("/node/0.0.1", func(data *host.MsgStream) {
+	// 	fmt.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
+	// 	info := sn.Host().Peerstore().PeerInfo(data.Conn().RemotePeer())
+
+	// 	for i, addr := range info.Addrs {
+	// 		fmt.Printf("远程地址:[%d]: %s", i, addr.String())
+	// 	}
+	// 	content := data.Content()
+	// 	if len(content) > 2 {
+	// 		msgTypeBuf := bytes.NewBuffer([]byte{})
+	// 		msgTypeBuf.Write(append([]byte{0, 0}, content[0:2]...))
+	// 		msgData := content[2:]
+	// 		var msgType int32
+	// 		binary.Read(msgTypeBuf, binary.BigEndian, &msgType)
+	// 		fmt.Println("收到消息", msgType)
+	// 		switch int32(msgType) {
+	// 		case message.MsgIDUploadShardRequest.Value():
+	// 			wh := WriteHandler{sn}
+	// 			data.SendMsgClose(wh.GetHandler(msgData))
+	// 		case message.MsgIDDownloadShardRequest.Value():
+	// 			dh := DownloadHandler{sn}
+	// 			data.SendMsgClose(dh.GetHandler(msgData))
+	// 		}
+	// 	} else {
+	// 		data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
+	// 		fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
+
+	// 	}
+
+	// })
 	// Report(sn)
+	var hm HandlerManager
+	hm.sn = sn
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
+		wh := WriteHandler{hm.sn}
+		return wh.Handle(data)
+	})
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
+		dh := DownloadHandler{hm.sn}
+		return dh.Handle(data)
+	})
+	hm.Service()
 	Register(sn)
 	go func() {
 		for {
@@ -128,5 +197,4 @@ func Report(sn *storageNode) {
 			fmt.Printf("report info success: %d\n", resMsg.ProductiveSpace)
 		}
 	}
-
 }
