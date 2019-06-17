@@ -20,9 +20,13 @@ import (
 	"github.com/yottachain/YTDataNode/host"
 
 	// "github.com/yottachain/P2PHost"
-
-	ytfs "github.com/yottachain/YTFS"
+	ytfs "github.com/dp1993132/YTFS"
 )
+
+// Service 服务接口
+type Service interface {
+	Service()
+}
 
 // StorageNode 存储节点接口
 type StorageNode interface {
@@ -66,7 +70,6 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
-		fmt.Printf("[debug %s]: env: %s ok %b", time.Now().String(), port, ok)
 		addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
 		addr = strings.Replace(addr, "\n", "", -1)
 		pubma, err := multiaddr.NewMultiaddr(addr)
@@ -122,7 +125,9 @@ func (rs *RuntimeStatus) Update() RuntimeStatus {
 	m, _ := mem.VirtualMemory()
 	rs.Mem = uint32(m.UsedPercent)
 	rs.CPU = cpupint32
-	rs.AvCPU = sumcpu / uint32(len(cpupercent))
+	if uint32(len(cpupercent)) > 0 {
+		rs.AvCPU = sumcpu / uint32(len(cpupercent))
+	}
 	fmt.Println("cupsum:", sumcpu, len(cpupercent))
 	return *rs
 }
@@ -187,7 +192,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.host = host.NewP2PHost()
 	sn.host.SetPrivKey(sn.config.PrivKey())
 	yp := util.GetYTFSPath()
-	ys, err := ytfs.Open(yp, cfg.Options)
+	ys, err := ytfs.NewYTFS(yp, cfg.Options)
 	if err != nil {
 		return nil, fmt.Errorf("YTFS storage init faile")
 	}
@@ -195,6 +200,5 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return sn, nil
 }

@@ -40,6 +40,32 @@ func init() {
 		// 未实现查询，先返回mock数据
 		rw.WriteJSON(Res{10, 50})
 	})
+	// 已连接节点
+	handler.HandleAPI("node/conns", func(rw *ResponseWriter, rq *http.Request) {
+		var res []string
+		conns := srv.sn.Host().Network().Conns()
+		if len(conns) > 0 {
+			res = make([]string, len(conns))
+		}
+		for k, v := range conns {
+			res[k] = fmt.Sprintf("%s/p2p/%s", v.RemoteMultiaddr(), v.RemotePeer().Pretty())
+		}
+		// 未实现查询，先返回mock数据
+		rw.WriteJSON(res)
+	})
+	// 已添加节点
+	handler.HandleAPI("node/peers", func(rw *ResponseWriter, rq *http.Request) {
+		var res []string
+		conns := srv.sn.Host().Peerstore().Peers()
+		if len(conns) > 0 {
+			res = make([]string, len(conns))
+		}
+		for k, v := range conns {
+			res[k] = v.Pretty()
+		}
+		// 未实现查询，先返回mock数据
+		rw.WriteJSON(res)
+	})
 	// 查询硬盘使用状况
 	handler.HandleAPI("ytfs/state", func(rw *ResponseWriter, rq *http.Request) {
 		type Res struct {

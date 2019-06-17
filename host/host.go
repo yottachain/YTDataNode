@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
 	ci "github.com/libp2p/go-libp2p-crypto"
-	"github.com/libp2p/go-libp2p-host"
+	host "github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
-	"github.com/libp2p/go-libp2p-peerstore"
+	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
 )
 
@@ -86,11 +86,13 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 }
 
 // Daemon 启动host节点
-func (h *Host) Daemon(ctx context.Context, addr string) error {
+func (h *Host) Daemon(ctx context.Context, addrs ...string) error {
 	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(addr),
+		libp2p.ListenAddrStrings(addrs...),
 		libp2p.NATPortMap(),
-		libp2p.EnableRelay(circuit.OptHop),
+		// libp2p.Transport(quictpt.NewTransport),
+		libp2p.DefaultTransports,
+		libp2p.EnableRelay(circuit.OptHop, circuit.OptDiscovery),
 	}
 	if h.privKey != nil {
 		opts = append(opts, libp2p.Identity(h.privKey))
@@ -185,6 +187,5 @@ func InfoFromAddrString(addr string) (*peerstore.PeerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return peerstore.InfoFromP2pAddr(ma)
 }

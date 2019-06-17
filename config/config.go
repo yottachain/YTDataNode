@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -23,6 +23,7 @@ type Config struct {
 	ID         string `json:"ID"`
 	privKey    ci.PrivKey
 	BPList     []peerInfo `json:"BPList"`
+	Relay      bool       `json:"Relay"`
 	ListenAddr string     `json:"ListenAddr"`
 	APIListen  string     `json:"APIListen"`
 	IndexID    uint32     `json:"IndexID"`
@@ -51,6 +52,7 @@ func NewConfig() *Config {
 	cfg.APIListen = ":9002"
 	cfg.Options = DefaultYTFSOptions()
 	cfg.privKey, _ = util.RandomIdentity()
+	cfg.Relay = true
 	cfg.BPList = []peerInfo{
 		peerInfo{
 			"16Uiu2HAkyHhwuzkR6fRhKbhUBVMySBKKtLCRkReYTJQEyfCkPSfN",

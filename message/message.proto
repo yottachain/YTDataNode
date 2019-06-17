@@ -37,37 +37,55 @@ message DownloadShardResponse{
 
 message NodeRegReq {                           
 
-    string nodeid= 1;                              
-
-    string owner=2;                                
-
-    uint64 maxDataSpace=3;                   
-
-    repeated string addrs=4;                   
-
+    string nodeid= 1;                           
+    string owner=2;                              
+    uint64 maxDataSpace=3;                 
+    repeated string addrs=4;     
+    bool relay=5;
 }
 
 
 message NodeRegResp {                        
-
-    uint32 id=1;                                   
-
-    uint64 assignedSpace=2;         
-
+    uint32 id= 1;                                    
+    uint64 assignedSpace=2;    
+    string relayUrl=3;
 }
 
 message StatusRepReq {                          
-    uint32 id=1;                                     
-    uint32 cpu=2;                                   
-    uint32 memory=3;                           
-    uint32 bandwidth=4;                         
+    uint32 id=1;                                   
+    uint32 cpu=2;                          
+    uint32 memory=3;                          
+    uint32 bandwidth=4;                        
     uint64 maxDataSpace=5;                   
     uint64 assignedSpace=6;                   
-    uint64 usedSpace=7;                        
-    repeated string addrs=8;                   
+    uint64 usedSpace=7;                       
+    repeated string addrs=8;  
+    bool relay=9;                     
 }
 
 message StatusRepResp {
-   uint64 productiveSpace=1;                 
+    uint64 productiveSpace=1; 
+    string relayUrl=2;                 
+}
+
+message P2PLocation{
+    string nodeId=1;
+    repeated string addrs=2;
+}
+
+message TaskDescription{
+    int64 id = 1; 
+    repeated bytes dataHash=2;
+    repeated bytes parityHash=3;
+    repeated P2PLocation locations=4;
+    repeated int32 recoverId=5;
+}
+
+message TaskOpResult{
+    int64 id = 1; 
+    int32 RES=2;
+}
+message StringMsg{
+    string msg=1;
 }
 
