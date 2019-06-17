@@ -23,6 +23,11 @@ import (
 	ytfs "github.com/dp1993132/YTFS"
 )
 
+// Service 服务接口
+type Service interface {
+	Service()
+}
+
 // StorageNode 存储节点接口
 type StorageNode interface {
 	Addrs() []string
