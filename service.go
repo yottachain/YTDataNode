@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/host"
 	"os"
 
 	"github.com/gogo/protobuf/proto"
@@ -21,17 +22,22 @@ var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDUploadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		wh := WriteHandler{sn}
 		return wh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDDownloadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		dh := DownloadHandler{sn}
 		return dh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		fmt.Println("ping")
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
+	})
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDCheckTaskList.Value(), func(data []byte, stm *host.MsgStream) []byte {
+		ch := new(CheckDataHandler)
+		ch.StorageNode = sn
+		return ch.Handle(data, 1)
 	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
@@ -40,7 +46,7 @@ func (sn *storageNode) Service() {
 	go func() {
 		for {
 			Report(sn)
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 60)
 		}
 	}()
 	// for _, v := range sn.services {

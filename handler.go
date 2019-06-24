@@ -1,7 +1,9 @@
 package node
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/mr-tron/base58/base58"
 
@@ -112,4 +114,96 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	}
 	fmt.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
+}
+
+type RecoverHandler struct {
+	StorageNode
+}
+
+func (rh *RecoverHandler) Handle(data []byte) []byte {
+	var res []byte
+	var msg message.TaskDescription
+	proto.Unmarshal(data, &msg)
+
+	return res
+}
+
+//type checkDataTask struct {
+//	message.SpotCheckTask
+//}
+
+type CheckDataHandler struct {
+	StorageNode
+	TaskList []*message.SpotCheckTask
+	TaskCh chan int
+	snid int
+}
+
+func (ch *CheckDataHandler) Handle(data []byte, snid int) []byte {
+	var msg message.SpotCheckTaskList
+	proto.Unmarshal(data, &msg)
+	ch.TaskList = msg.TaskList
+	ch.snid = snid
+	ch.Run()
+	return message.MsgIDVoidResponse.Marshal([]byte{})
+}
+
+
+
+func (ch *CheckDataHandler)do(task *message.SpotCheckTask) error {
+	var msg message.DownloadShardRequest
+	var resmsg message.DownloadShardResponse
+	ch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr})
+	// 1. 获取分片
+	stm,err := ch.Host().NewMsgStream(context.Background(),task.NodeId, "/node/0.0.1")
+	if err != nil {
+		return err
+
+	}
+	msg.VHF = task.VHF
+	msgData,err := proto.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+	resp,err:= stm.SendMsgGetResponse(message.MsgIDDownloadShardRequest.Marshal(msgData))
+	if err != nil {
+		return nil
+	}
+	err=message.MsgIDDownloadShardResponse.Unmarshal(resp, &resmsg)
+	if err != nil {
+		return err
+	}
+	// 2. 验证分片VHF
+	if msg.VerifyVHF(resmsg.Data) {
+		return nil
+	} else {
+		return fmt.Errorf("check unpass")
+	}
+	defer func (){
+		<- ch.TaskCh
+	}()
+	return nil
+}
+
+func (ch *CheckDataHandler)Run(){
+	ch.TaskCh = make(chan int, 5)
+	var msg message.SpotCheckStatus
+	sn := ch.Config().BPList[ch.snid]
+	for k,v:=range ch.TaskList {
+		ch.TaskCh <- 0
+		err:=ch.do(v)
+		// 如果获取分片的过程中报错，或者数据校验报错都会校验失败
+		if err != nil {
+			msg.InvalidNodeList = append(msg.InvalidNodeList, v.Id)
+		}
+		msg.Percent = int32(k%len(ch.TaskList))
+		if k % 10 == 0 {
+			ctx ,_:= context.WithTimeout(context.Background(),30 * time.Second)
+			ch.Host().ConnectAddrStrings(sn.ID, sn.Addrs)
+			stm,err := ch.Host().NewMsgStream(ctx, sn.ID, "/node/0.0.1")
+			fmt.Printf("create conn fail %s\n", err)
+			msgData,err:=proto.Marshal(&msg)
+			stm.SendMsg(message.MsgIDCheckStatus.Marshal(msgData))
+		}
+	}
 }

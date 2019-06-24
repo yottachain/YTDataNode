@@ -9,7 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 )
 
-type handlerFunc func(msgData []byte) []byte
+type handlerFunc func(msgData []byte, stm *host.MsgStream) []byte
 
 // HandlerMap 消息处理器列表
 type HandlerMap map[int32]handlerFunc
@@ -49,7 +49,7 @@ func (hm *HandleMsgService) Service() {
 				data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
 				fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
 			} else {
-				data.SendMsgClose(hmp[msgType](msgData))
+				data.SendMsgClose(hmp[msgType](msgData, data))
 			}
 		})
 	}
