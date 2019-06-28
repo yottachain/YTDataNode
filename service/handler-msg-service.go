@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 
 	"github.com/yottachain/YTDataNode/host"
 	"github.com/yottachain/YTDataNode/message"
@@ -37,17 +38,17 @@ func (hm *HandleMsgService) RegitsterHandler(protocol string, msgType int32, han
 func (hm *HandleMsgService) Service() {
 	for protocol, hmp := range hm.handler {
 		hm.host.HandleMessage(protocol, func(data *host.MsgStream) {
-			fmt.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
+			log.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
 			info := hm.host.Peerstore().PeerInfo(data.Conn().RemotePeer())
 
 			for i, addr := range info.Addrs {
-				fmt.Printf("远程地址:[%d]: %s", i, addr.String())
+				log.Printf("远程地址:[%d]: %s", i, addr.String())
 			}
 			content := data.Content()
 			msgType, msgData, err := hm.ParseMsg(content)
 			if err != nil {
 				data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
-				fmt.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
+				log.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
 			} else {
 				data.SendMsgClose(hmp[msgType](msgData))
 			}

@@ -3,6 +3,7 @@ package commander
 import (
 	"context"
 	"fmt"
+	"log"
 
 	ytfs "github.com/dp1993132/YTFS"
 	// node "github.com/yottachain/YTDataNode"
@@ -29,7 +30,7 @@ func Init() error {
 func NewID() (string, int) {
 	cfg, err := config.ReadConfig()
 	if err != nil {
-		fmt.Println("read config fail:", err)
+		log.Println("read config fail:", err)
 	}
 	cfg.NewKey()
 	cfg.Save()
@@ -42,20 +43,20 @@ func Daemon() {
 	sn := instance.GetStorageNode()
 	err := sn.Host().Daemon(ctx, sn.Config().ListenAddr)
 	if err != nil {
-		fmt.Println("node daemon fail", err)
+		log.Println("node daemon fail", err)
 	}
-	fmt.Println("YTFS daemon success")
+	log.Println("YTFS daemon success")
 	for k, v := range sn.Addrs() {
-		fmt.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
+		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 	}
 	srv := api.NewHTTPServer()
-	fmt.Println("Wait request")
+	log.Println("Wait request")
 	sn.Service()
 	go func() {
 		if err := srv.Daemon(); err != nil {
 			panic(fmt.Sprintf("Api server fail:%s\n", err))
 		} else {
-			fmt.Printf("API serve at:%s\n", srv.Addr)
+			log.Printf("API serve at:%s\n", srv.Addr)
 		}
 	}()
 	defer sn.YTFS().Close()

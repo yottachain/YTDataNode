@@ -2,7 +2,7 @@ package test
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -77,5 +77,5 @@ func TestAddPeer(t *testing.T) {
 		t.Error(err)
 	}
 	id, _ := peer.IDB58Decode("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi")
-	fmt.Println(h.Peerstore().Addrs(id))
+	log.Println(h.Peerstore().Addrs(id))
 }

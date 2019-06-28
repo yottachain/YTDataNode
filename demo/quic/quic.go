@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"io"
 	"io/ioutil"
 	"os"
@@ -26,11 +26,11 @@ func main() {
 		libp2p.DefaultTransports,
 	)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	host.SetStreamHandler("test", func(stm inet.Stream) {
-		fmt.Println("新链接建立")
-		fmt.Printf("addrs:%s/p2p/%s\n", stm.Conn().RemoteMultiaddr().String(), stm.Conn().RemotePeer().Pretty())
+		log.Println("新链接建立")
+		log.Printf("addrs:%s/p2p/%s\n", stm.Conn().RemoteMultiaddr().String(), stm.Conn().RemotePeer().Pretty())
 		io.WriteString(stm, fmt.Sprintf("hello , this is %s\n", stm.Conn().LocalPeer().String()))
 		stm.Close()
 	})
@@ -49,15 +49,15 @@ func main() {
 				}
 				stm.Write([]byte("hello"))
 				res, _ := ioutil.ReadAll(stm)
-				fmt.Printf("%s\n", res)
+				log.Printf("%s\n", res)
 				<-time.After(3 * time.Second)
 			}
 		}
 	}
-	fmt.Printf("初始化完成:\n")
+	log.Printf("初始化完成:\n")
 	for k, v := range host.Addrs() {
-		fmt.Printf("Addr[%d]:%s/p2p/%s\n", k, v.String(), host.ID().Pretty())
+		log.Printf("Addr[%d]:%s/p2p/%s\n", k, v.String(), host.ID().Pretty())
 	}
-	fmt.Printf("addrs:/p2p-circuit/p2p/%s\n", host.ID().Pretty())
+	log.Printf("addrs:/p2p-circuit/p2p/%s\n", host.ID().Pretty())
 	<-ctx.Done()
 }

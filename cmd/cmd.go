@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"github.com/yottachain/YTDataNode/cmd/register"
 
 	"github.com/yottachain/YTDataNode/commander"
 
@@ -14,7 +15,7 @@ var daemonCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// sn, err := node.NewStorageNode(args[0])
 		// if err != nil {
-		// 	fmt.Println("ytfs-disk init fail", err)
+		// 	log.Println("ytfs-disk init fail", err)
 		// }
 		// sn.Host().Daemon(context.Background(), "/ip4/0.0.0.0/tcp/9001")
 		// err = sn.Host().ConnectAddrStrings("16Uiu2HAm4ejSpUiVYEYc2pCk7RUa3ScdswM6cXGwzTZziSKcAYwi", []string{
@@ -22,21 +23,21 @@ var daemonCmd = &cobra.Command{
 		// 	"/ip4/152.136.11.202/tcp/9999",
 		// })
 		// if err != nil {
-		// 	fmt.Println("Add addr fail", err)
+		// 	log.Println("Add addr fail", err)
 		// }
-		// fmt.Println("pk:", args[0])
-		// fmt.Println("YTFS init success")
+		// log.Println("pk:", args[0])
+		// log.Println("YTFS init success")
 		// for k, v := range sn.Host().Addrs() {
-		// 	fmt.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
+		// 	log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 		// }
 		// srv := api.NewHTTPServer(sn)
-		// fmt.Println("Wait request")
+		// log.Println("Wait request")
 		// sn.Service()
 		// go func() {
 		// 	if err := srv.Daemon(":9002"); err != nil {
 		// 		panic(fmt.Sprintf("Api server fail:%s\n", err))
 		// 	} else {
-		// 		fmt.Printf("API serve at:%s\n", srv.Addr)
+		// 		log.Printf("API serve at:%s\n", srv.Addr)
 		// 	}
 		// }()
 		// ctx := context.Background()
@@ -50,7 +51,7 @@ var initCmd = &cobra.Command{
 	Short: "Init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
 		commander.Init()
-		fmt.Println("YTFS init success")
+		log.Println("YTFS init success")
 	},
 }
 
@@ -64,8 +65,8 @@ var newIDCmd = &cobra.Command{
 	Short: "create new id",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, index := commander.NewID()
-		fmt.Println("create new id success")
-		fmt.Printf("id:%s sn:%d\n", id, index)
+		log.Println("create new id success")
+		log.Printf("id:%s sn:%d\n", id, index)
 	},
 }
 
@@ -77,5 +78,6 @@ func main() {
 	RootCommand.AddCommand(initCmd)
 	RootCommand.AddCommand(daemonCmd)
 	RootCommand.AddCommand(idCmd)
+	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.Execute()
 }

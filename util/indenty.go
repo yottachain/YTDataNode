@@ -1,7 +1,8 @@
 package util
 
 import (
-	"bytes"
+	"log"
+	peer "github.com/libp2p/go-libp2p-peer"
 
 	"github.com/mr-tron/base58"
 
@@ -13,11 +14,42 @@ import (
 func RandomIdentity() (crypto.PrivKey, error) {
 	privstr, _ := ci.CreateKey()
 	pr, _ := base58.Decode(privstr)
-	priv, _, err := crypto.GenerateSecp256k1Key(bytes.NewBuffer(pr))
-	// fmt.Println(privstr)
+	priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[1:33])
+	// log.Println(privstr)
 	// priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 	return priv, err
+}
+
+// RandomIdentity2 generates a random identity (default behaviour)
+func RandomIdentity2() (crypto.PrivKey, string, error) {
+	privstr, pubstr := ci.CreateKey()
+	pr, _ := base58.Decode(privstr)
+	log.Println(pr[1:33])
+	priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[1:33])
+	// log.Println(privstr)
+	// priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
+	if err != nil {
+		return nil, "", err
+	}
+	return priv, pubstr, err
+}
+
+func GetPublicKey(privkey string) (string, error) {
+	return ci.GetPublicKeyByPrivateKey(privkey)
+}
+
+func IdFromPublicKey(publicKey string) (peer.ID, error) {
+	bytes, err := base58.Decode(publicKey)
+	if err != nil {
+		return "", err
+	}
+	rawpk, err := crypto.UnmarshalSecp256k1PublicKey(bytes[0:33])
+	if err != nil {
+		return "", err
+	}
+	id, err := peer.IDFromPublicKey(rawpk)
+	return id, nil
 }

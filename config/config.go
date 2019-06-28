@@ -3,10 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
 	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
-
-	peer "github.com/libp2p/go-libp2p-peer"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -22,6 +23,7 @@ type peerInfo struct {
 type Config struct {
 	ID         string `json:"ID"`
 	privKey    ci.PrivKey
+	PubKey     string
 	BPList     []peerInfo `json:"BPList"`
 	Relay      bool       `json:"Relay"`
 	ListenAddr string     `json:"ListenAddr"`
@@ -51,29 +53,27 @@ func NewConfig() *Config {
 	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
 	cfg.APIListen = ":9002"
 	cfg.Options = DefaultYTFSOptions()
-	cfg.privKey, _ = util.RandomIdentity()
+	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
+
 	cfg.Relay = true
-	cfg.BPList = []peerInfo{
-		peerInfo{
-			"16Uiu2HAkyHhwuzkR6fRhKbhUBVMySBKKtLCRkReYTJQEyfCkPSfN",
-			[]string{
-				"/ip4/152.136.16.118/tcp/9999",
-			},
-		},
-		peerInfo{
-			"16Uiu2HAm9fBJNUzSD5V9aFJQQHbxE3rPsTiyrYk7vju18JCf3xm8",
-			[]string{
-				"/ip4/152.136.17.115/tcp/9999",
-			},
-		},
-		peerInfo{
-			"16Uiu2HAkwNCD9HSH5hh36LmzgLjRcQiQFpT9spwspaAM5AH3rqA9",
-			[]string{
-				"/ip4/152.136.18.185/tcp/9999",
-			},
-		},
-	}
+	cfg.BPList = getBPList()
 	return cfg
+}
+
+func getBPList() []peerInfo {
+	var bplist []peerInfo
+	resp, err := http.Get("http://download.yottachain.io/config/bp.json")
+	if err != nil {
+		log.Println("获取BPLIST失败")
+		os.Exit(1)
+	}
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("获取BPLIST失败")
+		os.Exit(1)
+	}
+	json.Unmarshal(buf, &bplist)
+	return bplist
 }
 
 // Save ..
@@ -84,9 +84,9 @@ func (cfg *Config) Save() error {
 	}
 
 	cfgPath := util.GetConfigPath()
-	keyBytes, _ := cfg.privKey.Bytes()
+	keyBytes, _ := cfg.privKey.Raw()
 	ioutil.WriteFile(fmt.Sprintf("%s/swarm.key", yp), keyBytes, os.ModePerm)
-	peerID, err := peer.IDFromPrivateKey(cfg.privKey)
+	peerID, err := util.IdFromPublicKey(cfg.PubKey)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (cfg *Config) Save() error {
 // NewKey 创建新的key
 func (cfg *Config) NewKey() error {
 	cfg.privKey, _ = util.RandomIdentity()
-	id, err := peer.IDFromPrivateKey(cfg.privKey)
+	id, err := util.IdFromPublicKey(cfg.PubKey)
 	if err != nil {
 		return err
 	}
@@ -111,9 +111,9 @@ func (cfg *Config) NewKey() error {
 
 // GetBPIndex 返回bpindex
 func (cfg *Config) GetBPIndex() int {
-	id := cfg.ID
-	bpnum := byte(len(cfg.BPList))
-	bpindex := id[len(id)-1] % bpnum
+	id := cfg.IndexID
+	bpnum := len(cfg.BPList)
+	bpindex := id % uint32(bpnum)
 	return int(bpindex)
 }
 
@@ -132,9 +132,9 @@ func ReadConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	privk, err := ci.UnmarshalPrivateKey(keyBytes)
+	privk, err := ci.UnmarshalSecp256k1PrivateKey(keyBytes)
 	if err != nil {
-		fmt.Println(len(keyBytes))
+
 		return nil, err
 	}
 	cfg.privKey = privk
@@ -145,3 +145,15 @@ func ReadConfig() (*Config, error) {
 func (cfg *Config) PrivKey() ci.PrivKey {
 	return cfg.privKey
 }
+func (cfg *Config) PrivKeyString() string {
+	buf, _ := cfg.privKey.Bytes()
+	return base58.Encode(buf)
+}
+
+//func (cfg *Config) PubKeyString() string {
+//	key, err := util.GetPublicKey(cfg.PrivKeyString())
+//	if err != nil {
+//		log.Println(err, cfg.PrivKeyString())
+//	}
+//	return key
+//}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -81,7 +82,7 @@ func init() {
 		res.Used = srv.sn.YTFS().Len() * uint64(srv.sn.YTFS().Meta().DataBlockSize)
 		res.Unused = res.Total - res.Used
 		res.ProductSpace = srv.sn.Owner().BuySpace * uint64(srv.sn.YTFS().Meta().DataBlockSize)
-		fmt.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
+		log.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
 		rw.WriteJSON(res)
 	})
 }

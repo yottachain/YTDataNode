@@ -41,7 +41,7 @@ func (rm *RelayManager) UpdateAddr(addr string) error {
 		}
 		rm.peer = pi
 	}
-	// fmt.Println(err, "中继地址解析错误")
+	// log.Println(err, "中继地址解析错误")
 	return err
 }
 

@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -60,11 +61,11 @@ func (am *AddrsManager) UpdateAddrs() {
 	am.addrs = am.sn.Host().Addrs()
 	resp, err := http.Get("http://39.97.41.155/self-ip")
 	if err != nil {
-		fmt.Println("get public ip fail")
+		log.Println("get public ip fail")
 	} else {
 		pubip, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("get public ip fail:", err)
+			log.Println("get public ip fail:", err)
 		}
 		port, ok := os.LookupEnv("nat_port")
 		if ok == false {
@@ -74,7 +75,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		addr = strings.Replace(addr, "\n", "", -1)
 		pubma, err := multiaddr.NewMultiaddr(addr)
 		if err != nil {
-			fmt.Println("fomate public ip fail:", err, addr)
+			log.Println("fomate public ip fail:", err, addr)
 		} else {
 			am.addrs = append(am.addrs, pubma)
 			am.updateTime = time.Now()
@@ -128,7 +129,7 @@ func (rs *RuntimeStatus) Update() RuntimeStatus {
 	if uint32(len(cpupercent)) > 0 {
 		rs.AvCPU = sumcpu / uint32(len(cpupercent))
 	}
-	fmt.Println("cupsum:", sumcpu, len(cpupercent))
+	log.Println("cupsum:", sumcpu, len(cpupercent))
 	return *rs
 }
 

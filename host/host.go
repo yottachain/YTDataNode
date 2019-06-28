@@ -5,11 +5,12 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
+	"log"
 
 	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/multiformats/go-multiaddr"
 
-	libp2p "github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
 	ci "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
@@ -102,7 +103,7 @@ func (h *Host) Daemon(ctx context.Context, addrs ...string) error {
 		opts...,
 	)
 	if err != nil {
-		fmt.Println("p2p host init fail:", err)
+		log.Println("p2p host init fail:", err)
 		return err
 	}
 	h.Host = host
@@ -148,7 +149,7 @@ func (m *MsgStream) SendMsgClose(msgData []byte) {
 // SendMsgGetResponse 发送消息并且获取返回
 func (m *MsgStream) SendMsgGetResponse(msgData []byte) ([]byte, error) {
 	m.SendMsg(msgData)
-	fmt.Println("send msg success")
+	log.Println("send msg success")
 	return ioutil.ReadAll(m)
 }
 

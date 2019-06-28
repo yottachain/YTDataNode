@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/gob"
-	"fmt"
+	"log"
 	"io/ioutil"
 	"os"
 
@@ -19,29 +19,29 @@ import (
 func main() {
 	host, err := libp2p.New(context.Background(), libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/9002"))
 	if err != nil {
-		fmt.Println("err ", err)
+		log.Println("err ", err)
 	}
 	ma, err := multiaddr.NewMultiaddr(os.Args[1])
 	if err != nil {
-		fmt.Println("错误 ", err)
+		log.Println("错误 ", err)
 	}
 	info, err := peerstore.InfoFromP2pAddr(ma)
 	if err != nil {
-		fmt.Println("错误3 ", err)
+		log.Println("错误3 ", err)
 	}
 	host.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.TempAddrTTL)
 	stm, err := host.NewStream(context.Background(), info.ID, "/node/0.0.1")
 	if err != nil {
-		fmt.Println("错误 4", err)
+		log.Println("错误 4", err)
 	}
 	ed := gob.NewEncoder(stm)
 	var msg message.StringMsg
 	msg.Msg = "ping"
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
-		fmt.Println("错误 5", err)
+		log.Println("错误 5", err)
 	}
 	ed.Encode(append(message.MsgIDString.Bytes(), buf...))
 	res, _ := ioutil.ReadAll(stm)
-	fmt.Printf("%s\n", res)
+	log.Printf("%s\n", res)
 }

@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/gogo/protobuf/proto"
@@ -30,17 +30,17 @@ func (sn *storageNode) Service() {
 		return dh.Handle(data)
 	})
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte) []byte {
-		fmt.Println("ping")
+		log.Println("ping")
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
 	rms.Service()
-	Register(sn)
+	//Register(sn)
 	go func() {
 		for {
 			Report(sn)
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 60)
 		}
 	}()
 	// for _, v := range sn.services {
@@ -53,37 +53,37 @@ func Register(sn *storageNode) {
 	var msg message.NodeRegReq
 	msg.Nodeid = sn.Host().ID().Pretty()
 	msg.Owner = os.Getenv("owner")
-	fmt.Println("owner:", msg.Owner)
+	log.Println("owner:", msg.Owner)
 	msg.Addrs = sn.Addrs()
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
 	msg.Relay = sn.config.Relay
 
 	bp := sn.Config().BPList[sn.GetBP()]
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		fmt.Println("Connect bp fail", err)
+		log.Println("Connect bp fail", err)
 	}
 	msgBytes, err := proto.Marshal(&msg)
 	if err != nil {
-		fmt.Println("Formate msg fail:", err)
+		log.Println("Formate msg fail:", err)
 	}
-	fmt.Println("sn index:", sn.GetBP())
+	log.Println("sn index:", sn.GetBP())
 	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
 	if err != nil {
-		fmt.Println("Create MsgStream fail:", err)
+		log.Println("Create MsgStream fail:", err)
 	} else {
 		res, err := stm.SendMsgGetResponse(append(message.MsgIDNodeRegReq.Bytes(), msgBytes...))
 		if err != nil {
-			fmt.Println("Send reg msg fail:", err)
+			log.Println("Send reg msg fail:", err)
 		} else {
 			var resMsg message.NodeRegResp
 			proto.Unmarshal(res[2:], &resMsg)
 			sn.Config().IndexID = resMsg.Id
 			sn.Config().Save()
 			sn.owner.BuySpace = resMsg.AssignedSpace
-			fmt.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
+			log.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
 			if resMsg.RelayUrl != "" {
 				rms.UpdateAddr(resMsg.RelayUrl)
-				fmt.Printf("update relay addr: %s\n", resMsg.RelayUrl)
+				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
 			}
 		}
 	}
@@ -102,28 +102,28 @@ func Report(sn *storageNode) {
 	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.Relay = sn.config.Relay
 	resData, err := proto.Marshal(&msg)
-	fmt.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
+	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
-		fmt.Println("send report msg fail:", err)
+		log.Println("send report msg fail:", err)
 	}
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		fmt.Println("Connect bp fail", err)
+		log.Println("Connect bp fail", err)
 	}
 	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
 	if err != nil {
-		fmt.Println("Create MsgStream fail:", err)
+		log.Println("Create MsgStream fail:", err)
 	} else {
 		res, err := stm.SendMsgGetResponse(append(message.MsgIDStatusRepReq.Bytes(), resData...))
 		if err != nil {
-			fmt.Println("Send report msg fail:", err)
+			log.Println("Send report msg fail:", err)
 		} else {
 			var resMsg message.StatusRepResp
 			proto.Unmarshal(res[2:], &resMsg)
 			sn.owner.BuySpace = resMsg.ProductiveSpace
-			fmt.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
+			log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 			if resMsg.RelayUrl != "" {
 				rms.UpdateAddr(resMsg.RelayUrl)
-				fmt.Printf("update relay addr: %s\n", resMsg.RelayUrl)
+				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
 			}
 		}
 	}

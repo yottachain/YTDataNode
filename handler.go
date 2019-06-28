@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/mr-tron/base58/base58"
 
@@ -20,30 +21,30 @@ type WriteHandler struct {
 func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
-	fmt.Println("超级节点签名:", msg.GetBPDSIGN())
-	fmt.Println("用户签名:", msg.GetUSERSIGN())
+	log.Println("超级节点签名:", msg.GetBPDSIGN())
+	log.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
 	res2client, err := msg.GetResponseToClientByCode(resCode)
 	bp := wh.Config().BPList[msg.BPDID]
 	if err != nil {
-		fmt.Println("Get res code 2 client fail:", err)
+		log.Println("Get res code 2 client fail:", err)
 	}
 	res2bp, err := msg.GetResponseToBPByCode(resCode, bp.ID, wh.Host().PrivKey())
 	if err != nil {
-		fmt.Println("Get res code fail:", err)
+		log.Println("Get res code fail:", err)
 	}
 	if err != nil {
-		fmt.Println("Get res code 2 bp fail:", err)
+		log.Println("Get res code 2 bp fail:", err)
 	}
 	if err = wh.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		fmt.Println("Connect bp fail", err)
+		log.Println("Connect bp fail", err)
 	}
 	wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
-	fmt.Println("return client")
+	log.Println("return client")
 	defer func() {
 		err := recover()
 		if err != nil {
-			fmt.Println("report to bp error", err)
+			log.Println("report to bp error", err)
 		}
 	}()
 	return res2client
@@ -56,12 +57,12 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	// 	host.PubKey(wh.Host().Peerstore().PubKey(wh.GetBP(msg.BPDID))),
 	// 	wh.Host().ID().Pretty(),
 	// ); err != nil || ok == false {
-	// 	fmt.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
+	// 	log.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
 	// 	return 100
 	// }
 	// 2. 验证数据Hash
 	if msg.VerifyVHF(msg.DAT) == false {
-		fmt.Println(fmt.Errorf("Verify VHF fail"))
+		log.Println(fmt.Errorf("Verify VHF fail"))
 		return 100
 	}
 	// 3. 将数据写入YTFS-disk
@@ -69,13 +70,13 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	copy(indexKey[:], msg.VHF[0:32])
 	err := wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
-		fmt.Println(fmt.Errorf("Write data slice fail:%s", err))
+		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" {
 			return 102
 		}
 		return 101
 	}
-	fmt.Println("return msg", 0)
+	log.Println("return msg", 0)
 	return 0
 }
 
@@ -89,7 +90,7 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	var msg message.DownloadShardRequest
 	var indexKey [32]byte
 	proto.Unmarshal(msgData, &msg)
-	fmt.Println("get vhf:", base58.Encode(msg.VHF))
+	log.Println("get vhf:", base58.Encode(msg.VHF))
 
 	for k, v := range msg.VHF {
 		if k >= 32 {
@@ -100,16 +101,16 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	res := message.DownloadShardResponse{}
 	resData, err := dh.YTFS().Get(common.IndexTableKey(indexKey))
 	if msg.VerifyVHF(resData) {
-		fmt.Println("data verify success")
+		log.Println("data verify success")
 	}
 	if err != nil {
-		fmt.Println("Get data Slice fail:", err)
+		log.Println("Get data Slice fail:", err)
 	}
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
-		fmt.Println("Marshar response data fail:", err)
+		log.Println("Marshar response data fail:", err)
 	}
-	fmt.Println("return msg", 0)
+	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
 }
