@@ -19,7 +19,6 @@ require (
 	github.com/libp2p/go-libp2p-peerstore v0.1.0
 	github.com/libp2p/go-libp2p-protocol v0.1.0
 	github.com/libp2p/go-libp2p-quic-transport v0.1.1
-	github.com/marcusolsson/tui-go v0.4.0 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mr-tron/base58 v1.1.2
 	github.com/multiformats/go-multiaddr v0.0.4

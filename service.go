@@ -94,7 +94,12 @@ func Report(sn *storageNode) {
 	var msg message.StatusRepReq
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
-	msg.Addrs = append(sn.Addrs(), rms.Addr())
+	if rms.Addr() != "" {
+		msg.Addrs = append(sn.Addrs(), rms.Addr())
+	} else {
+		msg.Addrs = sn.Addrs()
+	}
+
 	msg.Cpu = sn.Runtime().AvCPU
 	msg.Memory = sn.Runtime().Mem
 	msg.Id = sn.Config().IndexID
@@ -124,6 +129,8 @@ func Report(sn *storageNode) {
 			if resMsg.RelayUrl != "" {
 				rms.UpdateAddr(resMsg.RelayUrl)
 				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
+			} else {
+				rms.UpdateAddr("")
 			}
 		}
 	}

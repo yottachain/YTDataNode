@@ -8,7 +8,9 @@ linux:
 darwin: 
 	$(BDSH)  darwin amd64
 windows: 
-	$(BDSH)  windows amd64	
-build: clear linux darwin
+	$(BDSH)  amd64
+build: clear linux
+
+
 publish: 
 	./publish.sh

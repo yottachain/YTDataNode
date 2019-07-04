@@ -50,7 +50,9 @@ func (hm *HandleMsgService) Service() {
 				data.SendMsgClose(append(message.MsgIDDownloadShardResponse.Bytes(), []byte{102}...))
 				log.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
 			} else {
-				data.SendMsgClose(hmp[msgType](msgData))
+				if hmp[msgType] != nil {
+					data.SendMsgClose(hmp[msgType](msgData))
+				}
 			}
 		})
 	}

@@ -25,10 +25,12 @@ type Config struct {
 	privKey    ci.PrivKey
 	PubKey     string
 	BPList     []peerInfo `json:"BPList"`
+	Adminacc   string     `json:"Adminacc"`
 	Relay      bool       `json:"Relay"`
 	ListenAddr string     `json:"ListenAddr"`
 	APIListen  string     `json:"APIListen"`
 	IndexID    uint32     `json:"IndexID"`
+	PoolID     string     `json:"PoolID"`
 	*ytfsOpts.Options
 }
 

@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/message"
 	"regexp"
 	"time"
 
@@ -61,13 +63,14 @@ func (rm *RelayManager) Service() {
 }
 
 func (rm *RelayManager) ping() error {
-	// if rm.peer == nil {
-	// 	return fmt.Errorf("relay peer is nil")
-	// }
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	// defer cancel()
-	// rm.host.Connect(ctx, *rm.peer)
-	// stm, _ := rm.host.NewMsgStream(context.Background(), rm.peer.ID.Pretty(), "/node/0.0.0.1")
-	// stm.SendMsg(append(message.MsgIDString.Bytes(), []byte("ping")...))
+	if rm.peer == nil {
+		return fmt.Errorf("relay peer is nil")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	rm.host.Connect(ctx, *rm.peer)
+	stm, _ := rm.host.NewMsgStream(context.Background(), rm.peer.ID.Pretty(), "/node/0.0.0.1")
+	stm.SendMsg(append(message.MsgIDString.Bytes(), []byte("ping")...))
+	stm.Close()
 	return nil
 }

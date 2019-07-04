@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"github.com/yottachain/YTDataNode/cmd/register"
+	"log"
 
 	"github.com/yottachain/YTDataNode/commander"
 
@@ -80,4 +80,9 @@ func main() {
 	RootCommand.AddCommand(idCmd)
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.Execute()
+
+	err := recover()
+	if err != nil {
+		log.Println("Error:", err)
+	}
 }

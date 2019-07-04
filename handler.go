@@ -25,6 +25,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	log.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
 	res2client, err := msg.GetResponseToClientByCode(resCode)
+	code104, err := msg.GetResponseToClientByCode(104)
 	bp := wh.Config().BPList[msg.BPDID]
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
@@ -39,15 +40,20 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	if err = wh.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		log.Println("Connect bp fail", err)
 	}
-	wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
-	log.Println("return client")
-	defer func() {
-		err := recover()
-		if err != nil {
-			log.Println("report to bp error", err)
-		}
-	}()
-	return res2client
+	_, err = wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
+	// 如果报错返回104
+	if err != nil {
+		return code104
+	} else {
+		log.Println("return client")
+		defer func() {
+			err := recover()
+			if err != nil {
+				log.Println("report to bp error", err)
+			}
+		}()
+		return res2client
+	}
 }
 
 func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {

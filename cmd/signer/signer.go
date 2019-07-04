@@ -3,23 +3,26 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"log"
+	"fmt"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+	"log"
 	"os"
 	//"github.com/rocket049/gocui"
 )
 
 var key string
+var key2 bool
 var keys []string
 var tx string
-var baseNodeUrl = "http://152.136.11.202:8888"
+var baseNodeUrl = "http://35.176.59.89:8888"
 var api = eos.New(baseNodeUrl)
 var kb = eos.NewKeyBag()
 
 func main() {
 	var signedTx eos.SignedTransaction
 	flag.StringVar(&key, "k", "", "签名私钥")
+	flag.BoolVar(&key2, "k2", false, "签名私钥")
 	flag.StringVar(&tx, "t", "", "签名交易")
 	flag.Parse()
 
@@ -30,6 +33,9 @@ func main() {
 		}
 	}
 	kb.ImportPrivateKey(key)
+	if key2 == true {
+		kb.ImportPrivateKey("5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ")
+	}
 	if tx == "" {
 		log.Println("请输入待签名交易：")
 		fmt.Scanf("%s\n", &tx)
@@ -40,8 +46,11 @@ func main() {
 	}
 	txopts := &eos.TxOptions{}
 	txopts.FillFromChain(api)
-
+	txdata, cfd, err := signedTx.PackedTransactionAndCFD()
+	pbuf := eos.SigDigest(txopts.ChainID, txdata, cfd)
+	fmt.Println("签名前的：", pbuf)
 	res, err := kb.Sign(&signedTx, txopts.ChainID, getPubkey()...)
+
 	if err != nil {
 		log.Println("签名失败:", err)
 	}

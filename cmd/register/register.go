@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eoscanada/eos-go"
+	"github.com/eoscanada/eos-go/ecc"
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
 	"log"
@@ -22,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var baseNodeUrl = "http://152.136.11.202:8888"
+var baseNodeUrl = "http://35.176.59.89:8888"
 
 var api = eos.New(baseNodeUrl)
 var BPList []string
@@ -31,17 +32,22 @@ var minerid uint64
 var adminacc string
 var depAcc string
 var depAmount int64
+var key1 string
+var key2 string = "5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ"
+var kb = eos.NewKeyBag()
+var cfg config.Config
+
 var yOrN byte
 
 func init() {
 	resp, err := http.Get("http://download.yottachain.io/config/bpbaseurl")
 	if err != nil {
-		log.Println("获取BP入口失败")
+		fmt.Println("获取BP入口失败")
 		os.Exit(1)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("获取BP入口失败")
+		fmt.Println("获取BP入口失败")
 		os.Exit(1)
 	}
 	baseNodeUrl = strings.Replace(string(buf), "\n", "", -1)
@@ -79,9 +85,26 @@ var RegisterCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		//var poolID string
 		BPList = getNodeList()
-		step1()
+		if err := readCfg(); err != nil {
+			fmt.Println("未查询到矿机注册信息，是否重新注册：y/n?")
+			fmt.Scanf("%c\n", yOrN)
+			if yOrN != 'n' {
+				step1()
+			} else {
+				fmt.Println("取消注册")
+				os.Exit(1)
+			}
+			if cfg.PoolID != "" {
+				fmt.Printf("已加入%s矿池，是否需要加入新的矿池", cfg.PoolID)
+				fmt.Scanf("%c\n", yOrN)
+				if yOrN == 'n' {
+					fmt.Println("取消加入新矿池")
+					os.Exit(1)
+				}
+			}
+		}
 		step2()
-		log.Println("注册完成，请使用daemon启动")
+		fmt.Println("注册完成，请使用daemon启动")
 	},
 }
 
@@ -92,35 +115,45 @@ func getNewMinerID() (uint64, int) {
 	bpurl, err := url.Parse(currBP)
 	requestUrl := fmt.Sprintf("http://%s:8082/newnodeid", bpurl.Host)
 	if err != nil {
-		log.Println("申请账号失败！", err)
+		fmt.Println("申请账号失败！", err)
 	}
 	resp, err := http.Get(requestUrl)
 	if err != nil {
-		log.Println("申请账号失败！", err)
+		fmt.Println("申请账号失败！", err)
 	}
 	defer resp.Body.Close()
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("申请账号失败！", err)
+		fmt.Println("申请账号失败！", err)
 	}
 	var resData struct {
 		NodeID uint64 `json:"nodeid"`
 	}
 	err = json.Unmarshal(buf, &resData)
 	if err != nil {
-		log.Println("申请账号失败！", err)
+		fmt.Println("申请账号失败！", err)
 	}
-	log.Println(resData.NodeID, bpindex, BPList)
+	fmt.Println(resData.NodeID, bpindex, BPList)
 	return resData.NodeID, bpIndex
 }
 
-func getPConfig() (*config.Config, error) {
+func newCfg() (*config.Config, error) {
 	commander.Init()
 	cfg, err := config.ReadConfig()
 	if err != nil {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func readCfg() error {
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		return err
+	}
+	adminacc = cfg.Adminacc
+	minerid = uint64(cfg.IndexID)
+	return nil
 }
 
 func step1() {
@@ -134,24 +167,25 @@ func step1() {
 		DepAmount eos.Asset       `json:"dep_amount"`
 		Extra     string          `json:"extra"`
 	}
-	cfg, err := getPConfig()
+	cfg, err := newCfg()
 
 	if err != nil {
-		log.Println("初始化错误:", err)
+		fmt.Println("初始化错误:", err)
 		os.Exit(1)
 	}
 
 	minerid, bpindex = getNewMinerID()
 	cfg.IndexID = uint32(minerid)
 	cfg.Save()
-	log.Println(cfg.PubKey)
 
-	log.Println("请输入抵押账号用户名：")
+	fmt.Println("请输入抵押账号用户名：")
 	fmt.Scanf("%s\n", &depAcc)
-	log.Println("请输入抵押账额度(YTA)：")
+	//log.Println("请输入抵押账号私钥：")
+	//fmt.Scanf("%s\n", &key1)
+	fmt.Println("请输入抵押额度(YTA)：")
 
 	fmt.Scanf("%d\n", &depAmount)
-	log.Println("请输入矿机管理严账号：")
+	fmt.Println("请输入矿机管理员账号：")
 	fmt.Scanf("%s\n", &adminacc)
 	action := &eos.Action{
 		Account: eos.AN("hddpool12345"),
@@ -162,7 +196,7 @@ func step1() {
 		ActionData: eos.NewActionData(minerData{
 			minerid,
 			eos.AN(adminacc),
-			eos.AN(adminacc),
+			eos.AN(depAcc),
 			newYTAAssect(depAmount),
 			cfg.PubKey,
 		}),
@@ -173,46 +207,50 @@ func step1() {
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
 regTxsign:
-	log.Println("请对如下交易进行签名并粘贴:")
+	fmt.Println("请对如下交易进行签名并粘贴:")
 	txjson, err := json.Marshal(tx)
-	log.Printf("%s\n", txjson)
+	fmt.Printf("%s\n", txjson)
+	fmt.Println("-----------------------------")
 	fmt.Scanf("%s\n", &regTxsigned)
 	json.Unmarshal([]byte(regTxsigned), &tx)
 	if err != nil {
-		log.Println("签名错误：", err)
+		fmt.Println("签名错误：", err)
 		goto regTxsign
 	}
 
 post:
-	log.Println("注册信息：")
-	log.Println("矿工ID：", minerid)
-	log.Println("管理账号用户名：", adminacc)
-	log.Println("抵押账号用户名：", depAcc)
-	log.Println("抵押额度：", depAmount)
-	log.Println("是否开始注册 y/n?")
+	fmt.Println("注册信息：")
+	fmt.Println("矿工ID：", minerid)
+	fmt.Println("管理账号用户名：", adminacc)
+	fmt.Println("抵押账号用户名：", depAcc)
+	fmt.Println("抵押额度：", depAmount)
+	fmt.Println("是否开始注册 y/n?")
 	fmt.Scanf("%c\n", &yOrN)
 
 	if yOrN == 'n' {
-		log.Println("取消注册")
+		fmt.Println("取消注册")
 		jsonbuf, _ := json.Marshal(tx)
-		log.Println(string(jsonbuf))
+		fmt.Println(string(jsonbuf))
 		os.Exit(1)
 	}
 	err = preRegister(tx)
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		goto post
 	}
+	cfg.Adminacc = adminacc
+	cfg.Save()
 }
 
 func step2() {
 	var poolID string
 	var txSigned string
+	var minerOwner string
 
-	log.Println("是否加入矿池:y/n?")
+	fmt.Println("是否加入矿池:y/n?")
 	fmt.Scanf("%c\n", &yOrN)
 	if yOrN == 'n' {
-		log.Println("取消加入矿池")
+		fmt.Println("取消加入矿池")
 		os.Exit(1)
 	}
 	type Data struct {
@@ -224,9 +262,11 @@ func step2() {
 getPoolInfo:
 	log.Println("请输入矿池id")
 	fmt.Scanf("%s\n", &poolID)
+	log.Println("请输入收益账号")
+	fmt.Scanf("%s\n", &minerOwner)
 	pi, err := getPoolInfo(poolID)
 	if err != nil || len(pi) == 0 {
-		log.Println("获取矿池信息失败！", pi, err)
+		fmt.Println("获取矿池信息失败！", pi, err)
 		goto getPoolInfo
 	}
 	action := &eos.Action{
@@ -238,9 +278,9 @@ getPoolInfo:
 		},
 		ActionData: eos.NewActionData(Data{
 			MinerID:    minerid,
-			Minerowner: eos.AN(adminacc),
+			Minerowner: eos.AN(minerOwner),
 			PoolID:     eos.AN(pi[0].PoolID),
-			MaxSpace:   10,
+			MaxSpace:   268435456,
 		}),
 	}
 	txOpts := &eos.TxOptions{}
@@ -248,26 +288,29 @@ getPoolInfo:
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
 addPoolSign:
-	log.Println("请对交易进行签名并粘贴：", "----------------------")
+	fmt.Println("请对交易进行签名并粘贴：")
+	fmt.Println("----------------------")
 	txjson, err := json.Marshal(tx)
-	log.Printf("%s\n", txjson)
+	fmt.Printf("%s\n", txjson)
 	fmt.Scanf("%s\n", &txSigned)
 	json.Unmarshal([]byte(txSigned), &tx)
 	if err != nil {
-		log.Println("签名错误：", err)
+		fmt.Println("签名错误：", err)
 		goto addPoolSign
 	}
 	err = addPool(tx)
 	if err != nil {
-		log.Println("加入矿池失败：", err)
+		fmt.Println("加入矿池失败：", err)
 		goto addPoolSign
 	}
+	cfg.PoolID = poolID
+	cfg.Save()
 }
 
 func addPool(tx *eos.SignedTransaction) error {
 	packedtx, err := tx.Pack(eos.CompressionZlib)
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		return err
 	}
 	//out, err := api.PushTransaction(packedtx)
@@ -292,7 +335,7 @@ func preRegister(tx *eos.SignedTransaction) error {
 	packedtx, err := tx.Pack(eos.CompressionZlib)
 
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		return err
 	}
 	//out, err := api.PushTransaction(packedtx)
@@ -333,14 +376,14 @@ func getNodeList() []string {
 	buf, _ := json.Marshal(p)
 	resp, err := http.Post(url, "applaction/json", bytes.NewBuffer(buf))
 	if err != nil {
-		log.Println("获取节点列表失败")
-		log.Println(err)
+		fmt.Println("获取节点列表失败")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	resData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("获取节点列表失败")
-		log.Println(err)
+		fmt.Println("获取节点列表失败")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	var res ResponseSchem
@@ -376,14 +419,14 @@ func getInServiceNode() []string {
 	buf, _ := json.Marshal(p)
 	resp, err := http.Post(url, "applaction/json", bytes.NewBuffer(buf))
 	if err != nil {
-		log.Println("获取节点列表失败")
-		log.Println(err)
+		fmt.Println("获取节点列表失败")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	resData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("获取节点列表失败")
-		log.Println(err)
+		fmt.Println("获取节点列表失败")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 	var res ResponseSchem
@@ -397,7 +440,15 @@ func getInServiceNode() []string {
 }
 
 func newYTAAssect(amount int64) eos.Asset {
-	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTA"}
+	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTT"}
 
 	return eos.Asset{Amount: eos.Int64(amount) * eos.Int64(math.Pow(10, float64(YTASymbol.Precision))), Symbol: YTASymbol}
+}
+
+func getPubkey() []ecc.PublicKey {
+	var pkeys = make([]ecc.PublicKey, len(kb.Keys))
+	for k, v := range kb.Keys {
+		pkeys[k] = v.PublicKey()
+	}
+	return pkeys
 }
