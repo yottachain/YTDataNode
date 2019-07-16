@@ -80,6 +80,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 		if err.Error() == "YTFS: hash key conflict happens" {
 			return 102
 		}
+		log.Println("数据写入错误error:", err)
 		return 101
 	}
 	log.Println("return msg", 0)

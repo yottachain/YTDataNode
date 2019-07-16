@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/message"
+	"log"
 	"regexp"
 	"time"
 
@@ -47,6 +48,11 @@ func (rm *RelayManager) UpdateAddr(addr string) error {
 	return err
 }
 
+func (rm *RelayManager) ClearRelayAddrs() {
+	rm.peer = nil
+	rm.addr = ""
+}
+
 // Addr 返回addr
 func (rm *RelayManager) Addr() string {
 	return rm.addr
@@ -66,11 +72,15 @@ func (rm *RelayManager) ping() error {
 	if rm.peer == nil {
 		return fmt.Errorf("relay peer is nil")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
 	rm.host.Connect(ctx, *rm.peer)
 	stm, _ := rm.host.NewMsgStream(context.Background(), rm.peer.ID.Pretty(), "/node/0.0.0.1")
 	stm.SendMsg(append(message.MsgIDString.Bytes(), []byte("ping")...))
 	stm.Close()
+	err := recover()
+	if err != nil {
+		log.Println("中继连接错误", err)
+		rm.ClearRelayAddrs()
+	}
 	return nil
 }

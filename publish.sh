@@ -22,6 +22,6 @@
 # ssh root@152.136.11.50 "cd /root/;nohup ytfs-node daemon &"
 # ssh root@152.136.11.50 "cd /root/;nohup ytfs-node daemon &"
 
-#scp  ./out/darwin-amd64-0.0.1/ytfs-node root@download.yottachain.io:/mnt/www/download/ytfs-node-darwin
-scp -P 52485  ./out/linux-amd64-0.0.1/ytfs-node root@39.97.41.155:/mnt/www/download/ytfs-node
+scp -P 52485 ./out/darwin-amd64-0.0.1/ytfs-node root@39.97.41.155:/mnt/www/download/ytfs-node-darwin
+scp -P 52485 ./out/linux-amd64-0.0.1/ytfs-node root@39.97.41.155:/mnt/www/download/ytfs-node
 scp -P 52485 ./out/windows-amd64-0.0.1/ytfs-node.exe root@39.97.41.155:/mnt/www/download/ytfs-node.exe

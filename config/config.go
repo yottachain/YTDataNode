@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -40,21 +41,81 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts := ytfsOpts.DefaultOptions()
 	for index, storage := range opts.Storages {
 		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
-		storage.StorageVolume = (2 << 30) * 10
+		storage.StorageVolume = 2 << 40
 		storage.DataBlockSize = 1 << 14
 		opts.Storages[index] = storage
 	}
 	opts.DataBlockSize = 1 << 14
-	opts.TotalVolumn = (2 << 30) * 10 * 2
+	opts.TotalVolumn = 2 << 41
+	opts.IndexTableCols = 1 << 14
+	opts.IndexTableRows = 1 << 28
+	return opts
+}
+
+// GetYTFSOptionsByParams 通过参数生成YTFS配置
+func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
+	yp := util.GetYTFSPath()
+	var d uint32 = 1 << 14
+	n := size / uint64(d) / uint64(m)
+	opts := &ytfsOpts.Options{
+		YTFSTag: "ytfs",
+		Storages: []ytfsOpts.StorageOptions{
+			{
+				StorageName:   path.Join(yp, "storage"),
+				StorageType:   0,
+				ReadOnly:      false,
+				SyncPeriod:    1,
+				StorageVolume: size,
+				DataBlockSize: 1 << 14,
+			},
+		},
+		ReadOnly:       false,
+		SyncPeriod:     1,
+		IndexTableCols: m,
+		IndexTableRows: uint32(n),
+		DataBlockSize:  d,
+		TotalVolumn:    size,
+	}
+	return opts
+}
+
+// GetYTFSOptionsByParams2 通过参数生成YTFS配置, 多storage配置
+func GetYTFSOptionsByParams2(totalSize uint64, storageSize uint64, m uint32) *ytfsOpts.Options {
+	yp := util.GetYTFSPath()
+	n := totalSize / uint64(m)
+	opts := &ytfsOpts.Options{
+		YTFSTag: "ytfs",
+		Storages: []ytfsOpts.StorageOptions{
+			{
+				StorageName:   path.Join(yp, "storage"),
+				StorageType:   0,
+				ReadOnly:      false,
+				SyncPeriod:    1,
+				StorageVolume: storageSize,
+				DataBlockSize: 1 << 14,
+			},
+		},
+		ReadOnly:       false,
+		SyncPeriod:     1,
+		IndexTableCols: m,
+		IndexTableRows: uint32(n),
+		DataBlockSize:  1 << 14,
+		TotalVolumn:    totalSize,
+	}
 	return opts
 }
 
 // NewConfig ..
 func NewConfig() *Config {
+	cfg := NewConfigByYTFSOptions(DefaultYTFSOptions())
+	return cfg
+}
+
+func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	cfg := new(Config)
 	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
 	cfg.APIListen = ":9002"
-	cfg.Options = DefaultYTFSOptions()
+	cfg.Options = opts
 	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
 
 	cfg.Relay = true
@@ -64,7 +125,12 @@ func NewConfig() *Config {
 
 func getBPList() []peerInfo {
 	var bplist []peerInfo
-	resp, err := http.Get("http://download.yottachain.io/config/bp.json")
+	var bpconfigurl = "http://download.yottachain.io/config/bp.json"
+	if url, ok := os.LookupEnv("bp-config-url"); ok {
+		bpconfigurl = url
+	}
+
+	resp, err := http.Get(bpconfigurl)
 	if err != nil {
 		log.Println("获取BPLIST失败")
 		os.Exit(1)
@@ -86,7 +152,11 @@ func (cfg *Config) Save() error {
 	}
 
 	cfgPath := util.GetConfigPath()
-	keyBytes, _ := cfg.privKey.Raw()
+
+	keyBytes, err := cfg.privKey.Raw()
+	if err != nil {
+		log.Println("配置保存失败", err)
+	}
 	ioutil.WriteFile(fmt.Sprintf("%s/swarm.key", yp), keyBytes, os.ModePerm)
 	peerID, err := util.IdFromPublicKey(cfg.PubKey)
 	if err != nil {
@@ -98,6 +168,10 @@ func (cfg *Config) Save() error {
 		return err
 	}
 	return ioutil.WriteFile(cfgPath, data, os.ModePerm)
+}
+
+func (cfg *Config) ReloadBPList() {
+	cfg.BPList = getBPList()
 }
 
 // NewKey 创建新的key
@@ -150,6 +224,19 @@ func (cfg *Config) PrivKey() ci.PrivKey {
 func (cfg *Config) PrivKeyString() string {
 	buf, _ := cfg.privKey.Bytes()
 	return base58.Encode(buf)
+}
+
+func (cfg *Config) Version() uint32 {
+	return 3
+}
+
+func Version() uint32 {
+	return new(Config).Version()
+}
+
+func (cfg Config) ResetYTFSOptions(opts *ytfsOpts.Options) Config {
+	cfg.Options = opts
+	return cfg
 }
 
 //func (cfg *Config) PubKeyString() string {

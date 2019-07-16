@@ -15,7 +15,11 @@ var key string
 var key2 bool
 var keys []string
 var tx string
+
 var baseNodeUrl = "http://35.176.59.89:8888"
+
+//var baseNodeUrl = "http://124.156.54.96:8888" //测试
+
 var api = eos.New(baseNodeUrl)
 var kb = eos.NewKeyBag()
 

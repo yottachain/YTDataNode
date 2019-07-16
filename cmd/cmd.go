@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/register"
+	"github.com/yottachain/YTDataNode/cmd/repo"
+	"github.com/yottachain/YTDataNode/config"
 	"log"
 
 	"github.com/yottachain/YTDataNode/commander"
@@ -9,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var size uint64
+var mc uint32
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
@@ -50,35 +55,33 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
-		commander.Init()
+
+		commander.InitBySignleStorage(size, 1<<mc)
 		log.Println("YTFS init success")
 	},
 }
 
-var idCmd = &cobra.Command{
-	Use:   "id",
-	Short: "ID api",
-}
-
-var newIDCmd = &cobra.Command{
-	Use:   "new",
-	Short: "create new id",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, index := commander.NewID()
-		log.Println("create new id success")
-		log.Printf("id:%s sn:%d\n", id, index)
-	},
-}
+//var version = &cobra.Command{
+//	Use:   "version",
+//	Short: "ytfs-node version",
+//	Run: func(cmd *cobra.Command, args []string) {
+//		log.Printf("ytfs-node version:%d\n", config.Version())
+//	},
+//}
 
 func main() {
+
+	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
+	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的偶数")
+
 	RootCommand := &cobra.Command{
-		Short: "ytfs storage node",
+		Version: fmt.Sprintf("%d", config.Version()),
+		Short:   "ytfs storage node",
 	}
-	idCmd.AddCommand(newIDCmd)
 	RootCommand.AddCommand(initCmd)
 	RootCommand.AddCommand(daemonCmd)
-	RootCommand.AddCommand(idCmd)
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
+	RootCommand.AddCommand(repoCmd.RepoCmd)
 	RootCommand.Execute()
 
 	err := recover()

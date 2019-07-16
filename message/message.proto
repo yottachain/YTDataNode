@@ -52,15 +52,16 @@ message NodeRegResp {
 }
 
 message StatusRepReq {                          
-    uint32 id=1;                                   
-    uint32 cpu=2;                          
-    uint32 memory=3;                          
-    uint32 bandwidth=4;                        
-    uint64 maxDataSpace=5;                   
-    uint64 assignedSpace=6;                   
-    uint64 usedSpace=7;                       
-    repeated string addrs=8;  
-    bool relay=9;                     
+   uint32 id=1;
+   uint32 cpu=2;
+   uint32 memory=3;
+   uint32 bandwidth=4;
+   uint64 maxDataSpace=5;
+   uint64 assignedSpace=6;
+   uint64 usedSpace=7;
+   repeated string addrs=8;
+   bool relay=9;
+   uint32 version=10;
 }
 
 message StatusRepResp {

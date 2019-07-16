@@ -21,7 +21,7 @@ import (
 	"github.com/yottachain/YTDataNode/host"
 
 	// "github.com/yottachain/P2PHost"
-	ytfs "github.com/dp1993132/YTFS"
+	ytfs "github.com/yottachain/YTFS"
 )
 
 // Service 服务接口
@@ -193,7 +193,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.host = host.NewP2PHost()
 	sn.host.SetPrivKey(sn.config.PrivKey())
 	yp := util.GetYTFSPath()
-	ys, err := ytfs.NewYTFS(yp, cfg.Options)
+	ys, err := ytfs.Open(yp, cfg.Options)
 	if err != nil {
 		return nil, fmt.Errorf("YTFS storage init faile")
 	}

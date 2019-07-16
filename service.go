@@ -46,6 +46,13 @@ func (sn *storageNode) Service() {
 	// for _, v := range sn.services {
 	// 	v.Service()
 	// }
+	go func() {
+		for {
+			sn.Config().ReloadBPList()
+			log.Println("更新BPLIST")
+			time.Sleep(time.Hour)
+		}
+	}()
 }
 
 // Register 注册矿机
@@ -106,6 +113,7 @@ func Report(sn *storageNode) {
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.Relay = sn.config.Relay
+	msg.Version = sn.config.Version()
 	resData, err := proto.Marshal(&msg)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
@@ -134,4 +142,5 @@ func Report(sn *storageNode) {
 			}
 		}
 	}
+
 }

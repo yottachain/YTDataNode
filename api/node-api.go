@@ -20,9 +20,10 @@ func init() {
 	// 获取矿机id
 	handler.HandleAPI("node/id", func(rw *ResponseWriter, rq *http.Request) {
 		type res struct {
-			ID string `json:"id"`
+			ID      string `json:"id"`
+			IndexID uint32 `json:iddexId`
 		}
-		rw.WriteJSON(res{srv.sn.Host().ID().Pretty()})
+		rw.WriteJSON(res{srv.sn.Host().ID().Pretty(), srv.sn.Config().IndexID})
 	})
 	// ytfs配置
 	handler.HandleAPI("node/config", func(rw *ResponseWriter, rq *http.Request) {

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	ytfs "github.com/dp1993132/YTFS"
+	ytfs "github.com/yottachain/YTFS"
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
-	instance "github.com/yottachain/YTDataNode/instance"
+	"github.com/yottachain/YTDataNode/instance"
 	"github.com/yottachain/YTDataNode/util"
 )
 
@@ -17,8 +17,19 @@ import (
 func Init() error {
 	cfg := config.NewConfig()
 	cfg.Save()
-	yt, err := ytfs.NewYTFS(util.GetYTFSPath(), cfg.Options)
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
 
+	if err != nil {
+		return err
+	}
+	defer yt.Close()
+	return nil
+}
+
+func InitBySignleStorage(size uint64, m uint32) error {
+	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
+	cfg.Save()
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
 	if err != nil {
 		return err
 	}
