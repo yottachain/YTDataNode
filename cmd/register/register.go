@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var baseNodeUrl = "http://35.176.59.89:8888" //正式
-//var baseNodeUrl = "http://124.156.54.96:8888" //测试
+//var baseNodeUrl = "http://35.176.59.89:8888" //正式
+var baseNodeUrl = "http://124.156.54.96:8888" //测试
 
 var api = eos.New(baseNodeUrl)
 var BPList []string
@@ -390,7 +390,7 @@ func preRegister(tx *eos.SignedTransaction) error {
 
 func getNodeList() []string {
 	var list []string
-	resp, err := http.Get("http://download.yottachain.io/config/bpsn.json")
+	resp, err := http.Get("http://download.yottachain.io/config/bpsn-test.json")
 	if err != nil {
 		log.Println("获取BP失败")
 		os.Exit(1)

@@ -125,7 +125,7 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 
 func getBPList() []peerInfo {
 	var bplist []peerInfo
-	var bpconfigurl = "http://download.yottachain.io/config/bp.json"
+	var bpconfigurl = "http://download.yottachain.io/config/bp-test.json"
 	if url, ok := os.LookupEnv("bp-config-url"); ok {
 		bpconfigurl = url
 	}
