@@ -48,7 +48,7 @@ var initCmd = &cobra.Command{
 func main() {
 
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
-	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的偶数")
+	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
