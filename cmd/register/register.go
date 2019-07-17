@@ -400,7 +400,10 @@ func getNodeList() []string {
 		log.Println("获取BP失败")
 		os.Exit(1)
 	}
-	json.Unmarshal(buf, &list)
+	err = json.Unmarshal(buf, &list)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return list
 }
 

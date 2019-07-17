@@ -2,10 +2,13 @@ package commander
 
 import (
 	"context"
-	"fmt"
-	"log"
-
 	ytfs "github.com/yottachain/YTFS"
+	"log"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path"
+	"syscall"
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
@@ -65,11 +68,40 @@ func Daemon() {
 	sn.Service()
 	go func() {
 		if err := srv.Daemon(); err != nil {
-			panic(fmt.Sprintf("Api server fail:%s\n", err))
+			log.Fatalf("Api server fail %s\n", err)
 		} else {
 			log.Printf("API serve at:%s\n", srv.Addr)
 		}
 	}()
 	defer sn.YTFS().Close()
 	<-ctx.Done()
+}
+
+func DaemonWithBackground() {
+	var file *os.File
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+
+	file, err := os.OpenFile(path.Join(util.GetYTFSPath(), "output.log"), os.O_WRONLY, 0666)
+	if err != nil {
+		fi, err := os.Create(path.Join(util.GetYTFSPath(), "output.log"))
+		if err != nil {
+			log.Fatalln("打开日志文件失败", err)
+		}
+		file = fi
+	}
+
+	defer file.Close()
+	c := exec.Command(os.Args[0], "daemon")
+	c.Env = os.Environ()
+	c.Stdout = file
+	c.Stderr = file
+	err = c.Start()
+	if err != nil {
+		log.Fatalln("启动失败：", err)
+	} else {
+		log.Println("守护进程已启动，进程ID：", c.Process.Pid)
+	}
+	log.Println(c.ProcessState.Exited())
+	os.Exit(0)
 }
