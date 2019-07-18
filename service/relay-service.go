@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/message"
 	"log"
 	"regexp"
 	"time"
@@ -62,25 +60,33 @@ func (rm *RelayManager) Addr() string {
 func (rm *RelayManager) Service() {
 	go func() {
 		for {
+			defer func() {
+				err := recover()
+				if err != nil {
+					log.Println("Error:", err)
+				}
+			}()
 			rm.ping()
-			<-time.After(time.Second * 30)
+			<-time.After(time.Second * 60)
 		}
 	}()
 }
 
 func (rm *RelayManager) ping() error {
-	if rm.peer == nil {
-		return fmt.Errorf("relay peer is nil")
-	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
-	rm.host.Connect(ctx, *rm.peer)
-	stm, _ := rm.host.NewMsgStream(context.Background(), rm.peer.ID.Pretty(), "/node/0.0.0.1")
-	stm.SendMsg(append(message.MsgIDString.Bytes(), []byte("ping")...))
-	stm.Close()
-	err := recover()
-	if err != nil {
-		log.Println("中继连接错误", err)
-		rm.ClearRelayAddrs()
-	}
+	// 中继维持存在bug先关闭中继维持。定期更换中继
+	//if rm.peer == nil {
+	//	return fmt.Errorf("relay peer is nil")
+	//}
+	//ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	//rm.host.Connect(ctx, *rm.peer)
+	//stm, _ := rm.host.NewMsgStream(context.Background(), rm.peer.ID.Pretty(), "/node/0.0.0.1")
+	//stm.SendMsg(append(message.MsgIDString.Bytes(), []byte("ping")...))
+	//stm.Close()
+	//err := recover()
+	//if err != nil {
+	//	log.Println("中继连接错误", err)
+	//	rm.ClearRelayAddrs()
+	//}
+	rm.ClearRelayAddrs()
 	return nil
 }

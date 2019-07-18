@@ -9,6 +9,10 @@ import (
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
 	"log"
+	"os"
+	"os/exec"
+	"os/signal"
+	"syscall"
 )
 
 var size uint64
@@ -24,6 +28,32 @@ var daemonCmd = &cobra.Command{
 		} else {
 			commander.Daemon()
 		}
+		defer func() {
+			if err := recover(); err != nil {
+				log.Println(err)
+			}
+		}()
+	},
+}
+
+var startCmd = &cobra.Command{
+	Use:   "start",
+	Short: "以守护进程启动并且自动调起掉线程序",
+	Run: func(cmd *cobra.Command, args []string) {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+		c := exec.Command(os.Args[0], "daemon", "-d")
+		c.Env = os.Environ()
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		err := c.Start()
+		if err != nil {
+			log.Fatalln("进程启动失败:", err)
+
+		} else {
+			log.Println("守护进程已启动")
+			log.Println("日志输出在output.log")
+		}
 	},
 }
 
@@ -31,7 +61,6 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		commander.InitBySignleStorage(size, 1<<mc)
 		log.Println("YTFS init success")
 	},
@@ -46,7 +75,12 @@ var initCmd = &cobra.Command{
 //}
 
 func main() {
-
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("Error:", err)
+		}
+	}()
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
@@ -60,10 +94,7 @@ func main() {
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.AddCommand(repoCmd.RepoCmd)
 	RootCommand.AddCommand(update.UpdateCMD)
+	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 
-	err := recover()
-	if err != nil {
-		log.Println("Error:", err)
-	}
 }

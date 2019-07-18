@@ -2,13 +2,15 @@ package commander
 
 import (
 	"context"
+	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
 	"syscall"
+	"time"
+
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
@@ -78,30 +80,44 @@ func Daemon() {
 }
 
 func DaemonWithBackground() {
-	var file *os.File
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 
-	file, err := os.OpenFile(path.Join(util.GetYTFSPath(), "output.log"), os.O_WRONLY, 0666)
-	if err != nil {
-		fi, err := os.Create(path.Join(util.GetYTFSPath(), "output.log"))
-		if err != nil {
-			log.Fatalln("打开日志文件失败", err)
-		}
-		file = fi
-	}
+	var daemonC *exec.Cmd
 
-	defer file.Close()
-	c := exec.Command(os.Args[0], "daemon")
-	c.Env = os.Environ()
-	c.Stdout = file
-	c.Stderr = file
-	err = c.Start()
-	if err != nil {
-		log.Fatalln("启动失败：", err)
-	} else {
-		log.Println("守护进程已启动，进程ID：", c.Process.Pid)
+	go updateService(daemonC)
+
+	for {
+		daemonC = getDaemonCmd()
+		log.Println("启动进程daemon")
+		err := daemonC.Run()
+		if err != nil {
+			log.Println(err)
+		}
+		time.Sleep(10 * time.Second)
 	}
-	log.Println(c.ProcessState.Exited())
-	os.Exit(0)
+}
+
+func getDaemonCmd() *exec.Cmd {
+	file := util.GetLogFile("output.log")
+	var daemonC *exec.Cmd
+	daemonC = exec.Command(os.Args[0], "daemon")
+	daemonC.Env = os.Environ()
+	daemonC.Stdout = file
+	daemonC.Stderr = file
+	return daemonC
+}
+
+func updateService(c *exec.Cmd) {
+	log.Println("自动更新服务启动")
+	for {
+		time.Sleep(time.Minute * 10)
+		log.Println("尝试更新")
+		if err := update.Update(); err == nil {
+			log.Println("更新完成尝试重启")
+			c.Process.Kill()
+		} else {
+			log.Println(err)
+		}
+	}
 }
