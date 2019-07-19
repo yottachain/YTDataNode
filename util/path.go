@@ -1,8 +1,10 @@
 package util
 
 import (
+	"log"
 	"os"
 	"os/user"
+	"path"
 )
 
 // GetCurrentUserHome 获取当前用户主目录
@@ -40,4 +42,16 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func GetLogFile(name string) *os.File {
+	file, err := os.OpenFile(path.Join(GetYTFSPath(), name), os.O_WRONLY, 0666)
+	if err != nil {
+		fi, err := os.Create(path.Join(GetYTFSPath(), name))
+		if err != nil {
+			log.Fatalln("打开日志文件失败", err)
+		}
+		file = fi
+	}
+	return file
 }

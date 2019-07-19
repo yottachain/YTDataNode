@@ -150,7 +150,7 @@ func newCfg() (*config.Config, error) {
 		log.Println(err)
 	}
 getMC:
-	fmt.Println("请输入存储分组大小:可能取值8～20间2的整数倍值")
+	fmt.Println("请输入存储分组数:可能取值8～20间")
 	_, err = fmt.Scanf("%d\n", &mc)
 	if err != nil {
 		log.Println(err)
@@ -158,10 +158,6 @@ getMC:
 	}
 	if mc < 8 || mc > 20 {
 		fmt.Println("请输入范围8～20的数")
-		goto getMC
-	}
-	if mc%2 != 0 {
-		fmt.Println("请输入2的整数倍")
 		goto getMC
 	}
 	commander.InitBySignleStorage(size*GB, 1<<mc)
