@@ -24,4 +24,6 @@
 
 version=0.0.3
 
-echo 当前版本为测试版本
+scp -P 52485 ./out/linux-amd64-0.0.1/ytfs-node root@39.97.41.155:/mnt/www/download/miner-test/ytfs-node
+scp -P 52485 ./out/darwin-amd64-0.0.1/ytfs-node root@39.97.41.155:/mnt/www/download/miner-test/ytfs-node-darwin
+
