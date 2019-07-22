@@ -142,5 +142,4 @@ func Report(sn *storageNode) {
 			}
 		}
 	}
-
 }
