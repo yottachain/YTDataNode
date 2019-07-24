@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
+
 	"log"
 	"os"
 	"os/exec"
@@ -55,6 +56,7 @@ func NewID() (string, int) {
 
 // Daemon 启动守护进程
 func Daemon() {
+
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
 	err := sn.Host().Daemon(ctx, sn.Config().ListenAddr)

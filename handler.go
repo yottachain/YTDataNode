@@ -2,9 +2,9 @@ package node
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/spotCheck"
+	"log"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -120,4 +120,60 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	}
 	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
+}
+
+// SpotCheckHandler 下载处理器
+type SpotCheckHandler struct {
+	StorageNode
+}
+
+func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
+	var msg message.SpotCheckTaskList
+	if err := proto.Unmarshal(msgData, &msg); err != nil {
+		log.Println(err)
+	}
+	log.Println("收到抽查任务：", msg.TaskId)
+	spotChecker := spotCheck.NewSpotChecker()
+	spotChecker.TaskList = msg.TaskList
+	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
+		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
+			return false
+		}
+		downloadRequest := &message.DownloadShardRequest{VHF: task.VHF}
+		checkData, err := proto.Marshal(downloadRequest)
+		if err != nil {
+			log.Println("error:", err)
+		}
+		// 发送下载分片命令
+		if shardData, err := sch.Host().SendMsg(task.NodeId, "/node/0.0.1", append(message.MsgIDDownloadShardRequest.Bytes(), checkData...)); err != nil {
+			log.Println("error:", err)
+		} else {
+			var share message.DownloadShardResponse
+			if err := proto.Unmarshal(shardData[2:], &share); err != nil {
+				log.Println("error:", err)
+			} else {
+				// 校验VHF
+				return downloadRequest.VerifyVHF(share.Data)
+			}
+
+		}
+		return true
+	}
+	// 异步执行检查任务
+	go func() {
+		spotChecker.Do()
+		bp := sch.Config().BPList[sch.GetBP()]
+		if err := recover(); err != nil {
+			log.Println("error:", err)
+		}
+		resp, err := proto.Marshal(&message.SpotCheckStatus{
+			TaskId:          msg.TaskId,
+			InvalidNodeList: spotChecker.InvalidNodeList,
+		})
+		if err != nil {
+			log.Println("error:", err)
+		}
+		sch.Host().SendMsg(bp.ID, "node/0.0.1", append(message.MsgIDSpotCheckStatus.Bytes(), resp...))
+	}()
+	return append(message.MsgIDVoidResponse.Bytes())
 }
