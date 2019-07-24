@@ -5,6 +5,7 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"log"
+	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -136,6 +137,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 	spotChecker := spotCheck.NewSpotChecker()
 	spotChecker.TaskList = msg.TaskList
 	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
+		log.Printf("执行抽查任务%s [%s]\n", task.Id, task.Addr)
 		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
 			return false
 		}
@@ -153,7 +155,9 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 				log.Println("error:", err)
 			} else {
 				// 校验VHF
-				return downloadRequest.VerifyVHF(share.Data)
+				checkres := downloadRequest.VerifyVHF(share.Data)
+				log.Println("校验结果：", checkres)
+				return checkres
 			}
 
 		}
@@ -161,7 +165,10 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 	}
 	// 异步执行检查任务
 	go func() {
+		startTime := time.Now()
 		spotChecker.Do()
+		endTime := time.Now()
+		log.Println("抽查任务结束用时:", endTime.Sub(startTime).String())
 		bp := sch.Config().BPList[sch.GetBP()]
 		if err := recover(); err != nil {
 			log.Println("error:", err)
