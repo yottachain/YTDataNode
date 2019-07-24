@@ -33,6 +33,10 @@ func (sn *storageNode) Service() {
 		log.Println("ping")
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
+		sch := SpotCheckHandler{sn}
+		return sch.Handle(data)
+	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
 	rms.Service()
