@@ -141,7 +141,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		log.Printf("执行抽查任务%d [%s]\n", task.Id, task.Addr)
 		var checkres bool = false
 		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
-			log.Fatalln("连接失败", task.Id)
+			log.Println("连接失败", task.Id)
 			return false
 		}
 		downloadRequest := &message.DownloadShardRequest{VHF: task.VHF}
