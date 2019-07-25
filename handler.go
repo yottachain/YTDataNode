@@ -133,12 +133,15 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
 		log.Println(err)
 	}
-	log.Println("收到抽查任务：", msg.TaskId)
+	log.Println("收到抽查任务：", msg.TaskId, len(msg.TaskList), msg.TaskList)
+	log.Println()
 	spotChecker := spotCheck.NewSpotChecker()
 	spotChecker.TaskList = msg.TaskList
 	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
-		log.Printf("执行抽查任务%s [%s]\n", task.Id, task.Addr)
+		log.Printf("执行抽查任务%d [%s]\n", task.Id, task.Addr)
+		var checkres bool = false
 		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
+			log.Fatalln("连接失败", task.Id)
 			return false
 		}
 		downloadRequest := &message.DownloadShardRequest{VHF: task.VHF}
@@ -155,13 +158,11 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 				log.Println("error:", err)
 			} else {
 				// 校验VHF
-				checkres := downloadRequest.VerifyVHF(share.Data)
-				log.Println("校验结果：", checkres)
-				return checkres
+				checkres = downloadRequest.VerifyVHF(share.Data)
 			}
-
 		}
-		return true
+		log.Println("校验结果：", task.Id, checkres)
+		return checkres
 	}
 	// 异步执行检查任务
 	go func() {
