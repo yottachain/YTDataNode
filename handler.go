@@ -139,6 +139,9 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 	spotChecker.TaskList = msg.TaskList
 	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
 		log.Printf("执行抽查任务%d [%s]\n", task.Id, task.Addr)
+		if uint32(task.Id) == sch.Config().IndexID {
+			return true
+		}
 		var checkres bool = false
 		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
 			log.Println("连接失败", task.Id)
