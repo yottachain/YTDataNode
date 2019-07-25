@@ -45,13 +45,11 @@ func PathExists(path string) (bool, error) {
 }
 
 func GetLogFile(name string) *os.File {
-	file, err := os.OpenFile(path.Join(GetYTFSPath(), name), os.O_WRONLY, 0666)
+	file, err := os.OpenFile(path.Join(GetYTFSPath(), name), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		fi, err := os.Create(path.Join(GetYTFSPath(), name))
 		if err != nil {
 			fmt.Println("打开日志文件失败")
 		}
-		file = fi
 	}
 	return file
 }
