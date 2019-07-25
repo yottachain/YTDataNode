@@ -5,7 +5,7 @@ import (
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 	"os/exec"
 	"os/signal"

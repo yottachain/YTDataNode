@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/gob"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"os"
 

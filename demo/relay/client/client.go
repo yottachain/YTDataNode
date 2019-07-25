@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"io"
 	"io/ioutil"
 	"os"

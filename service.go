@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 
 	"github.com/gogo/protobuf/proto"

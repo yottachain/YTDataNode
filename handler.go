@@ -3,8 +3,8 @@ package node
 import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
-	"log"
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"

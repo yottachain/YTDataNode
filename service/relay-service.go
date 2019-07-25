@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"regexp"
 	"time"
 

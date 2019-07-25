@@ -2,7 +2,7 @@ package test
 
 import (
 	"context"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"testing"
 	"time"
 
