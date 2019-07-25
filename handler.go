@@ -181,7 +181,12 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		if err != nil {
 			log.Println("error:", err)
 		}
-		sch.Host().SendMsg(bp.ID, "node/0.0.1", append(message.MsgIDSpotCheckStatus.Bytes(), resp...))
+		log.Println("失败的任务：", spotChecker.InvalidNodeList)
+		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.1", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+			log.Println(e)
+		} else {
+			log.Printf("%s\n", r)
+		}
 	}()
 	return append(message.MsgIDVoidResponse.Bytes())
 }
