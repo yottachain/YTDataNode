@@ -2,7 +2,7 @@ package repoCmd
 
 import (
 	"fmt"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 	"path"
 

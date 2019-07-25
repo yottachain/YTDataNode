@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"math"
 
 	"github.com/eoscanada/eos-go"

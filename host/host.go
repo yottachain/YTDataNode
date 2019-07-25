@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
-	"log"
 
 	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/multiformats/go-multiaddr"

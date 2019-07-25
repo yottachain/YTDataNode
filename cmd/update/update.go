@@ -9,7 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 
 	//"github.com/yottachain/YTDataNode/util"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"net/http"
 	"os"
 	"runtime"

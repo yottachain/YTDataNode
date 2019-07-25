@@ -1,7 +1,7 @@
 package util
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"os/user"
 	"path"
@@ -49,7 +49,7 @@ func GetLogFile(name string) *os.File {
 	if err != nil {
 		fi, err := os.Create(path.Join(GetYTFSPath(), name))
 		if err != nil {
-			log.Fatalln("打开日志文件失败", err)
+			fmt.Println("打开日志文件失败")
 		}
 		file = fi
 	}

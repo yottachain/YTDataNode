@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logger"
 )
 
 func main() {
