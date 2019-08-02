@@ -122,6 +122,7 @@ func Report(sn *storageNode) {
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		log.Println("Connect bp fail", err)
 	}
+	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
 	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
 	if err != nil {
 		log.Println("Create MsgStream fail:", err)

@@ -16,8 +16,8 @@ import (
 )
 
 type peerInfo struct {
-	ID    string
-	Addrs []string
+	ID    string   `json:"ID"`
+	Addrs []string `json:"Addrs"`
 }
 
 // Config 配置
@@ -130,6 +130,7 @@ func getBPList() []peerInfo {
 		bpconfigurl = url
 	}
 
+	log.Println("bpconfigurl", bpconfigurl)
 	resp, err := http.Get(bpconfigurl)
 	if err != nil {
 		log.Println("获取BPLIST失败")
@@ -172,6 +173,7 @@ func (cfg *Config) Save() error {
 
 func (cfg *Config) ReloadBPList() {
 	cfg.BPList = getBPList()
+	cfg.Save()
 }
 
 // NewKey 创建新的key

@@ -35,6 +35,7 @@ var depAmount int64
 var key1 string
 var key2 string = "5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ"
 var kb = eos.NewKeyBag()
+var maxSpace uint64 = 268435456
 
 //var initConfig config.Config
 
@@ -227,6 +228,7 @@ func step1() {
 	txOpts.FillFromChain(api)
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
+
 regTxsign:
 	fmt.Println("请对如下交易进行签名并粘贴:")
 	txjson, err := json.Marshal(tx)
@@ -285,6 +287,8 @@ getPoolInfo:
 	fmt.Scanf("%s\n", &poolID)
 	log.Println("请输入收益账号")
 	fmt.Scanf("%s\n", &minerOwner)
+	log.Println("请输入配额（单位：block）")
+	fmt.Scanf("%d\n", &maxSpace)
 	pi, err := getPoolInfo(poolID)
 	if err != nil || len(pi) == 0 {
 		fmt.Println("获取矿池信息失败！", pi, err)
@@ -301,13 +305,14 @@ getPoolInfo:
 			MinerID:    minerid,
 			Minerowner: eos.AN(minerOwner),
 			PoolID:     eos.AN(pi[0].PoolID),
-			MaxSpace:   268435456,
+			MaxSpace:   maxSpace,
 		}),
 	}
 	txOpts := &eos.TxOptions{}
 	txOpts.FillFromChain(api)
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
+	log.Printf("交易信息 %v", action)
 addPoolSign:
 	fmt.Println("请对交易进行签名并粘贴：")
 	fmt.Println("----------------------")
