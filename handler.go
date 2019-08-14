@@ -2,9 +2,10 @@ package node
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/spotCheck"
+	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -120,4 +121,75 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	}
 	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
+}
+
+// SpotCheckHandler 下载处理器
+type SpotCheckHandler struct {
+	StorageNode
+}
+
+func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
+	var msg message.SpotCheckTaskList
+	if err := proto.Unmarshal(msgData, &msg); err != nil {
+		log.Println(err)
+	}
+	log.Println("收到抽查任务：", msg.TaskId, len(msg.TaskList), msg.TaskList)
+	log.Println()
+	spotChecker := spotCheck.NewSpotChecker()
+	spotChecker.TaskList = msg.TaskList
+	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
+		log.Printf("执行抽查任务%d [%s]\n", task.Id, task.Addr)
+		if uint32(task.Id) == sch.Config().IndexID {
+			return true
+		}
+		var checkres bool = false
+		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
+			log.Println("连接失败", task.Id)
+			return false
+		}
+		downloadRequest := &message.DownloadShardRequest{VHF: task.VHF}
+		checkData, err := proto.Marshal(downloadRequest)
+		if err != nil {
+			log.Println("error:", err)
+		}
+		// 发送下载分片命令
+		if shardData, err := sch.Host().SendMsg(task.NodeId, "/node/0.0.1", append(message.MsgIDDownloadShardRequest.Bytes(), checkData...)); err != nil {
+			log.Println("error:", err)
+		} else {
+			var share message.DownloadShardResponse
+			if err := proto.Unmarshal(shardData[2:], &share); err != nil {
+				log.Println("error:", err)
+			} else {
+				// 校验VHF
+				checkres = downloadRequest.VerifyVHF(share.Data)
+			}
+		}
+		log.Println("校验结果：", task.Id, checkres)
+		return checkres
+	}
+	// 异步执行检查任务
+	go func() {
+		startTime := time.Now()
+		spotChecker.Do()
+		endTime := time.Now()
+		log.Println("抽查任务结束用时:", endTime.Sub(startTime).String())
+		bp := sch.Config().BPList[sch.GetBP()]
+		if err := recover(); err != nil {
+			log.Println("error:", err)
+		}
+		resp, err := proto.Marshal(&message.SpotCheckStatus{
+			TaskId:          msg.TaskId,
+			InvalidNodeList: spotChecker.InvalidNodeList,
+		})
+		if err != nil {
+			log.Println("error:", err)
+		}
+		log.Println("失败的任务：", spotChecker.InvalidNodeList)
+		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.1", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+			log.Println(e)
+		} else {
+			log.Printf("%s\n", r)
+		}
+	}()
+	return append(message.MsgIDVoidResponse.Bytes())
 }

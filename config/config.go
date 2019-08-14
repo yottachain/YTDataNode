@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -229,7 +229,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 4
+	return 5
 }
 
 func Version() uint32 {

@@ -22,6 +22,8 @@ const (
 	MsgIDStatusRepResp         msgType = 0xfa09
 	MsgIDTaskDescript          msgType = 0xd761
 	MsgIDTaskOPResult          msgType = 0x16f3
+	MsgIDSpotCheckTaskList     msgType = 0x903a
+	MsgIDSpotCheckStatus       msgType = 0xa583
 	MsgIDString                msgType = 0x0000
 )
 

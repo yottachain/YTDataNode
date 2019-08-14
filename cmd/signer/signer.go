@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+
+	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
-	"log"
 	"os"
 	//"github.com/rocket049/gocui"
 )

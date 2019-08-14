@@ -90,3 +90,20 @@ message StringMsg{
     string msg=1;
 }
 
+message SpotCheckTaskList{
+    string taskId = 1;
+     int32 snid=2;
+    repeated SpotCheckTask taskList=3;
+}
+
+message SpotCheckTask{
+    int32 id = 1;
+    string nodeId=2;
+    string addr=3;
+    bytes VHF=4;
+}
+
+message SpotCheckStatus{
+    string taskId = 1;
+    repeated int32 invalidNodeList=2;
+}

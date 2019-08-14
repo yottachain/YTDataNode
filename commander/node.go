@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 	"os/exec"
 	"time"
@@ -56,6 +56,7 @@ func NewID() (string, int) {
 
 // Daemon 启动守护进程
 func Daemon() {
+
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
 	err := sn.Host().Daemon(ctx, sn.Config().ListenAddr)

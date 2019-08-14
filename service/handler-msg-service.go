@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 
 	"github.com/yottachain/YTDataNode/host"
 	"github.com/yottachain/YTDataNode/message"

@@ -1,8 +1,8 @@
 package util
 
 import (
-	"log"
 	peer "github.com/libp2p/go-libp2p-peer"
+	"log"
 
 	"github.com/mr-tron/base58"
 

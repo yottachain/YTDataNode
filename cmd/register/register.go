@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/yottachain/YTDataNode/util"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"math"
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/util"
 
 	//"github.com/eoscanada/eos-go/ecc"
 	"io/ioutil"

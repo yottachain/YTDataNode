@@ -2,8 +2,8 @@ package node
 
 import (
 	"fmt"
+	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"

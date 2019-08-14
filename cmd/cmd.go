@@ -8,7 +8,7 @@ import (
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 	"os/exec"
 	"os/signal"

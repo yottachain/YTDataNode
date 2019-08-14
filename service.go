@@ -2,7 +2,7 @@ package node
 
 import (
 	"context"
-	"log"
+	"github.com/yottachain/YTDataNode/logger"
 	"os"
 
 	"github.com/gogo/protobuf/proto"
@@ -32,6 +32,10 @@ func (sn *storageNode) Service() {
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte) []byte {
 		log.Println("ping")
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
+	})
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
+		sch := SpotCheckHandler{sn}
+		return sch.Handle(data)
 	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
