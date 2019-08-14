@@ -41,7 +41,7 @@ var startCmd = &cobra.Command{
 	Short: "以守护进程启动并且自动调起掉线程序",
 	Run: func(cmd *cobra.Command, args []string) {
 		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 		c := exec.Command(os.Args[0], "daemon", "-d")
 		c.Env = os.Environ()
 		c.Stdout = os.Stdout

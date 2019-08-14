@@ -4,12 +4,12 @@ import (
 	"context"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
+	"os/signal"
+	"syscall"
 
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
-	"syscall"
 	"time"
 
 	// node "github.com/yottachain/YTDataNode"
@@ -82,7 +82,7 @@ func Daemon() {
 
 func DaemonWithBackground() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 
 	var daemonC *exec.Cmd
 

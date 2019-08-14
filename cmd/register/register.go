@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/yottachain/YTDataNode/util"
 	"log"
 	"math"
 
@@ -234,7 +235,7 @@ regTxsign:
 	txjson, err := json.Marshal(tx)
 	fmt.Printf("%s\n", txjson)
 	fmt.Println("-----------------------------")
-	fmt.Scanf("%s\n", &regTxsigned)
+	regTxsigned = util.ReadStringLine(os.Stdin, 4096)
 	json.Unmarshal([]byte(regTxsigned), &tx)
 	if err != nil {
 		fmt.Println("签名错误：", err)
@@ -287,8 +288,8 @@ getPoolInfo:
 	fmt.Scanf("%s\n", &poolID)
 	log.Println("请输入收益账号")
 	fmt.Scanf("%s\n", &minerOwner)
-	log.Println("请输入配额（单位：block）")
-	fmt.Scanf("%d\n", &maxSpace)
+	//log.Println("请输入配额（单位：block）")
+	//fmt.Scanf("%d\n", &maxSpace)
 	pi, err := getPoolInfo(poolID)
 	if err != nil || len(pi) == 0 {
 		fmt.Println("获取矿池信息失败！", pi, err)
@@ -318,7 +319,7 @@ addPoolSign:
 	fmt.Println("----------------------")
 	txjson, err := json.Marshal(tx)
 	fmt.Printf("%s\n", txjson)
-	fmt.Scanf("%s\n", &txSigned)
+	txSigned = util.ReadStringLine(os.Stdin, 4096)
 	json.Unmarshal([]byte(txSigned), &tx)
 	if err != nil {
 		fmt.Println("签名错误：", err)

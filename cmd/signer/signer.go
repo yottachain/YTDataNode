@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+	"github.com/yottachain/YTDataNode/util"
 	"log"
 	"os"
 	//"github.com/rocket049/gocui"
@@ -42,7 +43,7 @@ func main() {
 	}
 	if tx == "" {
 		log.Println("请输入待签名交易：")
-		fmt.Scanf("%s\n", &tx)
+		tx = util.ReadStringLine(os.Stdin, 4096)
 	}
 	err := json.Unmarshal([]byte(tx), &signedTx)
 	if err != nil {
