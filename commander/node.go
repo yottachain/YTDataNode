@@ -63,7 +63,7 @@ func Daemon() {
 	if err != nil {
 		log.Println("node daemon fail", err)
 	}
-	log.Println("YTFS daemon success")
+	log.Println("YTFS daemon success [0.4b]")
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 	}
