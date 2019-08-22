@@ -4,12 +4,12 @@ import (
 	"context"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
+	"os/signal"
+	"syscall"
 
 	"github.com/yottachain/YTDataNode/logger"
 	"os"
 	"os/exec"
-	"os/signal"
-	"syscall"
 	"time"
 
 	// node "github.com/yottachain/YTDataNode"
@@ -59,11 +59,11 @@ func Daemon() {
 
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
-	err := sn.Host().Daemon(ctx, sn.Config().ListenAddr)
+	err := sn.Host().Daemon(ctx, *sn.Config())
 	if err != nil {
 		log.Println("node daemon fail", err)
 	}
-	log.Println("YTFS daemon success")
+	log.Println("YTFS daemon success [0.4b]")
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 	}
@@ -83,7 +83,7 @@ func Daemon() {
 
 func DaemonWithBackground() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 
 	var daemonC *exec.Cmd
 

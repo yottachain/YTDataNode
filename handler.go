@@ -20,11 +20,14 @@ type WriteHandler struct {
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte) []byte {
+	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
+	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	log.Println("超级节点签名:", msg.GetBPDSIGN())
 	log.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
+	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
 	res2client, err := msg.GetResponseToClientByCode(resCode)
 	code104, err := msg.GetResponseToClientByCode(104)
 	bp := wh.Config().BPList[msg.BPDID]
@@ -42,6 +45,8 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 		log.Println("Connect bp fail", err)
 	}
 	_, err = wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
+	log.Printf("shard [VHF:%s] report to bp [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
+	defer log.Printf("shard [VHF:%s] save end report to client [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
 	// 如果报错返回104
 	if err != nil {
 		return code104
@@ -53,6 +58,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 				log.Println("report to bp error", err)
 			}
 		}()
+
 		return res2client
 	}
 }

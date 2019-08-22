@@ -38,11 +38,10 @@ func (hm *HandleMsgService) RegitsterHandler(protocol string, msgType int32, han
 func (hm *HandleMsgService) Service() {
 	for protocol, hmp := range hm.handler {
 		hm.host.HandleMessage(protocol, func(data *host.MsgStream) {
-			log.Println("创建新流：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
+			log.Println("new connect：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
 			info := hm.host.Peerstore().PeerInfo(data.Conn().RemotePeer())
-
 			for i, addr := range info.Addrs {
-				log.Printf("远程地址:[%d]: %s", i, addr.String())
+				log.Printf("address:[%d]: %s", i, addr.String())
 			}
 			content := data.Content()
 			msgType, msgData, err := hm.ParseMsg(content)

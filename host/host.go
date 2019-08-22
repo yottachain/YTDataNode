@@ -4,14 +4,21 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+	"time"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
+	ifconnmgr "github.com/libp2p/go-libp2p-connmgr"
 	ci "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
@@ -87,13 +94,27 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 }
 
 // Daemon 启动host节点
-func (h *Host) Daemon(ctx context.Context, addrs ...string) error {
+func (h *Host) Daemon(ctx context.Context, cfg config.Config) error {
+	setupSigusr1Trap()
+	if cfg.MaxConn < 500 {
+		cfg.MaxConn = 500
+	}
+	connMgr := ifconnmgr.NewConnManager(10, cfg.MaxConn, 30*time.Second)
+
 	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(addrs...),
+		libp2p.ConnectionManager(connMgr),
+		libp2p.ListenAddrStrings(cfg.ListenAddr),
 		libp2p.NATPortMap(),
 		// libp2p.Transport(quictpt.NewTransport),
 		libp2p.DefaultTransports,
 		libp2p.EnableRelay(circuit.OptHop, circuit.OptDiscovery),
+		//libp2p.AddrsFactory(func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
+		//		//	for i, addr := range addrs {
+		//		//		pls := addr.Protocols()
+		//		//		pls[1].
+		//		//	}
+		//		//	return addrs
+		//		//}),
 	}
 	if h.privKey != nil {
 		opts = append(opts, libp2p.Identity(h.privKey))
@@ -189,4 +210,19 @@ func InfoFromAddrString(addr string) (*peerstore.PeerInfo, error) {
 		return nil, err
 	}
 	return peerstore.InfoFromP2pAddr(ma)
+}
+
+func setupSigusr1Trap() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGUSR1)
+	go func() {
+		for range c {
+			DumpStacks()
+		}
+	}()
+}
+func DumpStacks() {
+	buf := make([]byte, 1<<20)
+	buf = buf[:runtime.Stack(buf, true)]
+	fmt.Printf("=== BEGIN goroutine stack dump ===\n%s\n=== END goroutine stack dump ===", buf)
 }

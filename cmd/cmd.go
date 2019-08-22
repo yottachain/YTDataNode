@@ -12,12 +12,15 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
+	"runtime/pprof"
 	"syscall"
 )
 
 var size uint64
 var mc uint32
 var isDaemon bool = false
+var pprofDebug = false
 
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
@@ -33,6 +36,16 @@ var daemonCmd = &cobra.Command{
 				log.Println(err)
 			}
 		}()
+		go func() {
+			if pprofDebug != false {
+				f, err := os.OpenFile(path.Join(path.Dir(os.Args[0]), "pprofCpu.log"), os.O_CREATE|os.O_RDWR, 0644)
+				if err != nil {
+					log.Printf("[pprof err] %s\n", err.Error())
+				}
+				pprof.StartCPUProfile(f)
+				defer pprof.StopCPUProfile()
+			}
+		}()
 	},
 }
 
@@ -41,7 +54,7 @@ var startCmd = &cobra.Command{
 	Short: "以守护进程启动并且自动调起掉线程序",
 	Run: func(cmd *cobra.Command, args []string) {
 		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 		c := exec.Command(os.Args[0], "daemon", "-d")
 		c.Env = os.Environ()
 		c.Stdout = os.Stdout
@@ -49,7 +62,6 @@ var startCmd = &cobra.Command{
 		err := c.Start()
 		if err != nil {
 			log.Fatalln("进程启动失败:", err)
-
 		} else {
 			log.Println("守护进程已启动")
 			log.Println("日志输出在output.log")
@@ -84,9 +96,10 @@ func main() {
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
+	daemonCmd.Flags().BoolVarP(&pprofDebug, "pprof", "p", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%d", config.Version()),
+		Version: fmt.Sprintf("%db", config.Version()),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(initCmd)
@@ -96,5 +109,4 @@ func main() {
 	RootCommand.AddCommand(update.UpdateCMD)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
-
 }

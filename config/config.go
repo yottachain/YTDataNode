@@ -16,8 +16,8 @@ import (
 )
 
 type peerInfo struct {
-	ID    string
-	Addrs []string
+	ID    string   `json:"ID"`
+	Addrs []string `json:"Addrs"`
 }
 
 // Config 配置
@@ -32,6 +32,7 @@ type Config struct {
 	APIListen  string     `json:"APIListen"`
 	IndexID    uint32     `json:"IndexID"`
 	PoolID     string     `json:"PoolID"`
+	MaxConn    int        `json:"maxConn"`
 	*ytfsOpts.Options
 }
 
@@ -130,6 +131,7 @@ func getBPList() []peerInfo {
 		bpconfigurl = url
 	}
 
+	log.Println("bpconfigurl", bpconfigurl)
 	resp, err := http.Get(bpconfigurl)
 	if err != nil {
 		log.Println("获取BPLIST失败")
@@ -172,6 +174,7 @@ func (cfg *Config) Save() error {
 
 func (cfg *Config) ReloadBPList() {
 	cfg.BPList = getBPList()
+	cfg.Save()
 }
 
 // NewKey 创建新的key
@@ -227,7 +230,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 5
+	return 4
 }
 
 func Version() uint32 {
