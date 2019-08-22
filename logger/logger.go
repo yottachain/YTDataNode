@@ -9,6 +9,7 @@ import (
 
 func init() {
 	file := util.GetLogFile("output.log")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 	log.SetOutput(io.MultiWriter(file, os.Stdout))
 }
 
