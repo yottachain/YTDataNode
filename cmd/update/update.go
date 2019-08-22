@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
 	"github.com/yottachain/YTDataNode/config"
+	"path"
 
 	//"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTDataNode/logger"
@@ -63,7 +64,10 @@ func doUpdate(downloadURL string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	err = update.Apply(resp.Body, update.Options{})
+	err = update.Apply(resp.Body, update.Options{
+		TargetPath:  os.Args[0],
+		OldSavePath: path.Join(path.Dir(os.Args[0]), "ytfs-node.old"),
+	})
 	if err != nil {
 		return err
 	}
