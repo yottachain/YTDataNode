@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 	"github.com/yottachain/YTDataNode/logger"
 	"os"
 
@@ -30,7 +31,7 @@ func (sn *storageNode) Service() {
 		return dh.Handle(data)
 	})
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte) []byte {
-		log.Println("ping")
+		fmt.Println(data)
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {

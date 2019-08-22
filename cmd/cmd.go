@@ -12,12 +12,15 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
+	"runtime/pprof"
 	"syscall"
 )
 
 var size uint64
 var mc uint32
 var isDaemon bool = false
+var pprofDebug = false
 
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
@@ -31,6 +34,16 @@ var daemonCmd = &cobra.Command{
 		defer func() {
 			if err := recover(); err != nil {
 				log.Println(err)
+			}
+		}()
+		go func() {
+			if pprofDebug != false {
+				f, err := os.OpenFile(path.Join(path.Dir(os.Args[0]), "pprofCpu.log"), os.O_CREATE|os.O_RDWR, 0644)
+				if err != nil {
+					log.Printf("[pprof err] %s\n", err.Error())
+				}
+				pprof.StartCPUProfile(f)
+				defer pprof.StopCPUProfile()
 			}
 		}()
 	},
@@ -49,7 +62,6 @@ var startCmd = &cobra.Command{
 		err := c.Start()
 		if err != nil {
 			log.Fatalln("进程启动失败:", err)
-
 		} else {
 			log.Println("守护进程已启动")
 			log.Println("日志输出在output.log")
@@ -84,6 +96,7 @@ func main() {
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
+	daemonCmd.Flags().BoolVarP(&pprofDebug, "pprof", "p", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
 		Version: fmt.Sprintf("%db", config.Version()),
@@ -96,5 +109,4 @@ func main() {
 	RootCommand.AddCommand(update.UpdateCMD)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
-
 }

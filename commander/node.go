@@ -59,7 +59,7 @@ func Daemon() {
 
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
-	err := sn.Host().Daemon(ctx, sn.Config().ListenAddr)
+	err := sn.Host().Daemon(ctx, *sn.Config())
 	if err != nil {
 		log.Println("node daemon fail", err)
 	}

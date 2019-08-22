@@ -286,6 +286,8 @@ func step2() {
 getPoolInfo:
 	log.Println("请输入矿池id")
 	fmt.Scanf("%s\n", &poolID)
+	log.Println("请输入配额")
+	fmt.Scanf("%d\n", &maxSpace)
 	log.Println("请输入收益账号")
 	fmt.Scanf("%s\n", &minerOwner)
 	//log.Println("请输入配额（单位：block）")
