@@ -32,7 +32,7 @@ type Config struct {
 	APIListen  string     `json:"APIListen"`
 	IndexID    uint32     `json:"IndexID"`
 	PoolID     string     `json:"PoolID"`
-	MaxConn    int        `json:"maxConn"`
+	MaxConn    int        `json:"MaxConn"`
 	*ytfsOpts.Options
 }
 
