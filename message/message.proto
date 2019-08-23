@@ -1,16 +1,30 @@
 syntax = "proto3";
 
-package message; 
+package message;
 
-message UploadShardRequest  { 
-   int32 SHARDID=1;
-   int32 BPDID = 2; 
-   int64 VBI = 3; 
-   bytes BPDSIGN=4; 
-   bytes DAT=5; 
-   bytes VHF=6; 
-   bytes USERSIGN=7; 
+//msgid=0xc487
+message NodeCapacityRequest{
 }
+
+//msgid=0xe684
+message NodeCapacityResponse {
+    bool writable=1;
+    string allocId=2;
+}
+
+
+//msgid=0xCB05
+message UploadShardRequest  {
+   int32 SHARDID=1;
+   int32 BPDID = 2;
+   int64 VBI = 3;
+   bytes BPDSIGN=4;
+   bytes DAT=5;
+   bytes VHF=6;
+   bytes USERSIGN=7;
+   string allocId=8;
+}
+
 
 message UploadShardResponse  {
    int32 RES= 1; 

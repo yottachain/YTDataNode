@@ -6,12 +6,10 @@ import (
 )
 
 const (
-
-	// MsgIDUploadShardRequest 上传分片消息
-	MsgIDUploadShardRequest msgType = 0xcb05
-	// MsgIDUploadShardResponse 上传分片消息返回
-	MsgIDUploadShardResponse msgType = 0x870b
-	// MsgIDVoidResponse 空返回
+	MsgIDNodeCapacityRequest   msgType = 0xc487
+	MsgIDNodeCapacityResponse  msgType = 0xe684
+	MsgIDUploadShardRequest    msgType = 0xCB05
+	MsgIDUploadShardResponse   msgType = 0x870b
 	MsgIDVoidResponse          msgType = 0xe64f
 	MsgIDUploadShard2CResponse msgType = 0x1978
 	MsgIDDownloadShardRequest  msgType = 0x1757
