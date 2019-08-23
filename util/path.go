@@ -46,7 +46,7 @@ func PathExists(path string) (bool, error) {
 }
 
 func GetLogFile(name string) *os.File {
-	file, err := os.OpenFile(path.Join(GetYTFSPath(), name), os.O_WRONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(path.Join(GetYTFSPath(), name), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		if err != nil {
 			fmt.Println("打开日志文件失败")
