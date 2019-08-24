@@ -39,10 +39,10 @@ func (hm *HandleMsgService) Service() {
 	for protocol, hmp := range hm.handler {
 		hm.host.HandleMessage(protocol, func(data *host.MsgStream) {
 			log.Println("new connect：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
-			info := hm.host.Peerstore().PeerInfo(data.Conn().RemotePeer())
-			for i, addr := range info.Addrs {
-				log.Printf("address:[%d]: %s", i, addr.String())
-			}
+			//info := hm.host.Peerstore().PeerInfo(data.Conn().RemotePeer())
+			//for i, addr := range info.Addrs {
+			//	log.Printf("address:[%d]: %s", i, addr.String())
+			//}
 			content := data.Content()
 			msgType, msgData, err := hm.ParseMsg(content)
 			if err != nil {

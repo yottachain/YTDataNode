@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/satori/go.uuid"
+	"log"
 	"sync"
+	"time"
 )
 
 type Token struct {
-	index int
-	uuid.UUID
+	Index int
+	UUID  uuid.UUID
 }
 
 func (tk *Token) Bytes() []byte {
@@ -92,6 +94,12 @@ func (utp *UploadTaskPool) Get() (*Token, error) {
 		}
 		index := <-utp.free
 		utp.tokenMap[index] = &token
+		// 如果10s后超时，将token释放
+		go func(idx int) {
+			<-time.After(time.Second * 10)
+			utp.Put(idx)
+		}(index)
+		log.Printf("[task pool]get token success %d/%d\n", index, utp.size)
 		return &Token{index, token}, nil
 	} else {
 		return nil, fmt.Errorf("upload queue bus")
@@ -99,7 +107,8 @@ func (utp *UploadTaskPool) Get() (*Token, error) {
 }
 
 func (utp *UploadTaskPool) Check(tk *Token) bool {
-	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.index].Bytes())
+	log.Println("[task pool]check token", tk.Index, tk.String())
+	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.Index].Bytes())
 }
 
 func (utp *UploadTaskPool) hasFreeToken() bool {
@@ -114,4 +123,5 @@ func (utp *UploadTaskPool) Put(index int) {
 	defer utp.Unlock()
 	utp.tokenMap[index] = nil
 	utp.free <- index
+	log.Printf("[task pool]put task success %d/%d\n", index, utp.size)
 }

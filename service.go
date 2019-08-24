@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"os"
 
 	"github.com/gogo/protobuf/proto"
@@ -22,8 +23,11 @@ var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
+	wh := WriteHandler{sn, uploadTaskPool.New(1000)}
+	hm.RegitsterHandler("/node/0.0.1", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
+		return wh.GetToken(data)
+	})
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
-		wh := WriteHandler{sn}
 		return wh.Handle(data)
 	})
 	hm.RegitsterHandler("/node/0.0.1", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
@@ -101,15 +105,20 @@ func Register(sn *storageNode) {
 	}
 }
 
+var first = true
+
 // Report 上报状态
 func Report(sn *storageNode) {
 	var msg message.StatusRepReq
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
-	if rms.Addr() != "" {
+	if rms.Addr() != "" && first == false {
 		msg.Addrs = append(sn.Addrs(), rms.Addr())
 	} else {
 		msg.Addrs = sn.Addrs()
+		if first == true {
+			first = false
+		}
 	}
 
 	msg.Cpu = sn.Runtime().AvCPU

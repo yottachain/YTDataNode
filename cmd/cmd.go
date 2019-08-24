@@ -99,7 +99,7 @@ func main() {
 	daemonCmd.Flags().BoolVarP(&pprofDebug, "pprof", "p", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%db", config.Version()),
+		Version: fmt.Sprintf("%d.2b", config.Version()),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(initCmd)

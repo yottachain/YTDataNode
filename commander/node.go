@@ -117,7 +117,9 @@ func updateService(c *exec.Cmd) {
 		log.Println("尝试更新")
 		if err := update.Update(); err == nil {
 			log.Println("更新完成尝试重启")
-			c.Process.Kill()
+			if err := c.Process.Kill(); err != nil {
+				log.Println(err)
+			}
 		} else {
 			log.Println(err)
 		}

@@ -51,11 +51,11 @@ func TestCheckToken(t *testing.T) {
 			t.Log(tk.String())
 			ntk := Token{}
 
-			err = ntk.FillFromString(tk.String())
+			err = ntk.FillFromBytes(tk.Bytes())
 			if err != nil {
 				t.Error(err)
 			}
-			t.Log(tk.index, tk.UUID.String(), ntk.UUID.String())
+			t.Log(ntk.Index, tk.Index, tk.UUID.String(), ntk.UUID.String())
 			t.Log(utp.Check(&ntk))
 		}
 	}

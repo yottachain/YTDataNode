@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
@@ -11,14 +13,9 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
-
-	peer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
-	ifconnmgr "github.com/libp2p/go-libp2p-connmgr"
 	ci "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
@@ -96,13 +93,8 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 // Daemon 启动host节点
 func (h *Host) Daemon(ctx context.Context, cfg config.Config) error {
 	setupSigusr1Trap()
-	if cfg.MaxConn < 500 {
-		cfg.MaxConn = 500
-	}
-	connMgr := ifconnmgr.NewConnManager(10, cfg.MaxConn, 30*time.Second)
 
 	opts := []libp2p.Option{
-		libp2p.ConnectionManager(connMgr),
 		libp2p.ListenAddrStrings(cfg.ListenAddr),
 		libp2p.NATPortMap(),
 		// libp2p.Transport(quictpt.NewTransport),

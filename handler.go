@@ -5,6 +5,7 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
+	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -16,6 +17,25 @@ import (
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
+	Upt *uploadTaskPool.UploadTaskPool
+}
+
+func (wh *WriteHandler) GetToken(data []byte) []byte {
+	tk, err := wh.Upt.Get()
+	var res message.NodeCapacityResponse
+	res.Writable = true
+	if err != nil {
+		res.Writable = false
+		log.Println(err)
+	}
+	res.AllocId = tk.String()
+	resbuf, err := proto.Marshal(&res)
+	if err != nil {
+		res.Writable = false
+		log.Println(err)
+	}
+	log.Printf("[task pool]get token return [%s]\n", tk.String())
+	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
 }
 
 // Handle 获取回调处理函数
@@ -24,8 +44,6 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
-	log.Println("超级节点签名:", msg.GetBPDSIGN())
-	log.Println("用户签名:", msg.GetUSERSIGN())
 	resCode := wh.saveSlice(msg)
 	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
 	res2client, err := msg.GetResponseToClientByCode(resCode)
@@ -51,7 +69,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	if err != nil {
 		return code104
 	} else {
-		log.Println("return client")
+		log.Println("return client", res2bp, res2client)
 		defer func() {
 			err := recover()
 			if err != nil {
@@ -64,6 +82,17 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 }
 
 func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
+	log.Printf("[task pool]check allocID[%s]\n", msg.AllocId)
+	tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId)
+	if err != nil {
+		// buys
+		log.Println("token check error：", err.Error())
+		return 105
+	}
+	if !wh.Upt.Check(tk) {
+		log.Println("token check fail：", tk.String())
+		return 105
+	}
 	// 1. 验证BP签名
 	// if ok, err := msg.VerifyBPSIGN(
 	// 	// 获取BP公钥
@@ -81,7 +110,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	// 3. 将数据写入YTFS-disk
 	var indexKey [32]byte
 	copy(indexKey[:], msg.VHF[0:32])
-	err := wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" {
@@ -91,6 +120,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 		return 101
 	}
 	log.Println("return msg", 0)
+	wh.Upt.Put(tk.Index)
 	return 0
 }
 
