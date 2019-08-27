@@ -93,7 +93,6 @@ func (utp *UploadTaskPool) Get() (*Token, error) {
 		}
 		token := &Token{index, id, time.Now()}
 		utp.tokenMap[index] = token
-
 		return token, nil
 	} else {
 		log.Printf("[task pool] get token error: free task is 0/n")
@@ -127,9 +126,5 @@ func (utp *UploadTaskPool) Put(index int) {
 		return
 	}
 	utp.tokenMap[index] = nil
-	//log.Printf("[task pool]put task success %d/%d\n", index, utp.size)
-}
 
-//func (utp *UploadTaskPool) Len() int {
-//	return len(utp.free)
-//}
+}

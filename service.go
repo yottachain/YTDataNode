@@ -27,6 +27,7 @@ func (sn *storageNode) Service() {
 	if maxConn == 0 {
 		maxConn = 50
 	}
+	fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh := WriteHandler{sn, uploadTaskPool.New(maxConn)}
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
 		return wh.GetToken(data)
