@@ -47,40 +47,13 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	resCode := wh.saveSlice(msg)
-	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
-	res2client, err := msg.GetResponseToClientByCode(resCode)
-	code104, err := msg.GetResponseToClientByCode(104)
-	bp := wh.Config().BPList[msg.BPDID]
+	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
 	}
-	res2bp, err := msg.GetResponseToBPByCode(resCode, bp.ID, wh.Host().PrivKey())
-	if err != nil {
-		log.Println("Get res code fail:", err)
-	}
-	if err != nil {
-		log.Println("Get res code 2 bp fail:", err)
-	}
-	if err = wh.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		log.Println("Connect bp fail", err)
-	}
-	_, err = wh.Host().SendMsg(bp.ID, "/node/0.0.2", res2bp)
-	log.Printf("shard [VHF:%s] report to bp [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
-	defer log.Printf("shard [VHF:%s] save end report to client [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
-	// 如果报错返回104
-	if err != nil {
-		return code104
-	} else {
-		log.Println("return client", res2bp, res2client)
-		defer func() {
-			err := recover()
-			if err != nil {
-				log.Println("report to bp error", err)
-			}
-		}()
-
-		return res2client
-	}
+	defer log.Printf("shard [VHF:%s] return client success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	return res2client
 }
 
 func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {

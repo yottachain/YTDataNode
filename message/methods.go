@@ -8,6 +8,7 @@ import (
 	host "github.com/yottachain/P2PHost"
 
 	"github.com/golang/protobuf/proto"
+	ci "github.com/yottachain/YTCrypto"
 )
 
 // VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
@@ -53,8 +54,14 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID string, 
 }
 
 // GetResponseToClientByCode 生成客户端返回消息
-func (req *UploadShardRequest) GetResponseToClientByCode(code int32) ([]byte, error) {
+func (req *UploadShardRequest) GetResponseToClientByCode(code int32, privkey string) ([]byte, error) {
 	var res UploadShard2CResponse
+	if code == 0 {
+		dnsig, err := ci.Sign(privkey, req.VHF)
+		if err != nil {
+			res.DNSIGN = dnsig
+		}
+	}
 	res.RES = code
 	resData, err := proto.Marshal(&res)
 	if err != nil {
