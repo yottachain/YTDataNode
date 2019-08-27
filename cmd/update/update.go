@@ -88,6 +88,15 @@ func Update() error {
 	}
 }
 
+func UpdateForce() error {
+	cfg, err := getUpdateConfig()
+	if err != nil {
+		return err
+	}
+	log.Println("即将更新版本：", cfg.RemoteVersion)
+	return doUpdate(cfg.DownloadURL)
+}
+
 var UpdateCMD = &cobra.Command{
 	Use:   "update",
 	Short: "检查更新",

@@ -27,13 +27,14 @@ func (wh *WriteHandler) GetToken(data []byte) []byte {
 	if err != nil {
 		res.Writable = false
 		log.Println(err)
+	} else {
+		res.AllocId = tk.String()
 	}
-	res.AllocId = tk.String()
-	resbuf, err := proto.Marshal(&res)
-	if err != nil {
+	// 如果token为空 返回 假
+	if res.AllocId == "" {
 		res.Writable = false
-		log.Println(err)
 	}
+	resbuf, _ := proto.Marshal(&res)
 	log.Printf("[task pool]get token return [%s]\n", tk.String())
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
 }
@@ -43,6 +44,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
+
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	resCode := wh.saveSlice(msg)
 	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
@@ -62,7 +64,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	if err = wh.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		log.Println("Connect bp fail", err)
 	}
-	_, err = wh.Host().SendMsg(bp.ID, "/node/0.0.1", res2bp)
+	_, err = wh.Host().SendMsg(bp.ID, "/node/0.0.2", res2bp)
 	log.Printf("shard [VHF:%s] report to bp [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
 	defer log.Printf("shard [VHF:%s] save end report to client [%f]\n", base58.Encode(msg.VHF), startTime.Sub(time.Now()).Seconds())
 	// 如果报错返回104
@@ -82,14 +84,22 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 }
 
 func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
-	log.Printf("[task pool]check allocID[%s]\n", msg.AllocId)
+	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
+	if msg.AllocId == "" {
+		// buys
+		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
+		return 105
+	}
 	tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId)
+	defer wh.Upt.Put(tk.Index)
 	if err != nil {
 		// buys
+		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check error：", err.Error())
 		return 105
 	}
 	if !wh.Upt.Check(tk) {
+		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", tk.String())
 		return 105
 	}
@@ -120,7 +130,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 		return 101
 	}
 	log.Println("return msg", 0)
-	wh.Upt.Put(tk.Index)
+
 	return 0
 }
 
@@ -189,7 +199,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 			log.Println("error:", err)
 		}
 		// 发送下载分片命令
-		if shardData, err := sch.Host().SendMsg(task.NodeId, "/node/0.0.1", append(message.MsgIDDownloadShardRequest.Bytes(), checkData...)); err != nil {
+		if shardData, err := sch.Host().SendMsg(task.NodeId, "/node/0.0.2", append(message.MsgIDDownloadShardRequest.Bytes(), checkData...)); err != nil {
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
@@ -221,7 +231,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 			log.Println("error:", err)
 		}
 		log.Println("失败的任务：", spotChecker.InvalidNodeList)
-		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.1", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.2", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
 			log.Println(e)
 		} else {
 			log.Printf("%s\n", r)

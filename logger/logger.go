@@ -1,16 +1,42 @@
 package log
 
 import (
+	"github.com/natefinch/lumberjack"
 	"github.com/yottachain/YTDataNode/util"
 	"io"
 	"log"
-	"os"
+	"net"
+	"path"
 )
 
+var FileLogger = &lumberjack.Logger{
+	Filename:   path.Join(util.GetYTFSPath(), "output.log"),
+	MaxSize:    128,
+	Compress:   false,
+	MaxAge:     7,
+	MaxBackups: 30,
+}
+
 func init() {
-	file := util.GetLogFile("output.log")
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
-	log.SetOutput(io.MultiWriter(file, os.Stdout))
+}
+
+func SetFileLog() {
+	log.SetOutput(FileLogger)
+	go LogService()
+}
+
+func LogService() {
+	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:9003")
+	tcpService, _ := net.ListenTCP("tcp", addr)
+	for {
+		tcpConn, _ := tcpService.AcceptTCP()
+		handLogConn(tcpConn)
+	}
+}
+
+func handLogConn(conn *net.TCPConn) {
+	log.SetOutput(io.MultiWriter(conn, FileLogger))
 }
 
 var Println = log.Println

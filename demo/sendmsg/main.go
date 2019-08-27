@@ -48,7 +48,7 @@ func sendMsg(i int) {
 		log.Println("错误3 ", err)
 	}
 	host.Peerstore().AddAddrs(info.ID, info.Addrs, peerstore.TempAddrTTL)
-	stm, err := host.NewStream(context.Background(), info.ID, "/node/0.0.1")
+	stm, err := host.NewStream(context.Background(), info.ID, "/node/0.0.2")
 	if err != nil {
 		log.Println("错误 4", err)
 	}
@@ -59,7 +59,7 @@ func sendMsg(i int) {
 	if err != nil {
 		log.Println("错误 5", err)
 	}
-	ed.Encode(append(message.MsgIDString.Bytes(), data...))
+	ed.Encode(append(message.MsgIDNodeCapacityRequest.Bytes()))
 	res, _ := ioutil.ReadAll(stm)
 	log.Printf("%s\n", res)
 }

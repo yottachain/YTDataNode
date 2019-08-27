@@ -2,6 +2,7 @@ package commander
 
 import (
 	"context"
+	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"os/signal"
@@ -84,15 +85,24 @@ func Daemon() {
 func DaemonWithBackground() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
-
+	log.SetFileLog()
 	var daemonC *exec.Cmd
-
-	go updateService(daemonC)
-
+	go updateService(&daemonC)
+	go func() {
+		var yOrN byte
+		<-sigs
+		fmt.Println("Are you sure you want to quit ？（y/n）")
+		fmt.Scanf("%c\n", &yOrN)
+		if yOrN == 'y' {
+			daemonC.Process.Signal(syscall.SIGQUIT)
+			os.Exit(0)
+		}
+	}()
 	for {
 		daemonC = getDaemonCmd()
 		log.Println("启动进程daemon")
 		err := daemonC.Run()
+		log.Println("重启完成")
 		if err != nil {
 			log.Println(err)
 		}
@@ -101,7 +111,7 @@ func DaemonWithBackground() {
 }
 
 func getDaemonCmd() *exec.Cmd {
-	file := util.GetLogFile("output.log")
+	file := log.FileLogger
 	var daemonC *exec.Cmd
 	daemonC = exec.Command(os.Args[0], "daemon")
 	daemonC.Env = os.Environ()
@@ -110,14 +120,15 @@ func getDaemonCmd() *exec.Cmd {
 	return daemonC
 }
 
-func updateService(c *exec.Cmd) {
+func updateService(c **exec.Cmd) {
 	log.Println("自动更新服务启动")
+	dcmd := *c
 	for {
 		time.Sleep(time.Minute * 10)
 		log.Println("尝试更新")
 		if err := update.Update(); err == nil {
 			log.Println("更新完成尝试重启")
-			if err := c.Process.Kill(); err != nil {
+			if err := dcmd.Process.Kill(); err != nil {
 				log.Println(err)
 			}
 		} else {

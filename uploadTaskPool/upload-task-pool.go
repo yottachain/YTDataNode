@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/satori/go.uuid"
-	"log"
+	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
 	"time"
 )
@@ -14,12 +14,17 @@ import (
 type Token struct {
 	Index int
 	UUID  uuid.UUID
+	Tm    time.Time
 }
 
 func (tk *Token) Bytes() []byte {
 	buf := bytes.NewBuffer([]byte{})
 	ed := gob.NewEncoder(buf)
+	if tk == nil {
+		return []byte{}
+	}
 	ed.Encode(tk)
+
 	return buf.Bytes()
 }
 
@@ -64,21 +69,16 @@ func (tk *Token) String() string {
 }
 
 type UploadTaskPool struct {
-	tokenMap []*uuid.UUID
+	tokenMap []*Token
 	size     int
-	free     chan int
 	sync.Mutex
 }
 
 func New(size int) *UploadTaskPool {
 	utp := UploadTaskPool{
-		make([]*uuid.UUID, size),
+		make([]*Token, size),
 		size,
-		make(chan int, size),
 		sync.Mutex{},
-	}
-	for i := 0; i < utp.size; i++ {
-		utp.Put(i)
 	}
 	return &utp
 }
@@ -86,42 +86,47 @@ func New(size int) *UploadTaskPool {
 func (utp *UploadTaskPool) Get() (*Token, error) {
 	utp.Lock()
 	defer utp.Unlock()
-
-	if utp.hasFreeToken() {
-		token, err := uuid.NewV4()
+	if index := utp.hasFreeToken(); index > -1 {
+		id, err := uuid.NewV4()
 		if err != nil {
 			return nil, err
 		}
-		index := <-utp.free
-		utp.tokenMap[index] = &token
-		// 如果10s后超时，将token释放
-		go func(idx int) {
-			<-time.After(time.Second * 10)
-			utp.Put(idx)
-		}(index)
-		log.Printf("[task pool]get token success %d/%d\n", index, utp.size)
-		return &Token{index, token}, nil
+		token := &Token{index, id, time.Now()}
+		utp.tokenMap[index] = token
+
+		return token, nil
 	} else {
+		log.Printf("[task pool] get token error: free task is 0/n")
 		return nil, fmt.Errorf("upload queue bus")
 	}
 }
 
 func (utp *UploadTaskPool) Check(tk *Token) bool {
-	log.Println("[task pool]check token", tk.Index, tk.String())
-	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.Index].Bytes())
+	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.Index].UUID.Bytes())
 }
 
-func (utp *UploadTaskPool) hasFreeToken() bool {
-	return len(utp.free) > 0
+func (utp *UploadTaskPool) hasFreeToken() int {
+	var i = -1
+	for index, tk := range utp.tokenMap {
+		if utp.tokenMap[index] == nil {
+			return index
+		} else if time.Now().Sub(tk.Tm).Seconds() > 10 {
+			return index
+		}
+	}
+	return i
 }
 
 func (utp *UploadTaskPool) Put(index int) {
+	utp.Lock()
+	defer utp.Unlock()
 	if index > utp.size {
 		return
 	}
-	utp.Lock()
-	defer utp.Unlock()
 	utp.tokenMap[index] = nil
-	utp.free <- index
-	log.Printf("[task pool]put task success %d/%d\n", index, utp.size)
+	//log.Printf("[task pool]put task success %d/%d\n", index, utp.size)
 }
+
+//func (utp *UploadTaskPool) Len() int {
+//	return len(utp.free)
+//}

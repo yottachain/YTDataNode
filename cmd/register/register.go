@@ -406,7 +406,7 @@ func getNodeList() []string {
 	}
 	err = json.Unmarshal(buf, &list)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	return list
 }

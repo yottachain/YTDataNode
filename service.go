@@ -23,22 +23,26 @@ var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
-	wh := WriteHandler{sn, uploadTaskPool.New(1000)}
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
+	maxConn := sn.Config().MaxConn
+	if maxConn == 0 {
+		maxConn = 10
+	}
+	wh := WriteHandler{sn, uploadTaskPool.New(maxConn)}
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
 		return wh.GetToken(data)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
 		return wh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
 		dh := DownloadHandler{sn}
 		return dh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDString.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte) []byte {
 		fmt.Println(data)
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
-	hm.RegitsterHandler("/node/0.0.1", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
 		sch := SpotCheckHandler{sn}
 		return sch.Handle(data)
 	})
@@ -83,7 +87,7 @@ func Register(sn *storageNode) {
 		log.Println("Formate msg fail:", err)
 	}
 	log.Println("sn index:", sn.GetBP())
-	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
+	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.2")
 	if err != nil {
 		log.Println("Create MsgStream fail:", err)
 	} else {
@@ -137,7 +141,9 @@ func Report(sn *storageNode) {
 		log.Println("Connect bp fail", err)
 	}
 	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
-	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.1")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	stm, err := sn.host.NewMsgStream(ctx, bp.ID, "/node/0.0.2")
 	if err != nil {
 		log.Println("Create MsgStream fail:", err)
 	} else {

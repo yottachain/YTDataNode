@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/cmd/register"
@@ -9,41 +10,35 @@ import (
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
-	"runtime/pprof"
 	"syscall"
 )
 
 var size uint64
 var mc uint32
 var isDaemon bool = false
-var pprofDebug = false
 
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
 	Run: func(cmd *cobra.Command, args []string) {
+		go func() {
+			log.Println(http.ListenAndServe("0.0.0.0:10000", nil))
+		}()
 		if isDaemon {
 			commander.DaemonWithBackground()
 		} else {
 			commander.Daemon()
 		}
+
 		defer func() {
 			if err := recover(); err != nil {
 				log.Println(err)
-			}
-		}()
-		go func() {
-			if pprofDebug != false {
-				f, err := os.OpenFile(path.Join(path.Dir(os.Args[0]), "pprofCpu.log"), os.O_CREATE|os.O_RDWR, 0644)
-				if err != nil {
-					log.Printf("[pprof err] %s\n", err.Error())
-				}
-				pprof.StartCPUProfile(f)
-				defer pprof.StopCPUProfile()
 			}
 		}()
 	},
@@ -61,7 +56,7 @@ var startCmd = &cobra.Command{
 		c.Stderr = os.Stderr
 		err := c.Start()
 		if err != nil {
-			log.Fatalln("进程启动失败:", err)
+			log.Println("进程启动失败:", err)
 		} else {
 			log.Println("守护进程已启动")
 			log.Println("日志输出在output.log")
@@ -86,6 +81,22 @@ var initCmd = &cobra.Command{
 //	},
 //}
 
+var logCmd = &cobra.Command{
+	Use:   "log",
+	Short: "log print",
+	Run: func(cmd *cobra.Command, args []string) {
+		conn, err := net.Dial("tcp", "127.0.0.1:9003")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(0)
+		}
+		scanner := bufio.NewScanner(conn)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+	},
+}
+
 func main() {
 	defer func() {
 		err := recover()
@@ -96,7 +107,6 @@ func main() {
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
-	daemonCmd.Flags().BoolVarP(&pprofDebug, "pprof", "p", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
 		Version: fmt.Sprintf("%d.2b", config.Version()),
@@ -107,6 +117,7 @@ func main() {
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.AddCommand(repoCmd.RepoCmd)
 	RootCommand.AddCommand(update.UpdateCMD)
+	RootCommand.AddCommand(logCmd)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 }

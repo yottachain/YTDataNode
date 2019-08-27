@@ -3,8 +3,10 @@ package api
 import (
 	"bytes"
 	"fmt"
+	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/logger"
 	"net/http"
+	"os"
 	"runtime/pprof"
 )
 
@@ -94,5 +96,15 @@ func init() {
 		pprof.WriteHeapProfile(buf)
 
 		rw.Write(buf.Bytes())
+	})
+	// 强制更新
+	handler.HandleAPI("debug/update", func(rw *ResponseWriter, rq *http.Request) {
+		fmt.Println("准备更新")
+		if err := update.UpdateForce(); err != nil {
+			rw.Write([]byte(err.Error()))
+		} else {
+			rw.Write([]byte("ok"))
+		}
+		defer os.Exit(0)
 	})
 }
