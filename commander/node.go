@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
+	"io"
 	"os/signal"
+	"path"
 	"syscall"
 
 	"github.com/yottachain/YTDataNode/logger"
@@ -64,7 +66,7 @@ func Daemon() {
 	if err != nil {
 		log.Println("node daemon fail", err)
 	}
-	log.Println("YTFS daemon success [0.4b]")
+	log.Println("YTFS daemon success", sn.Config().Version())
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
 	}
@@ -122,17 +124,37 @@ func getDaemonCmd() *exec.Cmd {
 
 func updateService(c **exec.Cmd) {
 	log.Println("自动更新服务启动")
-	dcmd := *c
 	for {
+		dcmd := *c
+
 		time.Sleep(time.Minute * 10)
 		log.Println("尝试更新")
 		if err := update.Update(); err == nil {
 			log.Println("更新完成尝试重启")
-			if err := dcmd.Process.Kill(); err != nil {
-				log.Println(err)
-			}
+			reboot(dcmd.Process.Pid)
 		} else {
 			log.Println(err)
 		}
+	}
+}
+
+func reboot(pid int) {
+	rebootShell := fmt.Sprintf("kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
+	rebootShellPath := path.Join(path.Dir(os.Args[0]), "reboot.sh")
+	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR, 0777)
+	if err == nil {
+		_, err := io.WriteString(file, rebootShell)
+		if err == nil {
+			rebootCMD := exec.Command("bash", rebootShellPath)
+			rebootCMD.Stdout = log.FileLogger
+			rebootCMD.Stderr = log.FileLogger
+			if err := rebootCMD.Start(); err != nil {
+				log.Println("[auto update]重启失败", err)
+			}
+		} else {
+			log.Println("[auto update]重启失败", err)
+		}
+	} else {
+		log.Println("[auto update]重启失败", err)
 	}
 }

@@ -49,7 +49,7 @@ func getUpdateConfig() (*UpdateConfig, error) {
 	return &cfg, nil
 }
 
-func checkUpdate(cfg *UpdateConfig) bool {
+func CheckUpdate(cfg *UpdateConfig) bool {
 	currVersion := config.Version()
 	if cfg.RemoteVersion > int32(currVersion) {
 		return true
@@ -80,7 +80,7 @@ func Update() error {
 	if err != nil {
 		return err
 	}
-	if checkUpdate(cfg) || force {
+	if CheckUpdate(cfg) || force {
 		log.Println("即将更新版本：", cfg.RemoteVersion)
 		return doUpdate(cfg.DownloadURL)
 	} else {

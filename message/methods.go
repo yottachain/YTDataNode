@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	host "github.com/yottachain/P2PHost"
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/util"
 
 	"github.com/golang/protobuf/proto"
 	ci "github.com/yottachain/YTCrypto"
@@ -57,15 +59,23 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID string, 
 func (req *UploadShardRequest) GetResponseToClientByCode(code int32, privkey string) ([]byte, error) {
 	var res UploadShard2CResponse
 	if code == 0 {
-		dnsig, err := ci.Sign(privkey, req.VHF)
+		pk, err := util.Libp2pPkey2eosPkey(privkey)
 		if err != nil {
-			res.DNSIGN = dnsig
+			log.Printf("[dn sign]sign fail %s\n", err)
 		}
+		dnsig, err := ci.Sign(pk, req.VHF)
+		if err == nil {
+			res.DNSIGN = dnsig
+		} else {
+			log.Printf("[dn sign]sign fail %s\n", err)
+		}
+
 	}
 	res.RES = code
 	resData, err := proto.Marshal(&res)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[dn sign]%s-%s\n", res.DNSIGN, privkey)
 	return append(MsgIDUploadShard2CResponse.Bytes(), resData...), nil
 }
