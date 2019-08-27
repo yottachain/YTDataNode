@@ -25,7 +25,7 @@ func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
 	maxConn := sn.Config().MaxConn
 	if maxConn == 0 {
-		maxConn = 10
+		maxConn = 50
 	}
 	wh := WriteHandler{sn, uploadTaskPool.New(maxConn)}
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
