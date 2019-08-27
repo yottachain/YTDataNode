@@ -48,7 +48,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	resCode := wh.saveSlice(msg)
 	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
-	res2client, err := msg.GetResponseToClientByCode(resCode)
+	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
 	}

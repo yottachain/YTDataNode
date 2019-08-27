@@ -39,7 +39,7 @@ message VoidResponse  {
 
 message UploadShard2CResponse {
    int32 RES= 1;
-   bytes DNSIGN =2;
+   string DNSIGN =2;
 }
 
 message DownloadShardRequest {
