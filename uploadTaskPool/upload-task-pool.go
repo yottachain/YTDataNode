@@ -102,6 +102,9 @@ func (utp *UploadTaskPool) Get() (*Token, error) {
 }
 
 func (utp *UploadTaskPool) Check(tk *Token) bool {
+	if tk == nil || utp.tokenMap[tk.Index] == nil {
+		return false
+	}
 	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.Index].UUID.Bytes())
 }
 
