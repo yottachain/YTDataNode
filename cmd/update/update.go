@@ -8,7 +8,6 @@ import (
 	_ "github.com/spf13/viper/remote"
 	"github.com/yottachain/YTDataNode/config"
 	"path"
-
 	//"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTDataNode/logger"
 	"net/http"
