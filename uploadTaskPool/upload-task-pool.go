@@ -2,11 +2,11 @@ package uploadTaskPool
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/satori/go.uuid"
-	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
 	"time"
 )
@@ -72,6 +72,7 @@ type UploadTaskPool struct {
 	tokenMap []*Token
 	size     int
 	sync.Mutex
+	WaitToekns chan *Token
 }
 
 func New(size int) *UploadTaskPool {
@@ -79,23 +80,46 @@ func New(size int) *UploadTaskPool {
 		make([]*Token, size),
 		size,
 		sync.Mutex{},
+		make(chan *Token, size),
 	}
 	return &utp
 }
 
 func (utp *UploadTaskPool) Get() (*Token, error) {
-	utp.Lock()
-	defer utp.Unlock()
 	if index := utp.hasFreeToken(); index > -1 {
 		id, err := uuid.NewV4()
 		if err != nil {
 			return nil, err
 		}
 		token := &Token{index, id, time.Now()}
+
+		utp.Lock()
+		defer utp.Unlock()
+
 		utp.tokenMap[index] = token
 		return token, nil
 	} else {
-		log.Printf("[task pool] get token error: free task is 0/n")
+		return nil, fmt.Errorf("upload queue bus")
+	}
+}
+
+func (utp *UploadTaskPool) FillQueue() {
+	go func() {
+		for {
+			tk, err := utp.Get()
+			if err == nil {
+				utp.WaitToekns <- tk
+			}
+			<-time.After(50 * time.Millisecond)
+		}
+	}()
+}
+
+func (utp *UploadTaskPool) GetTokenFromWaitQueue(ctx context.Context) (*Token, error) {
+	select {
+	case tk := <-utp.WaitToekns:
+		return tk, nil
+	case <-ctx.Done():
 		return nil, fmt.Errorf("upload queue bus")
 	}
 }

@@ -1,6 +1,8 @@
 package uploadTaskPool
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -85,4 +87,26 @@ func TestTimeOut(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	index, _ = utp.Get()
 	t.Log(index.Index)
+}
+
+func TestWaitTimeOut(t *testing.T) {
+	utp := New(1)
+	utp.Get()
+	//utp.Put(0)
+	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	start := time.Now()
+	utp.FillQueue()
+
+	go func() {
+		//utp.Put(0)
+		<-time.After(3 * time.Second)
+		utp.Put(0)
+		<-time.After(4 * time.Second)
+		utp.Put(0)
+	}()
+	tk2, err := utp.GetTokenFromWaitQueue(ctx)
+	fmt.Println(tk2, err, time.Now().Sub(start), 2)
+	tk3, err := utp.GetTokenFromWaitQueue(ctx)
+
+	fmt.Println(tk3, err, time.Now().Sub(start), 3)
 }

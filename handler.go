@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
@@ -21,7 +22,9 @@ type WriteHandler struct {
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
-	tk, err := wh.Upt.Get()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	tk, err := wh.Upt.GetTokenFromWaitQueue(ctx)
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {
