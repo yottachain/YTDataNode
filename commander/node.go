@@ -2,7 +2,6 @@ package commander
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
@@ -10,7 +9,6 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/yottachain/YTDataNode/logger"
@@ -147,7 +145,7 @@ func reboot(pid int) {
 	if err != nil {
 		log.Println("[auto update]重启失败", err)
 	}
-	rebootShellPath := path.Join(path.Dir(execPath), "reboot.sh")
+	rebootShellPath := path.Join(execPath, "reboot.sh")
 	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR, 0777)
 	if err == nil {
 		_, err := io.WriteString(file, rebootShell)
@@ -175,12 +173,5 @@ func GetCurrentPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	i := strings.LastIndex(path, "/")
-	if i < 0 {
-		i = strings.LastIndex(path, "\\")
-	}
-	if i < 0 {
-		return "", errors.New(`error: Can't find "/" or "\".`)
-	}
-	return string(path[0 : i+1]), nil
+	return filepath.Dir(path), nil
 }
