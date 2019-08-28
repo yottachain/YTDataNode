@@ -2,12 +2,15 @@ package commander
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"io"
 	"os/signal"
 	"path"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/yottachain/YTDataNode/logger"
@@ -140,7 +143,11 @@ func updateService(c **exec.Cmd) {
 
 func reboot(pid int) {
 	rebootShell := fmt.Sprintf("kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
-	rebootShellPath := path.Join(path.Dir(os.Args[0]), "reboot.sh")
+	execPath, err := GetCurrentPath()
+	if err != nil {
+		log.Println("[auto update]重启失败", err)
+	}
+	rebootShellPath := path.Join(path.Dir(execPath), "reboot.sh")
 	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR, 0777)
 	if err == nil {
 		_, err := io.WriteString(file, rebootShell)
@@ -157,4 +164,23 @@ func reboot(pid int) {
 	} else {
 		log.Println("[auto update]重启失败", err)
 	}
+}
+
+func GetCurrentPath() (string, error) {
+	file, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		return "", err
+	}
+	path, err := filepath.Abs(file)
+	if err != nil {
+		return "", err
+	}
+	i := strings.LastIndex(path, "/")
+	if i < 0 {
+		i = strings.LastIndex(path, "\\")
+	}
+	if i < 0 {
+		return "", errors.New(`error: Can't find "/" or "\".`)
+	}
+	return string(path[0 : i+1]), nil
 }
