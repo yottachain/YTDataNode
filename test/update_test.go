@@ -1,11 +1,12 @@
 package test
 
 import (
-	"github.com/yottachain/YTDataNode/commander"
 	"testing"
+	"time"
 )
 
 func TestGetPath(t *testing.T) {
-	file, _ := commander.GetCurrentPath()
-	t.Log(file)
+	var t1 time.Time
+	t2 := time.Time{}
+	t.Log(t1.Unix() == t2.Unix())
 }

@@ -85,13 +85,13 @@ func New(size int) *UploadTaskPool {
 	return &utp
 }
 
-func (utp *UploadTaskPool) Get() (*Token, error) {
+func (utp *UploadTaskPool) get() (*Token, error) {
 	if index := utp.hasFreeToken(); index > -1 {
 		id, err := uuid.NewV4()
 		if err != nil {
 			return nil, err
 		}
-		token := &Token{index, id, time.Now()}
+		token := &Token{index, id, time.Time{}}
 
 		utp.Lock()
 		defer utp.Unlock()
@@ -103,10 +103,20 @@ func (utp *UploadTaskPool) Get() (*Token, error) {
 	}
 }
 
+func (utp *UploadTaskPool) Get() (*Token, error) {
+	tk, err := utp.get()
+	if err != nil {
+		return nil, err
+	} else {
+		tk.Tm = time.Now()
+		return tk, nil
+	}
+}
+
 func (utp *UploadTaskPool) FillQueue() {
 	go func() {
 		for {
-			tk, err := utp.Get()
+			tk, err := utp.get()
 			if err == nil {
 				utp.WaitToekns <- tk
 			}
@@ -118,6 +128,7 @@ func (utp *UploadTaskPool) FillQueue() {
 func (utp *UploadTaskPool) GetTokenFromWaitQueue(ctx context.Context) (*Token, error) {
 	select {
 	case tk := <-utp.WaitToekns:
+		tk.Tm = time.Now()
 		return tk, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("upload queue bus")
@@ -136,7 +147,8 @@ func (utp *UploadTaskPool) hasFreeToken() int {
 	for index, tk := range utp.tokenMap {
 		if utp.tokenMap[index] == nil {
 			return index
-		} else if time.Now().Sub(tk.Tm).Seconds() > 10 {
+			//	如果token时间不等于初始时间 且token > 10 秒 让出此位置
+		} else if tk.Tm.Unix() != (time.Time{}).Unix() && time.Now().Sub(tk.Tm).Seconds() > 10 {
 			return index
 		}
 	}

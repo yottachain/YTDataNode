@@ -2,7 +2,6 @@ package uploadTaskPool
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 )
@@ -77,6 +76,12 @@ func TestCheckToken(t *testing.T) {
 	}
 }
 
+func TestToken(t *testing.T) {
+	tk := Token{}
+	tk.FillFromString("As5KQYFqzvsushMvPjrxTfc3CUip3GDxqH5ohawXitv6BaLAjNje8L6ZbVZhwtk9cND6oH5sYc8WW1qAZdHNC7eP9bmMnL8JwQcuxp3RekQpaXhjHRXA4jqmsFqz9ACVwxa7441XjUKVfPghDff5nwenAe1PCNYXDeYXP3pb")
+	t.Log(tk.Tm.String())
+}
+
 func TestTimeOut(t *testing.T) {
 	utp := New(10)
 	index, _ := utp.Get()
@@ -91,22 +96,27 @@ func TestTimeOut(t *testing.T) {
 
 func TestWaitTimeOut(t *testing.T) {
 	utp := New(1)
-	utp.Get()
-	//utp.Put(0)
-	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
-	start := time.Now()
 	utp.FillQueue()
-
-	go func() {
-		//utp.Put(0)
-		<-time.After(3 * time.Second)
-		utp.Put(0)
-		<-time.After(4 * time.Second)
-		utp.Put(0)
-	}()
-	tk2, err := utp.GetTokenFromWaitQueue(ctx)
-	fmt.Println(tk2, err, time.Now().Sub(start), 2)
-	tk3, err := utp.GetTokenFromWaitQueue(ctx)
-
-	fmt.Println(tk3, err, time.Now().Sub(start), 3)
+	outTk, err := utp.GetTokenFromWaitQueue(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+	<-time.After(time.Second * 11)
+	if !utp.Check(outTk) {
+		t.Log("pass")
+	} else {
+		t.Error("unpass")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tk, err := utp.GetTokenFromWaitQueue(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+	<-time.After(3 * time.Second)
+	if utp.Check(tk) {
+		t.Log("pass")
+	} else {
+		t.Error("unpass")
+	}
 }
