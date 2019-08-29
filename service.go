@@ -25,7 +25,7 @@ func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
 	maxConn := sn.Config().MaxConn
 	if maxConn == 0 {
-		maxConn = 50
+		maxConn = 100
 	}
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh := WriteHandler{sn, uploadTaskPool.New(maxConn)}

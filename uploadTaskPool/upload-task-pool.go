@@ -120,7 +120,7 @@ func (utp *UploadTaskPool) FillQueue() {
 			if err == nil {
 				utp.WaitToekns <- tk
 			}
-			<-time.After(50 * time.Millisecond)
+			<-time.After(10 * time.Millisecond)
 		}
 	}()
 }
