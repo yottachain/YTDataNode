@@ -4,23 +4,18 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/logger"
-	"io/ioutil"
-	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
-
 	"github.com/libp2p/go-libp2p"
 	circuit "github.com/libp2p/go-libp2p-circuit"
+	"github.com/libp2p/go-libp2p-core/peer"
 	ci "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logger"
+	"io/ioutil"
 )
 
 // Host 节点host
@@ -204,17 +199,17 @@ func InfoFromAddrString(addr string) (*peerstore.PeerInfo, error) {
 	return peerstore.InfoFromP2pAddr(ma)
 }
 
-func setupSigusr1Trap() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
-	go func() {
-		for range c {
-			DumpStacks()
-		}
-	}()
-}
-func DumpStacks() {
-	buf := make([]byte, 1<<20)
-	buf = buf[:runtime.Stack(buf, true)]
-	fmt.Printf("=== BEGIN goroutine stack dump ===\n%s\n=== END goroutine stack dump ===", buf)
-}
+//func setupSigusr1Trap() {
+//	c := make(chan os.Signal, 1)
+//	signal.Notify(c, syscall.SIGUSR1)
+//	go func() {
+//		for range c {
+//			DumpStacks()
+//		}
+//	}()
+//}
+//func DumpStacks() {
+//	buf := make([]byte, 1<<20)
+//	buf = buf[:runtime.Stack(buf, true)]
+//	fmt.Printf("=== BEGIN goroutine stack dump ===\n%s\n=== END goroutine stack dump ===", buf)
+//}
