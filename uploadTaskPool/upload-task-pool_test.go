@@ -78,8 +78,8 @@ func TestCheckToken(t *testing.T) {
 
 func TestToken(t *testing.T) {
 	tk := Token{}
-	tk.FillFromString("kY24EtxXGgoiNm9LfNBVnhPehfMYczCDS5zD88ogbv9Ksg7bx2wCsMHYsF5MjHPT16cQbFzW6W49D4fbD19EY4KzkxSnj5RGB9FWmLdhocc8zzWmeTNRWkgAr9AQrEP2bcB96k3ofetYWa57zHSPECuD5gJ4n3ATNoBxp2TV9")
-	t.Log(tk.Tm.String())
+	tk.FillFromString("As5KQYFqzvsushMvPjrxTfc3CUip3GDxqH5ohawXitv6BaLAjNje8L6ZbVZhwtk9cND6oH5sYc8WW1qAZdHNC7eP9bmMnL8JwQcuxp3RekQpaXhjHRXA4midZB8CoLZsZv992QsvgcbMSgAyMcueBShpEfd4HGeDyN6prvoh")
+	t.Log(tk.Tm.String(), tk.Index, tk.UUID)
 }
 
 func TestTimeOut(t *testing.T) {

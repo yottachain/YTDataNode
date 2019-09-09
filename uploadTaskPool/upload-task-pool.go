@@ -143,6 +143,8 @@ func (utp *UploadTaskPool) Check(tk *Token) bool {
 }
 
 func (utp *UploadTaskPool) hasFreeToken() int {
+	utp.Lock()
+	defer utp.Unlock()
 	var i = -1
 	for index, tk := range utp.tokenMap {
 		if utp.tokenMap[index] == nil {
