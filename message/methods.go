@@ -5,7 +5,7 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
-	host "github.com/yottachain/P2PHost"
+	host "github.com/yottachain/YTDataNode/host"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
 

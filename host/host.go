@@ -25,6 +25,9 @@ type Host struct {
 	privKey    ci.PrivKey
 }
 
+type PubKey ci.PubKey
+type PrivKey ci.PrivKey
+
 // NewP2PHost 创建p2p节点
 func NewP2PHost() *Host {
 	var h Host
