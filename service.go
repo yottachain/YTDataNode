@@ -6,7 +6,6 @@ import (
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"os"
-	"sync"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -14,7 +13,6 @@ import (
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-	"github.com/yottachain/YTFS/common"
 
 	ytfs "github.com/yottachain/YTFS"
 )
@@ -34,14 +32,8 @@ func (sn *storageNode) Service() {
 		tokenInterval = 50
 	}
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := WriteHandler{
-		sn,
-		uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond),
-		make(map[common.IndexTableKey][]byte, 32),
-		make(chan error),
-		sync.RWMutex{},
-	}
-	wh.Upt.FillQueue()
+	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
+	wh.Run()
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
 		return wh.GetToken(data)
 	})

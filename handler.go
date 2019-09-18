@@ -7,7 +7,6 @@ import (
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"sync"
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -19,28 +18,59 @@ import (
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	Upt        *uploadTaskPool.UploadTaskPool
-	shardCache map[common.IndexTableKey][]byte
-	result     chan error
-	sync.RWMutex
+	Upt          *uploadTaskPool.UploadTaskPool
+	RequestQueue chan *wRequest
 }
 
-func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) {
-	wh.Lock()
-	defer wh.Unlock()
-	if len(wh.shardCache) >= 32 {
-		wh.traying()
-	}
-	wh.shardCache[key] = data
-	select {
-	case err := <-wh.result:
-		return err
+func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
+	return &WriteHandler{
+		sn,
+		utp,
+		make(chan *wRequest, 1000),
 	}
 }
-func (wh *WriteHandler) traying() {
-	defer func() { wh.shardCache = make(map[common.IndexTableKey][]byte, 32) }()
-	_, err := wh.YTFS().BatchPut(wh.shardCache)
-	wh.result <- err
+
+type wRequest struct {
+	Key   common.IndexTableKey
+	Data  []byte
+	Error chan error
+}
+
+func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
+	rq := &wRequest{
+		key,
+		data,
+		make(chan error),
+	}
+	wh.RequestQueue <- rq
+	return <-rq.Error
+}
+func (wh *WriteHandler) batchWrite(number int) {
+	rqmap := make(map[common.IndexTableKey][]byte, number)
+	rqs := make([]*wRequest, number)
+	for i := 0; i < number; i++ {
+		rq := <-wh.RequestQueue
+		rqmap[rq.Key] = rq.Data
+		rqs[i] = rq
+	}
+	_, err := wh.YTFS().BatchPut(rqmap)
+	log.Printf("[ytfs]flush success:%d\n", number)
+	for _, rq := range rqs {
+		rq.Error <- err
+	}
+}
+
+func (wh *WriteHandler) Run() {
+	wh.Upt.FillQueue()
+	go func() {
+		var flushInterval time.Duration = time.Millisecond * 100
+		for {
+			<-time.After(flushInterval)
+			if n := len(wh.RequestQueue); n > 0 {
+				wh.batchWrite(n)
+			}
+		}
+	}()
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
@@ -121,7 +151,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	// 3. 将数据写入YTFS-disk
 	var indexKey [32]byte
 	copy(indexKey[:], msg.VHF[0:32])
-	err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.push(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" {

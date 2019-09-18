@@ -36,7 +36,7 @@ func (utp *UploadTaskPool) FillQueue() {
 			if atomic.LoadInt32(&utp.runCount) <= int32(utp.cap) {
 				utp.tokenBuket.Put(NewToken())
 			}
-			<-time.After(utp.fillTokenInterval)
+			//<-time.After(utp.fillTokenInterval)
 		}
 	}()
 	go func() {

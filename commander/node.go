@@ -146,6 +146,7 @@ func reboot(pid int) {
 		log.Println("[auto update]重启失败", err)
 	}
 	rebootShellPath := path.Join(execPath, "reboot.sh")
+
 	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR, 0777)
 	if err == nil {
 		_, err := io.WriteString(file, rebootShell)
