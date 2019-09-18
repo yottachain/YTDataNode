@@ -7,6 +7,7 @@ import (
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
+	"sync"
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -18,7 +19,28 @@ import (
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	Upt *uploadTaskPool.UploadTaskPool
+	Upt        *uploadTaskPool.UploadTaskPool
+	shardCache map[common.IndexTableKey][]byte
+	result     chan error
+	sync.RWMutex
+}
+
+func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) {
+	wh.Lock()
+	defer wh.Unlock()
+	if len(wh.shardCache) >= 32 {
+		wh.traying()
+	}
+	wh.shardCache[key] = data
+	select {
+	case err := <-wh.result:
+		return err
+	}
+}
+func (wh *WriteHandler) traying() {
+	defer func() { wh.shardCache = make(map[common.IndexTableKey][]byte, 32) }()
+	_, err := wh.YTFS().BatchPut(wh.shardCache)
+	wh.result <- err
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
