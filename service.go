@@ -27,9 +27,12 @@ func (sn *storageNode) Service() {
 	if maxConn == 0 {
 		maxConn = 100
 	}
+	tokenInterval := sn.Config().TokenInterval
+	if tokenInterval == 0 {
+		tokenInterval = 50
+	}
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := WriteHandler{sn, uploadTaskPool.New(maxConn)}
-	// 按一定速率填充队列
+	wh := WriteHandler{sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond)}
 	wh.Upt.FillQueue()
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
 		return wh.GetToken(data)

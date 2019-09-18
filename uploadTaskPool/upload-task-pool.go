@@ -1,168 +1,93 @@
 package uploadTaskPool
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"fmt"
-	"github.com/mr-tron/base58/base58"
-	"github.com/satori/go.uuid"
-	"sync"
+	log "github.com/yottachain/YTDataNode/logger"
+	"sync/atomic"
 	"time"
 )
 
-type Token struct {
-	Index int
-	UUID  uuid.UUID
-	Tm    time.Time
-}
-
-func (tk *Token) Bytes() []byte {
-	buf := bytes.NewBuffer([]byte{})
-	ed := gob.NewEncoder(buf)
-	if tk == nil {
-		return []byte{}
-	}
-	ed.Encode(tk)
-
-	return buf.Bytes()
-}
-
-func (tk *Token) FillFromBytes(tkdata []byte) error {
-	buf := bytes.NewReader(tkdata)
-	dd := gob.NewDecoder(buf)
-	return dd.Decode(tk)
-}
-
-func (tk *Token) FillFromString(tkstring string) error {
-	data, err := base58.Decode(tkstring)
-	if err != nil {
-		return err
-	}
-	buf := bytes.NewReader(data)
-	dd := gob.NewDecoder(buf)
-	return dd.Decode(tk)
-}
-
-func NewTokenFromBytes(tkdata []byte) (*Token, error) {
-	tk := new(Token)
-	err := tk.FillFromBytes(tkdata)
-	if err != nil {
-		return nil, err
-	} else {
-		return tk, nil
-	}
-}
-
-func NewTokenFromString(tkstring string) (*Token, error) {
-	tk := new(Token)
-	err := tk.FillFromString(tkstring)
-	if err != nil {
-		return nil, err
-	} else {
-		return tk, nil
-	}
-}
-
-func (tk *Token) String() string {
-	return base58.Encode(tk.Bytes())
-}
-
 type UploadTaskPool struct {
-	tokenMap []*Token
-	size     int
-	sync.Mutex
-	WaitToekns chan *Token
+	cap               int
+	ttl               time.Duration
+	fillTokenInterval time.Duration
+	tokenBuket        *TokenBucket
+	changeTime        atomic.Value
+	runCount          int32
 }
 
-func New(size int) *UploadTaskPool {
+func New(size int, ttl time.Duration, fillTokenInterval time.Duration) *UploadTaskPool {
 	utp := UploadTaskPool{
-		make([]*Token, size),
 		size,
-		sync.Mutex{},
-		make(chan *Token, size),
+		ttl,
+		fillTokenInterval,
+		NewTokenBucket(size, ttl),
+		atomic.Value{},
+		0,
 	}
+	utp.changeTime.Store(time.Now())
 	return &utp
-}
-
-func (utp *UploadTaskPool) get() (*Token, error) {
-	if index := utp.hasFreeToken(); index > -1 {
-		id, err := uuid.NewV4()
-		if err != nil {
-			return nil, err
-		}
-		token := &Token{index, id, time.Time{}}
-
-		utp.Lock()
-		defer utp.Unlock()
-
-		utp.tokenMap[index] = token
-		return token, nil
-	} else {
-		return nil, fmt.Errorf("upload queue bus")
-	}
-}
-
-func (utp *UploadTaskPool) Get() (*Token, error) {
-	tk, err := utp.get()
-	if err != nil {
-		return nil, err
-	} else {
-		tk.Tm = time.Now()
-		return tk, nil
-	}
 }
 
 func (utp *UploadTaskPool) FillQueue() {
 	go func() {
 		for {
-			tk, err := utp.get()
-			if err == nil {
-				utp.WaitToekns <- tk
+			if atomic.LoadInt32(&utp.runCount) <= int32(utp.cap) {
+				utp.tokenBuket.Put(NewToken())
 			}
-			<-time.After(10 * time.Millisecond)
+			<-time.After(utp.fillTokenInterval)
+		}
+	}()
+	go func() {
+		for {
+			log.Printf("[task pool]push token interval %f\n", utp.fillTokenInterval.Seconds())
+			<-time.After(time.Minute)
 		}
 	}()
 }
 
+func (utp *UploadTaskPool) ChangePushTokenInterval(d time.Duration) {
+	if d < 10*time.Millisecond {
+		utp.fillTokenInterval = 10 * time.Millisecond
+	} else if d > 1000*time.Millisecond {
+		utp.fillTokenInterval = 1000 * time.Millisecond
+	} else {
+		utp.fillTokenInterval = d
+	}
+}
+
 func (utp *UploadTaskPool) GetTokenFromWaitQueue(ctx context.Context) (*Token, error) {
-	select {
-	case tk := <-utp.WaitToekns:
-		tk.Tm = time.Now()
+	tk := utp.tokenBuket.Get(ctx)
+	if tk != nil {
 		return tk, nil
-	case <-ctx.Done():
+	} else {
+
+		if time.Now().Sub(utp.changeTime.Load().(time.Time)) > time.Second*10 {
+			utp.ChangePushTokenInterval(utp.fillTokenInterval - 1*time.Millisecond)
+			utp.changeTime.Store(time.Now())
+			log.Printf("[task pool]change fillTokenInterval %f\n", utp.fillTokenInterval.Seconds())
+		}
+
 		return nil, fmt.Errorf("upload queue bus")
 	}
 }
 
 func (utp *UploadTaskPool) Check(tk *Token) bool {
-	if tk == nil || utp.tokenMap[tk.Index] == nil {
-		return false
+	res := utp.tokenBuket.Check(tk)
+	if res == false && time.Now().Sub(utp.changeTime.Load().(time.Time)) > time.Second*10 {
+		utp.ChangePushTokenInterval(utp.fillTokenInterval + 10*time.Millisecond)
+		log.Printf("[task pool]change fillTokenInterval %f\n", utp.fillTokenInterval.Seconds())
+		utp.changeTime.Store(time.Now())
 	}
-	return bytes.Equal(tk.UUID.Bytes(), utp.tokenMap[tk.Index].UUID.Bytes())
+	return res
 }
 
-func (utp *UploadTaskPool) hasFreeToken() int {
-	utp.Lock()
-	defer utp.Unlock()
-	var i = -1
-	for index, tk := range utp.tokenMap {
-		if utp.tokenMap[index] == nil {
-			return index
-			//	如果token时间不等于初始时间 且token > 10 秒 让出此位置
-		} else if tk.Tm.Unix() != (time.Time{}).Unix() && time.Now().Sub(tk.Tm).Seconds() > 10 {
-			return index
-		}
-	}
-	return i
+func (utp *UploadTaskPool) Do() {
+	log.Printf("[task pool][task start]task count %d\n", utp.runCount)
+	atomic.AddInt32(&utp.runCount, 1)
 }
-
-func (utp *UploadTaskPool) Put(index int) {
-	utp.Lock()
-	defer utp.Unlock()
-	if index > utp.size {
-		return
-	}
-	utp.tokenMap[index] = nil
-
+func (utp *UploadTaskPool) Done() {
+	log.Printf("[task pool][task end]task count %d\n", utp.runCount)
+	atomic.AddInt32(&utp.runCount, -1)
 }

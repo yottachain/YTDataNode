@@ -44,6 +44,10 @@ func (wh *WriteHandler) GetToken(data []byte) []byte {
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte) []byte {
+	// 开始处理任务占用处理器数量
+	wh.Upt.Do()
+	// 结束任务减少处理器数量
+	defer wh.Upt.Done()
 	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
@@ -67,7 +71,6 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 		return 105
 	}
 	tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId)
-	defer wh.Upt.Put(tk.Index)
 	if err != nil {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)

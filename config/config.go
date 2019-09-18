@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -22,17 +23,18 @@ type peerInfo struct {
 
 // Config 配置
 type Config struct {
-	ID         string `json:"ID"`
-	privKey    ci.PrivKey
-	PubKey     string
-	BPList     []peerInfo `json:"BPList"`
-	Adminacc   string     `json:"Adminacc"`
-	Relay      bool       `json:"Relay"`
-	ListenAddr string     `json:"ListenAddr"`
-	APIListen  string     `json:"APIListen"`
-	IndexID    uint32     `json:"IndexID"`
-	PoolID     string     `json:"PoolID"`
-	MaxConn    int        `json:"MaxConn"`
+	ID            string `json:"ID"`
+	privKey       ci.PrivKey
+	PubKey        string
+	BPList        []peerInfo    `json:"BPList"`
+	Adminacc      string        `json:"Adminacc"`
+	Relay         bool          `json:"Relay"`
+	ListenAddr    string        `json:"ListenAddr"`
+	APIListen     string        `json:"APIListen"`
+	IndexID       uint32        `json:"IndexID"`
+	PoolID        string        `json:"PoolID"`
+	MaxConn       int           `json:"MaxConn"`
+	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
 }
 
@@ -230,7 +232,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 8
+	return 9
 }
 
 func Version() uint32 {
@@ -241,11 +243,3 @@ func (cfg Config) ResetYTFSOptions(opts *ytfsOpts.Options) Config {
 	cfg.Options = opts
 	return cfg
 }
-
-//func (cfg *Config) PubKeyString() string {
-//	key, err := util.GetPublicKey(cfg.PrivKeyString())
-//	if err != nil {
-//		log.Println(err, cfg.PrivKeyString())
-//	}
-//	return key
-//}
