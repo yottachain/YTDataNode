@@ -1,10 +1,20 @@
-maxSpace: 268435456
+maxSpace: 131072
+
+ytfsNodePath: /Users/mac/go/src/github.com/yottachain/YTDataNode/out/ytfs-node
+signerPath: /Users/mac/go/src/github.com/yottachain/YTDataNode/out/ytfs-signer
+
 dep:
-  name: test12341234
-  key: 5JWUif6MMtT8vMqH7GTQup5sMbkPN93zAaSFejm4nWhDHWtJHQi
+  name: username1234
+  key: 5JcDH48njDbUQLu1R8SWwKsfWLnqBpWXDDiCgxFC3hioDuwLhVx
 miner:
   name: test12341234
   key: 5JWUif6MMtT8vMqH7GTQup5sMbkPN93zAaSFejm4nWhDHWtJHQi
 pool:
-  name: storePool11
-  key:
+  name: storepool11
+  key: 5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ
+
+beneficial:
+  name: storename123
+
+env:
+  - ytfs_path=/Users/mac/YTFS2

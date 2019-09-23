@@ -128,7 +128,7 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 
 func getBPList() []peerInfo {
 	var bplist []peerInfo
-	//var bpconfigurl = "http://download.yottachain.io/config/bp.json"
+	//var bpconfigurl = "http://download.yottachain.io/config/bp-test.json"
 	//if url, ok := os.LookupEnv("bp-config-url"); ok {
 	//	bpconfigurl = url
 	//}
@@ -145,92 +145,33 @@ func getBPList() []peerInfo {
 	//	os.Exit(1)
 	//}
 	jsdata := `
-    [
+
+[
     {
-      "ID": "16Uiu2HAmTT47W5sBd2oF6MMwft8GAqDyZJFXc2HVit3oQ8p4jijh",
-      "Addrs": ["/ip4/106.52.13.73/tcp/9999"]
+
+      "ID": "16Uiu2HAmPqE8R8U7CHRsKrNw9aVjdxUrGUEWBvNPGsVbaCBxrLkt",
+      "Addrs": ["/ip4/49.234.139.206/tcp/9999"]
     },
     {
-      "ID": "16Uiu2HAm3Rea9AGSJYZLgU3ZqdzNoZfb5UUmYF8SAN7FH97HNauq",
-      "Addrs": ["/ip4/129.28.188.167/tcp/9999"]
+
+      "ID": "16Uiu2HAmR7VVxjZ516FkXmjoeAaMQ5UBEtqR1xPDmFhLi1ivb5GP",
+      "Addrs": ["/ip4/129.211.72.15/tcp/9999"]
     },
     {
-      "ID": "16Uiu2HAmUhi4iTzvqoJZUJeomnemhWVAf8Vmy25nrPA7HzpAEbm9",
-      "Addrs": ["/ip4/139.155.106.14/tcp/9999"]
+
+      "ID": "16Uiu2HAm1h55uTrWXATukWgMwKdYEEdSbkUpCwfSc2fznfebNcJL",
+      "Addrs": ["/ip4/122.152.203.189/tcp/9999"]
     },
     {
-      "ID": "16Uiu2HAmNi1Ht6AFHRCSNeBja5ej6WNVNf3ghFKPdNJ9uDsApXvT",
-      "Addrs": ["/ip4/39.105.24.143/tcp/9999"]
+      "ID": "16Uiu2HAmCtczNYRxsUj4xi4jMGFsfxn1oKYsbSLAYNsJZkJJLgsZ",
+      "Addrs": ["/ip4/212.129.153.253/tcp/9999"]
     },
     {
-      "ID": "16Uiu2HAmLXRAj6ntKgzAQ8PwHqUmqHUhhRRekHknzwPHoK4HEHuX",
-      "Addrs": ["/ip4/47.104.13.155/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm2JAGMgSmHmwg5UA7L6RpqTm1F5Dc6xVqyDjY7HM73TLB",
-      "Addrs": ["/ip4/106.15.235.83/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmE83eDy4ypdMokJmdecUFJKPB3iCEQbu5qeR36V2sCiwF",
-      "Addrs": ["/ip4/118.190.38.93/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm3mTmdKt48HFhkjZ2qqUTyBH79xkW4TFfPwMzwnZiDcXT",
-     "Addrs": ["/ip4/112.125.27.112/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmPcsnLY8fnU9qzN4hJrTtARJL2CrF3DXNK5uSEASLXXBJ",
-      "Addrs": ["/ip4/129.28.191.41/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm75hpYM7SXomQaTWjoNU5xQrpUmm7naoUJEeWKKXq3Lei",
-      "Addrs": ["/ip4/39.104.164.98/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmCT9SEfxzCaTUQnzuh7wQU5EQFR1dmtebwd7HjKWR3zj1",
-      "Addrs": ["/ip4/47.112.150.170/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmKwHyu5xjkj8urA6UcssWyu93PowU5Uk83FehVBTv7JsR",
-      "Addrs": ["/ip4/47.97.217.154/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmQbcFyWzRfiHjnsekzcvcFSPFXae8bUoa7F3YpjdwiSh8",
-      "Addrs": ["/ip4/120.92.140.173/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmThsJVyAuz1cc6M33yKhe36WDfBocp9BfDTDGSDQync8G",
-      "Addrs": ["/ip4/112.74.173.232/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm7MeyYNqupFB32axs3zzcGBwzHLAZeDCTRebaUnmXPAFe",
-      "Addrs": ["/ip4/152.136.14.175/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmRd62XLp5bbCU1yhXkgv2N59NizPPBnaaGYWQsm2V1evM",
-      "Addrs": ["/ip4/39.105.98.237/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmV6kpceDrpojkfi7qPVhrWpaSE9UjmznzszyMuRNxn7je",
-      "Addrs": ["/ip4/39.98.54.152/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAmUPU1RR9ASUqwYaA8N9xyk6T8qY9wN4JbTBZH71cBZJm2",
-      "Addrs": ["/ip4/39.104.201.48/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm8iV5UhQHRd2EXSjB1hCKUYwedVzbt4iUncuCJ99ddGNs",
-      "Addrs": ["/ip4/47.112.138.94/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm8jAW9tfocDdsqEV83Vni1L4bfc7X4oDm1N5A9HHhjwj5",
-      "Addrs": ["/ip4/47.106.202.196/tcp/9999"]
-    },
-    {
-      "ID": "16Uiu2HAm5B6Zgp91hzzdQywTU3xphKsXnnEbTD2UE61rxzm7Qwpc",
-      "Addrs": ["/ip4/62.234.163.238/tcp/9999"]
+      "ID": "16Uiu2HAmSXfk5mgmZd2YmA5Aug23vCdUesRuVEeCHSFUDeX2GxWv",
+      "Addrs": ["/ip4/49.235.52.30/tcp/9999"]
     }
   ]
+
 `
 	buf := bytes.NewBufferString(jsdata)
 	json.Unmarshal(buf.Bytes(), &bplist)

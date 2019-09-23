@@ -60,11 +60,11 @@ func main() {
 	if err != nil {
 		log.Println("签名失败:", err)
 	}
-	log.Println("交易签名：")
+	fmt.Println("交易签名：")
 	buf, _ := json.Marshal(res)
-	log.Println("-----------签名结果-----------")
-	log.Println(string(buf))
-	log.Println("-----------------------------")
+	fmt.Println("-----------签名结果-----------")
+	fmt.Println(string(buf))
+	fmt.Println("-----------------------------")
 }
 
 func getPubkey() []ecc.PublicKey {
