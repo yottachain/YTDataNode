@@ -1,15 +1,21 @@
 package main
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
+	"github.com/eoscanada/eos-go"
+	"github.com/eoscanada/eos-go/ecc"
 	"github.com/spf13/viper"
-	log "github.com/yottachain/YTDataNode/logger"
+	register_api "github.com/yottachain/YTDataNode/cmd/register-api"
+	"github.com/yottachain/YTDataNode/commander"
+	"github.com/yottachain/YTDataNode/config"
+	"math/rand"
 	"os"
-	"os/exec"
+	"strings"
+	"time"
 )
 
-var maxSpace int64 = 268435456
+var maxSpace int64 = 4096
 var key1 string // 抵押私钥
 var key2 string // 矿机管理员私钥
 var key3 string // 矿池私钥
@@ -24,32 +30,48 @@ var configPath string
 var ytfsNodePath string
 var ytfsSignerPath string
 
+var minerId uint64
+
+var snList = []string{
+	"49.234.139.206",
+	"129.211.72.15",
+	"122.152.203.189",
+	"212.129.153.253",
+	"49.235.52.30",
+}
+
+var baseNodeUrl = "http://49.234.139.206:8888"
+var api *register_api.API
+
+var currsn string
+
 func main() {
-	log.Println("最大空间:", maxSpace)
-	log.Println("抵押账号:", depAN, "-", key1)
-	log.Println("矿机管理员:", adminAN, "-", key2)
-	log.Println("矿池管理员:", poolAdminAN, "-", key3)
-	log.Println("收益账号:", beneficialAN)
-	log.Println("ytfs-node 路径:", ytfsNodePath)
-	log.Println("ytfs-signer 路径:", ytfsSignerPath)
-	log.Println("开始注册...")
+	fmt.Println("最大空间:", maxSpace)
+	fmt.Println("抵押账号:", depAN, "-", key1)
+	fmt.Println("矿机管理员:", adminAN, "-", key2)
+	fmt.Println("矿池管理员:", poolAdminAN, "-", key3)
+	fmt.Println("收益账号:", beneficialAN)
+	fmt.Println("ytfs-node 路径:", ytfsNodePath)
+	fmt.Println("ytfs-signer 路径:", ytfsSignerPath)
+	fmt.Println("开始注册...")
 	register()
+	addPool()
 }
 
 func init() {
 	configPath = os.Args[1]
 	file, err := os.OpenFile(configPath, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
 	viper.SetConfigType("yaml")
 	err = viper.ReadConfig(file)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
 	maxSpace = viper.GetInt64("maxSpace")
 	if maxSpace <= 0 {
-		maxSpace = 268435456
+		maxSpace = 20
 	}
 	key1 = viper.GetString("dep.key")
 	key2 = viper.GetString("miner.key")
@@ -64,71 +86,162 @@ func init() {
 	ytfsSignerPath = viper.GetString("signerPath")
 
 	envs = viper.GetStringSlice("env")
+	for _, v := range envs {
+		str := strings.Split(v, "=")
+		os.Setenv(str[0], str[1])
+	}
+
+	snList = viper.GetStringSlice("snips")
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	snindex := r.Int() % len(snList)
+	fmt.Println("snindex:", snindex)
+	currsn = snList[snindex]
+
+	if bu := viper.GetString("baseNodeUrl"); bu != "" {
+		baseNodeUrl = bu
+	}
+	api = &register_api.API{
+		eos.New(baseNodeUrl),
+		currsn,
+	}
 }
 
 func register() {
-	//cmdin, _ := os.OpenFile(path.Join(path.Dir(configPath), "in"), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	//mcin := io.MultiWriter(os.Stdout, cmdin)
-	var next bool = false
-	var actionStr chan string = make(chan string)
 
-	cmd := exec.Command(ytfsNodePath, "register")
-	cmd.Env = envs
-	//cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
-	out, _ := cmd.StdoutPipe()
-	scaner := bufio.NewScanner(out)
-	go func() {
-		for scaner.Scan() {
-			if next {
-				actionStr <- scaner.Text()
-			}
-			if scaner.Text() == "请对如下交易进行签名并粘贴:" {
-				next = true
-			}
-			fmt.Println("-", scaner.Text())
-		}
-	}()
-
-	w, _ := cmd.StdinPipe()
-	cmd.Start()
-	fmt.Fprintf(w, "%c\n", 'y')
-	fmt.Fprintf(w, "%d\n", maxSpace*16/1024/1024)
-	fmt.Fprintf(w, "%d\n", 14)
-	fmt.Fprintln(w, depAN)
-	fmt.Fprintln(w, maxSpace*16*1024)
-	fmt.Fprintln(w, adminAN)
-
-	select {
-	case act := <-actionStr:
-		println(act)
-		res := signer(act, key1)
-		fmt.Fprintf(w, "%s\n", res)
-		fmt.Fprintf(w, "%c\n", 'y')
+	err := commander.InitBySignleStorage(uint64(maxSpace*(1<<30)), 1<<14)
+	if err != nil {
+		fmt.Println("初始化失败", err)
 	}
-	cmd.Wait()
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
+	id, err := api.GetNewMinerID()
+	fmt.Println(id, err)
+	minerId = id
+	md := register_api.MinerData{
+		id,
+		eos.AN(adminAN),
+		eos.AN(depAN),
+		register_api.NewYTAAssect(maxSpace),
+		cfg.PubKey,
+	}
+	action := &eos.Action{
+		Account: eos.AN("hddpool12345"),
+		Name:    eos.ActN("newminer"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: eos.AN(depAN), Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(md),
+	}
+	txOpts := &eos.TxOptions{}
+	txOpts.FillFromChain(api.API)
+	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
+	tx2 := signer(tx, key1)
+	err = api.PushTransactionToSN(tx2, ":8082/preregnode")
+	if err != nil {
+		fmt.Println(err)
+	}
+	cfg.Adminacc = adminAN
+	cfg.IndexID = uint32(md.MinerID)
+
+	if len(os.Args) == 3 && os.Args[2] != "" {
+		cfg.Storages[0].StorageName = os.Args[2]
+		cfg.Storages[0].StorageType = 1
+	}
+
+	cfg.Save()
+}
+func addPool() {
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
+	pi, err := getPoolInfo(poolAdminAN)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	apd := register_api.ADDPoolData{
+		minerId,
+		eos.AN(pi[0].PoolID),
+		eos.AN(adminAN),
+		uint64(maxSpace * (1 << 30) / (1 << 14)),
+	}
+	action := eos.Action{
+		Account: eos.AN("hddpool12345"),
+		Name:    eos.ActN("addm2pool"),
+		Authorization: []eos.PermissionLevel{
+			{Actor: eos.AN(adminAN), Permission: eos.PN("active")},
+			{Actor: eos.AN(pi[0].PoolOwner), Permission: eos.PN("active")},
+		},
+		ActionData: eos.NewActionData(apd),
+	}
+	txOpts := &eos.TxOptions{}
+	txOpts.FillFromChain(api.API)
+	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{&action}, txOpts))
+	tx2 := signer(tx, key2, key3)
+	err = api.PushTransactionToSN(tx2, ":8082/changeminerpool")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("初始化成功")
+	}
+	cfg.PoolID = poolAdminAN
+	cfg.Save()
 }
 
-func signer(tx string, keys ...string) string {
-	var signedTx chan string = make(chan string)
-	var next bool = false
-	cmd := exec.Command(ytfsSignerPath, keys...)
-	out, _ := cmd.StdoutPipe()
-	w, _ := cmd.StdinPipe()
-	scaner := bufio.NewScanner(out)
-	go func() {
-		for scaner.Scan() {
-			if next {
-				fmt.Println("-----------签名结果-----------:")
-				fmt.Println(scaner.Text())
-				signedTx <- scaner.Text()
-			}
-			if scaner.Text() == "-----------签名结果-----------" {
-				next = true
-			}
+func signer(tx *eos.SignedTransaction, keys ...string) *eos.SignedTransaction {
+	var kb = eos.NewKeyBag()
+	for _, v := range keys {
+		if err := kb.ImportPrivateKey(v); err != nil {
+			fmt.Println(err)
 		}
-	}()
-	cmd.Start()
-	fmt.Fprintln(w, tx)
-	return <-signedTx
+	}
+	txopts := &eos.TxOptions{}
+	txopts.FillFromChain(api.API)
+	res, err := kb.Sign(tx, txopts.ChainID, getPubkey(kb)...)
+	if err != nil {
+		fmt.Println("签名失败:", err)
+	} else {
+		buf, _ := json.Marshal(res)
+		fmt.Println(string(buf), kb)
+	}
+
+	return res
+}
+
+func getPubkey(kb *eos.KeyBag) []ecc.PublicKey {
+	var pkeys = make([]ecc.PublicKey, len(kb.Keys))
+	for k, v := range kb.Keys {
+		pkeys[k] = v.PublicKey()
+	}
+	return pkeys
+}
+
+type PoolInfo []struct {
+	PoolID    string `json:"pool_id"`
+	PoolOwner string `json:"pool_owner"`
+	MaxSpace  uint64 `json:"max_space"`
+}
+
+func getPoolInfo(poolID string) (PoolInfo, error) {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hddpool12345",
+		Scope:      "hddpool12345",
+		Table:      "storepool",
+		Index:      "1",
+		Limit:      1,
+		LowerBound: poolID,
+		UpperBound: poolID,
+		JSON:       true,
+		KeyType:    "name",
+	})
+	if err != nil {
+		return nil, err
+	}
+	var res PoolInfo
+	json.Unmarshal(out.Rows, &res)
+	return res, nil
 }
