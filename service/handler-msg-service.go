@@ -10,7 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 )
 
-type handlerFunc func(msgData []byte) []byte
+type handlerFunc func(msgData []byte, stm *host.MsgStream) []byte
 
 // HandlerMap 消息处理器列表
 type HandlerMap map[int32]handlerFunc
@@ -38,7 +38,7 @@ func (hm *HandleMsgService) RegitsterHandler(protocol string, msgType int32, han
 func (hm *HandleMsgService) Service() {
 	for protocol, hmp := range hm.handler {
 		hm.host.HandleMessage(protocol, func(data *host.MsgStream) {
-			log.Println("new connect：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
+			//log.Println("new connect：", data.Conn().RemoteMultiaddr().String()+"/p2p/"+data.Conn().RemotePeer().Pretty())
 			//info := hm.host.Peerstore().PeerInfo(data.Conn().RemotePeer())
 			//for i, addr := range info.Addrs {
 			//	log.Printf("address:[%d]: %s", i, addr.String())
@@ -50,7 +50,7 @@ func (hm *HandleMsgService) Service() {
 				log.Println(fmt.Sprintf("%c[0;0;31m content len error : %d%c[0m\n", 0x1B, len(content), 0x1B))
 			} else {
 				if hmp[msgType] != nil {
-					data.SendMsgClose(hmp[msgType](msgData))
+					data.SendMsgClose(hmp[msgType](msgData, data))
 				}
 			}
 		})

@@ -147,7 +147,7 @@ func reboot(pid int) {
 	}
 	rebootShellPath := path.Join(execPath, "reboot.sh")
 
-	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR, 0777)
+	file, err := os.OpenFile(rebootShellPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
 	if err == nil {
 		_, err := io.WriteString(file, rebootShell)
 		if err == nil {

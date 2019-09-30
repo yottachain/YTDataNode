@@ -3,7 +3,9 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/host"
 	"github.com/yottachain/YTDataNode/logger"
+	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"os"
 
@@ -34,23 +36,36 @@ func (sn *storageNode) Service() {
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
 	wh.Run()
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		return wh.GetToken(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		return wh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		dh := DownloadHandler{sn}
 		return dh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		fmt.Println(data)
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		sch := SpotCheckHandler{sn}
 		return sch.Handle(data)
+	})
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDTaskDescript.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
+		rce, err := rc.New(sn.host, sn.ytfs)
+		if err != nil {
+			log.Printf("[recover]init error %s\n", err.Error())
+		}
+		go func() {
+			if err := rce.HandleMsg(msgData, stm); err == nil {
+				log.Println("[recover]error", err)
+			}
+		}()
+
+		return message.MsgIDVoidResponse.Bytes()
 	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)

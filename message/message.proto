@@ -34,9 +34,6 @@ message UploadShardResponse  {
    bytes USERSIGN=5;
 }
 
-message VoidResponse  {
-}
-
 message UploadShard2CResponse {
    int32 RES= 1;
    string DNSIGN =2;
@@ -84,23 +81,6 @@ message StatusRepResp {
     string relayUrl=2;                 
 }
 
-message P2PLocation{
-    string nodeId=1;
-    repeated string addrs=2;
-}
-
-message TaskDescription{
-    int64 id = 1; 
-    repeated bytes dataHash=2;
-    repeated bytes parityHash=3;
-    repeated P2PLocation locations=4;
-    repeated int32 recoverId=5;
-}
-
-message TaskOpResult{
-    int64 id = 1; 
-    int32 RES=2;
-}
 message StringMsg{
     string msg=1;
 }
@@ -122,3 +102,53 @@ message SpotCheckStatus{
     string taskId = 1;
     repeated int32 invalidNodeList=2;
 }
+
+//RS编码重建任务
+//msgid=0xd761
+message TaskDescription{
+    bytes id = 1;
+    repeated bytes hashs=2;
+    repeated P2PLocation locations=3;
+    int32 parityShardCount=4;
+    int32 recoverId=5;
+}
+
+//id:任务ID,在上报重建结果(TaskOpResult)时,传入
+//hashs:RS分片HASH列表
+//locations:RS分片对应的矿机地址列表,数目与hashs一致
+//parityShardCount:校验分片数目(一般32),即hashs的后32个是校验分片
+//recoverId:需要恢复的分片索引,从0开始,相当于hashs[recoverId]需要恢复
+
+
+//msgid=0xc258
+message TaskDescriptionCP{
+    bytes id = 1;
+    bytes dataHash=2;
+    repeated P2PLocation locations=3;
+}
+
+//副本集模式指一个小于16K的数据块,不使用RS编码,生成32个完全相同的数据分片写入32台矿机
+//id:任务ID,在上报重建结果(TaskOpResult)时,传入
+//hashs:副本集分片HASH(所有分片的HASH是相同的)
+//locations:副本分片对应的矿机地址列表,从32台矿机中任选一个下载到数据，复制到本地即可
+
+
+message P2PLocation{
+    string nodeId=1;
+    repeated string addrs=2;
+}
+
+//矿机收到任务请回复VoidResp
+//msgid=0xe64f
+message VoidResponse  {
+}
+
+//矿机重建完毕后向任务发起方SN返回结果
+//msgid=0x16f3
+message TaskOpResult{
+    bytes id = 1;
+    int32 RES=2;
+}
+
+//暂定：RES=0 成功，RES=1 失败
+//矿机收到结果回复VoidResp
