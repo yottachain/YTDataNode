@@ -11,7 +11,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"net"
-	//_ "net/http/pprof"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -26,9 +27,9 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-		//go func() {
-		//	log.Println(http.ListenAndServe("0.0.0.0:10000", nil))
-		//}()
+		go func() {
+			log.Println(http.ListenAndServe("0.0.0.0:10000", nil))
+		}()
 		if isDaemon {
 			commander.DaemonWithBackground()
 		} else {
