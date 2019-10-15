@@ -81,7 +81,6 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 	if err != nil {
 		return fmt.Errorf("ID formate fail：%s", err)
 	}
-
 	return h.Connect(context.Background(), peerstore.PeerInfo{
 		ID:    pid,
 		Addrs: maddrs,

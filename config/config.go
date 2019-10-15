@@ -145,7 +145,6 @@ func getBPList() []peerInfo {
 	//	os.Exit(1)
 	//}
 	jsdata := `
-
 [
     {
 
@@ -262,7 +261,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 9
+	return 11
 }
 
 func Version() uint32 {
