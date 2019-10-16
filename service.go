@@ -61,6 +61,8 @@ func (sn *storageNode) Service() {
 		}
 		go func() {
 			if err := rce.HandleMsg(msgData, stm); err == nil {
+				log.Println("[recover]success")
+			} else {
 				log.Println("[recover]error", err)
 			}
 		}()

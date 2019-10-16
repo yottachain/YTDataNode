@@ -102,6 +102,7 @@ func (re *RecoverEngine) HandleMsg(msgData []byte, stm *host.MsgStream) error {
 		return err
 	}
 	res.Id = msg.Id
+
 	if err := re.ExecRecoverTask(&msg); err != nil {
 		res.RES = 1
 	} else {
@@ -119,15 +120,18 @@ func (re *RecoverEngine) HandleMsg(msgData []byte, stm *host.MsgStream) error {
 }
 
 func (re *RecoverEngine) replay(data []byte, stm *host.MsgStream) error {
+	log.Printf("[recover:%s]reply to [%s]\n", stm.Conn().RemoteMultiaddr().String())
+	defer log.Printf("[recover:%s]reply success [%s]\n", stm.Conn().RemoteMultiaddr().String())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := re.host.ConnectAddrStrings(stm.Conn().RemotePeer().Pretty(), []string{stm.Conn().RemoteMultiaddr().String()}); err != nil {
 		return nil
 	}
-	stm, err := re.host.NewMsgStream(ctx, stm.Conn().RemotePeer().Pretty(), "/bp/0.0.2")
+	stm, err := re.host.NewMsgStream(ctx, stm.Conn().RemotePeer().Pretty(), "/node/0.0.2")
 	if err != nil {
 		return err
 	}
-	stm.SendMsgClose(append(message.MsgIDTaskOPResult.Bytes(), data...))
+	stm.SendMsg(append(message.MsgIDTaskOPResult.Bytes(), data...))
+	defer stm.Close()
 	return nil
 }
