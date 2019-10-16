@@ -163,6 +163,7 @@ func Report(sn *storageNode) {
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		log.Println("Connect bp fail", err)
 	}
+
 	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

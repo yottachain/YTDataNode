@@ -152,3 +152,8 @@ message TaskOpResult{
 
 //暂定：RES=0 成功，RES=1 失败
 //矿机收到结果回复VoidResp
+
+message MultiTaskDescription{
+    repeated bytes tasklist=1;
+}
+
