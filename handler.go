@@ -154,7 +154,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	err = wh.push(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
-		if err.Error() == "YTFS: hash key conflict happens" {
+		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 			return 102
 		}
 		log.Println("数据写入错误error:", err)

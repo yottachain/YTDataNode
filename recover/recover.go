@@ -95,31 +95,75 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, addrs []string
 	log.Printf("[recover:%s]get shard success[%d]\n", base58.Encode(hash), *n)
 	return res.Data, nil
 }
+
+type RCTaskMsgResult struct {
+	ID  []byte
+	RES int32
+}
+
 func (re *RecoverEngine) HandleMsg(msgData []byte, stm *host.MsgStream) error {
-	var msg message.TaskDescription
 	var res message.TaskOpResult
-	if err := proto.Unmarshal(msgData, &msg); err != nil {
+	r := re.execRCTask(msgData)
+	res.Id = r.ID
+	res.RES = r.RES
+	buf, err := proto.Marshal(&res)
+	if err != nil {
 		return err
 	}
-	res.Id = msg.Id
+	if err := re.replay(message.MsgIDTaskOPResult.Bytes(), buf, stm); err != nil {
+		return err
+	}
+	log.Printf("[recover:%s]success\n", base58.Encode(res.Id))
+	return nil
+}
 
+func (re *RecoverEngine) execRCTask(msgData []byte) *RCTaskMsgResult {
+	var res RCTaskMsgResult
+	var msg message.TaskDescription
+	if err := proto.Unmarshal(msgData, &msg); err != nil {
+		log.Printf("[recover]proto解析错误")
+		res.RES = 0
+	}
+	res.ID = msg.Id
 	if err := re.ExecRecoverTask(&msg); err != nil {
 		res.RES = 1
 	} else {
 		res.RES = 0
 	}
-	buf, err := proto.Marshal(&res)
+	return &res
+}
+
+func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte, stm *host.MsgStream) error {
+	var mtdMsg message.MultiTaskDescription
+	var multiTaskOPResults message.MultiTaskOpResult
+	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
+		return err
+	}
+	multiTaskOPResults.Id = make([][]byte, len(mtdMsg.Tasklist))
+	multiTaskOPResults.RES = make([]int32, len(mtdMsg.Tasklist))
+
+	var wg sync.WaitGroup
+	wg.Add(len(mtdMsg.Tasklist))
+	for k, v := range mtdMsg.Tasklist {
+		go func(msg []byte) {
+			r := re.execRCTask(msg)
+			multiTaskOPResults.Id[k] = r.ID
+			multiTaskOPResults.RES[k] = r.RES
+			wg.Done()
+		}(v)
+	}
+	wg.Wait()
+	buf, err := proto.Marshal(&multiTaskOPResults)
 	if err != nil {
 		return err
 	}
-	if err := re.replay(buf, stm); err != nil {
+	if err := re.replay(message.MsgIDMultiTaskOPResult.Bytes(), buf, stm); err != nil {
 		return err
 	}
-	log.Printf("[recover:%s]success\n", base58.Encode(msg.Id))
 	return nil
 }
 
-func (re *RecoverEngine) replay(data []byte, stm *host.MsgStream) error {
+func (re *RecoverEngine) replay(msgid []byte, data []byte, stm *host.MsgStream) error {
 	log.Printf("[recover:%s]reply to [%s]\n", stm.Conn().RemoteMultiaddr().String())
 	defer log.Printf("[recover:%s]reply success [%s]\n", stm.Conn().RemoteMultiaddr().String())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -131,7 +175,7 @@ func (re *RecoverEngine) replay(data []byte, stm *host.MsgStream) error {
 	if err != nil {
 		return err
 	}
-	stm.SendMsg(append(message.MsgIDTaskOPResult.Bytes(), data...))
+	stm.SendMsg(append(msgid, data...))
 	defer stm.Close()
 	return nil
 }

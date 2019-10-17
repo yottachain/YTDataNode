@@ -153,7 +153,14 @@ message TaskOpResult{
 //暂定：RES=0 成功，RES=1 失败
 //矿机收到结果回复VoidResp
 
+//MessageID:2cb0
 message MultiTaskDescription{
     repeated bytes tasklist=1;
+}
+
+//MessageID:1b31
+message MultiTaskOpResult{
+    repeated bytes id = 1;
+    repeated int32 RES=2;
 }
 

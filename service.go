@@ -69,6 +69,21 @@ func (sn *storageNode) Service() {
 
 		return message.MsgIDVoidResponse.Bytes()
 	})
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDMultiTaskDescription.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
+		rce, err := rc.New(sn.host, sn.ytfs)
+		if err != nil {
+			log.Printf("[recover]init error %s\n", err.Error())
+		}
+		go func() {
+			if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
+				log.Println("[recover]success")
+			} else {
+				log.Println("[recover]error", err)
+			}
+		}()
+
+		return message.MsgIDVoidResponse.Bytes()
+	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
 	rms.Service()
