@@ -36,7 +36,7 @@ func (re *RecoverEngine) ExecRecoverTask(description *message.TaskDescription) e
 	var shards [][]byte = make([][]byte, 160)
 	var wg = sync.WaitGroup{}
 	var number int
-	wg.Add(160)
+	wg.Add(len(description.Locations))
 	for k, v := range description.Locations {
 		go func(k int, v *message.P2PLocation) {
 			defer wg.Done()
@@ -121,7 +121,7 @@ func (re *RecoverEngine) execRCTask(msgData []byte) *RCTaskMsgResult {
 	var res RCTaskMsgResult
 	var msg message.TaskDescription
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
-		log.Printf("[recover]proto解析错误")
+		log.Printf("[recover]proto解析错误%s", err)
 		res.RES = 0
 	}
 	res.ID = msg.Id
@@ -142,20 +142,16 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte, stm *host.MsgStream
 	multiTaskOPResults.Id = make([][]byte, len(mtdMsg.Tasklist))
 	multiTaskOPResults.RES = make([]int32, len(mtdMsg.Tasklist))
 
-	var wg sync.WaitGroup
-	wg.Add(len(mtdMsg.Tasklist))
 	for k, v := range mtdMsg.Tasklist {
-		go func(msg []byte) {
-			r := re.execRCTask(msg)
+		func(msg []byte) {
+			r := re.execRCTask(msg[2:])
 			multiTaskOPResults.Id[k] = r.ID
 			multiTaskOPResults.RES[k] = r.RES
-			wg.Done()
 		}(v)
 	}
-	wg.Wait()
 	buf, err := proto.Marshal(&multiTaskOPResults)
 	if err != nil {
-		return err
+		log.Println("recover", err)
 	}
 	if err := re.replay(message.MsgIDMultiTaskOPResult.Bytes(), buf, stm); err != nil {
 		return err
