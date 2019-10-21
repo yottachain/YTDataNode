@@ -139,24 +139,34 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte, stm *host.MsgStream
 	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
 		return err
 	}
-	multiTaskOPResults.Id = make([][]byte, len(mtdMsg.Tasklist))
-	multiTaskOPResults.RES = make([]int32, len(mtdMsg.Tasklist))
+	multiTaskOPResults.Id = make([][]byte, 10)
+	multiTaskOPResults.RES = make([]int32, 10)
 
 	for k, v := range mtdMsg.Tasklist {
 		func(msg []byte) {
 			r := re.execRCTask(msg[2:])
-			multiTaskOPResults.Id[k] = r.ID
-			multiTaskOPResults.RES[k] = r.RES
+			index := k % 10
+			multiTaskOPResults.Id[index] = r.ID
+			multiTaskOPResults.RES[index] = r.RES
+			if index == 9 {
+				re.mutiReplay(&multiTaskOPResults, stm)
+			}
 		}(v)
 	}
-	buf, err := proto.Marshal(&multiTaskOPResults)
+	re.mutiReplay(&multiTaskOPResults, stm)
+	return nil
+}
+
+func (re *RecoverEngine) mutiReplay(multiTaskOPResults *message.MultiTaskOpResult, stm *host.MsgStream) {
+	buf, err := proto.Marshal(multiTaskOPResults)
 	if err != nil {
 		log.Println("recover", err)
 	}
 	if err := re.replay(message.MsgIDMultiTaskOPResult.Bytes(), buf, stm); err != nil {
-		return err
+		log.Println("recover", err)
 	}
-	return nil
+	multiTaskOPResults.Id = make([][]byte, 10)
+	multiTaskOPResults.RES = make([]int32, 10)
 }
 
 func (re *RecoverEngine) replay(msgid []byte, data []byte, stm *host.MsgStream) error {
