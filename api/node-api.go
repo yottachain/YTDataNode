@@ -1,13 +1,11 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/logger"
 	"net/http"
 	"os"
-	"runtime/pprof"
 )
 
 // APIHandler api处理器
@@ -89,13 +87,6 @@ func init() {
 		res.ProductSpace = srv.sn.Owner().BuySpace * uint64(srv.sn.YTFS().Meta().DataBlockSize)
 		log.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
 		rw.WriteJSON(res)
-	})
-	// 内存分析
-	handler.HandleAPI("debug/mem", func(rw *ResponseWriter, rq *http.Request) {
-		buf := bytes.NewBuffer([]byte{})
-		pprof.WriteHeapProfile(buf)
-
-		rw.Write(buf.Bytes())
 	})
 	// 强制更新
 	handler.HandleAPI("debug/update", func(rw *ResponseWriter, rq *http.Request) {

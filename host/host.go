@@ -90,7 +90,6 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 // Daemon 启动host节点
 func (h *Host) Daemon(ctx context.Context, cfg config.Config) error {
 	//setupSigusr1Trap()
-
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.ListenAddr),
 		libp2p.NATPortMap(),
