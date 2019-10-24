@@ -5,12 +5,10 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
-	host "github.com/yottachain/YTDataNode/host"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/util"
-
 	"github.com/golang/protobuf/proto"
 	ci "github.com/yottachain/YTCrypto"
+	"github.com/yottachain/YTDataNode/host"
+	log "github.com/yottachain/YTDataNode/logger"
 )
 
 // VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
@@ -59,11 +57,7 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID string, 
 func (req *UploadShardRequest) GetResponseToClientByCode(code int32, privkey string) ([]byte, error) {
 	var res UploadShard2CResponse
 	if code == 0 || code == 102 {
-		pk, err := util.Libp2pPkey2eosPkey(privkey)
-		if err != nil {
-			log.Printf("[dn sign]sign fail %s\n", err)
-		}
-		dnsig, err := ci.Sign(pk, req.VHF)
+		dnsig, err := ci.Sign(privkey, req.VHF)
 		if err == nil {
 			res.DNSIGN = dnsig
 		} else {

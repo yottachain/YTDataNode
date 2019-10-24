@@ -122,7 +122,7 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
 
 	cfg.Relay = true
-	cfg.BPList = getBPList()
+	//cfg.BPList = getBPList()
 	return cfg
 }
 
@@ -204,8 +204,8 @@ func (cfg *Config) Save() error {
 }
 
 func (cfg *Config) ReloadBPList() {
-	cfg.BPList = getBPList()
-	cfg.Save()
+	//cfg.BPList = getBPList()
+	//cfg.Save()
 }
 
 // NewKey 创建新的key

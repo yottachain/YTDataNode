@@ -97,13 +97,13 @@ func (sn *storageNode) Service() {
 	// for _, v := range sn.services {
 	// 	v.Service()
 	// }
-	go func() {
-		for {
-			sn.Config().ReloadBPList()
-			log.Println("更新BPLIST")
-			time.Sleep(time.Hour)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		sn.Config().ReloadBPList()
+	//		log.Println("更新BPLIST")
+	//		time.Sleep(time.Hour)
+	//	}
+	//}()
 }
 
 // Register 注册矿机
