@@ -46,6 +46,11 @@ func (sc *SpotChecker) check(task *message.SpotCheckTask) {
 	sc.Lock()
 	sc.progress = sc.progress + 1
 	if result != true {
+		for i := 0; i < 3; i++ {
+			if sc.TaskHandler(task) {
+				return
+			}
+		}
 		sc.InvalidNodeList = append(sc.InvalidNodeList, task.Id)
 	}
 }
