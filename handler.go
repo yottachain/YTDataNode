@@ -250,22 +250,28 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		spotChecker.Do()
 		endTime := time.Now()
 		log.Println("抽查任务结束用时:", endTime.Sub(startTime).String())
-		bp := sch.Config().BPList[sch.GetBP()]
 		if err := recover(); err != nil {
 			log.Println("error:", err)
 		}
-		resp, err := proto.Marshal(&message.SpotCheckStatus{
-			TaskId:          msg.TaskId,
-			InvalidNodeList: spotChecker.InvalidNodeList,
-		})
-		if err != nil {
-			log.Println("error:", err)
+		var replayMap = make(map[int][]int32)
+		for _, v := range spotChecker.InvalidNodeList {
+			row := replayMap[int(v)%len(sch.Config().BPList)]
+			replayMap[int(v)%len(sch.Config().BPList)] = append(row, v)
 		}
-		log.Println("失败的任务：", spotChecker.InvalidNodeList)
-		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.2", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
-			log.Println(e)
-		} else {
-			log.Printf("%s\n", r)
+		for k, v := range replayMap {
+			resp, err := proto.Marshal(&message.SpotCheckStatus{
+				TaskId:          msg.TaskId,
+				InvalidNodeList: v,
+			})
+			if err != nil {
+				log.Println("error:", err)
+			}
+			log.Println("上报失败的任务：", v, "sn:", k)
+			if r, e := sch.SendBPMsg(k, append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+				log.Println("抽查任务上报失败：", e)
+			} else {
+				log.Printf("抽查任务上报成功%s\n", r)
+			}
 		}
 	}()
 	return append(message.MsgIDVoidResponse.Bytes())

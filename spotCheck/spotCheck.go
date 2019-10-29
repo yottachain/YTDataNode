@@ -1,8 +1,11 @@
 package spotCheck
 
 import (
+	"github.com/mr-tron/base58"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"sync"
+	"time"
 )
 
 type TaskHandler func(task *message.SpotCheckTask) bool
@@ -46,7 +49,9 @@ func (sc *SpotChecker) check(task *message.SpotCheckTask) {
 	sc.Lock()
 	sc.progress = sc.progress + 1
 	if result != true {
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 5; i++ {
+			log.Println("抽查重试第:", i, "次", base58.Encode(task.VHF))
+			<-time.After(500 * time.Millisecond)
 			if sc.TaskHandler(task) {
 				return
 			}

@@ -36,6 +36,7 @@ type Config struct {
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
+	UpdateURL string `json:"update_url"`
 }
 
 // DefaultYTFSOptions default config
@@ -261,7 +262,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 11
+	return 12
 }
 
 func Version() uint32 {

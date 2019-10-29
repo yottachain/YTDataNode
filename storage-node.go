@@ -39,6 +39,7 @@ type StorageNode interface {
 	Config() *config.Config
 	Runtime() RuntimeStatus
 	Owner() *Owner
+	SendBPMsg(index int, data []byte) ([]byte, error)
 }
 
 // Owner 归属信息
@@ -166,6 +167,13 @@ func (sn *storageNode) GetBP() int {
 }
 func (sn *storageNode) Addrs() []string {
 	return sn.addrsmanager.GetAddStrings()
+}
+
+func (sn *storageNode) SendBPMsg(index int, data []byte) ([]byte, error) {
+	bp := sn.config.BPList[index]
+	sn.host.ConnectAddrStrings(bp.ID, bp.Addrs)
+	res, err := sn.Host().SendMsg(bp.ID, "/node/0.0.2", data)
+	return res, err
 }
 
 // NewStorageNode 创建存储节点

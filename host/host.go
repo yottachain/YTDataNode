@@ -16,6 +16,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
+	"time"
 )
 
 // Host 节点host
@@ -81,10 +82,8 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 	if err != nil {
 		return fmt.Errorf("ID formate fail：%s", err)
 	}
-	return h.Connect(context.Background(), peerstore.PeerInfo{
-		ID:    pid,
-		Addrs: maddrs,
-	})
+	h.Peerstore().AddAddrs(pid, maddrs, 10*time.Second)
+	return nil
 }
 
 // Daemon 启动host节点
