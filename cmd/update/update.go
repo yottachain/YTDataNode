@@ -27,7 +27,8 @@ func getUpdateConfig() (*UpdateConfig, error) {
 	var updateURL = "http://39.97.41.155/ytnode-update-config/update.yaml"
 	if url, ok := os.LookupEnv("update_url"); ok {
 		updateURL = url
-	} else if baseCfg, err := config.ReadConfig(); err == nil && baseCfg.UpdateURL != "" {
+	}
+	if baseCfg, err := config.ReadConfig(); err == nil && baseCfg.UpdateURL != "" {
 		updateURL = baseCfg.UpdateURL
 	}
 	resp, err := http.Get(updateURL)
