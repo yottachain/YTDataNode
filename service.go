@@ -3,13 +3,14 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/host"
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
+	"github.com/yottachain/YTDataNode/util"
 	"os"
-
-	"github.com/gogo/protobuf/proto"
+	"path"
 
 	"time"
 
@@ -81,7 +82,11 @@ func (sn *storageNode) Service() {
 				log.Println("[recover]error", err)
 			}
 		}()
-
+		go func() {
+			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), "test.data"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+			defer fd.Close()
+			fd.Write(msgData)
+		}()
 		return message.MsgIDVoidResponse.Bytes()
 	})
 	hm.Service()

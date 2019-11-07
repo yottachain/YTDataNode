@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-var addr = "/ip4/127.0.0.1/tcp/9001/p2p/16Uiu2HAmRVPcVcSP7hRKPY55uHjX1m7ZMHXh71FbH4eUXG9cmtpP"
+var addr = "/ip4/127.0.0.1/tcp/9001/p2p/16Uiu2HAmCesehUznuW6moZgPAWoJrryXDjbX4gbqn5Zet7f2db2e"
 
 func TestRecover(t *testing.T) {
 	fi, _ := os.OpenFile("/Users/mac/go/src/github.com/yottachain/YTDataNode/recover/test.dat", os.O_RDONLY, 0644)
@@ -21,10 +21,11 @@ func TestRecover(t *testing.T) {
 	h, _ := libp2p.New(context.Background())
 	ma, _ := multiaddr.NewMultiaddr(addr)
 	info, _ := peer.AddrInfoFromP2pAddr(ma)
-	h.Connect(context.Background(), *info)
+	err := h.Connect(context.Background(), *info)
+	fmt.Println(err)
 	stm, err := h.NewStream(context.Background(), info.ID, "/node/0.0.2")
 	fmt.Println("err", err, len(buf))
 	ee := gob.NewEncoder(stm)
-	ee.Encode(append(message.MsgIDTaskDescript.Bytes(), buf[2:]...))
+	ee.Encode(append(message.MsgIDMultiTaskDescription.Bytes(), buf[:]...))
 	select {}
 }

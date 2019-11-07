@@ -19,6 +19,7 @@ const (
 	MsgIDStatusRepReq          msgType = 0xc9a9
 	MsgIDStatusRepResp         msgType = 0xfa09
 	MsgIDTaskDescript          msgType = 0xd761
+	MsgIDTaskDescriptCP        msgType = 0xc258
 	MsgIDTaskOPResult          msgType = 0x16f3
 	MsgIDSpotCheckTaskList     msgType = 0x903a
 	MsgIDSpotCheckStatus       msgType = 0xa583
