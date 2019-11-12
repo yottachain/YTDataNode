@@ -16,6 +16,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
+	"net/http"
 	"time"
 )
 
@@ -89,6 +90,9 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 // Daemon 启动host节点
 func (h *Host) Daemon(ctx context.Context, cfg config.Config) error {
 	//setupSigusr1Trap()
+	go func() {
+		http.ListenAndServe(":10000", nil)
+	}()
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.ListenAddr),
 		libp2p.NATPortMap(),

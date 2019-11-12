@@ -55,35 +55,19 @@ func (sn *storageNode) Service() {
 		sch := SpotCheckHandler{sn}
 		return sch.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDTaskDescript.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
-		rce, err := rc.New(sn.host, sn.ytfs)
-		if err != nil {
-			log.Printf("[recover]init error %s\n", err.Error())
-		}
-		go func() {
-			if err := rce.HandleMsg(msgData, stm); err == nil {
-				log.Println("[recover]success")
-			} else {
-				log.Println("[recover]error", err)
-			}
-		}()
-
-		return message.MsgIDVoidResponse.Bytes()
-	})
+	rce, err := rc.New(sn)
+	if err != nil {
+		log.Printf("[recover]init error %s\n", err.Error())
+	}
+	go rce.Run()
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDMultiTaskDescription.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
-		rce, err := rc.New(sn.host, sn.ytfs)
-		if err != nil {
-			log.Printf("[recover]init error %s\n", err.Error())
+		if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
+			log.Println("[recover]success")
+		} else {
+			log.Println("[recover]error", err)
 		}
 		go func() {
-			if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
-				log.Println("[recover]success")
-			} else {
-				log.Println("[recover]error", err)
-			}
-		}()
-		go func() {
-			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), "test.data"), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("%d-test.data", time.Now().UnixNano())), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 			defer fd.Close()
 			fd.Write(msgData)
 		}()

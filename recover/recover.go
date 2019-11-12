@@ -3,6 +3,7 @@ package recover
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kkdai/diskqueue"
 	"github.com/klauspost/reedsolomon"
@@ -10,29 +11,33 @@ import (
 	"github.com/yottachain/YTDataNode/host"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
-	"github.com/yottachain/YTFS"
 	"github.com/yottachain/YTFS/common"
-	"path"
+	_ "net/http/pprof"
 	"sync"
 	"time"
 )
 
 type RecoverEngine struct {
-	host  *host.Host
-	ytfs  *ytfs.YTFS
-	queue diskqueue.WorkQueue
+	sn         node.StorageNode
+	queue      diskqueue.WorkQueue
+	replyQueue diskqueue.WorkQueue
 }
 
-func New(hst *host.Host, yt *ytfs.YTFS) (*RecoverEngine, error) {
+func New(sn node.StorageNode) (*RecoverEngine, error) {
 	var re = new(RecoverEngine)
-	re.host = hst
-	re.ytfs = yt
-	re.queue = diskqueue.NewDiskqueue("taskQueue", util.GetYTFSPath())
+	re.queue = diskqueue.NewDiskqueue(".taskQueue", util.GetYTFSPath())
+	re.replyQueue = diskqueue.NewDiskqueue(".replyQueue", util.GetYTFSPath())
+	re.sn = sn
 	return re, nil
 }
 
 func (re *RecoverEngine) recoverShard(description *message.TaskDescription) error {
+	defer func() {
+		err := recover()
+		fmt.Println(err)
+	}()
 	var size = len(description.Hashs)
 	var shards [][]byte = make([][]byte, size)
 	encoder, err := reedsolomon.New(size-int(description.ParityShardCount), int(description.ParityShardCount))
@@ -66,7 +71,7 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	log.Printf("[recover:%s]datas recover success\n", base58.Encode(description.Id))
 	var vhf [32]byte
 	copy(vhf[:], description.Hashs[description.RecoverId])
-	err = re.ytfs.Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
+	err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
 	if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 		log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(description.Id), err.Error())
 		return err
@@ -75,16 +80,17 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 }
 
 func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
-	err := re.host.ConnectAddrStrings(id, addrs)
+
+	err := re.sn.Host().ConnectAddrStrings(id, addrs)
 	if err != nil {
 		return nil, err
 	}
-	stm, err := re.host.NewMsgStream(ctx, id, "/node/0.0.2")
+	stm, err := re.sn.Host().NewMsgStream(ctx, id, "/node/0.0.2")
 	if err != nil {
 		if err.Error() == "new stream error:dial to self attempted" {
 			var vhf [32]byte
 			copy(vhf[:], hash)
-			return re.ytfs.Get(common.IndexTableKey(vhf))
+			return re.sn.YTFS().Get(common.IndexTableKey(vhf))
 		}
 		return nil, err
 	}
@@ -110,42 +116,94 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	return res.Data, nil
 }
 
-type RCTaskMsgResult struct {
-	ID  []byte
-	RES int32
+type TaskMsgResult struct {
+	ID   []byte
+	RES  int32
+	BPID byte
 }
 
 func (re *RecoverEngine) HandleMsg(msgData []byte, stm *host.MsgStream) error {
-	var res message.TaskOpResult
-	r := re.execRCTask(msgData)
-	res.Id = r.ID
-	res.RES = r.RES
-	buf, err := proto.Marshal(&res)
-	if err != nil {
-		return err
-	}
-	if err := re.replay(message.MsgIDTaskOPResult.Bytes(), buf, stm); err != nil {
-		return err
-	}
-	log.Printf("[recover:%s]success\n", base58.Encode(res.Id))
-	return nil
+	return re.PutTask(append(message.MsgIDTaskDescript.Bytes(), msgData...))
 }
 
 func (re *RecoverEngine) PutTask(task []byte) error {
-	if err := re.queue.Put(task); err != nil {
+	go re.queue.Put(task)
+	return nil
+}
+
+// 多重建任务消息处理
+func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte, stm *host.MsgStream) error {
+	var mtdMsg message.MultiTaskDescription
+	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
 		return err
+	}
+	log.Printf("[recover]multi recover task start, pack size %d\n", len(mtdMsg.Tasklist))
+	for _, task := range mtdMsg.Tasklist {
+		if err := re.PutTask(task); err != nil {
+			log.Printf("[recover]put recover task error: %s\n", err.Error())
+		}
 	}
 	return nil
 }
 
-func (re *RecoverEngine) execRCTask(msgData []byte) *RCTaskMsgResult {
-	var res RCTaskMsgResult
+func (re *RecoverEngine) Run() {
+	for {
+		msg := <-re.queue.ReadChan()
+		if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
+			res := re.execRCTask(msg[2:])
+			re.reply(res)
+		} else {
+			res := re.execCPTask(msg[2:])
+			re.reply(res)
+		}
+	}
+}
+
+func (re *RecoverEngine) PutReplyQueue(res *TaskMsgResult) {
+	//re.replyQueue.Put(res)
+}
+
+func (re *RecoverEngine) reply(res *TaskMsgResult) error {
+	var msgData message.TaskOpResult
+	msgData.Id = res.ID
+	msgData.RES = res.RES
+	data, err := proto.Marshal(&msgData)
+	if err != nil {
+		return err
+	}
+	_, err = re.sn.SendBPMsg(int(res.BPID), append(message.MsgIDTaskOPResult.Bytes(), data...))
+	log.Println("[recover] reply to", int(res.BPID))
+	return err
+}
+
+//func (re *RecoverEngine) MultiReply()error {
+//	var resmsg message.MultiTaskOpResult
+//	for i := 0; i < 10; i++ {
+//		select {
+//		case res := <-re.replyQueue:
+//			resmsg.Id = append(resmsg.Id, res.ID)
+//			resmsg.RES = append(resmsg.RES, res.RES)
+//		case <-time.After(10 * time.Second):
+//			break
+//		}
+//	}
+//	data, err := proto.Marshal(&resmsg)
+//	if err != nil {
+//		return err
+//	}
+//	_, err = re.sn.SendBPMsg(int(res.BPID), append(message.MsgIDTaskOPResult.Bytes(), data...))
+//	return err
+//}
+
+func (re *RecoverEngine) execRCTask(msgData []byte) *TaskMsgResult {
+	var res TaskMsgResult
 	var msg message.TaskDescription
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
 		log.Printf("[recover]proto解析错误%s", err)
 		res.RES = 0
 	}
 	res.ID = msg.Id
+	res.BPID = msg.Id[12]
 	if err := re.recoverShard(&msg); err != nil {
 		res.RES = 1
 	} else {
@@ -154,54 +212,16 @@ func (re *RecoverEngine) execRCTask(msgData []byte) *RCTaskMsgResult {
 	return &res
 }
 
-// 多重建任务消息处理
-func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte, stm *host.MsgStream) error {
-	// 结果集最大长度
-	const maxResultLen = 10
-
-	var mtdMsg message.MultiTaskDescription
-	var multiTaskOPResults message.MultiTaskOpResult
-	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
-		return err
-	}
-	log.Printf("[recover]multi recover task start, pack size %d\n", len(mtdMsg.Tasklist))
-	defer log.Printf("[recover]multi recover task complite, pack size %d\n", len(mtdMsg.Tasklist))
-	for index, task := range mtdMsg.Tasklist {
-		func(msg []byte) {
-			defer func() {
-				if err := recover(); err != nil {
-					log.Printf("[recover]exec error:%s\n", err.(error).Error())
-				}
-			}()
-			var r *RCTaskMsgResult
-			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
-				r = re.execRCTask(msg[2:])
-			} else {
-				r = re.execCPTask(msg[2:])
-			}
-			multiTaskOPResults.Id = append(multiTaskOPResults.Id, r.ID)
-			multiTaskOPResults.RES = append(multiTaskOPResults.RES, r.RES)
-
-			// 如果达到提交条件，满个或者已经遍历到数组尾部。提交结果,并清空结果
-			if len(multiTaskOPResults.Id) >= maxResultLen || index >= len(mtdMsg.Tasklist)-1 {
-				re.multiReply(&multiTaskOPResults, stm)
-				multiTaskOPResults.Id = make([][]byte, 0)
-				multiTaskOPResults.RES = make([]int32, 0)
-			}
-		}(task)
-	}
-	return nil
-}
-
 // 副本集任务
-func (re *RecoverEngine) execCPTask(msgData []byte) *RCTaskMsgResult {
+func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 	var msg message.TaskDescriptionCP
-	var result RCTaskMsgResult
+	var result TaskMsgResult
 	err := proto.UnmarshalMerge(msgData, &msg)
 	if err != nil {
 		log.Printf("[recover]解析错误%s\n", err.Error())
 	}
 	result.ID = msg.Id
+	result.BPID = msg.Id[12]
 	result.RES = 1
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -213,7 +233,7 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *RCTaskMsgResult {
 		if err == nil {
 			var vhf [32]byte
 			copy(vhf[:], msg.DataHash)
-			err := re.ytfs.Put(common.IndexTableKey(vhf), shard)
+			err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 				log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
@@ -225,35 +245,4 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *RCTaskMsgResult {
 		}
 	}
 	return &result
-}
-
-func (re *RecoverEngine) multiReply(multiTaskOPResults *message.MultiTaskOpResult, stm *host.MsgStream) {
-
-	defer log.Printf("[recover] result %s, %v\n", util.IDS2String(multiTaskOPResults.Id), multiTaskOPResults.RES)
-
-	buf, err := proto.Marshal(multiTaskOPResults)
-	if err != nil {
-		log.Println("recover", err)
-	}
-	if err := re.replay(message.MsgIDMultiTaskOPResult.Bytes(), buf, stm); err != nil {
-		log.Println("recover", err)
-	}
-}
-
-func (re *RecoverEngine) replay(msgid []byte, data []byte, stm *host.MsgStream) error {
-	log.Printf("[recover:%s]reply to [%s]\n", stm.Conn().RemoteMultiaddr().String())
-	defer log.Printf("[recover:%s]reply complite\n", stm.Conn().RemoteMultiaddr().String())
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := re.host.ConnectAddrStrings(stm.Conn().RemotePeer().Pretty(), []string{stm.Conn().RemoteMultiaddr().String()}); err != nil {
-		return nil
-	}
-	stm, err := re.host.NewMsgStream(ctx, stm.Conn().RemotePeer().Pretty(), "/node/0.0.2")
-	if err != nil {
-		log.Printf("[recover:%s]reply error [%s]\n", stm.Conn().RemoteMultiaddr().String(), err.Error())
-		return err
-	}
-	stm.SendMsg(append(msgid, data...))
-	defer stm.Close()
-	return nil
 }

@@ -11,14 +11,13 @@ import (
 
 	"github.com/yottachain/YTDataNode/util"
 
-	"github.com/shirou/gopsutil/mem"
-
 	"github.com/multiformats/go-multiaddr"
-	"github.com/shirou/gopsutil/cpu"
 
 	"github.com/yottachain/YTDataNode/config"
 
 	"github.com/yottachain/YTDataNode/host"
+	. "github.com/yottachain/YTDataNode/runtimeStatus"
+	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 
 	// "github.com/yottachain/P2PHost"
 	ytfs "github.com/yottachain/YTFS"
@@ -29,25 +28,12 @@ type Service interface {
 	Service()
 }
 
-// StorageNode 存储节点接口
-type StorageNode interface {
-	Addrs() []string
-	Host() *host.Host
-	YTFS() *ytfs.YTFS
-	GetBP() int
-	Service()
-	Config() *config.Config
-	Runtime() RuntimeStatus
-	Owner() *Owner
-	SendBPMsg(index int, data []byte) ([]byte, error)
-}
-
-// Owner 归属信息
-type Owner struct {
-	ID       string
-	BuySpace uint64
-	HDD      uint64
-}
+//// Owner 归属信息
+//type Owner struct {
+//	ID       string
+//	BuySpace uint64
+//	HDD      uint64
+//}
 
 // AddrsManager 地址管理器
 type AddrsManager struct {
@@ -101,37 +87,6 @@ func (am *AddrsManager) GetAddStrings() []string {
 		addrstrings[k] = v.String()
 	}
 	return addrstrings
-}
-
-// RuntimeStatus 运行时状态
-type RuntimeStatus struct {
-	CPU   []uint32
-	AvCPU uint32
-	Mem   uint32
-}
-
-// NewRuntimeStatus 创建状态管理器
-func NewRuntimeStatus() *RuntimeStatus {
-	return new(RuntimeStatus)
-}
-
-// Update 刷新
-func (rs *RuntimeStatus) Update() RuntimeStatus {
-	cpupercent, _ := cpu.Percent(0, true)
-	var cpupint32 = make([]uint32, len(cpupercent))
-	var sumcpu uint32
-	for k, v := range cpupercent {
-		cpupint32[k] = uint32(v)
-		sumcpu = sumcpu + cpupint32[k]
-	}
-	m, _ := mem.VirtualMemory()
-	rs.Mem = uint32(m.UsedPercent)
-	rs.CPU = cpupint32
-	if uint32(len(cpupercent)) > 0 {
-		rs.AvCPU = sumcpu / uint32(len(cpupercent))
-	}
-	log.Println("cupsum:", sumcpu, len(cpupercent))
-	return *rs
 }
 
 type storageNode struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 
 	"github.com/golang/protobuf/proto"
+	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTFS/common"
 )
 

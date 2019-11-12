@@ -13,9 +13,9 @@ import (
 	"testing"
 )
 
-//var addr = "/ip4/127.0.0.1/tcp/9001/p2p/16Uiu2HAmCesehUznuW6moZgPAWoJrryXDjbX4gbqn5Zet7f2db2e"
+var addr = "/ip4/127.0.0.1/tcp/9001/p2p/16Uiu2HAmCesehUznuW6moZgPAWoJrryXDjbX4gbqn5Zet7f2db2e"
 
-var addr = "/ip4/49.233.89.233/tcp/9001/p2p/16Uiu2HAm6DwmkSz3AezYdG5Gkx8xpB2pebpn9Ct3jgpZuurMbXvh"
+//var addr = "/ip4/49.233.89.233/tcp/9001/p2p/16Uiu2HAm6DwmkSz3AezYdG5Gkx8xpB2pebpn9Ct3jgpZuurMbXvh"
 
 func TestRecover(t *testing.T) {
 	fi, _ := os.OpenFile("/Users/mac/go/src/github.com/yottachain/YTDataNode/recover/test.data", os.O_RDONLY, 0644)
@@ -26,8 +26,14 @@ func TestRecover(t *testing.T) {
 	err := h.Connect(context.Background(), *info)
 	fmt.Println(err)
 	stm, err := h.NewStream(context.Background(), info.ID, "/node/0.0.2")
-	fmt.Println("err", err, len(buf))
 	ee := gob.NewEncoder(stm)
-	ee.Encode(append(message.MsgIDMultiTaskDescription.Bytes(), buf[:]...))
+	go SendData(ee, append(message.MsgIDMultiTaskDescription.Bytes(), buf[:]...))
 	select {}
+}
+
+func SendData(ee *gob.Encoder, data []byte) {
+	err := ee.Encode(data)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
