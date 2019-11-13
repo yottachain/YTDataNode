@@ -224,6 +224,9 @@ func (cfg *Config) NewKey() error {
 func (cfg *Config) GetBPIndex() int {
 	id := cfg.IndexID
 	bpnum := len(cfg.BPList)
+	if bpnum == 0 {
+		return 0
+	}
 	bpindex := id % uint32(bpnum)
 	return int(bpindex)
 }

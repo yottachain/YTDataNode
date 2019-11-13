@@ -141,6 +141,9 @@ var first = true
 // Report 上报状态
 func Report(sn *storageNode) {
 	var msg message.StatusRepReq
+	if sn.GetBP() == 0 {
+		return
+	}
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
 	if rms.Addr() != "" && first == false {
