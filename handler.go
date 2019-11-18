@@ -146,8 +146,8 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 		return 100
 	}
 	// 3. 将数据写入YTFS-disk
-	var indexKey [32]byte
-	copy(indexKey[:], msg.VHF[0:32])
+	var indexKey [16]byte
+	copy(indexKey[:], msg.VHF[0:16])
 	err = wh.push(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
@@ -170,12 +170,12 @@ type DownloadHandler struct {
 // Handle 获取处理器
 func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 	var msg message.DownloadShardRequest
-	var indexKey [32]byte
+	var indexKey [16]byte
 	proto.Unmarshal(msgData, &msg)
 	log.Println("get vhf:", base58.Encode(msg.VHF))
 
 	for k, v := range msg.VHF {
-		if k >= 32 {
+		if k >= 16 {
 			break
 		}
 		indexKey[k] = v

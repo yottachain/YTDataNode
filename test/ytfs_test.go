@@ -19,7 +19,7 @@ func TestAddShard(t *testing.T) {
 	data := []byte("3212testdata22132")
 	hash := sha256.New()
 
-	var key [32]byte
+	var key [16]byte
 	copy(key[:], hash.Sum(data))
 	ytfs.Put(common.IndexTableKey(key), data)
 	if err != nil {

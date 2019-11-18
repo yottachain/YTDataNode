@@ -69,7 +69,7 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 		return err
 	}
 	log.Printf("[recover:%s]datas recover success\n", base58.Encode(description.Id))
-	var vhf [32]byte
+	var vhf [16]byte
 	copy(vhf[:], description.Hashs[description.RecoverId])
 	err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
 	if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
@@ -88,7 +88,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	stm, err := re.sn.Host().NewMsgStream(ctx, id, "/node/0.0.2")
 	if err != nil {
 		if err.Error() == "new stream error:dial to self attempted" {
-			var vhf [32]byte
+			var vhf [16]byte
 			copy(vhf[:], hash)
 			return re.sn.YTFS().Get(common.IndexTableKey(vhf))
 		}
@@ -231,7 +231,7 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 		shard, err := re.getShard(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
 		// 如果没有发生错误，分片下载成功，就存储分片
 		if err == nil {
-			var vhf [32]byte
+			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
 			err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
