@@ -26,14 +26,17 @@ var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
 	hm := service.NewHandleMsgService(sn.host)
+
 	maxConn := sn.Config().MaxConn
 	if maxConn == 0 {
 		maxConn = 100
 	}
+
 	tokenInterval := sn.Config().TokenInterval
 	if tokenInterval == 0 {
 		tokenInterval = 50
 	}
+
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
 	wh.Run()
@@ -59,7 +62,9 @@ func (sn *storageNode) Service() {
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
+
 	go rce.Run()
+
 	hm.RegitsterHandler("/node/0.0.2", message.MsgIDMultiTaskDescription.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
 		if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
 			log.Println("[recover]success")
