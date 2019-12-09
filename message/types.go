@@ -23,7 +23,7 @@ const (
 	MsgIDTaskOPResult          msgType = 0x16f3
 	MsgIDSpotCheckTaskList     msgType = 0x903a
 	MsgIDSpotCheckStatus       msgType = 0xa583
-	MsgIDString                msgType = 0x0000
+	MsgIDString                msgType = 0x0011
 	MsgIDMultiTaskDescription  msgType = 0x2cb0
 	MsgIDMultiTaskOPResult     msgType = 0x1b31
 )

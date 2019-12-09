@@ -63,13 +63,9 @@ func Daemon() {
 
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
-	err := sn.Host().Daemon(ctx, *sn.Config())
-	if err != nil {
-		log.Println("node daemon fail", err)
-	}
 	log.Println("YTFS daemon success:", sn.Config().Version())
 	for k, v := range sn.Addrs() {
-		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().ID().Pretty())
+		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())
 	}
 	srv := api.NewHTTPServer()
 	log.Println("Wait request")

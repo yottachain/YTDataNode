@@ -4,19 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	"github.com/yottachain/YTDataNode/host"
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"github.com/yottachain/YTDataNode/util"
-	"os"
-	"path"
-
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 
+	yhservice "github.com/graydream/YTHost/service"
 	ytfs "github.com/yottachain/YTFS"
 )
 
@@ -25,7 +21,8 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
-	hm := service.NewHandleMsgService(sn.host)
+
+	rms = service.NewRelayManage(sn.Host())
 
 	maxConn := sn.Config().MaxConn
 	if maxConn == 0 {
@@ -40,23 +37,22 @@ func (sn *storageNode) Service() {
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
 	wh.Run()
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
-		return wh.GetToken(data)
+	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		return wh.GetToken(data), nil
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
-		return wh.Handle(data)
+	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		return wh.Handle(data), nil
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
+	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
-		return dh.Handle(data)
+		return dh.Handle(data), nil
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte, stm *host.MsgStream) []byte {
-		fmt.Println(data)
-		return append(message.MsgIDString.Bytes(), []byte("pong")...)
+	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte, stm *host.MsgStream) []byte {
+	_ = sn.Host().RegisterHandler(message.MsgIDSpotCheckTaskList.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		sch := SpotCheckHandler{sn}
-		return sch.Handle(data)
+		return sch.Handle(data), nil
 	})
 	rce, err := rc.New(sn)
 	if err != nil {
@@ -65,22 +61,22 @@ func (sn *storageNode) Service() {
 
 	go rce.Run()
 
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDMultiTaskDescription.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
-		if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
-			log.Println("[recover]success")
-		} else {
-			log.Println("[recover]error", err)
-		}
-		go func() {
-			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("%d-test.data", time.Now().UnixNano())), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-			defer fd.Close()
-			fd.Write(msgData)
-		}()
-		return message.MsgIDVoidResponse.Bytes()
-	})
-	hm.Service()
-	rms = service.NewRelayManage(sn.host)
-	rms.Service()
+	//sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, rp peerInfo.PeerInfo) ([]byte, error) {
+	//	if err := rce.HandleMuilteTaskMsg(data, rp); err == nil {
+	//		log.Println("[recover]success")
+	//	} else {
+	//		log.Println("[recover]error", err)
+	//	}
+	//
+	//	// 记录上次数据
+	//	go func() {
+	//		fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("%d-test.data", time.Now().UnixNano())), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	//		defer fd.Close()
+	//		fd.Write(data)
+	//	}()
+	//	return message.MsgIDVoidResponse.Bytes(), nil
+	//})
+	go sn.Host().Accept()
 	//Register(sn)
 	go func() {
 		for {
@@ -88,57 +84,6 @@ func (sn *storageNode) Service() {
 			time.Sleep(time.Second * 60)
 		}
 	}()
-	// for _, v := range sn.services {
-	// 	v.Service()
-	// }
-	//go func() {
-	//	for {
-	//		sn.Config().ReloadBPList()
-	//		log.Println("更新BPLIST")
-	//		time.Sleep(time.Hour)
-	//	}
-	//}()
-}
-
-// Register 注册矿机
-func Register(sn *storageNode) {
-	var msg message.NodeRegReq
-	msg.Nodeid = sn.Host().ID().Pretty()
-	msg.Owner = os.Getenv("owner")
-	log.Println("owner:", msg.Owner)
-	msg.Addrs = sn.Addrs()
-	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize
-	msg.Relay = sn.config.Relay
-
-	bp := sn.Config().BPList[sn.GetBP()]
-	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		log.Println("Connect bp fail", err)
-	}
-	msgBytes, err := proto.Marshal(&msg)
-	if err != nil {
-		log.Println("Formate msg fail:", err)
-	}
-	log.Println("sn index:", sn.GetBP())
-	stm, err := sn.host.NewMsgStream(context.Background(), bp.ID, "/node/0.0.2")
-	if err != nil {
-		log.Println("Create MsgStream fail:", err)
-	} else {
-		res, err := stm.SendMsgGetResponse(append(message.MsgIDNodeRegReq.Bytes(), msgBytes...))
-		if err != nil {
-			log.Println("Send reg msg fail:", err)
-		} else {
-			var resMsg message.NodeRegResp
-			proto.Unmarshal(res[2:], &resMsg)
-			sn.Config().IndexID = resMsg.Id
-			sn.Config().Save()
-			sn.owner.BuySpace = resMsg.AssignedSpace
-			log.Printf("id %d, Reg success, distribution space %d\n", resMsg.Id, resMsg.AssignedSpace)
-			if resMsg.RelayUrl != "" {
-				rms.UpdateAddr(resMsg.RelayUrl)
-				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
-			}
-		}
-	}
 }
 
 var first = true
@@ -146,7 +91,8 @@ var first = true
 // Report 上报状态
 func Report(sn *storageNode) {
 	var msg message.StatusRepReq
-	if sn.GetBP() == 0 {
+	if len(sn.Config().BPList) == 0 {
+		log.Println("no bp")
 		return
 	}
 	bp := sn.Config().BPList[sn.GetBP()]
@@ -165,6 +111,7 @@ func Report(sn *storageNode) {
 	msg.Id = sn.Config().IndexID
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
+
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	resData, err := proto.Marshal(&msg)
@@ -172,18 +119,15 @@ func Report(sn *storageNode) {
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
-	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
-		log.Println("Connect bp fail", err)
-	}
-
-	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	stm, err := sn.host.NewMsgStream(ctx, bp.ID, "/node/0.0.2")
-	if err != nil {
-		log.Println("Create MsgStream fail:", err)
+
+	if clt, err := sn.Host().ConnectAddrStrings(ctx, bp.ID, bp.Addrs); err != nil {
+		log.Println("Connect bp fail", err)
 	} else {
-		res, err := stm.SendMsgGetResponse(append(message.MsgIDStatusRepReq.Bytes(), resData...))
+		log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
+		res, err := clt.SendMsg(ctx, message.MsgIDStatusRepReq.Value(), resData)
+		defer clt.Close()
 		if err != nil {
 			log.Println("Send report msg fail:", err)
 		} else {

@@ -2,24 +2,24 @@ package service
 
 import (
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/yottachain/YTDataNode/logger"
 	"regexp"
 	"time"
 
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
+	. "github.com/graydream/YTHost/hostInterface"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/host"
 )
 
 // RelayManager 中继管理
 type RelayManager struct {
-	host *host.Host
-	peer *peerstore.PeerInfo
+	host Host
+	peer *peer.AddrInfo
 	addr string
 }
 
 // NewRelayManage 创建新的中继管理器
-func NewRelayManage(hst *host.Host) *RelayManager {
+func NewRelayManage(hst Host) *RelayManager {
 	rm := new(RelayManager)
 	rm.host = hst
 	return rm
@@ -36,7 +36,7 @@ func (rm *RelayManager) UpdateAddr(addr string) error {
 	res := rp.ReplaceAllString(addr, "")
 	ma, err := multiaddr.NewMultiaddr(res)
 	if err == nil {
-		pi, err := peerstore.InfoFromP2pAddr(ma)
+		pi, err := peer.AddrInfoFromP2pAddr(ma)
 		if err != nil {
 			return err
 		}

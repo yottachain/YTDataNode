@@ -25,7 +25,7 @@ func init() {
 			ID      string `json:"id"`
 			IndexID uint32 `json:iddexId`
 		}
-		rw.WriteJSON(res{srv.sn.Host().ID().Pretty(), srv.sn.Config().IndexID})
+		rw.WriteJSON(res{srv.sn.Host().Config().ID.Pretty(), srv.sn.Config().IndexID})
 	})
 	// ytfs配置
 	handler.HandleAPI("node/config", func(rw *ResponseWriter, rq *http.Request) {
@@ -46,29 +46,29 @@ func init() {
 	})
 	// 已连接节点
 	handler.HandleAPI("node/conns", func(rw *ResponseWriter, rq *http.Request) {
-		var res []string
-		conns := srv.sn.Host().Network().Conns()
-		if len(conns) > 0 {
-			res = make([]string, len(conns))
-		}
-		for k, v := range conns {
-			res[k] = fmt.Sprintf("%s/p2p/%s", v.RemoteMultiaddr(), v.RemotePeer().Pretty())
-		}
-		// 未实现查询，先返回mock数据
-		rw.WriteJSON(res)
+		//var res []string
+		//conns := srv.sn.Host().Network().Conns()
+		//if len(conns) > 0 {
+		//	res = make([]string, len(conns))
+		//}
+		//for k, v := range conns {
+		//	res[k] = fmt.Sprintf("%s/p2p/%s", v.RemoteMultiaddr(), v.RemotePeer().Pretty())
+		//}
+		//// 未实现查询，先返回mock数据
+		//rw.WriteJSON(res)
 	})
 	// 已添加节点
 	handler.HandleAPI("node/peers", func(rw *ResponseWriter, rq *http.Request) {
-		var res []string
-		conns := srv.sn.Host().Peerstore().Peers()
-		if len(conns) > 0 {
-			res = make([]string, len(conns))
-		}
-		for k, v := range conns {
-			res[k] = v.Pretty()
-		}
-		// 未实现查询，先返回mock数据
-		rw.WriteJSON(res)
+		//var res []string
+		//conns := srv.sn.Host().Peerstore().Peers()
+		//if len(conns) > 0 {
+		//	res = make([]string, len(conns))
+		//}
+		//for k, v := range conns {
+		//	res[k] = v.Pretty()
+		//}
+		//// 未实现查询，先返回mock数据
+		//rw.WriteJSON(res)
 	})
 	// 查询硬盘使用状况
 	handler.HandleAPI("ytfs/state", func(rw *ResponseWriter, rq *http.Request) {

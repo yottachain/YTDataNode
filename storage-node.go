@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
@@ -15,7 +16,9 @@ import (
 
 	"github.com/yottachain/YTDataNode/config"
 
-	"github.com/yottachain/YTDataNode/host"
+	"github.com/graydream/YTHost"
+	. "github.com/graydream/YTHost/hostInterface"
+	"github.com/graydream/YTHost/option"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 
@@ -90,7 +93,7 @@ func (am *AddrsManager) GetAddStrings() []string {
 }
 
 type storageNode struct {
-	host          *host.Host
+	host          Host
 	ytfs          *ytfs.YTFS
 	config        *config.Config
 	addrsmanager  *AddrsManager
@@ -106,7 +109,7 @@ func (sn *storageNode) Runtime() RuntimeStatus {
 	return sn.runtimeStatus.Update()
 }
 
-func (sn *storageNode) Host() *host.Host {
+func (sn *storageNode) Host() Host {
 	return sn.host
 }
 func (sn *storageNode) Config() *config.Config {
@@ -124,10 +127,15 @@ func (sn *storageNode) Addrs() []string {
 	return sn.addrsmanager.GetAddStrings()
 }
 
-func (sn *storageNode) SendBPMsg(index int, data []byte) ([]byte, error) {
+func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, error) {
 	bp := sn.config.BPList[index]
-	sn.host.ConnectAddrStrings(bp.ID, bp.Addrs)
-	res, err := sn.Host().SendMsg(bp.ID, "/node/0.0.2", data)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	clt, err := sn.host.ConnectAddrStrings(ctx, bp.ID, bp.Addrs)
+	if err != nil {
+		return nil, err
+	}
+	res, err := clt.SendMsgClose(ctx, id, data)
 	return res, err
 }
 
@@ -153,8 +161,13 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	}
 	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
-	sn.host = host.NewP2PHost()
-	sn.host.SetPrivKey(sn.config.PrivKey())
+	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
+	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma))
+	if err != nil {
+		panic(err)
+	}
+	sn.host = hst
+
 	yp := util.GetYTFSPath()
 	ys, err := ytfs.Open(yp, cfg.Options)
 	if err != nil {

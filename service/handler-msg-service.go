@@ -70,8 +70,8 @@ func (hm *HandleMsgService) ParseMsg(content []byte) (int32, []byte, error) {
 }
 
 // NewHandleMsgService 创建消息处理服务
-func NewHandleMsgService(hst *host.Host) *HandleMsgService {
-	hms := new(HandleMsgService)
-	hms.host = hst
-	return hms
-}
+//func NewHandleMsgService(hst *host.Host) *HandleMsgService {
+//	hms := new(HandleMsgService)
+//	hms.host = hst
+//	return hms
+//}

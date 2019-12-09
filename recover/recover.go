@@ -81,19 +81,21 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 
 func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
 
-	err := re.sn.Host().ConnectAddrStrings(id, addrs)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	clt, err := re.sn.Host().ConnectAddrStrings(ctx, id, addrs)
 	if err != nil {
 		return nil, err
 	}
-	stm, err := re.sn.Host().NewMsgStream(ctx, id, "/node/0.0.2")
-	if err != nil {
-		if err.Error() == "new stream error:dial to self attempted" {
-			var vhf [16]byte
-			copy(vhf[:], hash)
-			return re.sn.YTFS().Get(common.IndexTableKey(vhf))
-		}
-		return nil, err
-	}
+	// todo: 这里需要单独处理，连接自己失败的错误
+	//if err != nil {
+	//	if err.Error() == "new stream error:dial to self attempted" {
+	//		var vhf [16]byte
+	//		copy(vhf[:], hash)
+	//		return re.sn.YTFS().Get(common.IndexTableKey(vhf))
+	//	}
+	//	return nil, err
+	//}
 
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
@@ -102,12 +104,12 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	if err != nil {
 		return nil, err
 	}
-	shardBuf, err := stm.SendMsgGetResponse(append(message.MsgIDDownloadShardRequest.Bytes(), buf...))
+	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
 		return nil, err
 	}
-	err = proto.Unmarshal(shardBuf[2:], &res)
+	err = proto.Unmarshal(shardBuf[:], &res)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +173,7 @@ func (re *RecoverEngine) reply(res *TaskMsgResult) error {
 	if err != nil {
 		return err
 	}
-	_, err = re.sn.SendBPMsg(int(res.BPID), append(message.MsgIDTaskOPResult.Bytes(), data...))
+	_, err = re.sn.SendBPMsg(int(res.BPID), message.MsgIDTaskOPResult.Value(), data)
 	log.Println("[recover] reply to", int(res.BPID))
 	return err
 }

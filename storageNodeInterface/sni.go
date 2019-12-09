@@ -1,8 +1,8 @@
 package storageNodeInterface
 
 import (
+	. "github.com/graydream/YTHost/hostInterface"
 	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/host"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	ytfs "github.com/yottachain/YTFS"
 )
@@ -17,12 +17,12 @@ type Owner struct {
 // StorageNode 存储节点接口
 type StorageNode interface {
 	Addrs() []string
-	Host() *host.Host
+	Host() Host
 	YTFS() *ytfs.YTFS
 	GetBP() int
 	Service()
 	Config() *config.Config
 	Runtime() RuntimeStatus
 	Owner() *Owner
-	SendBPMsg(index int, data []byte) ([]byte, error)
+	SendBPMsg(index int, id int32, data []byte) ([]byte, error)
 }

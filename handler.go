@@ -217,7 +217,11 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 			return true
 		}
 		var checkres bool = false
-		if err := sch.Host().ConnectAddrStrings(task.NodeId, []string{task.Addr}); err != nil {
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		clt, err := sch.Host().ConnectAddrStrings(ctx, task.NodeId, []string{task.Addr})
+		if err != nil {
 			log.Println("连接失败", task.Id)
 			return false
 		}
@@ -227,11 +231,11 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 			log.Println("error:", err)
 		}
 		// 发送下载分片命令
-		if shardData, err := sch.Host().SendMsg(task.NodeId, "/node/0.0.2", append(message.MsgIDDownloadShardRequest.Bytes(), checkData...)); err != nil {
+		if shardData, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
-			if err := proto.Unmarshal(shardData[2:], &share); err != nil {
+			if err := proto.Unmarshal(shardData[:], &share); err != nil {
 				log.Println("error:", err)
 			} else {
 				// 校验VHF
@@ -264,7 +268,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 				log.Println("error:", err)
 			}
 			log.Println("上报失败的任务：", v, "sn:", k)
-			if r, e := sch.SendBPMsg(k, append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+			if r, e := sch.SendBPMsg(k, message.MsgIDSpotCheckStatus.Value(), resp); e != nil {
 				log.Println("抽查任务上报失败：", e)
 			} else {
 				log.Printf("抽查任务上报成功%s\n", r)
