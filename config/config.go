@@ -260,7 +260,7 @@ func (cfg *Config) PrivKey() ci.PrivKey {
 	return cfg.privKey
 }
 func (cfg *Config) PrivKeyString() string {
-	buf, _ := cfg.privKey.Bytes()
+	buf, _ := cfg.privKey.Raw()
 	return base58.Encode(buf)
 }
 
