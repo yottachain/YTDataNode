@@ -52,19 +52,16 @@ func main() {
 	}
 	txopts := &eos.TxOptions{}
 	txopts.FillFromChain(api)
-	txdata, cfd, err := signedTx.PackedTransactionAndCFD()
-	pbuf := eos.SigDigest(txopts.ChainID, txdata, cfd)
-	fmt.Println("签名前的：", pbuf)
-	res, err := kb.Sign(&signedTx, txopts.ChainID, getPubkey()...)
 
+	res, err := kb.Sign(&signedTx, txopts.ChainID, getPubkey()...)
 	if err != nil {
 		log.Println("签名失败:", err)
 	}
-	log.Println("交易签名：")
+	fmt.Println("交易签名：")
 	buf, _ := json.Marshal(res)
-	log.Println("-----------签名结果-----------")
-	log.Println(string(buf))
-	log.Println("-----------------------------")
+	fmt.Println("-----------签名结果-----------")
+	fmt.Println(string(buf))
+	fmt.Println("-----------------------------")
 }
 
 func getPubkey() []ecc.PublicKey {

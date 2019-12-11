@@ -3,11 +3,14 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"os"
-
 	"github.com/gogo/protobuf/proto"
+	"github.com/yottachain/YTDataNode/host"
+	"github.com/yottachain/YTDataNode/logger"
+	rc "github.com/yottachain/YTDataNode/recover"
+	"github.com/yottachain/YTDataNode/uploadTaskPool"
+	"github.com/yottachain/YTDataNode/util"
+	"os"
+	"path"
 
 	"time"
 
@@ -32,25 +35,43 @@ func (sn *storageNode) Service() {
 		tokenInterval = 50
 	}
 	fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := WriteHandler{sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond)}
-	wh.Upt.FillQueue()
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte) []byte {
+	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
+	wh.Run()
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDNodeCapacityRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		return wh.GetToken(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDUploadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		return wh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDDownloadShardRequest.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		dh := DownloadHandler{sn}
 		return dh.Handle(data)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDString.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		fmt.Println(data)
 		return append(message.MsgIDString.Bytes(), []byte("pong")...)
 	})
-	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte) []byte {
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDSpotCheckTaskList.Value(), func(data []byte, stm *host.MsgStream) []byte {
 		sch := SpotCheckHandler{sn}
 		return sch.Handle(data)
+	})
+	rce, err := rc.New(sn)
+	if err != nil {
+		log.Printf("[recover]init error %s\n", err.Error())
+	}
+	go rce.Run()
+	hm.RegitsterHandler("/node/0.0.2", message.MsgIDMultiTaskDescription.Value(), func(msgData []byte, stm *host.MsgStream) []byte {
+		if err := rce.HandleMuilteTaskMsg(msgData, stm); err == nil {
+			log.Println("[recover]success")
+		} else {
+			log.Println("[recover]error", err)
+		}
+		go func() {
+			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("%d-test.data", time.Now().UnixNano())), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+			defer fd.Close()
+			fd.Write(msgData)
+		}()
+		return message.MsgIDVoidResponse.Bytes()
 	})
 	hm.Service()
 	rms = service.NewRelayManage(sn.host)
@@ -65,13 +86,13 @@ func (sn *storageNode) Service() {
 	// for _, v := range sn.services {
 	// 	v.Service()
 	// }
-	go func() {
-		for {
-			sn.Config().ReloadBPList()
-			log.Println("更新BPLIST")
-			time.Sleep(time.Hour)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		sn.Config().ReloadBPList()
+	//		log.Println("更新BPLIST")
+	//		time.Sleep(time.Hour)
+	//	}
+	//}()
 }
 
 // Register 注册矿机
@@ -120,6 +141,9 @@ var first = true
 // Report 上报状态
 func Report(sn *storageNode) {
 	var msg message.StatusRepReq
+	if sn.GetBP() == 0 {
+		return
+	}
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
 	if rms.Addr() != "" && first == false {
@@ -146,6 +170,7 @@ func Report(sn *storageNode) {
 	if err := sn.Host().ConnectAddrStrings(bp.ID, bp.Addrs); err != nil {
 		log.Println("Connect bp fail", err)
 	}
+
 	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

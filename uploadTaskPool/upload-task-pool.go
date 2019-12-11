@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/yottachain/YTDataNode/logger"
+	_ "net/http/pprof"
 	"sync/atomic"
 	"time"
 )

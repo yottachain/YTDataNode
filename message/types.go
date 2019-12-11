@@ -19,10 +19,13 @@ const (
 	MsgIDStatusRepReq          msgType = 0xc9a9
 	MsgIDStatusRepResp         msgType = 0xfa09
 	MsgIDTaskDescript          msgType = 0xd761
+	MsgIDTaskDescriptCP        msgType = 0xc258
 	MsgIDTaskOPResult          msgType = 0x16f3
 	MsgIDSpotCheckTaskList     msgType = 0x903a
 	MsgIDSpotCheckStatus       msgType = 0xa583
 	MsgIDString                msgType = 0x0000
+	MsgIDMultiTaskDescription  msgType = 0x2cb0
+	MsgIDMultiTaskOPResult     msgType = 0x1b31
 )
 
 type msgType int32

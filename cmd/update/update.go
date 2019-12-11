@@ -28,6 +28,9 @@ func getUpdateConfig() (*UpdateConfig, error) {
 	if url, ok := os.LookupEnv("update_url"); ok {
 		updateURL = url
 	}
+	if baseCfg, err := config.ReadConfig(); err == nil && baseCfg.UpdateURL != "" {
+		updateURL = baseCfg.UpdateURL
+	}
 	resp, err := http.Get(updateURL)
 	if err != nil {
 		return nil, fmt.Errorf("读取配置失败%s\n", err)

@@ -16,6 +16,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
+	"net/http"
+	"time"
 )
 
 // Host 节点host
@@ -81,17 +83,16 @@ func (h *Host) ConnectAddrStrings(id string, addrs []string) error {
 	if err != nil {
 		return fmt.Errorf("ID formate fail：%s", err)
 	}
-
-	return h.Connect(context.Background(), peerstore.PeerInfo{
-		ID:    pid,
-		Addrs: maddrs,
-	})
+	h.Peerstore().AddAddrs(pid, maddrs, 10*time.Second)
+	return nil
 }
 
 // Daemon 启动host节点
 func (h *Host) Daemon(ctx context.Context, cfg config.Config) error {
 	//setupSigusr1Trap()
-
+	go func() {
+		http.ListenAndServe(":10000", nil)
+	}()
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.ListenAddr),
 		libp2p.NATPortMap(),

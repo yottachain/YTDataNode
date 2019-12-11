@@ -3,12 +3,13 @@ package instance
 import (
 	node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/config"
+	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 )
 
-var sn node.StorageNode
+var sn StorageNode
 
 // GetStorageNode 获取StorageNode
-func GetStorageNode() node.StorageNode {
+func GetStorageNode() StorageNode {
 	if sn == nil {
 		cfg, err := config.ReadConfig()
 		if err != nil {

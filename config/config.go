@@ -1,12 +1,12 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"time"
@@ -36,6 +36,7 @@ type Config struct {
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
+	UpdateURL string `json:"update_url"`
 }
 
 // DefaultYTFSOptions default config
@@ -122,29 +123,58 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
 
 	cfg.Relay = true
-	cfg.BPList = getBPList()
+	//cfg.BPList = getBPList()
 	return cfg
 }
 
 func getBPList() []peerInfo {
 	var bplist []peerInfo
-	var bpconfigurl = "http://download.yottachain.io/config/bp.json"
-	if url, ok := os.LookupEnv("bp-config-url"); ok {
-		bpconfigurl = url
-	}
+	//var bpconfigurl = "http://download.yottachain.io/config/bp-test.json"
+	//if url, ok := os.LookupEnv("bp-config-url"); ok {
+	//	bpconfigurl = url
+	//}
+	//
+	//log.Println("bpconfigurl", bpconfigurl)
+	//resp, err := http.Get(bpconfigurl)
+	//if err != nil {
+	//	log.Println("获取BPLIST失败")
+	//	os.Exit(1)
+	//}
+	//buf, err := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	log.Println("获取BPLIST失败")
+	//	os.Exit(1)
+	//}
+	jsdata := `
+[
+    {
 
-	log.Println("bpconfigurl", bpconfigurl)
-	resp, err := http.Get(bpconfigurl)
-	if err != nil {
-		log.Println("获取BPLIST失败")
-		os.Exit(1)
-	}
-	buf, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("获取BPLIST失败")
-		os.Exit(1)
-	}
-	json.Unmarshal(buf, &bplist)
+      "ID": "16Uiu2HAmPqE8R8U7CHRsKrNw9aVjdxUrGUEWBvNPGsVbaCBxrLkt",
+      "Addrs": ["/ip4/49.234.139.206/tcp/9999"]
+    },
+    {
+
+      "ID": "16Uiu2HAmR7VVxjZ516FkXmjoeAaMQ5UBEtqR1xPDmFhLi1ivb5GP",
+      "Addrs": ["/ip4/129.211.72.15/tcp/9999"]
+    },
+    {
+
+      "ID": "16Uiu2HAm1h55uTrWXATukWgMwKdYEEdSbkUpCwfSc2fznfebNcJL",
+      "Addrs": ["/ip4/122.152.203.189/tcp/9999"]
+    },
+    {
+      "ID": "16Uiu2HAmCtczNYRxsUj4xi4jMGFsfxn1oKYsbSLAYNsJZkJJLgsZ",
+      "Addrs": ["/ip4/212.129.153.253/tcp/9999"]
+    },
+    {
+      "ID": "16Uiu2HAmSXfk5mgmZd2YmA5Aug23vCdUesRuVEeCHSFUDeX2GxWv",
+      "Addrs": ["/ip4/49.235.52.30/tcp/9999"]
+    }
+  ]
+
+`
+	buf := bytes.NewBufferString(jsdata)
+	json.Unmarshal(buf.Bytes(), &bplist)
 	return bplist
 }
 
@@ -175,8 +205,8 @@ func (cfg *Config) Save() error {
 }
 
 func (cfg *Config) ReloadBPList() {
-	cfg.BPList = getBPList()
-	cfg.Save()
+	//cfg.BPList = getBPList()
+	//cfg.Save()
 }
 
 // NewKey 创建新的key
@@ -194,6 +224,9 @@ func (cfg *Config) NewKey() error {
 func (cfg *Config) GetBPIndex() int {
 	id := cfg.IndexID
 	bpnum := len(cfg.BPList)
+	if bpnum == 0 {
+		return 0
+	}
 	bpindex := id % uint32(bpnum)
 	return int(bpindex)
 }
@@ -232,7 +265,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 9
+	return 12
 }
 
 func Version() uint32 {

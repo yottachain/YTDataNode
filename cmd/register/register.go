@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var baseNodeUrl = "http://35.176.59.89:8888" //正式
-//var baseNodeUrl = "http://124.156.54.96:8888" //测试
+//var baseNodeUrl = "http://35.176.59.89:8888" //正式
+var baseNodeUrl = "http://124.156.54.96:8888" //测试
 
 var api = eos.New(baseNodeUrl)
 var BPList []string
@@ -93,7 +93,8 @@ var RegisterCmd = &cobra.Command{
 		if err != nil || initConfig.IndexID == 0 {
 			fmt.Println("未查询到矿机注册信息，是否重新注册：y/n?")
 			fmt.Scanf("%c\n", &yOrN)
-			if yOrN != 'n' {
+			if yOrN == 'y' {
+				fmt.Println(yOrN)
 				step1()
 			} else {
 				fmt.Println("取消注册")
@@ -118,7 +119,9 @@ func getNewMinerID() (uint64, int) {
 	fmt.Println("获取ID")
 	rand.Seed(time.Now().Unix())
 	randInt := rand.Int()
+	fmt.Println(BPList)
 	bpIndex := randInt % len(BPList)
+
 	fmt.Println(randInt, bpIndex, len(BPList))
 	currBP := BPList[bpIndex]
 	requestUrl := fmt.Sprintf("http://%s:8082/newnodeid", currBP)
@@ -159,7 +162,7 @@ getMC:
 		goto getMC
 	}
 	if mc < 8 || mc > 20 {
-		fmt.Println("请输入范围8～20的数")
+		fmt.Println("请输入范围8～20的数", mc)
 		goto getMC
 	}
 	commander.InitBySignleStorage(size*GB, 1<<mc)
@@ -235,7 +238,7 @@ regTxsign:
 	txjson, err := json.Marshal(tx)
 	fmt.Printf("%s\n", txjson)
 	fmt.Println("-----------------------------")
-	regTxsigned = util.ReadStringLine(os.Stdin, 4096)
+	fmt.Scanln(&regTxsigned)
 	json.Unmarshal([]byte(regTxsigned), &tx)
 	if err != nil {
 		fmt.Println("签名错误：", err)
@@ -394,7 +397,7 @@ func preRegister(tx *eos.SignedTransaction) error {
 
 func getNodeList() []string {
 	var list []string
-	resp, err := http.Get("http://download.yottachain.io/config/bpsn.json")
+	resp, err := http.Get("http://download.yottachain.io/config/bpsn-test.json")
 	if err != nil {
 		log.Println("获取BP失败")
 		os.Exit(1)
@@ -404,6 +407,14 @@ func getNodeList() []string {
 		log.Println("获取BP失败")
 		os.Exit(1)
 	}
+	//listStr := `
+	//["49.234.139.206",
+	//"129.211.72.15",
+	//"122.152.203.189",
+	//"212.129.153.253",
+	//"49.235.52.30"]
+	//`
+	//buf := bytes.NewBufferString(listStr)
 	err = json.Unmarshal(buf, &list)
 	if err != nil {
 		log.Println(err)
