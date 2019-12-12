@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
@@ -119,7 +120,7 @@ func Report(sn *storageNode) {
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	if clt, err := sn.Host().ConnectAddrStrings(ctx, bp.ID, bp.Addrs); err != nil {
@@ -136,6 +137,9 @@ func Report(sn *storageNode) {
 			sn.owner.BuySpace = resMsg.ProductiveSpace
 			log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 			if resMsg.RelayUrl != "" {
+				if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err != nil {
+					return
+				}
 				rms.UpdateAddr(resMsg.RelayUrl)
 				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
 			} else {
