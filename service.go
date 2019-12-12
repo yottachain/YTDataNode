@@ -137,11 +137,12 @@ func Report(sn *storageNode) {
 			sn.owner.BuySpace = resMsg.ProductiveSpace
 			log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 			if resMsg.RelayUrl != "" {
-				if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err != nil {
-					return
+				if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err == nil {
+					rms.UpdateAddr(resMsg.RelayUrl)
+					log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
+				} else {
+					rms.UpdateAddr("")
 				}
-				rms.UpdateAddr(resMsg.RelayUrl)
-				log.Printf("update relay addr: %s\n", resMsg.RelayUrl)
 			} else {
 				rms.UpdateAddr("")
 			}
