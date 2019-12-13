@@ -2,6 +2,7 @@ package recover
 
 import (
 	"bytes"
+	"container/list"
 	"context"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
@@ -18,6 +19,22 @@ import (
 	"sync"
 	"time"
 )
+
+type Shardsinfo struct {
+	recoverNum    int16  //可覆盖碎片总数
+	decoderNum    int16  //解码器最大允许数
+	originalCount uint16 //原始数据最大碎片数
+	lostindex     uint16 //希望恢复块的序号
+	shardSize     uint32 //碎片大小,当前默认是16k
+}
+
+type LRCEngine interface {
+	GetRCHandle(sdinf *Shardsinfo) int16           //创建碎片任务
+	GetNeededShardList(handle int16) *list.List    //获得恢复指定碎片所需碎片的列表，建议加载完所有已知碎片后再调用
+	AddShardData(handle int16, sdata []byte) int16 //每获得一个碎片就可以加入，大于0表示已经重建完毕，等于0表示还需要碎片，小于0表示有错误
+	GetShardData(handle int16) ([]byte, int16)     //获取恢复后的碎片及状态，大于0表示数据获取成功，等于0表示还需要碎片，小于0表示错误
+	FreeHandle(handle int16)                       //恢复中期，放弃恢复任务或者任务结束时，需要调用本函数
+}
 
 type RecoverEngine struct {
 	sn         node.StorageNode
