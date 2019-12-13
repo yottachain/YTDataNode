@@ -77,6 +77,9 @@ func (sn *storageNode) Service() {
 	//	}()
 	//	return message.MsgIDVoidResponse.Bytes(), nil
 	//})
+	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, e error) {
+		return message.MsgIDVoidResponse.Bytes(), nil
+	})
 	go sn.Host().Accept()
 	//Register(sn)
 	go func() {
