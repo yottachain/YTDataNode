@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
+	node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/instance"
-	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 )
 
 // Server api服务

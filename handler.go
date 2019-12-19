@@ -12,66 +12,13 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 
 	"github.com/golang/protobuf/proto"
-	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTFS/common"
 )
 
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	Upt          *uploadTaskPool.UploadTaskPool
-	RequestQueue chan *wRequest
-}
-
-func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
-	return &WriteHandler{
-		sn,
-		utp,
-		make(chan *wRequest, 1000),
-	}
-}
-
-type wRequest struct {
-	Key   common.IndexTableKey
-	Data  []byte
-	Error chan error
-}
-
-func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
-	rq := &wRequest{
-		key,
-		data,
-		make(chan error),
-	}
-	wh.RequestQueue <- rq
-	return <-rq.Error
-}
-func (wh *WriteHandler) batchWrite(number int) {
-	rqmap := make(map[common.IndexTableKey][]byte, number)
-	rqs := make([]*wRequest, number)
-	for i := 0; i < number; i++ {
-		rq := <-wh.RequestQueue
-		rqmap[rq.Key] = rq.Data
-		rqs[i] = rq
-	}
-	_, err := wh.YTFS().BatchPut(rqmap)
-	log.Printf("[ytfs]flush success:%d\n", number)
-	for _, rq := range rqs {
-		rq.Error <- err
-	}
-}
-
-func (wh *WriteHandler) Run() {
-	wh.Upt.FillQueue()
-	go func() {
-		var flushInterval time.Duration = time.Millisecond * 100
-		for {
-			<-time.After(flushInterval)
-			if n := len(wh.RequestQueue); n > 0 {
-				wh.batchWrite(n)
-			}
-		}
-	}()
+	Upt *uploadTaskPool.UploadTaskPool
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
@@ -97,6 +44,10 @@ func (wh *WriteHandler) GetToken(data []byte) []byte {
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte) []byte {
+	// 开始处理任务占用处理器数量
+	wh.Upt.Do()
+	// 结束任务减少处理器数量
+	defer wh.Upt.Done()
 	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
@@ -148,10 +99,10 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	// 3. 将数据写入YTFS-disk
 	var indexKey [32]byte
 	copy(indexKey[:], msg.VHF[0:32])
-	err = wh.push(common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
-		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
+		if err.Error() == "YTFS: hash key conflict happens" {
 			return 102
 		}
 		log.Println("数据写入错误error:", err)
@@ -247,28 +198,22 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		spotChecker.Do()
 		endTime := time.Now()
 		log.Println("抽查任务结束用时:", endTime.Sub(startTime).String())
+		bp := sch.Config().BPList[sch.GetBP()]
 		if err := recover(); err != nil {
 			log.Println("error:", err)
 		}
-		var replayMap = make(map[int][]int32)
-		for _, v := range spotChecker.InvalidNodeList {
-			row := replayMap[int(v)%len(sch.Config().BPList)]
-			replayMap[int(v)%len(sch.Config().BPList)] = append(row, v)
+		resp, err := proto.Marshal(&message.SpotCheckStatus{
+			TaskId:          msg.TaskId,
+			InvalidNodeList: spotChecker.InvalidNodeList,
+		})
+		if err != nil {
+			log.Println("error:", err)
 		}
-		for k, v := range replayMap {
-			resp, err := proto.Marshal(&message.SpotCheckStatus{
-				TaskId:          msg.TaskId,
-				InvalidNodeList: v,
-			})
-			if err != nil {
-				log.Println("error:", err)
-			}
-			log.Println("上报失败的任务：", v, "sn:", k)
-			if r, e := sch.SendBPMsg(k, append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
-				log.Println("抽查任务上报失败：", e)
-			} else {
-				log.Printf("抽查任务上报成功%s\n", r)
-			}
+		log.Println("失败的任务：", spotChecker.InvalidNodeList)
+		if r, e := sch.Host().SendMsg(bp.ID, "/node/0.0.2", append(message.MsgIDSpotCheckStatus.Bytes(), resp...)); e != nil {
+			log.Println(e)
+		} else {
+			log.Printf("%s\n", r)
 		}
 	}()
 	return append(message.MsgIDVoidResponse.Bytes())
