@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package message;
+
+//msgid=0xc487
+message NodeCapacityRequest{
+}
+
+//msgid=0xe684
+message NodeCapacityResponse {
+    bool writable=1;
+    string allocId=2;
+}
+
+
+//msgid=0xCB05
+message UploadShardRequest  {
+   int32 SHARDID=1;
+   int32 BPDID = 2;
+   int64 VBI = 3;
+   bytes BPDSIGN=4;
+   bytes DAT=5;
+   bytes VHF=6;
+   bytes USERSIGN=7;
+   string allocId=8;
+}
+
+
+message UploadShardResponse  {
+   int32 RES= 1; 
+   int32 SHARDID = 2;
+   int64 VBI = 3;
+   bytes VHF=4;
+   bytes USERSIGN=5;
+}
+
+message UploadShard2CResponse {
+   int32 RES= 1;
+   string DNSIGN =2;
+}
+
+message DownloadShardRequest {
+   bytes VHF=1;
+}
+
+message DownloadShardResponse{
+   bytes data=1;
+}
+
+message NodeRegReq {                           
+
+    string nodeid= 1;                           
+    string owner=2;                              
+    uint64 maxDataSpace=3;                 
+    repeated string addrs=4;     
+    bool relay=5;
+}
+
+
+message NodeRegResp {                        
+    uint32 id= 1;                                    
+    uint64 assignedSpace=2;    
+    string relayUrl=3;
+}
+
+message StatusRepReq {
+    uint32 id=1;
+    uint32 cpu=2;
+    uint32 memory=3;
+    uint32 bandwidth=4;
+    uint64 maxDataSpace=5;
+    uint64 assignedSpace=6;
+    uint64 usedSpace=7;
+    repeated string addrs=8;
+    bool relay=9;
+    uint32 version=10;
+ }
+
+message StatusRepResp {
+    uint64 productiveSpace=1; 
+    string relayUrl=2;                 
+}
+
+message StringMsg{
+    string msg=1;
+}
+
+message SpotCheckTaskList{
+    string taskId = 1;
+     int32 snid=2;
+    repeated SpotCheckTask taskList=3;
+}
+
+message SpotCheckTask{
+    int32 id = 1;
+    string nodeId=2;
+    string addr=3;
+    bytes VHF=4;
+}
+
+message SpotCheckStatus{
+    string taskId = 1;
+    repeated int32 invalidNodeList=2;
+}
+
+//RS编码重建任务
+//msgid=0xd761
+message TaskDescription{
+    bytes id = 1;
+    repeated bytes hashs=2;
+    repeated P2PLocation locations=3;
+    int32 parityShardCount=4;
+    int32 recoverId=5;
+}
+
+//id:任务ID,在上报重建结果(TaskOpResult)时,传入
+//hashs:RS分片HASH列表
+//locations:RS分片对应的矿机地址列表,数目与hashs一致
+//parityShardCount:校验分片数目(一般32),即hashs的后32个是校验分片
+//recoverId:需要恢复的分片索引,从0开始,相当于hashs[recoverId]需要恢复
+
+
+//msgid=0xc258
+message TaskDescriptionCP{
+    bytes id = 1;
+    bytes dataHash=2;
+    repeated P2PLocation locations=3;
+}
+
+//副本集模式指一个小于16K的数据块,不使用RS编码,生成32个完全相同的数据分片写入32台矿机
+//id:任务ID,在上报重建结果(TaskOpResult)时,传入
+//hashs:副本集分片HASH(所有分片的HASH是相同的)
+//locations:副本分片对应的矿机地址列表,从32台矿机中任选一个下载到数据，复制到本地即可
+
+
+message P2PLocation{
+    string nodeId=1;
+    repeated string addrs=2;
+}
+
+//矿机收到任务请回复VoidResp
+//msgid=0xe64f
+message VoidResponse  {
+}
+
+//矿机重建完毕后向任务发起方SN返回结果
+//msgid=0x16f3
+message TaskOpResult{
+    bytes id = 1;
+    int32 RES=2;
+}
+
+//暂定：RES=0 成功，RES=1 失败
+//矿机收到结果回复VoidResp
+
+//MessageID:2cb0
+message MultiTaskDescription{
+    repeated bytes tasklist=1;
+}
+
+//MessageID:1b31
+message MultiTaskOpResult{
+    repeated bytes id = 1;
+    repeated int32 RES=2;
+}
+
