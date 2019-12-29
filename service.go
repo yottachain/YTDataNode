@@ -8,10 +8,12 @@ import (
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
+	"sync"
 	"time"
-
+ //   "runtime"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
+	"github.com/yottachain/YTDataNode/slicecompare"
 
 	yhservice "github.com/graydream/YTHost/service"
 	ytfs "github.com/yottachain/YTFS"
@@ -20,6 +22,7 @@ import (
 type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
+//var FileComparedIdx string = "last_compared_index_file"
 
 func (sn *storageNode) Service() {
 
@@ -39,22 +42,34 @@ func (sn *storageNode) Service() {
 	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, tokenInterval*time.Millisecond))
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		log.Println("收到消息:MsgIDNodeCapacityRequest")
 		return wh.GetToken(data), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		log.Println("收到消息:MsgIDUploadShardRequest")
 		return wh.Handle(data), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
+		log.Println("收到消息:MsgIDDownloadShardRequest")
 		return dh.Handle(data), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		log.Println("收到消息:MsgIDString")
 		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDSpotCheckTaskList.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		sch := SpotCheckHandler{sn}
+		log.Println("收到消息:MsgIDSpotCheckTaskList")
 		return sch.Handle(data), nil
 	})
+	scp := downloadsnlistHandler{sn,sync.Mutex{}}
+	_ = sn.Host().RegisterHandler(message.MsgIDListDNIResp.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		log.Println("收到消息:MsgIDListDNIResp")
+		go scp.Handle(data)
+		return append(message.MsgIDVoidResponse.Bytes()),nil
+	})
+
 	rce, err := rc.New(sn)
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
@@ -86,6 +101,34 @@ func (sn *storageNode) Service() {
 		for {
 			Report(sn)
 			time.Sleep(time.Second * 60)
+		}
+	}()
+
+	sc := slicecompare.NewSliceComparer()
+	go func() {
+		for {
+			<-time.After(90 * time.Second)
+            log.Println("sc.ComparedIdxFile:",sc.ComparedIdxFile)
+			nextidtodownld, _ := sc.GetValueFromFile(sc.ComparedIdxFile)
+			log.Println("nextidtodownld",nextidtodownld)
+	//		nextidtodownld=[]byte("000000000000")
+			downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
+			downloadrq, _ := proto.Marshal(downloadsnlist)
+			bpindex := sn.GetBP()
+			scp.Lock()
+			if _, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil {
+				log.Println("error:", err)
+			}
+			scp.Unlock()
+		}
+	}()
+
+	go func() {
+		for {
+			<-time.After(120 * time.Second)
+			if err := sc.SaveEntryInDBToDel(sc.File_TmpDB, sc.File_ToDelDB); err != nil {
+				log.Println("error:", err)
+			}
 		}
 	}()
 }

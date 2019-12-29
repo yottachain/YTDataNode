@@ -26,6 +26,8 @@ const (
 	MsgIDString                msgType = 0x0011
 	MsgIDMultiTaskDescription  msgType = 0x2cb0
 	MsgIDMultiTaskOPResult     msgType = 0x1b31
+	MsgIDListDNIReq            msgType = 0x4bc6
+    MsgIDListDNIResp           msgType = 0xd6cb
 )
 
 type msgType int32

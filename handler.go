@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
+	"sync"
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -15,6 +17,7 @@ import (
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTFS/common"
 )
+//var FileDB_tmp string = "temp_index_kvdb"
 
 // WriteHandler 写入处理器
 type WriteHandler struct {
@@ -47,14 +50,25 @@ func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
 	return <-rq.Error
 }
 func (wh *WriteHandler) batchWrite(number int) {
+	sc := slicecompare.NewSliceComparer()
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
 	for i := 0; i < number; i++ {
 		rq := <-wh.RequestQueue
 		rqmap[rq.Key] = rq.Data
 		rqs[i] = rq
+		hashkey[i] = rq.Key[:]
 	}
-	_, err := wh.YTFS().BatchPut(rqmap)
+
+	err := sc.SaveRecordToTmpDB(hashkey, sc.File_TmpDB)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = wh.YTFS().BatchPut(rqmap)
 	log.Printf("[ytfs]flush success:%d\n", number)
 	for _, rq := range rqs {
 		rq.Error <- err
@@ -276,4 +290,42 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		}
 	}()
 	return append(message.MsgIDVoidResponse.Bytes())
+}
+
+// SpotCheckHandler 下载处理器
+type downloadsnlistHandler struct {
+	StorageNode
+	sync.Mutex
+}
+
+func (snlst *downloadsnlistHandler) Handle(msgData []byte)  ([]byte,error) {
+	snlst.Lock()
+	defer snlst.Unlock()
+	var msg message.ListDNIResp
+	var err error
+	log.Println("this is download entries for sliceentry compare!!!!")
+	sc := new(slicecompare.SliceComparer)
+	if err = proto.Unmarshal(msgData, &msg); err != nil {
+		log.Println(err)
+	}
+
+	log.Println("nextid",string(msg.Nextid))
+	log.Println("download entry byte",len(msg.Vnflist))
+	log.Println("download entry count",len(msg.Vnflist)/24)
+	if err = sc.CompareEntryWithSnTables(msg.Vnflist, sc.File_TmpDB, sc.ComparedIdxFile); err != nil{
+		log.Println(err)
+	}
+	if((len(msg.Vnflist)/24) == 1000){
+		sn := snlst.StorageNode
+		nextidtodownld, _ := sc.GetValueFromFile(sc.ComparedIdxFile)
+		log.Println("nextidtodownld",nextidtodownld)
+		//		nextidtodownld=[]byte("000000000000")
+		downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
+		downloadrq, _ := proto.Marshal(downloadsnlist)
+		bpindex := sn.GetBP()
+		if _, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil {
+			log.Println("error:", err)
+		}
+	}
+	return append(message.MsgIDVoidResponse.Bytes()),err
 }

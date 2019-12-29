@@ -132,6 +132,7 @@ func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, erro
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	clt, err := sn.host.ConnectAddrStrings(ctx, bp.ID, bp.Addrs)
+	//sn.host.ClientStore().Get(ctx, bp.ID, bp.Addrs)
 	if err != nil {
 		return nil, err
 	}
