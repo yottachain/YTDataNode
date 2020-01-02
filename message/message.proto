@@ -164,3 +164,14 @@ message MultiTaskOpResult{
     repeated int32 RES=2;
 }
 
+//msgid=0x4bc6
+message ListDNIReq{
+    string nextid= 1;
+    int32 count=2;
+}
+//msgid=0xd6cb
+message ListDNIResp{
+    repeated bytes vnflist=1;
+    string nextid= 2;
+}
+

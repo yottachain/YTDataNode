@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"time"
@@ -47,14 +48,25 @@ func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
 	return <-rq.Error
 }
 func (wh *WriteHandler) batchWrite(number int) {
+	sc := slicecompare.NewSliceComparer()
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
 	for i := 0; i < number; i++ {
 		rq := <-wh.RequestQueue
 		rqmap[rq.Key] = rq.Data
 		rqs[i] = rq
+		hashkey[i] = rq.Key[:]
 	}
-	_, err := wh.YTFS().BatchPut(rqmap)
+
+	err := sc.SaveRecordToTmpDB(hashkey, sc.File_TmpDB)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = wh.YTFS().BatchPut(rqmap)
 	log.Printf("[ytfs]flush success:%d\n", number)
 	for _, rq := range rqs {
 		rq.Error <- err
