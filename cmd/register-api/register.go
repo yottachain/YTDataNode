@@ -30,8 +30,6 @@ type ADDPoolData struct {
 	MaxSpace   uint64          `json:"max_space"`
 }
 
-// http://download.yottachain.io/config/bpsn.json  公测
-// http://download.yottachain.io/config/bpsn-test.json 研发
 func GetSNList(baseaddr string) ([]string, error) {
 	var list []string
 	resp, err := http.Get(baseaddr)
