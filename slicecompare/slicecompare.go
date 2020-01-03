@@ -98,13 +98,13 @@ func (sc *SliceComparer)SaveRecordToTmpDB(hashBatch [][]byte, tmpDBName string) 
 	return err
 }
 
-func (sc *SliceComparer)SaveSnRecordToDB(hashBatch [][]byte, firstEntryIdx string, fileSnDBName string, firstEntryIdxFile string) error {
+func (sc *SliceComparer)SaveSnRecordToDB(hashBatch [][]byte, fileSnDBName string) error {
 	var strval string
 	DBPath := util.GetYTFSPath() + fileSnDBName
 	db,err := leveldb.OpenFile(DBPath,nil)
 	defer db.Close()
 
-	sc.saveFirstEntryNumToFile(firstEntryIdx,firstEntryIdxFile)
+//	sc.saveFirstEntryNumToFile(firstEntryIdx,firstEntryIdxFile)
 
 	for value, key := range hashBatch{
 		strval = strconv.Itoa(value)
@@ -138,11 +138,15 @@ func (sc *SliceComparer)GetValueFromFile(fileName string) (string ,error){
 	return string(content),err
 }
 
-func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmpHashDB, comparedIdxFileName, nextID string, comparetimes * uint8) error {
+func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmpHashDB, snHashDB, comparedIdxFileName, nextID string, comparetimes * uint8) error {
 
 	tmpDBPath := util.GetYTFSPath() + tmpHashDB
 	tmp_db,_ := leveldb.OpenFile(tmpDBPath,nil)
 	defer tmp_db.Close()
+
+	snDBPath := util.GetYTFSPath() + snHashDB
+	sn_db,_ := leveldb.OpenFile(snDBPath,nil)
+	defer sn_db.Close()
 
 	filePath := util.GetYTFSPath() + comparedIdxFileName
 	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_TRUNC, 0666)
@@ -157,11 +161,14 @@ func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmpHashDB
 	}
 	defer f.Close()
 
+	nowtime := strconv.FormatInt(time.Now().Unix(),10)
+
 	for _,key := range snHashBatch {
+		err = sn_db.Put(key, []byte(nowtime), nil)
 		if ok,err := tmp_db.Has(key,nil); ok == true{
             err = tmp_db.Delete(key,nil)
             if err != nil{
-				log.Println(err)
+				log.Println("[error]delete item from tmp_db error",err)
             	return err
 			}
 		}else{
@@ -203,7 +210,7 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmpHashDB, toDelEntryDB string, compa
 	for iter.Next() {
 		saveTime = string(iter.Value())
 		saveTimeInt,_ = strconv.ParseInt(saveTime,10,64)
-		if nowTime - saveTimeInt >= 180 {
+		if nowTime - saveTimeInt >= 600 {
            if err := del_db.Put(iter.Key(),iter.Value(),nil); err != nil{
            	   log.Println(err)
            	   return err

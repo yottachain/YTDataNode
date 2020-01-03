@@ -142,15 +142,12 @@ func (sn *storageNode) Service() {
 				     	msgData := msgresp[2:]
 					 	var msg message.ListDNIResp
 					 	var err error
-					 //log.Println("this is download entries for sliceentry compare!!!!")
+
 					 	if err = proto.Unmarshal(msgData, &msg); err != nil {
 						 	log.Println(err)
 					 	}
 
-					 //log.Println("nextid",string(msg.Nextid))
-					 //log.Println("download entry byte",len(msg.Vnflist))
-					 //log.Println("download entry count",len(msg.Vnflist)/22)
-					if err = sc.CompareEntryWithSnTables(msg.Vnflist, sc.File_TmpDB, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
+					if err = sc.CompareEntryWithSnTables(msg.Vnflist, sc.File_TmpDB, sc.File_SnDB, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
 						 log.Println(err)
 					}
 					 if len(msg.Vnflist)/22 < 1000{
@@ -163,7 +160,7 @@ func (sn *storageNode) Service() {
 
 	go func() {
 		for {
-			<-time.After(120 * time.Second)
+			<-time.After(180 * time.Second)
 			if err := sc.SaveEntryInDBToDel(sc.File_TmpDB, sc.File_ToDelDB,sc.CompareTimes); err != nil {
 				log.Println("error:", err)
 			}
