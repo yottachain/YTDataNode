@@ -74,7 +74,8 @@ message StatusRepReq {
     repeated string addrs=8;
     bool relay=9;
     uint32 version=10;
- }
+    uint32 rebuilding=11;
+}
 
 message StatusRepResp {
     uint64 productiveSpace=1; 

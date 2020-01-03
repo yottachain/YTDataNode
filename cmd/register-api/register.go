@@ -116,6 +116,6 @@ func (api *API) PushTransactionToSN(tx *eos.SignedTransaction, url string) error
 }
 
 func NewYTAAssect(amount int64) eos.Asset {
-	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTT"}
+	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTA"}
 	return eos.Asset{Amount: eos.Int64(amount) * eos.Int64(math.Pow(10, float64(YTASymbol.Precision))), Symbol: YTASymbol}
 }

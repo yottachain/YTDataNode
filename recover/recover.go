@@ -41,6 +41,10 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 	return re, nil
 }
 
+func (re *RecoverEngine) Len() uint32 {
+	return uint32(len(re.queue))
+}
+
 func (re *RecoverEngine) recoverShard(description *message.TaskDescription) error {
 	defer func() {
 		err := recover()

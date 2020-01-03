@@ -238,7 +238,7 @@ regTxsign:
 	txjson, err := json.Marshal(tx)
 	fmt.Printf("%s\n", txjson)
 	fmt.Println("-----------------------------")
-	fmt.Scanln(&regTxsigned)
+	regTxsigned = util.ReadStringLine(os.Stdin, 4096)
 	json.Unmarshal([]byte(regTxsigned), &tx)
 	if err != nil {
 		fmt.Println("签名错误：", err)

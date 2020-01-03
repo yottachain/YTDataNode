@@ -121,7 +121,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn)
+			Report(sn, rce)
 			time.Sleep(time.Second * 60)
 		}
 	}()
@@ -130,7 +130,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode) {
+func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -155,6 +155,8 @@ func Report(sn *storageNode) {
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
+	msg.Rebuilding = rce.Len()
+
 	resData, err := proto.Marshal(&msg)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
