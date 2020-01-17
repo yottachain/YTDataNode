@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"os"
@@ -19,6 +22,24 @@ import (
 type peerInfo struct {
 	ID    string   `json:"ID"`
 	Addrs []string `json:"Addrs"`
+}
+
+var isDebug = false
+
+func init() {
+	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
+	ok, err := util.PathExists(filename)
+	if err == nil && ok {
+		viper.SetConfigType("yaml")
+		fl, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		defer fl.Close()
+		viper.ReadConfig(fl)
+		isDebug = true
+		fmt.Println("---------DEBUG MODE------")
+	}
 }
 
 // Config 配置
@@ -129,6 +150,29 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 
 func getBPList() []peerInfo {
 	var bplist []peerInfo
+
+	if isDebug {
+		snmaddr := viper.GetStringSlice("snmaddrs")
+		for _, v := range snmaddr {
+			ma, err := multiaddr.NewMultiaddr(v)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			ai, err := peer.AddrInfoFromP2pAddr(ma)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			var addrs = []string{}
+			for _, v := range ai.Addrs {
+				addrs = append(addrs, v.String())
+			}
+			bplist = append(bplist, peerInfo{ai.ID.String(), addrs})
+		}
+		return bplist
+	}
+
 	//var bpconfigurl = "http://download.yottachain.io/config/bp-test.json"
 	//if url, ok := os.LookupEnv("bp-config-url"); ok {
 	//	bpconfigurl = url
@@ -265,8 +309,8 @@ func (cfg *Config) Save() error {
 }
 
 func (cfg *Config) ReloadBPList() {
-	//cfg.BPList = getBPList()
-	//cfg.Save()
+	cfg.BPList = getBPList()
+	cfg.Save()
 }
 
 // NewKey 创建新的key
@@ -325,7 +369,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 1
+	return 2
 }
 
 func Version() uint32 {

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+	"github.com/spf13/viper"
+	"path"
 
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
@@ -24,6 +26,24 @@ var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //测试
 
 var api = eos.New(baseNodeUrl)
 var kb = eos.NewKeyBag()
+
+func init() {
+	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
+	ok, err := util.PathExists(filename)
+	if err == nil && ok {
+		viper.SetConfigType("yaml")
+		fl, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		defer fl.Close()
+		viper.ReadConfig(fl)
+		fmt.Println("---------DEBUG MODE------")
+		baseNodeUrl = viper.GetString("baseNodeUrl")
+		fmt.Println("baseNodeUrl:", baseNodeUrl)
+		api = eos.New(baseNodeUrl)
+	}
+}
 
 func main() {
 	var signedTx eos.SignedTransaction

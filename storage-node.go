@@ -162,7 +162,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
-	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"))
+	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.OpenDebug())
 	if err != nil {
 		panic(err)
 	}

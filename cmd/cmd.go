@@ -8,7 +8,6 @@ import (
 	"github.com/yottachain/YTDataNode/cmd/repo"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/commander"
-	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"net"
 	"os"
@@ -103,7 +102,7 @@ func main() {
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%d.0b", config.Version()),
+		Version: fmt.Sprintf("%s", "1.0.1"),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(initCmd)

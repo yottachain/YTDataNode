@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"github.com/yottachain/YTDataNode/logger"
 	"math"
+	"path"
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
@@ -33,27 +35,32 @@ var minerid uint64
 var adminacc string
 var depAcc string
 var depAmount int64
-var key1 string
-var key2 string = "5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ"
 var kb = eos.NewKeyBag()
 var maxSpace uint64 = 268435456
 
-//var initConfig config.Config
+var isDebug = false
 
 var yOrN byte
 
 func init() {
-	// resp, err := http.Get("http://download.yottachain.io/config/bpbaseurl")
-	// if err != nil {
-	// 	fmt.Println("获取BP入口失败")
-	// 	os.Exit(1)
-	// }
-	// buf, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	fmt.Println("获取BP入口失败")
-	// 	os.Exit(1)
-	// }
-	// baseNodeUrl = strings.Replace(string(buf), "\n", "", -1)
+	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
+	ok, err := util.PathExists(filename)
+	if err == nil && ok {
+		viper.SetConfigType("yaml")
+		fl, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		defer fl.Close()
+		viper.ReadConfig(fl)
+		isDebug = true
+		fmt.Println("---------DEBUG MODE------")
+		baseNodeUrl = viper.GetString("baseNodeUrl")
+		fmt.Println("baseNodeUrl:", baseNodeUrl)
+		BPList = viper.GetStringSlice("snips")
+		api = eos.New(baseNodeUrl)
+	}
+	BPList = getNodeList()
 }
 
 type PoolInfo []struct {
@@ -206,8 +213,6 @@ func step1() {
 
 	fmt.Println("请输入抵押账号用户名：")
 	fmt.Scanf("%s\n", &depAcc)
-	//log.Println("请输入抵押账号私钥：")
-	//fmt.Scanf("%s\n", &key1)
 	fmt.Println("请输入抵押额度(YTA)：")
 
 	fmt.Scanf("%d\n", &depAmount)
@@ -396,6 +401,9 @@ func preRegister(tx *eos.SignedTransaction) error {
 }
 
 func getNodeList() []string {
+	if isDebug {
+		return BPList
+	}
 	var list []string
 	//resp, err := http.Get("http://download.yottachain.io/config/bpsn-test.json")
 	//if err != nil {

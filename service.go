@@ -155,7 +155,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
-	msg.Rebuilding = rce.Len()
+	if rce.Len() == 0 {
+		msg.Rebuilding = 0
+	} else {
+		msg.Rebuilding = 1
+	}
 
 	resData, err := proto.Marshal(&msg)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
