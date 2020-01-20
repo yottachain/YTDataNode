@@ -17,7 +17,6 @@ import (
 var SliceCompareDir string = "/" + "gc"
 var FileNextIdx string ="/" + "gc/next_index_file"
 var ComparedIdxFile string = "/" + "gc/compared_index_file"
-
 var FileDB_tmp string = "/" + "gc/temp_index_kvdb"
 var FileDB_sn string = "/" + "gc/sn_index_kvdb"
 var FileDB_todel string = "/" + "gc/entry_to_del_kvdb"
@@ -80,6 +79,7 @@ func NewSliceComparer() *SliceComparer {
 		CompareTimes : 0,
 	}
 }
+
 
 func (sc *SliceComparer)OpenLevelDB(DBName string) (db *leveldb.DB,err error){
 	DBPath := util.GetYTFSPath() + DBName
@@ -158,6 +158,7 @@ func (sc *SliceComparer)GetValueFromFile(fileName string) (string ,error){
 	return string(content),err
 }
 
+
 func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmp_db *leveldb.DB, snHashDB, NextIdxFileName, comparedFileName, nextID string, comparetimes * uint8) error {
 	//
 	//tmpDBPath := util.GetYTFSPath() + tmpHashDB
@@ -182,7 +183,6 @@ func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmp_db *l
     //	fmt.Printf("open file:%s error",NextIdxFileName)
     //	return err
 	//}
-
 	err = ioutil.WriteFile(filePath,[]byte(nextID),0666)
 	if err != nil{
 		fmt.Println(err)
@@ -192,7 +192,6 @@ func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmp_db *l
 	total_compared_iter,_ := sc.GetValueFromFile(sc.ComparedIdxFile)
 	total_iter,_ := strconv.ParseInt(total_compared_iter,10,64)
  //   total_iter := strconv.ParseInt(total_compared_iter,10,64)
-
 	nowtime := strconv.FormatInt(time.Now().Unix(),10)
 
 	for _,key := range snHashBatch {
@@ -219,6 +218,7 @@ func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmp_db *l
 	return err
 }
 
+
 func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB string, comparetimes uint8) error {
 	var saveTime string
 	var saveTimeInt int64
@@ -236,7 +236,6 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB stri
 	//}
 	//
 	//defer tmp_db.Close()
-
 	toDelDBPath := util.GetYTFSPath() + toDelEntryDB
 	del_db,err := leveldb.OpenFile(toDelDBPath,nil)
 	if err != nil{
@@ -249,6 +248,7 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB stri
 	for iter.Next() {
 		saveTime = string(iter.Value())
 		saveTimeInt,_ = strconv.ParseInt(saveTime,10,64)
+
 		if nowTime - saveTimeInt >= 1200 {
            if err := del_db.Put(iter.Key(),iter.Value(),nil); err != nil{
            	   log.Println(err)
