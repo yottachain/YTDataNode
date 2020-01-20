@@ -40,7 +40,14 @@ func (sn *storageNode) Service() {
 	//}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
+	sc := slicecompare.NewSliceComparer()
+	tmp_db, err := sc.OpenLevelDB(sc.File_TmpDB)
+    if err != nil {
+    	log.Println(err)
+    	return
+	}
 	wh := NewWriteHandler(sn, uploadTaskPool.New(500, time.Second*10, 10*time.Millisecond))
+	wh.db = tmp_db
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data), nil
@@ -127,12 +134,11 @@ func (sn *storageNode) Service() {
 		}
 	}()
 
-	sc := slicecompare.NewSliceComparer()
-	go func() {
-		for {
-				<-time.After(90 * time.Second)
+	go func(){
+		 for {
+				<-time.After(60 * time.Second)
             	for{
-					nextidtodownld, _ := sc.GetValueFromFile(sc.ComparedIdxFile)
+					nextidtodownld, _ := sc.GetValueFromFile(sc.NextIdxFile)
 					downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
 					downloadrq, _ := proto.Marshal(downloadsnlist)
 					bpindex := sn.GetBP()
@@ -147,7 +153,7 @@ func (sn *storageNode) Service() {
 						 	log.Println(err)
 					 	}
 
-					if err = sc.CompareEntryWithSnTables(msg.Vnflist, sc.File_TmpDB, sc.File_SnDB, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
+					if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
 						 log.Println(err)
 					}
 					 if len(msg.Vnflist)/22 < 1000{
@@ -161,7 +167,7 @@ func (sn *storageNode) Service() {
 	go func() {
 		for {
 			<-time.After(180 * time.Second)
-			if err := sc.SaveEntryInDBToDel(sc.File_TmpDB, sc.File_ToDelDB,sc.CompareTimes); err != nil {
+			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
 				log.Println("error:", err)
 			}
 		}
