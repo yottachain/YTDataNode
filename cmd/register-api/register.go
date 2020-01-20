@@ -91,6 +91,8 @@ func (api *API) NewRegisterTransaction(data MinerData) *eos.Transaction {
 	txOpt := eos.TxOptions{}
 	txOpt.FillFromChain(api.API)
 	tx := eos.NewTransaction([]*eos.Action{action}, &txOpt)
+
+	eos.
 	return tx
 }
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
@@ -116,7 +117,11 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	if err != nil {
 		return nil, err
 	}
-	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	_id, err := peer.Decode(id)
+	if err != nil {
+		return nil, err
+	}
+	shardBuf, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
 		return nil, err

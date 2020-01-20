@@ -324,6 +324,7 @@ getPoolInfo:
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
 	log.Printf("交易信息 %v", action)
+
 addPoolSign:
 	fmt.Println("请对交易进行签名并粘贴：")
 	fmt.Println("----------------------")

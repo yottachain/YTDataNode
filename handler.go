@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
@@ -230,8 +231,9 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		if err != nil {
 			log.Println("error:", err)
 		}
+		_id, err := peer.Decode(task.NodeId)
 		// 发送下载分片命令
-		if shardData, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
+		if shardData, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
