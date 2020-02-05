@@ -1,16 +1,11 @@
 package node
 
 import (
-	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"github.com/yottachain/YTDataNode/util"
-	"os"
-	"path"
-
 	"time"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -73,11 +68,11 @@ func (sn *storageNode) Service() {
 		}
 
 		// 记录上次数据
-		go func() {
-			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-			defer fd.Close()
-			fd.Write(data)
-		}()
+		//go func() {
+		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		//	defer fd.Close()
+		//	fd.Write(data)
+		//}()
 		return message.MsgIDVoidResponse.Bytes(), nil
 	})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
