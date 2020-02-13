@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
@@ -168,7 +169,7 @@ type DownloadHandler struct {
 }
 
 // Handle 获取处理器
-func (dh *DownloadHandler) Handle(msgData []byte) []byte {
+func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 	var msg message.DownloadShardRequest
 	var indexKey [16]byte
 	proto.Unmarshal(msgData, &msg)
@@ -186,7 +187,7 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 		log.Println("data verify success")
 	}
 	if err != nil {
-		log.Println("Get data Slice fail:", err)
+		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 	res.Data = resData
 	resp, err := proto.Marshal(&res)

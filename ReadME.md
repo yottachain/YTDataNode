@@ -1,4 +1,5 @@
 # YTDataNode
+version: 1.0.1
 
 ```
 ytf矿机存储节点
@@ -16,8 +17,6 @@ vim ~/YTFS/node-config.json
 3. 启动
 ./out/linux-amd64-0.0.1/ytfs-node daemon
 ```
-
-性能调试
 
 ## config
 ```bash
