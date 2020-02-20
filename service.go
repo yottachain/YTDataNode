@@ -60,21 +60,21 @@ func (sn *storageNode) Service() {
 
 	go rce.Run()
 
-	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rce.HandleMuilteTaskMsg(data); err == nil {
-			log.Println("[recover]success")
-		} else {
-			log.Println("[recover]error", err)
-		}
-
-		// 记录上次数据
-		//go func() {
-		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		//	defer fd.Close()
-		//	fd.Write(data)
-		//}()
-		return message.MsgIDVoidResponse.Bytes(), nil
-	})
+	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+	//	if err := rce.HandleMuilteTaskMsg(data); err == nil {
+	//		log.Println("[recover]success")
+	//	} else {
+	//		log.Println("[recover]error", err)
+	//	}
+	//
+	//	// 记录上次数据
+	//	//go func() {
+	//	//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	//	//	defer fd.Close()
+	//	//	fd.Write(data)
+	//	//}()
+	//	return message.MsgIDVoidResponse.Bytes(), nil
+	//})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//	go func(data []byte) {
 	//		var msg message.MultiTaskDescription
