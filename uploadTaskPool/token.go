@@ -41,10 +41,10 @@ func (tk *Token) FillFromString(tkstring string) error {
 
 func NewToken() *Token {
 	tk := new(Token)
-	id, err := uuid.NewV4()
-	if err != nil {
+	id := uuid.NewV4()
+	/*if err != nil {
 		return nil
-	}
+	}*/
 	tk.UUID = id
 	tk.Tm = time.Time{}
 	return tk

@@ -137,7 +137,9 @@ func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, erro
 		return nil, err
 	}
 	pid, err := peer.Decode(bp.ID)
-	res, err := clt.SendMsgClose(ctx, pid, id, data)
+	//res, err := clt.SendMsgClose(ctx, pid, id, data)
+	res, err := clt.SendMsg(ctx, pid, id, data)
+	//err = sn.host.ClientStore().Close(pid)
 	return res, err
 }
 

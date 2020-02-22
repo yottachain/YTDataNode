@@ -121,8 +121,9 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	if err != nil {
 		return nil, err
 	}
-	shardBuf, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), buf)
-
+	//shardBuf, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), buf)
+	shardBuf, err := clt.SendMsg(ctx, _id, message.MsgIDDownloadShardRequest.Value(), buf)
+	//_ = re.sn.Host().ClientStore().Close(_id)
 	if err != nil {
 		return nil, err
 	}
