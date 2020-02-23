@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/mr-tron/base58/base58"
+	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"time"
@@ -21,13 +23,15 @@ type WriteHandler struct {
 	StorageNode
 	Upt          *uploadTaskPool.UploadTaskPool
 	RequestQueue chan *wRequest
+	db           *leveldb.DB
 }
 
 func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
 	return &WriteHandler{
-		sn,
-		utp,
-		make(chan *wRequest, 1000),
+        sn,
+        utp,
+        make(chan *wRequest, 1000),
+        nil,
 	}
 }
 
@@ -46,16 +50,30 @@ func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
 	wh.RequestQueue <- rq
 	return <-rq.Error
 }
+
 func (wh *WriteHandler) batchWrite(number int) {
+	sc := slicecompare.NewSliceComparer()
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
 	for i := 0; i < number; i++ {
 		rq := <-wh.RequestQueue
 		rqmap[rq.Key] = rq.Data
 		rqs[i] = rq
+		hashkey[i] = rq.Key[:]
 	}
-	_, err := wh.YTFS().BatchPut(rqmap)
+
+	err := sc.SaveRecordToTmpDB(hashkey, wh.db)
+	if err != nil {
+		log.Println("SaveRecordToTmpDB error")
+		goto OUT
+	}
+
+	_, err = wh.YTFS().BatchPut(rqmap)
 	log.Printf("[ytfs]flush success:%d\n", number)
+
+OUT:
 	for _, rq := range rqs {
 		rq.Error <- err
 	}
