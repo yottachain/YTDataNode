@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/yottachain/YTCrypto/common"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
@@ -31,7 +30,7 @@ func init(){
 
 func forInit(fileName string, value string){
 	filePath := util.GetYTFSPath() + fileName
-	status_exist := common.FileExist(filePath)
+	status_exist,_ := util.PathExists(filePath)
 	if status_exist == false {
 		content := []byte(value)
 		err := ioutil.WriteFile(filePath,content,0666)
@@ -43,7 +42,7 @@ func forInit(fileName string, value string){
 
 func initDir(dirName string){
 	filePath := util.GetYTFSPath() + dirName
-	status_exist := common.FileExist(filePath)
+	status_exist,_ := util.PathExists(filePath)
 	if status_exist == false {
 		err := os.Mkdir(filePath, os.ModePerm)
 		if err != nil {
