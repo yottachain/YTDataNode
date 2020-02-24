@@ -31,7 +31,6 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/mr-tron/base58 v1.1.3
 	github.com/multiformats/go-multiaddr v0.2.0
-	github.com/multiformats/go-multiaddr-net v0.1.2 // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/prometheus/client_golang v0.9.3 // indirect
 	github.com/satori/go.uuid v1.2.0
@@ -49,7 +48,7 @@ require (
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTFS v0.0.0-20200224071646-5cd33ea89338
-	github.com/yottachain/YTHost v1.0.0
+	github.com/yottachain/YTHost v1.0.1
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect
 	google.golang.org/grpc v1.21.0 // indirect
