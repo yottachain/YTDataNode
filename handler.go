@@ -233,7 +233,9 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		}
 		_id, err := peer.Decode(task.NodeId)
 		// 发送下载分片命令
-		if shardData, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
+		//if shardData, err := clt.SendMsgClose(ctx, _id, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
+		if shardData, err := clt.SendMsg(ctx, _id, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
+			//_ = sch.Host().ClientStore().Close(_id)
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
