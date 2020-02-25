@@ -39,9 +39,9 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20191111140914-83c018a089b4
-	github.com/yottachain/YTFS v0.0.0-20200122164809-9cf180e92538
+	github.com/yottachain/YTFS v0.0.0-20200224071646-5cd33ea89338
 	github.com/yottachain/YTHost v0.0.0-20200203041759-c5d7f894a9a2
-	github.com/yottachain/YTLRC v0.0.0-00010101000000-000000000000
+	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
@@ -51,9 +51,3 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
-
-replace github.com/yottachain/YTLRC => D:\GoProjects\YTLRC
-
-replace github.com/yottachain/YTFS => ../YTFS
-
-replace github.com/yottachain/directio => D:\gopath\pkg\mod\github.com\yottachain\directio@v1.0.5
