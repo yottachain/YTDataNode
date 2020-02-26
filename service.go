@@ -143,7 +143,6 @@ func (sn *storageNode) Service() {
             		if msgresp, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil{
 				     	log.Println("[slicecompare] SendBPMsg error:", err)
 			    	}else{
-						log.Println("[slicecompare] hash list recieved")
 				     	msgData := msgresp[2:]
 					 	var msg message.ListDNIResp
 					 	var err error
@@ -173,12 +172,9 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func(){
-		log.Println("[confirmslice] goroutine start")
 		cfs := confirmSlice.ConfirmSler{sn}
-		log.Println("[confirmslice] for circle will start")
 		for {
 			<-time.After(90 * time.Second)
-			log.Println("[confirmslice] verify start ")
 			cfs.ConfirmSlice()
 		}
 	}()
