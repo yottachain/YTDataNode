@@ -10,13 +10,11 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
-
 	"time"
-
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 	"github.com/yottachain/YTDataNode/slicecompare"
-
+	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
@@ -171,6 +169,17 @@ func (sn *storageNode) Service() {
 			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
 				log.Println("error:", err)
 			}
+		}
+	}()
+
+	go func(){
+		log.Println("[confirmslice] goroutine start")
+		cfs := confirmSlice.ConfirmSler{sn}
+		log.Println("[confirmslice] for circle will start")
+		for {
+			<-time.After(90 * time.Second)
+			log.Println("[confirmslice] verify start ")
+			cfs.ConfirmSlice()
 		}
 	}()
 }
