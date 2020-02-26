@@ -7,11 +7,13 @@ import (
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr-net"
 	"github.com/spf13/viper"
 	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
@@ -379,4 +381,17 @@ func Version() uint32 {
 func (cfg Config) ResetYTFSOptions(opts *ytfsOpts.Options) Config {
 	cfg.Options = opts
 	return cfg
+}
+
+func (cfg Config) GetAPIAddr() string {
+	bpIndex := cfg.GetBPIndex()
+	ma, err := multiaddr.NewMultiaddr(cfg.BPList[bpIndex].Addrs[0])
+	if err != nil {
+		return ""
+	}
+	addr, err := manet.ToNetAddr(ma)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("http://%s", strings.ReplaceAll(addr.String(), ":9999", ":8082"))
 }

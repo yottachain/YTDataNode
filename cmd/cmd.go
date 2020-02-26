@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/yottachain/YTDataNode/cmd/account"
 	"github.com/yottachain/YTDataNode/cmd/register"
 	"github.com/yottachain/YTDataNode/cmd/repo"
 	"github.com/yottachain/YTDataNode/cmd/update"
@@ -111,6 +112,7 @@ func main() {
 	RootCommand.AddCommand(repoCmd.RepoCmd)
 	RootCommand.AddCommand(update.UpdateCMD)
 	RootCommand.AddCommand(logCmd)
+	RootCommand.AddCommand(account.AccountCmd)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 }
