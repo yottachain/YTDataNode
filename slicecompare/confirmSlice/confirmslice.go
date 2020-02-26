@@ -23,14 +23,7 @@ type ConfirmSler struct {
 	stni.StorageNode
 }
 
-//func NewConfirmSler(sn *stni.StorageNode) *ConfirmSler{
-//	cfs := new(ConfirmSler)
-//	cfs.sn = sn
-//	return cfs
-//}
-
 func init(){
-	log.Println("[confirmslice] this is Init function")
 	slicecompare.InitDir(slicecompare.SliceCompareDir)
 	slicecompare.ForInit(nUseForVarify,"0")
 }
@@ -38,7 +31,6 @@ func init(){
 func (cfs *ConfirmSler)SliceHashVarify(n, m, h, nv uint64, fl *os.File) error {
 	var i uint64
 	var indexKey [16]byte
-//	var err error
 	ni := nv
 	buf := make([]byte,16,16)
 
@@ -57,7 +49,6 @@ VERIFYSTA:
 
 	pos := ni*(4+m*20) + h + 4
 	for i = 0; i < m; i++ {
-//		log.Printf("[confirmslice] hash pos:%x",pos)
 		fl.Seek(int64(pos),io.SeekStart)
 		k, err := fl.Read(buf)
 		if (err != nil) || (k != 16) {
@@ -74,8 +65,6 @@ VERIFYSTA:
 			}
 			continue
 		}
-
-//		log.Printf("[confirmslice] n=%d,m=%d,ni=%d,VHF=%s",n,m,ni,base58.Encode(indexKey[:]))
 
 		resData, err := cfs.YTFS().Get(indexKey)
 		if err != nil {
@@ -100,7 +89,6 @@ VERIFYSTA:
 }
 
 func (cfs *ConfirmSler)ConfirmSlice() {
-	log.Println("[confirmslice] next Open index.db:")
 	dir := util.GetYTFSPath()
 	fileName := path.Join(dir, "index.db")
 	fl, err := os.Open(fileName)
@@ -135,8 +123,6 @@ func (cfs *ConfirmSler)ConfirmSlice() {
     err = cfs.SliceHashVarify(n, m, h, ni, fl)
     if err != nil {
 		log.Println("[confirmslice][error] SliceHashVarify error!")
-//		return
 	}
-//	log.Println("[confirmslice] SliceHashVarify success!")
     return
 }

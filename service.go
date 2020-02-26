@@ -173,12 +173,9 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func(){
-		log.Println("[confirmslice] goroutine start")
 		cfs := confirmSlice.ConfirmSler{sn}
-		log.Println("[confirmslice] for circle will start")
 		for {
 			<-time.After(90 * time.Second)
-			log.Println("[confirmslice] verify start ")
 			cfs.ConfirmSlice()
 		}
 	}()
