@@ -40,7 +40,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20191111140914-83c018a089b4
 	github.com/yottachain/YTFS v0.0.0-20200224071646-5cd33ea89338
-	github.com/yottachain/YTHost v1.0.2-0.20200225114853-fe0ee4a51ee0
+	github.com/yottachain/YTHost v1.0.2-0.20200226062446-8b5a6291da53
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
