@@ -23,12 +23,12 @@ var Entrycountdownld int32 = 1000
 
 
 func init(){
-    initDir(SliceCompareDir)
-    forInit(FileNextIdx,"000000000000000000000000")
-	forInit(ComparedIdxFile,"000000000000000000000000")
+    InitDir(SliceCompareDir)
+    ForInit(FileNextIdx,"000000000000000000000000")
+	ForInit(ComparedIdxFile,"000000000000000000000000")
 }
 
-func forInit(fileName string, value string){
+func ForInit(fileName string, value string){
 	filePath := util.GetYTFSPath() + fileName
 	status_exist,_ := util.PathExists(filePath)
 	if status_exist == false {
@@ -40,7 +40,7 @@ func forInit(fileName string, value string){
 	}
 }
 
-func initDir(dirName string){
+func InitDir(dirName string){
 	filePath := util.GetYTFSPath() + dirName
 	status_exist,_ := util.PathExists(filePath)
 	if status_exist == false {

@@ -28,10 +28,10 @@ type WriteHandler struct {
 
 func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
 	return &WriteHandler{
-        sn,
-        utp,
-        make(chan *wRequest, 1000),
-        nil,
+		sn,
+		utp,
+		make(chan *wRequest, 1000),
+		nil,
 	}
 }
 
@@ -93,7 +93,7 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.GetTokenFromWaitQueue(ctx)
 	var res message.NodeCapacityResponse
