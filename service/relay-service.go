@@ -1,9 +1,9 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/yottachain/YTDataNode/logger"
 	"regexp"
 	"time"
 
@@ -42,7 +42,12 @@ func (rm *RelayManager) UpdateAddr(addr string) error {
 		}
 		rm.peer = pi
 	}
-	// log.Println(err, "中继地址解析错误")
+
+	// 如果地址有更新，就关闭原来连接
+	if rm.peer != nil {
+		rm.host.ClientStore().Close(rm.peer.ID)
+	}
+	rm.Connect()
 	return err
 }
 
@@ -58,18 +63,18 @@ func (rm *RelayManager) Addr() string {
 
 // Service 启动服务
 func (rm *RelayManager) Service() {
-	go func() {
-		for {
-			defer func() {
-				err := recover()
-				if err != nil {
-					log.Println("Error:", err)
-				}
-			}()
-			rm.ping()
-			<-time.After(time.Second * 60)
-		}
-	}()
+	//go func() {
+	//	for {
+	//		defer func() {
+	//			err := recover()
+	//			if err != nil {
+	//				log.Println("Error:", err)
+	//			}
+	//		}()
+	//		rm.ping()
+	//		<-time.After(time.Second * 60)
+	//	}
+	//}()
 }
 
 func (rm *RelayManager) ping() error {
@@ -89,4 +94,10 @@ func (rm *RelayManager) ping() error {
 	//}
 	rm.ClearRelayAddrs()
 	return nil
+}
+
+func (rm *RelayManager) Connect() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	rm.host.ClientStore().Get(ctx, rm.peer.ID, rm.peer.Addrs)
 }
