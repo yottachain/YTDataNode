@@ -6,6 +6,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
+	"github.com/yottachain/YTDataNode/remoteDebug"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 	"github.com/yottachain/YTDataNode/util"
 	"os"
@@ -79,6 +80,11 @@ func (sn *storageNode) Service() {
 			fd.Write(data)
 		}()
 		return message.MsgIDVoidResponse.Bytes(), nil
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		err := remoteDebug.Handle(data)
+		return message.MsgIDVoidResponse.Bytes(), err
 	})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//	go func(data []byte) {

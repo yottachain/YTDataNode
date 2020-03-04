@@ -165,3 +165,10 @@ message MultiTaskOpResult{
     repeated int32 RES=2;
 }
 
+//MessageID:0x1b32
+message DownloadYTFSFile{
+    string name=1;
+    string serverUrl=2;
+    bool gzip=3;
+}
+
