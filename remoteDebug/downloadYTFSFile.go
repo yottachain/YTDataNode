@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"path"
@@ -77,7 +77,9 @@ func CompressYTFSFile(name string) error {
 }
 
 func UploadYTFSFile(name string, addr string, compress bool) error {
+	fn := fmt.Sprintf("upload/%d-%s", c.IndexID, name)
 	if compress {
+		fn = fn + ".gz"
 		err := CompressYTFSFile(name)
 		if err != nil {
 			return err
@@ -87,12 +89,12 @@ func UploadYTFSFile(name string, addr string, compress bool) error {
 			return err
 		}
 		defer fr.Close()
-		conn, err := net.Dial("tcp4", addr)
+
+		_, err = http.Post("http://"+path.Join(addr, fn), "application/octet-stream", fr)
 		if err != nil {
-			return err
+			log.Println(err)
 		}
-		defer conn.Close()
-		io.Copy(conn, fr)
+		log.Println("[debug]", "下载成功", path.Join(addr, fn))
 	} else {
 		fr, err := os.OpenFile(path.Join(util.GetYTFSPath(), name), os.O_RDONLY, 0644)
 		if err != nil {
@@ -100,18 +102,18 @@ func UploadYTFSFile(name string, addr string, compress bool) error {
 		}
 		defer fr.Close()
 
-		fn := string(c.IndexID) + name
-		if compress {
-			fn = fn + ".gz"
+		_, err = http.Post("http://"+path.Join(addr, fn), "application/octet-stream", fr)
+		if err != nil {
+			log.Println(err)
 		}
-		http.Post(path.Join(addr, fn), "application/octet-stream", fr)
+		log.Println("[debug]", "下载成功", path.Join(addr, fn))
 	}
 
 	return nil
 }
 
 func Handle(data []byte) error {
-
+	log.Println("[debug]下载请求")
 	var msg message.DownloadYTFSFile
 	err := proto.Unmarshal(data, &msg)
 	if err != nil {

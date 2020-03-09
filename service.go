@@ -84,6 +84,9 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle(data)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
