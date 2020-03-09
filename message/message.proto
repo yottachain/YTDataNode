@@ -170,5 +170,6 @@ message DownloadYTFSFile{
     string name=1;
     string serverUrl=2;
     bool gzip=3;
+    bytes sig=4;
 }
 
