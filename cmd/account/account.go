@@ -328,19 +328,19 @@ var changeDepositCmd = &cobra.Command{
 
 func init() {
 	c, err := config.ReadConfig()
-	if err != nil {
-		panic(err)
-	} else {
+	if err == nil {
 		cfg = c
-	}
-	opt.FillFromChain(api)
+		opt.FillFromChain(api)
 
-	AccountCmd.AddCommand(
-		changeAdminCmd,
-		changeOwnerCmd,
-		changePoolIDCmd,
-		changeMaxSpaceCmd,
-		changeDepAccCmd,
-		changeDepositCmd,
-	)
+		AccountCmd.AddCommand(
+			changeAdminCmd,
+			changeOwnerCmd,
+			changePoolIDCmd,
+			changeMaxSpaceCmd,
+			changeDepAccCmd,
+			changeDepositCmd,
+		)
+	} else {
+		AccountCmd.Short = "账号管理[请先初始化]"
+	}
 }

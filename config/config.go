@@ -339,6 +339,12 @@ func (cfg *Config) GetBPIndex() int {
 
 // ReadConfig 读配置
 func ReadConfig() (*Config, error) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("读取配置失败部分功能不可用")
+		}
+	}()
 	var cfg Config
 	data, err := ioutil.ReadFile(util.GetConfigPath())
 	if err != nil {
