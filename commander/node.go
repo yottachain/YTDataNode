@@ -101,7 +101,7 @@ func Daemon() {
 			}
 			defer resp.Body.Close()
 
-			fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, 0777)
+			fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, os.ModePerm)
 			if err != nil {
 				log.Println("[cron-node]下载失败")
 				return
