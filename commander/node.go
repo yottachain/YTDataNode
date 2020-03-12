@@ -109,6 +109,7 @@ func Daemon() {
 			defer fl.Close()
 
 			io.Copy(fl, resp.Body)
+			fl.Close()
 			log.Println("[cron-node]下载 cron-node 完成")
 		}
 
