@@ -118,7 +118,7 @@ func Daemon() {
 			return
 		}
 		cmd := exec.Command(cronPath, "daemon")
-		err = cmd.Start()
+		go cmd.Run()
 		if err != nil {
 			log.Println(err)
 		}
