@@ -118,12 +118,11 @@ func Daemon() {
 			return
 		}
 		cmd := exec.Command(cronPath, "daemon")
-		cmd.Stdout = log.FileLogger
-		cmd.Stderr = log.FileLogger
-		err = cmd.Run()
+		err = cmd.Start()
 		if err != nil {
 			log.Println(err)
 		}
+		<-time.After(time.Second)
 		err = exec.Command(cronPath, "clear").Run()
 		if err != nil {
 			log.Println(err)
@@ -132,6 +131,7 @@ func Daemon() {
 		if err != nil {
 			log.Println(err)
 		}
+		log.Println("[cron-node]", "添加定时任务完成")
 	}()
 	<-ctx.Done()
 }
