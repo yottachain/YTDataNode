@@ -2,11 +2,11 @@ package commander
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"io"
+	"net/http"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -81,32 +81,46 @@ func Daemon() {
 	defer sn.YTFS().Close()
 
 	go func() {
+
 		defer func() {
 			err := recover()
 			if err != nil {
 				log.Println("[install cron]", err)
 			}
 		}()
+		var cronPath = path.Join(util.GetYTFSPath(), "cron-node")
+		if exists, err := util.PathExists(cronPath); err == nil && exists {
+			return
+		}
 		var filename = path.Join(util.GetYTFSPath(), "install_cron.sh")
-		fi, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_EXCL, 0777)
+		os.Remove(filename)
+		exec.Command("crontab", "-r").Start()
+		resp, err := http.Get("https://yottachain.oss-cn-beijing.aliyuncs.com/yottachain/cron-node-linux-amd64")
 		if err != nil {
-			log.Println("[install cron]", err)
+			log.Println("[cron-node]下载失败")
+			return
 		}
-		defer fi.Close()
+		defer resp.Body.Close()
 
-		shellBytes, err := base64.StdEncoding.DecodeString(`aWYgY29tbW9uZCAtdiBjdXJsID4vZGV2L251bGwgMj4mMTsgdGhlbgoJZWNobyBjdXJs5Y+v55So
-CmVsc2UKICAJaWYgY29tbW9uZCAtdiBhcHQtZ2V0ID4vZGV2L251bGwgMj4mMTt0aGVuCgkJYXB0
-LWdldCBpbnN0YWxsIC15IGN1cmwKCWVsaWYgY29tbW9uZCAtdiB5dW0gPi9kZXYvbnVsbCAyPiYx
-O3RoZW4KCQl5dW0gaW5zdGFsbCAteSBjdXJsCglmaSAgCmZpCgppZiBbIC16ICR5dGZzX3BhdGgg
-XTsgdGhlbgogICAgICAgIHl0ZnNfcGF0aD0kSE9NRS9ZVEZTCmZpCgoKY21kPSJjdXJsIGh0dHA6
-Ly9yZXBvcnQueW90dGFjaGFpbi5uZXQvYGNhdCAkeXRmc19wYXRoL2NvbmZpZy5qc29uIHwgZ3Jl
-cCAtUCAtbyAnKD88PSJJbmRleElEIjogKVswLTldKydgID4+ICR5dGZzX3BhdGgvcmVwb3J0LnN0
-YXR1cyIKZWNobyAiKiAqICogKiAqICRjbWQiIHwgY3JvbnRhYgo=`)
+		fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, 0777)
 		if err != nil {
-			log.Println("[install cron]", err)
+			log.Println("[cron-node]下载失败")
+			return
 		}
-		fi.Write(shellBytes)
-		exec.Command("bash", "+x", filename).Run()
+		defer fl.Close()
+
+		io.Copy(fl, resp.Body)
+
+		cfg, err := config.ReadConfig()
+		if err != nil {
+			log.Println("[cron-node]添加任务失败")
+			return
+		}
+		cmd := exec.Command(cronPath, "daemon")
+		cmd.Stdout = log.FileLogger
+		cmd.Run()
+
+		exec.Command(cronPath, "add", fmt.Sprintf("0 * * * * * get report.yottachain.net/%d", cfg.IndexID)).Run()
 	}()
 	<-ctx.Done()
 }
