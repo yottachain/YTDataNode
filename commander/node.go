@@ -89,27 +89,28 @@ func Daemon() {
 			}
 		}()
 		var cronPath = path.Join(util.GetYTFSPath(), "cron-node")
-		if exists, err := util.PathExists(cronPath); err == nil && exists {
-			return
-		}
-		var filename = path.Join(util.GetYTFSPath(), "install_cron.sh")
-		os.Remove(filename)
-		exec.Command("crontab", "-r").Start()
-		resp, err := http.Get("https://yottachain.oss-cn-beijing.aliyuncs.com/yottachain/cron-node-linux-amd64")
-		if err != nil {
-			log.Println("[cron-node]下载失败")
-			return
-		}
-		defer resp.Body.Close()
+		if exists, err := util.PathExists(cronPath); err != nil || !exists {
+			var filename = path.Join(util.GetYTFSPath(), "install_cron.sh")
+			os.Remove(filename)
+			exec.Command("crontab", "-r").Start()
+			log.Println("[cron-node]下载 cron-node")
+			resp, err := http.Get("https://yottachain.oss-cn-beijing.aliyuncs.com/yottachain/cron-node-linux-amd64")
+			if err != nil {
+				log.Println("[cron-node]下载失败")
+				return
+			}
+			defer resp.Body.Close()
 
-		fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, 0777)
-		if err != nil {
-			log.Println("[cron-node]下载失败")
-			return
-		}
-		defer fl.Close()
+			fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, 0777)
+			if err != nil {
+				log.Println("[cron-node]下载失败")
+				return
+			}
+			defer fl.Close()
 
-		io.Copy(fl, resp.Body)
+			io.Copy(fl, resp.Body)
+			log.Println("[cron-node]下载 cron-node 完成")
+		}
 
 		cfg, err := config.ReadConfig()
 		if err != nil {
@@ -118,9 +119,19 @@ func Daemon() {
 		}
 		cmd := exec.Command(cronPath, "daemon")
 		cmd.Stdout = log.FileLogger
-		cmd.Run()
-
-		exec.Command(cronPath, "add", fmt.Sprintf("0 * * * * * get report.yottachain.net/%d", cfg.IndexID)).Run()
+		cmd.Stderr = log.FileLogger
+		err = cmd.Run()
+		if err != nil {
+			log.Println(err)
+		}
+		err = exec.Command(cronPath, "clear").Run()
+		if err != nil {
+			log.Println(err)
+		}
+		err = exec.Command(cronPath, "add", fmt.Sprintf("0 * * * * * get report.yottachain.net/%d", cfg.IndexID)).Run()
+		if err != nil {
+			log.Println(err)
+		}
 	}()
 	<-ctx.Done()
 }
