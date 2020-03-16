@@ -3,12 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
-	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -76,7 +77,7 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetToken(data []byte) []byte {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.GetTokenFromWaitQueue(ctx)
 	var res message.NodeCapacityResponse
