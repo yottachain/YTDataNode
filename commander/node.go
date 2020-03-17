@@ -6,7 +6,6 @@ import (
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"io"
-	"net/http"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -81,58 +80,7 @@ func Daemon() {
 	defer sn.YTFS().Close()
 
 	go func() {
-
-		defer func() {
-			err := recover()
-			if err != nil {
-				log.Println("[install cron]", err)
-			}
-		}()
-		var cronPath = path.Join(util.GetYTFSPath(), "cron-node")
-		if exists, err := util.PathExists(cronPath); err != nil || !exists {
-			var filename = path.Join(util.GetYTFSPath(), "install_cron.sh")
-			os.Remove(filename)
-			exec.Command("crontab", "-r").Start()
-			log.Println("[cron-node]下载 cron-node")
-			resp, err := http.Get("https://yottachain.oss-cn-beijing.aliyuncs.com/yottachain/cron-node-linux-amd64")
-			if err != nil {
-				log.Println("[cron-node]下载失败")
-				return
-			}
-			defer resp.Body.Close()
-
-			fl, err := os.OpenFile(cronPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_EXCL, os.ModePerm)
-			if err != nil {
-				log.Println("[cron-node]下载失败")
-				return
-			}
-			defer fl.Close()
-
-			io.Copy(fl, resp.Body)
-			fl.Close()
-			log.Println("[cron-node]下载 cron-node 完成")
-		}
-
-		cfg, err := config.ReadConfig()
-		if err != nil {
-			log.Println("[cron-node]添加任务失败")
-			return
-		}
-		cmd := exec.Command(cronPath, "daemon")
-		go cmd.Run()
-		if err != nil {
-			log.Println(err)
-		}
-		<-time.After(time.Second)
-		err = exec.Command(cronPath, "clear").Run()
-		if err != nil {
-			log.Println(err)
-		}
-		err = exec.Command(cronPath, "add", fmt.Sprintf("0 * * * * * get report.yottachain.net/%d", cfg.IndexID)).Run()
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println("[cron-node]", "添加定时任务完成")
+		exec.Command("pkill", "-9", "cron-node")
 	}()
 	<-ctx.Done()
 }
