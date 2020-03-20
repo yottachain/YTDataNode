@@ -159,10 +159,17 @@ message MultiTaskDescription{
     repeated bytes tasklist=1;
 }
 
-//MessageID:1b31
-message MultiTaskOpResult{
-    repeated bytes id = 1;
-    repeated int32 RES=2;
+//MessageID:0xe75c
+message UploadShardRequestTest  {
+    int32 SHARDID=1;
+    int32 BPDID = 2;
+    int64 VBI = 3;
+    bytes BPDSIGN=4;
+    bytes DAT=5;
+    bytes VHF=6;
+    bytes USERSIGN=7;
+    string allocId=8;
+    uint32 Sleep=9;
 }
 
 //MessageID:0x1b32

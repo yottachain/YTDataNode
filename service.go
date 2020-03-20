@@ -88,6 +88,21 @@ func (sn *storageNode) Service() {
 			log.Println("[debug]", err)
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
+	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.UploadShardRequestTest
+		if err := proto.Unmarshal(data, &msg); err == nil {
+			log.Println("[sleep]", msg.Sleep)
+			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
+		}
+		var res message.UploadShardResponse
+		res.RES = 0
+		res.SHARDID = msg.SHARDID
+		res.VHF = msg.VHF
+		res.VBI = msg.VBI
+
+		buf, err := proto.Marshal(&res)
+
+		return append(message.MsgIDUploadShardResponse.Bytes(), buf...), err
 	})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//	go func(data []byte) {
