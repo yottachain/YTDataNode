@@ -78,6 +78,10 @@ func Daemon() {
 		}
 	}()
 	defer sn.YTFS().Close()
+
+	go func() {
+		exec.Command("pkill", "-9", "cron-node").Run()
+	}()
 	<-ctx.Done()
 }
 
