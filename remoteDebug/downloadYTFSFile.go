@@ -123,7 +123,7 @@ func Handle(data []byte) error {
 		return fmt.Errorf("403")
 	}
 	switch msg.Name {
-	case "index.db", "config.json":
+	case "index.db", "config.json", "output.log":
 		return UploadYTFSFile(msg.Name, msg.ServerUrl, msg.Gzip)
 	default:
 		return fmt.Errorf("403")
