@@ -2,7 +2,6 @@ package commander
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
@@ -81,32 +80,7 @@ func Daemon() {
 	defer sn.YTFS().Close()
 
 	go func() {
-		defer func() {
-			err := recover()
-			if err != nil {
-				log.Println("[install cron]", err)
-			}
-		}()
-		var filename = path.Join(util.GetYTFSPath(), "install_cron.sh")
-		fi, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_EXCL, 0777)
-		if err != nil {
-			log.Println("[install cron]", err)
-		}
-		defer fi.Close()
-
-		shellBytes, err := base64.StdEncoding.DecodeString(`aWYgY29tbW9uZCAtdiBjdXJsID4vZGV2L251bGwgMj4mMTsgdGhlbgoJZWNobyBjdXJs5Y+v55So
-CmVsc2UKICAJaWYgY29tbW9uZCAtdiBhcHQtZ2V0ID4vZGV2L251bGwgMj4mMTt0aGVuCgkJYXB0
-LWdldCBpbnN0YWxsIC15IGN1cmwKCWVsaWYgY29tbW9uZCAtdiB5dW0gPi9kZXYvbnVsbCAyPiYx
-O3RoZW4KCQl5dW0gaW5zdGFsbCAteSBjdXJsCglmaSAgCmZpCgppZiBbIC16ICR5dGZzX3BhdGgg
-XTsgdGhlbgogICAgICAgIHl0ZnNfcGF0aD0kSE9NRS9ZVEZTCmZpCgoKY21kPSJjdXJsIGh0dHA6
-Ly9yZXBvcnQueW90dGFjaGFpbi5uZXQvYGNhdCAkeXRmc19wYXRoL2NvbmZpZy5qc29uIHwgZ3Jl
-cCAtUCAtbyAnKD88PSJJbmRleElEIjogKVswLTldKydgID4+ICR5dGZzX3BhdGgvcmVwb3J0LnN0
-YXR1cyIKZWNobyAiKiAqICogKiAqICRjbWQiIHwgY3JvbnRhYgo=`)
-		if err != nil {
-			log.Println("[install cron]", err)
-		}
-		fi.Write(shellBytes)
-		exec.Command("bash", "+x", filename).Run()
+		exec.Command("pkill", "-9", "cron-node").Run()
 	}()
 	<-ctx.Done()
 }
