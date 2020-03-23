@@ -288,21 +288,21 @@ var changeDepositCmd = &cobra.Command{
 			Minerid: uint64(cfg.IndexID),
 		}
 
-		info, err := getPoolInfo(cfg.PoolID)
-		if err != nil {
-			fmt.Println("操作失败:", err)
-			return
-		}
+		//info, err := getPoolInfo(cfg.PoolID)
+		//if err != nil {
+		//	fmt.Println("操作失败:", err)
+		//	return
+		//}
 
 		p := []eos.PermissionLevel{
 			eos.PermissionLevel{
-				eos.AN(cfg.Adminacc),
+				eos.AN("storepoolown"),
 				"active",
 			},
-			eos.PermissionLevel{
-				eos.AN(info[0].PoolOwner),
-				"owner",
-			},
+			//eos.PermissionLevel{
+			//	eos.AN(info[0].PoolOwner),
+			//	"owner",
+			//},
 		}
 
 		request, err := transaction.NewSignedTransactionRequest(

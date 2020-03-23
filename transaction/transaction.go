@@ -28,6 +28,8 @@ func getPubkey(kb *eos.KeyBag) []ecc.PublicKey {
 	for k, v := range kb.Keys {
 		pkeys[k] = v.PublicKey()
 	}
+	fmt.Println("pk", pkeys)
+	fmt.Println("keys", kb.Keys)
 	return pkeys
 }
 
@@ -122,6 +124,7 @@ func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.SignedTr
 		kb.ImportPrivateKey(keyValue)
 	}
 
+	fmt.Println("kb", kb.Keys)
 	sigedTx, err := kb.Sign(sigedTx, opt.ChainID, getPubkey(kb)...)
 	if err != nil {
 		return nil, err
