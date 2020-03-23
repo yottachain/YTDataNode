@@ -280,12 +280,15 @@ var changeDepositCmd = &cobra.Command{
 	Short: "更改抵押金额",
 	Run: func(cmd *cobra.Command, args []string) {
 		ad := &struct {
-			User       eos.AccountName `json:"user" prompt:"请输入当前抵押账号" require:"true"`
+			User       eos.AccountName `json:"user" prompt_:"请输入当前抵押账号" require:"true"`
 			Minerid    uint64          `json:"minerid"`
-			IsIncrease bool            `json:"is_increase" prompt:"是否为追加抵押（yes 或者 no）" required:"true"`
-			Quant      eos.Asset       `json:"quant" prompt:"请输入增加额度" require:"true"`
+			IsIncrease bool            `json:"is_increase" prompt_:"是否为追加抵押（yes 或者 no）" required:"true"`
+			Quant      eos.Asset       `json:"quant" prompt_:"请输入增加额度" require:"true"`
 		}{
-			Minerid: uint64(cfg.IndexID),
+			Minerid:    uint64(cfg.IndexID),
+			User:       eos.AN("storepoolown"),
+			IsIncrease: true,
+			Quant:      transaction.NewYTAAssect(10),
 		}
 
 		//info, err := getPoolInfo(cfg.PoolID)

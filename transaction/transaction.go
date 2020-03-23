@@ -22,6 +22,9 @@ func newYTAAssect(amount int64) eos.Asset {
 	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTA"}
 	return eos.Asset{Amount: eos.Int64(amount) * eos.Int64(math.Pow(10, float64(YTASymbol.Precision))), Symbol: YTASymbol}
 }
+func NewYTAAssect(amount int64) eos.Asset {
+	return newYTAAssect(amount)
+}
 
 func getPubkey(kb *eos.KeyBag) []ecc.PublicKey {
 	var pkeys = make([]ecc.PublicKey, len(kb.Keys))
@@ -121,7 +124,8 @@ func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.SignedTr
 			fmt.Println("输入错误:", err.Error())
 			goto inputKey
 		}
-		kb.ImportPrivateKey(keyValue)
+		//kb.ImportPrivateKey(keyValue)
+		kb.ImportPrivateKey("5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ")
 	}
 
 	fmt.Println("kb", kb.Keys)
@@ -148,6 +152,7 @@ func (tr *TransactionRequest) Send(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("sn url", url)
 	res, err := http.Post(url, "applaction/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return nil, err
