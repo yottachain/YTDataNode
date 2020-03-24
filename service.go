@@ -127,6 +127,8 @@ func (sn *storageNode) Service() {
 		if err := proto.Unmarshal(data, &msg); err == nil {
 			log.Println("[sleep]", msg.Sleep)
 			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
+		} else {
+			log.Println("[sleep]", err)
 		}
 		var res message.UploadShardResponse
 		res.RES = 0
