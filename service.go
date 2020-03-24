@@ -127,11 +127,8 @@ func (sn *storageNode) Service() {
 			log.Println("[sleep]", msg.Sleep)
 			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
 		}
-		var res message.UploadShardResponse
+		var res message.UploadShard2CResponse
 		res.RES = 0
-		res.SHARDID = msg.SHARDID
-		res.VHF = msg.VHF
-		res.VBI = msg.VBI
 
 		buf, err := proto.Marshal(&res)
 
