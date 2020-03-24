@@ -165,3 +165,24 @@ message MultiTaskOpResult{
     repeated int32 RES=2;
 }
 
+//MessageID:0x1b32
+message DownloadYTFSFile{
+    string name=1;
+    string serverUrl=2;
+    bool gzip=3;
+    bytes sig=4;
+}
+
+//MessageID:0xe75c
+message UploadShardRequestTest  {
+    int32 SHARDID=1;
+    int32 BPDID = 2;
+    int64 VBI = 3;
+    bytes BPDSIGN=4;
+    bytes DAT=5;
+    bytes VHF=6;
+    bytes USERSIGN=7;
+    string allocId=8;
+    uint32 Sleep=9;
+}
+

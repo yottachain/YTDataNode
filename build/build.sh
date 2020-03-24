@@ -8,6 +8,7 @@ MAINFILE=cmd/cmd.go
 DIRNAME=${OUTDIR}/${OS}-${ARCH}-${VERSION}
 FULLNAME=${DIRNAME}/${FILENAME}
 
+rm -rf out/*
 mkdir ${DIRNAME}
 
 if [ "$1" = "linux" ];then

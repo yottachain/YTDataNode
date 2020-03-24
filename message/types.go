@@ -27,6 +27,8 @@ const (
 	MsgIDMultiTaskDescription  msgType = 0x2cb0
 	MsgIDLRCTaskDescription    msgType = 0x68b3
 	MsgIDMultiTaskOPResult     msgType = 0x1b31
+	MsgIDDownloadYTFSFile      msgType = 0x1b32
+	MsgIDSleepReturn           msgType = 0xe75c
 )
 
 type msgType int32

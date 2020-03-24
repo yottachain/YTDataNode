@@ -3,17 +3,18 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/yottachain/YTDataNode/cmd/register"
-	"github.com/yottachain/YTDataNode/cmd/repo"
-	"github.com/yottachain/YTDataNode/cmd/update"
-	"github.com/yottachain/YTDataNode/commander"
-	"github.com/yottachain/YTDataNode/logger"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/spf13/cobra"
+	registerCmd "github.com/yottachain/YTDataNode/cmd/register"
+	repoCmd "github.com/yottachain/YTDataNode/cmd/repo"
+	"github.com/yottachain/YTDataNode/cmd/update"
+	"github.com/yottachain/YTDataNode/commander"
+	log "github.com/yottachain/YTDataNode/logger"
 )
 
 var size uint64
