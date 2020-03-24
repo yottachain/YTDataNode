@@ -16,8 +16,9 @@ import (
 	"time"
 )
 
-// 新增的通用api
+var Api *eos.API
 
+// 新增的通用api
 func newYTAAssect(amount int64) eos.Asset {
 	var YTASymbol = eos.Symbol{Precision: 4, Symbol: "YTA"}
 	return eos.Asset{Amount: eos.Int64(amount) * eos.Int64(math.Pow(10, float64(YTASymbol.Precision))), Symbol: YTASymbol}
@@ -31,9 +32,10 @@ func getPubkey(kb *eos.KeyBag) []ecc.PublicKey {
 	for k, v := range kb.Keys {
 		pkeys[k] = v.PublicKey()
 	}
-	fmt.Println("pk", pkeys)
-	fmt.Println("keys", kb.Keys)
 	return pkeys
+}
+func GetPubKey(kb *eos.KeyBag) []ecc.PublicKey {
+	return getPubkey(kb)
 }
 
 func GetActionData(ad interface{}) (*eos.ActionData, error) {
@@ -46,6 +48,7 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 		tags := t.Field(i).Tag
 		prompt := tags.Get("prompt")
 		required := tags.Get("required")
+		convert := tags.Get("convert")
 	input:
 		if prompt != "" {
 			fmt.Printf("%s\n", prompt)
@@ -59,7 +62,11 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 			fmt.Println("该字段不能为空")
 			goto input
 		}
-		switch t.Field(i).Type.Name() {
+		typename := t.Field(i).Type.Name()
+		if convert != "" {
+			typename = convert
+		}
+		switch typename {
 		case "string", "AccountName", "ActionName":
 			var value string
 			fmt.Sscanln(text, &value)
@@ -94,6 +101,10 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 			fmt.Sscanln(text, &value)
 			ast := newYTAAssect(value)
 			v.Field(i).Set(reflect.ValueOf(ast))
+		case "Block":
+			var value uint64
+			fmt.Sscanln(text, &value)
+			v.Field(i).SetUint(value * 1024 * 1024 / 16)
 		default:
 			fmt.Println("未定义类型", t.Field(i).Type.Name())
 		}
@@ -103,16 +114,19 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 	return &actionData, nil
 }
 
-func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.SignedTransaction, error) {
+func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.PackedTransaction, error) {
 	tx := eos.NewTransaction([]*eos.Action{
 		action,
 	}, opt)
 
-	sigedTx := eos.NewSignedTransaction(tx)
-
 	keysnum := len(action.Authorization)
 	fmt.Printf("需要%d个私钥签名\n", keysnum)
 	kb := eos.NewKeyBag()
+	Api.SetSigner(kb)
+	Api.SetCustomGetRequiredKeys(func(tx *eos.Transaction) (keys []ecc.PublicKey, err error) {
+		return getPubkey(kb), nil
+	})
+
 	for i := 0; i < keysnum; i++ {
 	inputKey:
 		fmt.Println("请输入私钥:", action.Authorization[i].Actor, action.Authorization[i].Permission)
@@ -124,31 +138,28 @@ func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.SignedTr
 			fmt.Println("输入错误:", err.Error())
 			goto inputKey
 		}
-		//kb.ImportPrivateKey(keyValue)
-		kb.ImportPrivateKey("5JkjKo4UGaTQFVuVpDZDV3LNvLrd2DgGRpTNB4E1o9gVuUf7aYZ")
+		kb.ImportPrivateKey(keyValue)
 	}
 
-	fmt.Println("kb", kb.Keys)
-	sigedTx, err := kb.Sign(sigedTx, opt.ChainID, getPubkey(kb)...)
+	tx.SetExpiration(time.Minute * 5)
+	fmt.Println("action data", action.ActionData.Data)
+	sigedTx, packedTx, err := Api.SignTransaction(tx, opt.ChainID, eos.CompressionZlib)
 	if err != nil {
 		return nil, err
 	}
 
-	return sigedTx, nil
+	fmt.Println(sigedTx)
+	return packedTx, nil
 }
 
 type TransactionRequest struct {
-	*eos.SignedTransaction
+	*eos.PackedTransaction
 }
 
 func (tr *TransactionRequest) Send(url string) ([]byte, error) {
-	tr.SetExpiration(30 * time.Minute)
-	fmt.Printf("%v\n", tr)
-	packedTx, err := tr.SignedTransaction.Pack(eos.CompressionZlib)
-	if err != nil {
-		return nil, err
-	}
-	buf, err := json.Marshal(packedTx)
+
+	buf, err := json.Marshal(tr.PackedTransaction)
+	fmt.Println("packedTx", string(buf))
 	if err != nil {
 		return nil, err
 	}

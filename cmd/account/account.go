@@ -7,14 +7,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/transaction"
+	"strings"
 )
 
 //var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
-var baseNodeUrl = "http://49.234.139.206:8888" //测试
-
-var api = eos.New(baseNodeUrl)
 
 var cfg *config.Config
+var baseNodeUrl string
+var api *eos.API
 var opt eos.TxOptions
 
 var AccountCmd = &cobra.Command{
@@ -109,7 +109,7 @@ var changeOwnerCmd = &cobra.Command{
 			},
 			eos.PermissionLevel{
 				eos.AN(info[0].PoolOwner),
-				"owner",
+				"active",
 			},
 		}
 		request, err := transaction.NewSignedTransactionRequest(
@@ -156,7 +156,7 @@ var changePoolIDCmd = &cobra.Command{
 			},
 			eos.PermissionLevel{
 				eos.AN(info[0].PoolOwner),
-				"owner",
+				"active",
 			},
 		}
 		request, err := transaction.NewSignedTransactionRequest(
@@ -187,7 +187,7 @@ var changeMaxSpaceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ad := &struct {
 			Minerid  uint64 `json:"minerid"`
-			MaxSpace uint64 `json:"max_space" prompt:"请输入最大可采购空间" required:"true"`
+			MaxSpace uint64 `json:"max_space" prompt:"请输入最大可采购空间 单位：G 最小100G，最大100T）" convert:"Block" required:"true"`
 		}{
 			Minerid: uint64(cfg.IndexID),
 		}
@@ -205,13 +205,13 @@ var changeMaxSpaceCmd = &cobra.Command{
 			},
 			eos.PermissionLevel{
 				eos.AN(info[0].PoolOwner),
-				"owner",
+				"active",
 			},
 		}
 		request, err := transaction.NewSignedTransactionRequest(
 			ad,
 			"hddpool12345",
-			"mchgstrpool",
+			"mchgspace",
 			p,
 			&opt,
 		)
@@ -220,6 +220,7 @@ var changeMaxSpaceCmd = &cobra.Command{
 		} else {
 			res, err := request.Send(cfg.GetAPIAddr() + "/ChangeAssignedSpace")
 			if err != nil {
+				fmt.Println("pool", eos.AN(info[0].PoolOwner))
 				fmt.Println("操作失败:", err, string(res))
 				return
 			}
@@ -252,7 +253,7 @@ var changeDepAccCmd = &cobra.Command{
 			},
 			eos.PermissionLevel{
 				eos.AN(info[0].PoolOwner),
-				"owner",
+				"active",
 			},
 		}
 		request, err := transaction.NewSignedTransactionRequest(
@@ -279,16 +280,22 @@ var changeDepositCmd = &cobra.Command{
 	Use:   "change-deposit",
 	Short: "更改抵押金额",
 	Run: func(cmd *cobra.Command, args []string) {
+		var valuestring string
+	input:
+		fmt.Println("请输入当前抵押账号")
+		fmt.Scanln(&valuestring)
+		if valuestring == "" {
+			goto input
+		}
+
 		ad := &struct {
-			User       eos.AccountName `json:"user" prompt_:"请输入当前抵押账号" require:"true"`
+			User       eos.AccountName `json:"user" require:"true"`
 			Minerid    uint64          `json:"minerid"`
-			IsIncrease bool            `json:"is_increase" prompt_:"是否为追加抵押（yes 或者 no）" required:"true"`
-			Quant      eos.Asset       `json:"quant" prompt_:"请输入增加额度" require:"true"`
+			IsIncrease bool            `json:"is_increase" prompt:"是否为追加抵押（yes 或者 no）" required:"true"`
+			Quant      eos.Asset       `json:"quant" prompt:"请输入增加额度" require:"true"`
 		}{
-			Minerid:    uint64(cfg.IndexID),
-			User:       eos.AN("storepoolown"),
-			IsIncrease: true,
-			Quant:      transaction.NewYTAAssect(10),
+			User:    eos.AN(valuestring),
+			Minerid: uint64(cfg.IndexID),
 		}
 
 		//info, err := getPoolInfo(cfg.PoolID)
@@ -299,7 +306,7 @@ var changeDepositCmd = &cobra.Command{
 
 		p := []eos.PermissionLevel{
 			eos.PermissionLevel{
-				eos.AN("storepoolown"),
+				eos.AN(valuestring),
 				"active",
 			},
 			//eos.PermissionLevel{
@@ -329,12 +336,61 @@ var changeDepositCmd = &cobra.Command{
 	},
 }
 
+var AddPoolCmd = &cobra.Command{
+	Use:   "change-quota",
+	Short: "修改配额",
+	Run: func(cmd *cobra.Command, args []string) {
+		ad := &struct {
+			MinerID    uint64          `json:"miner_id"`
+			PoolID     eos.AccountName `json:"pool_id"`
+			Minerowner eos.AccountName `json:"minerowner" prompt:"请输入矿机管理员" require:"true"`
+			MaxSpace   uint64          `json:"max_space" prompt:"请输入配额 单位：G 最小100G，最大100T" convert:"Block" require:"true"`
+		}{
+			MinerID: uint64(cfg.IndexID),
+			PoolID:  eos.AN(cfg.PoolID),
+		}
+
+		info, err := getPoolInfo(cfg.PoolID)
+		if err != nil {
+			fmt.Println("操作失败:", err)
+			return
+		}
+
+		p := []eos.PermissionLevel{
+			eos.PermissionLevel{
+				eos.AN(cfg.Adminacc),
+				"active",
+			},
+			eos.PermissionLevel{
+				eos.AN(info[0].PoolOwner),
+				"active",
+			},
+		}
+		request, err := transaction.NewSignedTransactionRequest(
+			ad,
+			"hddpool12345",
+			"addm2pool",
+			p,
+			&opt,
+		)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			res, err := request.Send(cfg.GetAPIAddr() + "/changeminerpool")
+			if err != nil {
+				fmt.Println("操作失败:", err, string(res))
+				return
+			}
+			fmt.Printf("操作成功，修改矿池最大配额成功:%d\n", ad.MaxSpace*16/1024)
+		}
+	},
+}
+
 func init() {
+
 	c, err := config.ReadConfig()
 	if err == nil {
 		cfg = c
-		opt.FillFromChain(api)
-
 		AccountCmd.AddCommand(
 			changeAdminCmd,
 			changeOwnerCmd,
@@ -342,7 +398,12 @@ func init() {
 			changeMaxSpaceCmd,
 			changeDepAccCmd,
 			changeDepositCmd,
+			AddPoolCmd,
 		)
+		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
+		api = eos.New(baseNodeUrl)
+		transaction.Api = api
+		opt.FillFromChain(api)
 	} else {
 		AccountCmd.Short = "账号管理[请先初始化]"
 	}
