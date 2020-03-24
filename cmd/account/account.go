@@ -398,13 +398,12 @@ func init() {
 			changeMaxSpaceCmd,
 			changeDepAccCmd,
 			changeDepositCmd,
-			AddPoolCmd,
 		)
 		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
 		api = eos.New(baseNodeUrl)
 		transaction.Api = api
 		opt.FillFromChain(api)
 	} else {
-		AccountCmd.Short = "账号管理[请先初始化]"
+		AccountCmd.Short = "账号管理[请先注册]"
 	}
 }
