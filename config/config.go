@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	manet "github.com/multiformats/go-multiaddr-net"
 	"io/ioutil"
 	"log"
 	"os"
