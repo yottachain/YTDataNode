@@ -361,6 +361,10 @@ func addPool(tx *eos.SignedTransaction) error {
 	//log.Println(out.StatusCode, out.BlockID)
 	//return nil
 	buf, err := json.Marshal(packedtx)
+	//cfg, err := readCfg()
+	//if err != nil {
+	//	bi = int(cfg.IndexID) % len(BPList)
+	//}
 	resp, err := http.Post(fmt.Sprintf("http://%s:8082/changeminerpool", BPList[bi]), "applaction/json", bytes.NewBuffer(buf))
 	if err != nil {
 		return err

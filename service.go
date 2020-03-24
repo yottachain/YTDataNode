@@ -1,13 +1,14 @@
 package node
 
 import (
+	"log"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
@@ -45,7 +46,7 @@ func (sn *storageNode) Service() {
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
-		return dh.Handle(data), nil
+		return dh.Handle(data, head.RemotePeerID), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
@@ -61,21 +62,21 @@ func (sn *storageNode) Service() {
 
 	go rce.Run()
 
-	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rce.HandleMuilteTaskMsg(data); err == nil {
-			log.Println("[recover]success")
-		} else {
-			log.Println("[recover]error", err)
-		}
+	// _ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+	// 	if err := rce.HandleMuilteTaskMsg(data); err == nil {
+	// 		log.Println("[recover]success")
+	// 	} else {
+	// 		log.Println("[recover]error", err)
+	// 	}
 
-		// 记录上次数据
-		//go func() {
-		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		//	defer fd.Close()
-		//	fd.Write(data)
-		//}()
-		return message.MsgIDVoidResponse.Bytes(), nil
-	})
+	// 	// 记录上次数据
+	// 	//go func() {
+	// 	//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	// 	//	defer fd.Close()
+	// 	//	fd.Write(data)
+	// 	//}()
+	// 	return message.MsgIDVoidResponse.Bytes(), nil
+	// })
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle(data)

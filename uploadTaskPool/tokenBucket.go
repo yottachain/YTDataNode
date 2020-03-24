@@ -25,7 +25,9 @@ func (tb *TokenBucket) Get(ctx context.Context) *Token {
 	select {
 	case tk = <-tb.tkchan:
 		tk.Tm = time.Now()
-	case <-ctx.Done():
+	//case <-ctx.Done():
+	//	tk = nil
+	default:
 		tk = nil
 	}
 	return tk

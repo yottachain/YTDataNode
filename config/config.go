@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
@@ -338,6 +339,12 @@ func (cfg *Config) GetBPIndex() int {
 
 // ReadConfig 读配置
 func ReadConfig() (*Config, error) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("读取配置失败部分功能不可用")
+		}
+	}()
 	var cfg Config
 	data, err := ioutil.ReadFile(util.GetConfigPath())
 	if err != nil {
@@ -380,4 +387,17 @@ func Version() uint32 {
 func (cfg Config) ResetYTFSOptions(opts *ytfsOpts.Options) Config {
 	cfg.Options = opts
 	return cfg
+}
+
+func (cfg Config) GetAPIAddr() string {
+	bpIndex := cfg.GetBPIndex()
+	ma, err := multiaddr.NewMultiaddr(cfg.BPList[bpIndex].Addrs[0])
+	if err != nil {
+		return ""
+	}
+	addr, err := manet.ToNetAddr(ma)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("http://%s", strings.ReplaceAll(addr.String(), ":9999", ":8082"))
 }

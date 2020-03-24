@@ -27,6 +27,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/mr-tron/base58 v1.1.3
 	github.com/multiformats/go-multiaddr v0.2.0
+	github.com/multiformats/go-multiaddr-net v0.1.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/prometheus/client_golang v0.9.3 // indirect
 	github.com/satori/go.uuid v1.2.0
