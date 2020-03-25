@@ -386,6 +386,47 @@ var AddPoolCmd = &cobra.Command{
 	},
 }
 
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "矿机信息",
+	Run: func(cmd *cobra.Command, args []string) {
+		out, err := api.GetTableRows(eos.GetTableRowsRequest{
+			Code:       "hddpool12345",
+			Scope:      "hddpool12345",
+			Table:      "minerinfo",
+			LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+			UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+			Index:      "1",
+			Limit:      1,
+			JSON:       true,
+			KeyType:    "int64",
+		})
+		if err != nil {
+			fmt.Println("查询失败", err, cfg.IndexID)
+		}
+		var res []struct {
+			MinerID   uint64 `json:"minerid"`
+			Owner     string `json:"owner"`
+			Admin     string `json:"admin"`
+			PoolID    string `json:"pool_id"`
+			MaxSpace  uint64 `json:"max_space"`
+			SpaceLeft uint64 `json:"space_left"`
+		}
+		json.Unmarshal(out.Rows, &res)
+
+		for _, v := range res {
+			fmt.Println("")
+			fmt.Println("------------------矿机信息-----------")
+			fmt.Println("矿机ID", v.MinerID)
+			fmt.Println("矿机管理员", v.Admin)
+			fmt.Println("矿池ID", v.PoolID)
+			fmt.Println("最大采购空间", v.MaxSpace)
+			fmt.Println("____________________________________")
+			fmt.Println("")
+		}
+	},
+}
+
 func init() {
 
 	c, err := config.ReadConfig()
@@ -398,6 +439,7 @@ func init() {
 			changeMaxSpaceCmd,
 			changeDepAccCmd,
 			changeDepositCmd,
+			infoCmd,
 		)
 		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
 		api = eos.New(baseNodeUrl)
