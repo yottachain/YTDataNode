@@ -51,4 +51,3 @@ require (
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
 
-replace github.com/yottachain/YTHost => /Users/mac/go/src/github.com/yottachain/YTHost/
