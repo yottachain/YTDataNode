@@ -130,15 +130,12 @@ func (sn *storageNode) Service() {
 		} else {
 			log.Println("[sleep]", err)
 		}
-		var res message.UploadShardResponse
+		var res message.UploadShard2CResponse
 		res.RES = 0
-		res.SHARDID = msg.SHARDID
-		res.VHF = msg.VHF
-		res.VBI = msg.VBI
 
 		buf, err := proto.Marshal(&res)
 
-		return append(message.MsgIDUploadShardResponse.Bytes(), buf...), err
+		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
 	go sn.Host().Accept()
 	//Register(sn)
