@@ -233,17 +233,19 @@ var changeDepAccCmd = &cobra.Command{
 	Use:   "change-dep-acc",
 	Short: "更改抵押账户",
 	Run: func(cmd *cobra.Command, args []string) {
+		var valuestring string
+	input:
+		fmt.Println("请输入新抵押账号")
+		fmt.Scanln(&valuestring)
+		if valuestring == "" {
+			goto input
+		}
 		ad := &struct {
 			Minerid   uint64          `json:"minerid"`
-			NewDepAcc eos.AccountName `json:"new_depacc" prompt:"请输入新的抵押账户" required:"true"`
+			NewDepAcc eos.AccountName `json:"new_depacc"`
 		}{
-			Minerid: uint64(cfg.IndexID),
-		}
-
-		info, err := getPoolInfo(cfg.PoolID)
-		if err != nil {
-			fmt.Println("操作失败:", err)
-			return
+			Minerid:   uint64(cfg.IndexID),
+			NewDepAcc: eos.AN(valuestring),
 		}
 
 		p := []eos.PermissionLevel{
@@ -252,7 +254,7 @@ var changeDepAccCmd = &cobra.Command{
 				"active",
 			},
 			eos.PermissionLevel{
-				eos.AN(info[0].PoolOwner),
+				ad.NewDepAcc,
 				"active",
 			},
 		}
@@ -282,7 +284,7 @@ var changeDepositCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var valuestring string
 	input:
-		fmt.Println("请输入当前抵押账号")
+		fmt.Println("请输入抵押账号")
 		fmt.Scanln(&valuestring)
 		if valuestring == "" {
 			goto input
