@@ -132,7 +132,7 @@ func (sn *storageNode) Service() {
 
 		buf, err := proto.Marshal(&res)
 
-		return append(message.MsgIDUploadShardResponse.Bytes(), buf...), err
+		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
 	go sn.Host().Accept()
 	//Register(sn)
