@@ -138,7 +138,7 @@ var changePoolIDCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var valuestring string
 	input:
-		fmt.Println("请输入抵押账号")
+		fmt.Println("请输入矿池id")
 		fmt.Scanln(&valuestring)
 		if valuestring == "" {
 			goto input
