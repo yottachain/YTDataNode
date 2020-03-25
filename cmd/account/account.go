@@ -386,18 +386,89 @@ var AddPoolCmd = &cobra.Command{
 	},
 }
 
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "矿机信息",
+	Run: func(cmd *cobra.Command, args []string) {
+		out, err := api.GetTableRows(eos.GetTableRowsRequest{
+			Code:       "hddpool12345",
+			Scope:      "hddpool12345",
+			Table:      "minerinfo",
+			LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+			UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+			Index:      "1",
+			Limit:      1,
+			JSON:       true,
+			KeyType:    "int64",
+		})
+		if err != nil {
+			fmt.Println("查询失败", err, cfg.IndexID)
+		}
+		var res []struct {
+			MinerID   uint64 `json:"minerid"`
+			Owner     string `json:"owner"`
+			Admin     string `json:"admin"`
+			PoolID    string `json:"pool_id"`
+			MaxSpace  uint64 `json:"max_space"`
+			SpaceLeft uint64 `json:"space_left"`
+		}
+		json.Unmarshal(out.Rows, &res)
+
+		for _, v := range res {
+			fmt.Println("")
+			fmt.Println("------------------矿机信息-----------")
+			fmt.Println("矿机ID", v.MinerID)
+			fmt.Println("矿机管理员", v.Admin)
+			fmt.Println("矿池ID", v.PoolID)
+			fmt.Printf("最大采购空间 %d Block(=%dGB)\n", v.MaxSpace, v.MaxSpace*16/1024/1024)
+		}
+		getDepInfo()
+	},
+}
+
+func getDepInfo() {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hdddeposit12",
+		Scope:      "hdddeposit12",
+		Table:      "miner2dep",
+		LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+		UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+		Index:      "1",
+		Limit:      1,
+		JSON:       true,
+		KeyType:    "int64",
+	})
+	if err != nil {
+		fmt.Println("查询失败", err, cfg.IndexID)
+	}
+	var res []struct {
+		AccountName string `json:"account_name"`
+		Deposit     string `json:"deposit"`
+	}
+	json.Unmarshal(out.Rows, &res)
+
+	for _, v := range res {
+		fmt.Println("------------------抵押信息-----------")
+		fmt.Println("抵押账户名", v.AccountName)
+		fmt.Println("抵押金额", v.Deposit)
+		fmt.Println("____________________________________")
+		fmt.Println("")
+	}
+}
+
 func init() {
 
 	c, err := config.ReadConfig()
 	if err == nil {
 		cfg = c
 		AccountCmd.AddCommand(
+			infoCmd,
+			changeDepositCmd,
+			changeMaxSpaceCmd,
 			changeAdminCmd,
 			changeOwnerCmd,
 			changePoolIDCmd,
-			changeMaxSpaceCmd,
 			changeDepAccCmd,
-			changeDepositCmd,
 		)
 		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
 		api = eos.New(baseNodeUrl)
