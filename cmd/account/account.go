@@ -136,17 +136,20 @@ var changePoolIDCmd = &cobra.Command{
 	Use:   "change-pool-id",
 	Short: "更改矿池ID",
 	Run: func(cmd *cobra.Command, args []string) {
-		ad := &struct {
-			Minerid   uint64          `json:"minerid"`
-			NewPoolID eos.AccountName `json:"new_poolid" prompt:"请输入新的矿池ID" required:"true"`
-		}{
-			Minerid: uint64(cfg.IndexID),
+		var valuestring string
+	input:
+		fmt.Println("请输入抵押账号")
+		fmt.Scanln(&valuestring)
+		if valuestring == "" {
+			goto input
 		}
 
-		info, err := getPoolInfo(cfg.PoolID)
-		if err != nil {
-			fmt.Println("操作失败:", err)
-			return
+		ad := &struct {
+			Minerid   uint64          `json:"minerid"`
+			NewPoolID eos.AccountName `json:"new_poolid"`
+		}{
+			Minerid:   uint64(cfg.IndexID),
+			NewPoolID: eos.AN(valuestring),
 		}
 
 		p := []eos.PermissionLevel{
@@ -155,7 +158,7 @@ var changePoolIDCmd = &cobra.Command{
 				"active",
 			},
 			eos.PermissionLevel{
-				eos.AN(info[0].PoolOwner),
+				ad.NewPoolID,
 				"active",
 			},
 		}
@@ -293,8 +296,8 @@ var changeDepositCmd = &cobra.Command{
 		ad := &struct {
 			User       eos.AccountName `json:"user" require:"true"`
 			Minerid    uint64          `json:"minerid"`
-			IsIncrease bool            `json:"is_increase" prompt:"是否为追加抵押（yes 或者 no）" required:"true"`
-			Quant      eos.Asset       `json:"quant" prompt:"请输入增加额度" require:"true"`
+			IsIncrease bool            `json:"is_increase" prompt:"是否为追加抵押（yes 追加 或者 no 减少）" required:"true"`
+			Quant      eos.Asset       `json:"quant" prompt:"请输入额度" require:"true"`
 		}{
 			User:    eos.AN(valuestring),
 			Minerid: uint64(cfg.IndexID),
@@ -333,7 +336,7 @@ var changeDepositCmd = &cobra.Command{
 				fmt.Println("操作失败:", err, string(res))
 				return
 			}
-			fmt.Printf("操作成功，增加抵押成功\n")
+			fmt.Printf("操作成功，修改抵押成功\n")
 		}
 	},
 }

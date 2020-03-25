@@ -91,7 +91,7 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 			case "yes":
 				v.Field(i).SetBool(true)
 			case "no":
-				v.Field(i).SetBool(true)
+				v.Field(i).SetBool(false)
 			default:
 				fmt.Println("输入错误")
 				goto input
