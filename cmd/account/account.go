@@ -420,7 +420,7 @@ var infoCmd = &cobra.Command{
 			fmt.Println("矿机ID", v.MinerID)
 			fmt.Println("矿机管理员", v.Admin)
 			fmt.Println("矿池ID", v.PoolID)
-			fmt.Println("最大采购空间", v.MaxSpace)
+			fmt.Printf("最大采购空间 %d Block(=%dGB)\n", v.MaxSpace, v.MaxSpace*16/1024/1024)
 		}
 		getDepInfo()
 	},
@@ -462,13 +462,13 @@ func init() {
 	if err == nil {
 		cfg = c
 		AccountCmd.AddCommand(
+			infoCmd,
+			changeDepositCmd,
+			changeMaxSpaceCmd,
 			changeAdminCmd,
 			changeOwnerCmd,
 			changePoolIDCmd,
-			changeMaxSpaceCmd,
 			changeDepAccCmd,
-			changeDepositCmd,
-			infoCmd,
 		)
 		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
 		api = eos.New(baseNodeUrl)
