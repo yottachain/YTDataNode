@@ -421,10 +421,39 @@ var infoCmd = &cobra.Command{
 			fmt.Println("矿机管理员", v.Admin)
 			fmt.Println("矿池ID", v.PoolID)
 			fmt.Println("最大采购空间", v.MaxSpace)
-			fmt.Println("____________________________________")
-			fmt.Println("")
 		}
+		getDepInfo()
 	},
+}
+
+func getDepInfo() {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hdddeposit12",
+		Scope:      "hdddeposit12",
+		Table:      "miner2dep",
+		LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+		UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+		Index:      "1",
+		Limit:      1,
+		JSON:       true,
+		KeyType:    "int64",
+	})
+	if err != nil {
+		fmt.Println("查询失败", err, cfg.IndexID)
+	}
+	var res []struct {
+		AccountName string `json:"account_name"`
+		Deposit     string `json:"deposit"`
+	}
+	json.Unmarshal(out.Rows, &res)
+
+	for _, v := range res {
+		fmt.Println("------------------抵押信息-----------")
+		fmt.Println("抵押账户名", v.AccountName)
+		fmt.Println("抵押金额", v.Deposit)
+		fmt.Println("____________________________________")
+		fmt.Println("")
+	}
 }
 
 func init() {
