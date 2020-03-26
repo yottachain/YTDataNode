@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	manet "github.com/multiformats/go-multiaddr-net"
 	"io/ioutil"
 	"log"
 	"os"
@@ -392,13 +391,14 @@ func (cfg Config) ResetYTFSOptions(opts *ytfsOpts.Options) Config {
 
 func (cfg Config) GetAPIAddr() string {
 	bpIndex := cfg.GetBPIndex()
-	ma, err := multiaddr.NewMultiaddr(cfg.BPList[bpIndex].Addrs[0])
-	if err != nil {
-		return ""
-	}
-	addr, err := manet.ToNetAddr(ma)
-	if err != nil {
-		return ""
-	}
-	return fmt.Sprintf("http://%s", strings.ReplaceAll(addr.String(), ":9999", ":8082"))
+	//ma, err := multiaddr.NewMultiaddr(cfg.BPList[bpIndex].Addrs[0])
+	//if err != nil {
+	//	return ""
+	//}
+	addrs := strings.Split(cfg.BPList[bpIndex].Addrs[0], "/")
+	//addr, err := manet.ToNetAddr(ma)
+	//if err != nil {
+	//	return ""
+	//}
+	return fmt.Sprintf("http://%s:%s", addrs[2], "8082")
 }

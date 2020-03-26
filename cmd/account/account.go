@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/transaction"
-	"strings"
 )
 
 //var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
@@ -475,7 +474,7 @@ func init() {
 			changePoolIDCmd,
 			changeDepAccCmd,
 		)
-		baseNodeUrl = strings.ReplaceAll(cfg.GetAPIAddr(), ":8082", ":8888")
+		baseNodeUrl = "http://dnapi1.yottachain.net:8888"
 		api = eos.New(baseNodeUrl)
 		transaction.Api = api
 		opt.FillFromChain(api)
