@@ -1,7 +1,11 @@
 package node
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -175,6 +179,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
+	msg.Rx = GetXX("R")
+	msg.Tx = GetXX("T")
+
 	if rce.Len() == 0 {
 		msg.Rebuilding = 0
 	} else {
@@ -217,4 +224,22 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 			rms.UpdateAddr("")
 		}
 	}
+}
+
+func GetXX(rt string) uint32 {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	var res uint32
+
+	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk '{if ($5+0>$max+0){$max=$5}}END{print $max}'", rt)
+	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
+
+	buf := bytes.NewBuffer([]byte{})
+	rtcmd.Stdout = buf
+	rtcmd.Run()
+
+	fmt.Fscanf(buf, "%s", &res)
+
+	return res
 }
