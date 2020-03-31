@@ -177,6 +177,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Id = sn.Config().IndexID
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
+	msg.RealSpace = uint32(sn.YTFS().Len())
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
@@ -190,6 +191,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 
 	resData, err := proto.Marshal(&msg)
+	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
 		log.Println("send report msg fail:", err)
