@@ -1,7 +1,6 @@
 package commander
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
@@ -87,48 +86,48 @@ func Daemon() {
 				log.Println(err)
 			}
 		}()
-
-		bashText := `
-if [ ! -f /etc/sysctl.d/yotta.conf ]; then
-
-    echo "*            soft   nofile         65535" >> /etc/security/limits.conf
-    echo "*            hard   nofile         65535" >> /etc/security/limits.conf
-    echo "*            soft   nproc          65535" >> /etc/security/limits.conf
-    echo "*            hard   nproc          65535" >> /etc/security/limits.conf
-    echo "*            soft   core        unlimited" >> /etc/security/limits.conf
-    echo "*            hard   core        unlimited" >> /etc/security/limits.conf
-    echo "ulimit -u 655350" >> /etc/profile
-    echo "ulimit -n 655350" >> /etc/profile
-    source /etc/profile
-
-    touch  /etc/sysctl.d/yotta.conf
-
-    echo 'net.ipv4.tcp_tw_reuse= 1' >/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_fin_timeout= 30' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_tw_recycle= 1' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_syncookies= 1' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_keepalive_time= 600' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_max_syn_backlog= 4096' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_max_tw_buckets = 2000' >>/etc/sysctl.d/yotta.conf
-    echo 'net.core.netdev_max_backlog= 10240' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_abort_on_overflow = 1' >>/etc/sysctl.d/yotta.conf
-    echo 'net.core.somaxconn = 10240' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_window_scaling = 1' >>/etc/sysctl.d/yotta.conf
-    echo 'net.ipv4.tcp_mtu_probing=1' >>/etc/sysctl.d/yotta.conf
-    sysctl  -p /etc/sysctl.d/yotta.conf
-else
-    echo 参数已修改
-fi
-`
-		bashBuf := bytes.NewBuffer([]byte{})
-		bashBuf.WriteString(bashText)
-
-		shellCmd := exec.Command("bash")
-		shellCmd.Stdout = os.Stdout
-		shellCmd.Stdin = bashBuf
-		shellCmd.Stderr = os.Stderr
-
-		shellCmd.Run()
+		//
+		//		bashText := `
+		//if [ ! -f /etc/sysctl.d/yotta.conf ]; then
+		//
+		//    echo "*            soft   nofile         65535" >> /etc/security/limits.conf
+		//    echo "*            hard   nofile         65535" >> /etc/security/limits.conf
+		//    echo "*            soft   nproc          65535" >> /etc/security/limits.conf
+		//    echo "*            hard   nproc          65535" >> /etc/security/limits.conf
+		//    echo "*            soft   core        unlimited" >> /etc/security/limits.conf
+		//    echo "*            hard   core        unlimited" >> /etc/security/limits.conf
+		//    echo "ulimit -u 655350" >> /etc/profile
+		//    echo "ulimit -n 655350" >> /etc/profile
+		//    source /etc/profile
+		//
+		//    touch  /etc/sysctl.d/yotta.conf
+		//
+		//    echo 'net.ipv4.tcp_tw_reuse= 1' >/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_fin_timeout= 30' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_tw_recycle= 1' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_syncookies= 1' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_keepalive_time= 600' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_max_syn_backlog= 4096' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_max_tw_buckets = 2000' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.core.netdev_max_backlog= 10240' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_abort_on_overflow = 1' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.core.somaxconn = 10240' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_window_scaling = 1' >>/etc/sysctl.d/yotta.conf
+		//    echo 'net.ipv4.tcp_mtu_probing=1' >>/etc/sysctl.d/yotta.conf
+		//    sysctl  -p /etc/sysctl.d/yotta.conf
+		//else
+		//    echo 参数已修改
+		//fi
+		//`
+		//		bashBuf := bytes.NewBuffer([]byte{})
+		//		bashBuf.WriteString(bashText)
+		//
+		//		shellCmd := exec.Command("bash")
+		//		shellCmd.Stdout = os.Stdout
+		//		shellCmd.Stdin = bashBuf
+		//		shellCmd.Stderr = os.Stderr
+		//
+		//		shellCmd.Run()
 
 	}()
 	<-ctx.Done()
