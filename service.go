@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"time"
@@ -233,13 +234,19 @@ func GetXX(rt string) uint32 {
 	var res uint32
 
 	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk '{if ($5+0>$max+0){$max=$5}}END{print $max}'", rt)
+	fmt.Println(cmdstr)
 	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
 
 	buf := bytes.NewBuffer([]byte{})
 	rtcmd.Stdout = buf
+	rtcmd.Stderr = buf
 	rtcmd.Run()
-
-	fmt.Fscanf(buf, "%s", &res)
+	rbuf, err := ioutil.ReadAll(buf)
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	fmt.Sscanf(string(rbuf), "%s", &res)
 
 	return res
 }
