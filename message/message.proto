@@ -76,8 +76,8 @@ message StatusRepReq {
     uint32 version=10;
     uint32 rebuilding=11;
     uint32 realSpace=12;
-    uint32 tx=13;
-    uint32 rx=14;
+    uint64 tx=13;
+    uint64 rx=14;
 }
 
 message StatusRepResp {

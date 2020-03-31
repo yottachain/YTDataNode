@@ -8,6 +8,7 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -230,11 +231,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 }
 
-func GetXX(rt string) uint32 {
+func GetXX(rt string) uint64 {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	var res uint32
+	var res uint64
 
 	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk 'BEGIN{max=0} {if ($5+0>max+0){max=$5}}END{print max}'", rt)
 	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
@@ -249,10 +250,10 @@ func GetXX(rt string) uint32 {
 		return 0
 	}
 
-	r, err := strconv.ParseUint(fmt.Sprintf("XX:%s", rbuf), 10, 32)
+	r, err := strconv.ParseUint(strings.ReplaceAll(fmt.Sprintf("%s", rbuf), "\n", ""), 10, 64)
 	if err != nil {
 		fmt.Println("[report]", err.Error())
 	}
-	res = uint32(r)
+	res = r
 	return res
 }
