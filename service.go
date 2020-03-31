@@ -233,7 +233,7 @@ func GetXX(rt string) uint32 {
 
 	var res uint32
 
-	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk '{if ($5+0>$max+0){$max=$5}}END{print $max}'", rt)
+	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk 'BEGIN{max=0} {if ($5+0>max+0){max=$5}}END{print max}'", rt)
 	fmt.Println(cmdstr)
 	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
 
@@ -247,6 +247,5 @@ func GetXX(rt string) uint32 {
 		return 0
 	}
 	fmt.Sscanf(string(rbuf), "%s", &res)
-
 	return res
 }
