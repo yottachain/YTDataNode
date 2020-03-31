@@ -247,6 +247,9 @@ func GetXX(rt string) uint32 {
 		log.Println(err)
 		return 0
 	}
-	fmt.Sscanf(string(rbuf), "%d", &res)
+
+	if _, err = fmt.Sscanf(fmt.Sprintf("XX:%s", rbuf), "%d", &res); err != nil {
+		log.Println("[report]", err.Error())
+	}
 	return res
 }
