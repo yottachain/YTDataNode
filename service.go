@@ -247,6 +247,6 @@ func GetXX(rt string) uint32 {
 		log.Println(err)
 		return 0
 	}
-	fmt.Sscanf(string(rbuf), "%s", &res)
+	fmt.Sscanf(string(rbuf), "%d", &res)
 	return res
 }
