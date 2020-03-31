@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -248,8 +249,10 @@ func GetXX(rt string) uint32 {
 		return 0
 	}
 
-	if _, err = fmt.Sscanf(fmt.Sprintf("XX:%s", rbuf), "%d", &res); err != nil {
-		log.Println("[report]", err.Error())
+	r, err := strconv.ParseUint(fmt.Sprintf("XX:%s", rbuf), 10, 32)
+	if err != nil {
+		fmt.Println("[report]", err.Error())
 	}
+	res = uint32(r)
 	return res
 }
