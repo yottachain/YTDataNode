@@ -176,7 +176,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Memory = sn.Runtime().Mem
 	msg.Id = sn.Config().IndexID
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
-	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
+	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
 	msg.Relay = sn.config.Relay
@@ -236,7 +236,6 @@ func GetXX(rt string) uint32 {
 	var res uint32
 
 	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk 'BEGIN{max=0} {if ($5+0>max+0){max=$5}}END{print max}'", rt)
-	fmt.Println(cmdstr)
 	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
 
 	buf := bytes.NewBuffer([]byte{})
@@ -248,6 +247,6 @@ func GetXX(rt string) uint32 {
 		log.Println(err)
 		return 0
 	}
-	fmt.Sscanf(string(rbuf), "%s", &res)
+	fmt.Sscanf(string(rbuf), "%d", &res)
 	return res
 }
