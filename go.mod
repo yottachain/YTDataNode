@@ -18,7 +18,6 @@ require (
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
-	github.com/klauspost/cpuid v1.2.3 // indirect
 	github.com/klauspost/reedsolomon v1.9.3
 	github.com/libp2p/go-libp2p-core v0.3.1
 	github.com/libp2p/go-libp2p-crypto v0.1.0
@@ -41,7 +40,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
-	github.com/yottachain/YTFS v0.0.0-20200224071646-5cd33ea89338
+	github.com/yottachain/YTFS v0.0.0-20200316060315-7c3df20724b4
 	github.com/yottachain/YTHost v1.0.2-0.20200226042847-daa6072b6384
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect
