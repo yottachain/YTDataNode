@@ -91,7 +91,7 @@ func (sc *SliceComparer)OpenLevelDB(DBName string) (db *leveldb.DB,err error){
 }
 
 func (sc *SliceComparer)SaveRecordToTmpDB(hashBatch [][]byte, db *leveldb.DB) error {
-
+	return nil                       //TODO  close slicecompare
 	var err error
 	nowtime := strconv.FormatInt(time.Now().Unix(),10)
     for _, key := range hashBatch{
