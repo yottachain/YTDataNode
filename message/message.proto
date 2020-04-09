@@ -47,8 +47,7 @@ message DownloadShardResponse{
    bytes data=1;
 }
 
-message NodeRegReq {                           
-
+message NodeRegReq {
     string nodeid= 1;                           
     string owner=2;                              
     uint64 maxDataSpace=3;                 
@@ -75,6 +74,9 @@ message StatusRepReq {
     bool relay=9;
     uint32 version=10;
     uint32 rebuilding=11;
+    uint32 realSpace=12;
+    uint64 tx=13;
+    uint64 rx=14;
 }
 
 message StatusRepResp {
@@ -88,7 +90,7 @@ message StringMsg{
 
 message SpotCheckTaskList{
     string taskId = 1;
-     int32 snid=2;
+    int32 snid=2;
     repeated SpotCheckTask taskList=3;
 }
 
@@ -174,5 +176,26 @@ message ListDNIReq{
 message ListDNIResp{
     repeated bytes vnflist=1;
     string nextid= 2;
+}
+
+//MessageID:0x1b32
+message DownloadYTFSFile{
+    string name=1;
+    string serverUrl=2;
+    bool gzip=3;
+    bytes sig=4;
+}
+
+//MessageID:0xe75c
+message UploadShardRequestTest  {
+    int32 SHARDID=1;
+    int32 BPDID = 2;
+    int64 VBI = 3;
+    bytes BPDSIGN=4;
+    bytes DAT=5;
+    bytes VHF=6;
+    bytes USERSIGN=7;
+    string allocId=8;
+    uint32 Sleep=9;
 }
 

@@ -3,13 +3,18 @@ package node
 import (
 	"context"
 	"fmt"
+	//"log"
+	"time"
+
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
+
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/slicecompare"
+
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -121,12 +126,19 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	resCode := wh.saveSlice(msg)
-	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	if resCode == 0 {
+		//success log will be delete later
+		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	}else{
+		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	}
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
+	}else {
+		//success log will be delete later
+		log.Printf("shard [VHF:%s] return client success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
-	defer log.Printf("shard [VHF:%s] return client success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	return res2client
 }
 
@@ -186,7 +198,7 @@ type DownloadHandler struct {
 }
 
 // Handle 获取处理器
-func (dh *DownloadHandler) Handle(msgData []byte) []byte {
+func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 	var msg message.DownloadShardRequest
 	var indexKey [16]byte
 	proto.Unmarshal(msgData, &msg)
@@ -204,7 +216,7 @@ func (dh *DownloadHandler) Handle(msgData []byte) []byte {
 		log.Println("data verify success")
 	}
 	if err != nil {
-		log.Println("Get data Slice fail:", err)
+		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 	res.Data = resData
 	resp, err := proto.Marshal(&res)

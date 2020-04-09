@@ -1,16 +1,27 @@
 package node
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/logger"
 	rc "github.com/yottachain/YTDataNode/recover"
+	"github.com/yottachain/YTDataNode/remoteDebug"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
-	"github.com/yottachain/YTDataNode/util"
-	"os"
-	"path"
-	"time"
+
+	//"github.com/yottachain/YTDataNode/util"
+	//"os"
+	//"path"
+//	"time"
+
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 	"github.com/yottachain/YTDataNode/slicecompare"
@@ -55,7 +66,7 @@ func (sn *storageNode) Service() {
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
-		return dh.Handle(data), nil
+		return dh.Handle(data, head.RemotePeerID), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
@@ -71,20 +82,28 @@ func (sn *storageNode) Service() {
 
 	go rce.Run()
 
-	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rce.HandleMuilteTaskMsg(data); err == nil {
-			log.Println("[recover]success")
-		} else {
-			log.Println("[recover]error", err)
-		}
+	// _ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+	// 	if err := rce.HandleMuilteTaskMsg(data); err == nil {
+	// 		log.Println("[recover]success")
+	// 	} else {
+	// 		log.Println("[recover]error", err)
+	// 	}
 
-		// 记录上次数据
-		go func() {
-			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-			defer fd.Close()
-			fd.Write(data)
-		}()
-		return message.MsgIDVoidResponse.Bytes(), nil
+	// 	// 记录上次数据
+	// 	//go func() {
+	// 	//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	// 	//	defer fd.Close()
+	// 	//	fd.Write(data)
+	// 	//}()
+	// 	return message.MsgIDVoidResponse.Bytes(), nil
+	// })
+
+	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		err := remoteDebug.Handle(data)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
+		return message.MsgIDVoidResponse.Bytes(), err
 	})
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//	go func(data []byte) {
@@ -123,6 +142,21 @@ func (sn *storageNode) Service() {
 	//	}(requestData)
 	//	return message.MsgIDVoidResponse.Bytes(), nil
 	//})
+	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.UploadShardRequestTest
+		if err := proto.Unmarshal(data, &msg); err == nil {
+			log.Println("[sleep]", msg.Sleep)
+			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
+		} else {
+			log.Println("[sleep]", err)
+		}
+		var res message.UploadShard2CResponse
+		res.RES = 0
+
+		buf, err := proto.Marshal(&res)
+
+		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
+	})
 	go sn.Host().Accept()
 	//Register(sn)
 	go func() {
@@ -133,6 +167,7 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func(){
+		return
 		 for {
 				<-time.After(60 * time.Second)
             	for{
@@ -164,6 +199,7 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func() {
+		return
 		for {
 			<-time.After(180 * time.Second)
 			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
@@ -173,6 +209,7 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func(){
+		return
 		cfs := confirmSlice.ConfirmSler{sn}
 		for {
 			<-time.After(90 * time.Second)
@@ -205,10 +242,14 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Memory = sn.Runtime().Mem
 	msg.Id = sn.Config().IndexID
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
-	msg.UsedSpace = sn.YTFS().Len() / uint64(sn.YTFS().Meta().DataBlockSize)
+	msg.UsedSpace = sn.YTFS().Len()
+	msg.RealSpace = uint32(sn.YTFS().Len())
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
+	msg.Rx = GetXX("R")
+	msg.Tx = GetXX("T")
+
 	if rce.Len() == 0 {
 		msg.Rebuilding = 0
 	} else {
@@ -216,6 +257,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 
 	resData, err := proto.Marshal(&msg)
+	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	if err != nil {
 		log.Println("send report msg fail:", err)
@@ -251,4 +293,31 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 			rms.UpdateAddr("")
 		}
 	}
+}
+
+func GetXX(rt string) uint64 {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	var res uint64
+
+	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk 'BEGIN{max=0} {if ($5+0>max+0){max=$5}}END{print max}'", rt)
+	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
+
+	buf := bytes.NewBuffer([]byte{})
+	rtcmd.Stdout = buf
+	rtcmd.Stderr = buf
+	rtcmd.Run()
+	rbuf, err := ioutil.ReadAll(buf)
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+
+	r, err := strconv.ParseUint(strings.ReplaceAll(fmt.Sprintf("%s", rbuf), "\n", ""), 10, 64)
+	if err != nil {
+		fmt.Println("[report]", err.Error())
+	}
+	res = r
+	return res
 }
