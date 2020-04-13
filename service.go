@@ -20,17 +20,15 @@ import (
 	//"github.com/yottachain/YTDataNode/util"
 	//"os"
 	//"path"
-//	"time"
+	//	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
-	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
 
-type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
 

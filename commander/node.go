@@ -171,6 +171,10 @@ func getDaemonCmd() *exec.Cmd {
 	return daemonC
 }
 
+func UpdateService(c **exec.Cmd){
+	updateService(c)
+}
+
 func updateService(c **exec.Cmd) {
 	log.Println("自动更新服务启动")
 	for {
