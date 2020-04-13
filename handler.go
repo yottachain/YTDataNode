@@ -56,8 +56,12 @@ func (wh *WriteHandler) batchWrite(number int) {
 		rqmap[rq.Key] = rq.Data
 		rqs[i] = rq
 	}
+
 	_, err := wh.YTFS().BatchPut(rqmap)
-	log.Printf("[ytfs]flush success:%d\n", number)
+	if err == nil{
+		log.Printf("[ytfs]flush sucess:%d\n", number)
+	}
+
 	for _, rq := range rqs {
 		rq.Error <- err
 	}
@@ -105,12 +109,14 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	resCode := wh.saveSlice(msg)
-	log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	if resCode != 0 {
+		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	}
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
+		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
-	defer log.Printf("shard [VHF:%s] return client success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	return res2client
 }
 
