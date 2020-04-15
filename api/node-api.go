@@ -79,7 +79,6 @@ func init() {
 			ProductSpace uint64 `json:"ProductSpace"`
 		}
 		const GB = 1024 * 1024 * 1024
-		// 未实现查询，先返回mock数据
 		res := new(Res)
 		res.Total = srv.sn.YTFS().Meta().YtfsSize
 		res.Used = srv.sn.YTFS().Len() * uint64(srv.sn.YTFS().Meta().DataBlockSize)

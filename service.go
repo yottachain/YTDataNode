@@ -1,12 +1,10 @@
 package node
 
 import (
-	"bytes"
-	"context"
-	"fmt"
-	"io/ioutil"
+	"bufio"
 	"log"
-	"os/exec"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -232,28 +230,34 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 }
 
 func GetXX(rt string) uint64 {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 
-	var res uint64
-
-	cmdstr := fmt.Sprintf("ifconfig | grep '%sX packets' | awk 'BEGIN{max=0} {if ($5+0>max+0){max=$5}}END{print max}'", rt)
-	rtcmd := exec.CommandContext(ctx, "bash", "-c", cmdstr)
-
-	buf := bytes.NewBuffer([]byte{})
-	rtcmd.Stdout = buf
-	rtcmd.Stderr = buf
-	rtcmd.Run()
-	rbuf, err := ioutil.ReadAll(buf)
+	nf, err := os.OpenFile("/proc/net/dev", os.O_RDONLY, 0644)
 	if err != nil {
-		log.Println(err)
 		return 0
 	}
+	sc := bufio.NewScanner(nf)
 
-	r, err := strconv.ParseUint(strings.ReplaceAll(fmt.Sprintf("%s", rbuf), "\n", ""), 10, 64)
-	if err != nil {
-		fmt.Println("[report]", err.Error())
+	var rx, tx uint64
+
+	for sc.Scan() {
+		line := sc.Text()
+		arr := strings.Split(line, ":")
+		if len(arr) > 1 {
+			reg := regexp.MustCompile(" +")
+			arr2 := reg.Split(arr[1], -1)
+			r, _ := strconv.ParseUint(arr2[1], 10, 64)
+			t, _ := strconv.ParseUint(arr2[9], 10, 64)
+			rx = rx + r
+			tx = tx + t
+		}
 	}
-	res = r
-	return res
+
+	switch rt {
+	case "r":
+		return uint64(rx)
+	case "t":
+		return uint64(tx)
+	default:
+		return 0
+	}
 }
