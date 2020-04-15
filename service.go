@@ -253,9 +253,9 @@ func GetXX(rt string) uint64 {
 	}
 
 	switch rt {
-	case "r":
+	case "r", "R":
 		return uint64(rx)
-	case "t":
+	case "t", "T":
 		return uint64(tx)
 	default:
 		return 0
