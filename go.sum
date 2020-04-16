@@ -338,8 +338,8 @@ github.com/yottachain/NodeOptimization v0.0.0-20200415100856-173c381a84db h1:XmF
 github.com/yottachain/NodeOptimization v0.0.0-20200415100856-173c381a84db/go.mod h1:hvnBaYc8ry78c2ifyZfkRpLqEh0LjRUZgmFKUGERE14=
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812 h1:XG9TtLosanLdwqSoporMr8OASUOjxuaj6cJDlut1c9s=
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812/go.mod h1:jDJUVGeQ1clW7k9OTRBAFtCMwGs9B9fGQ9QY64SKqlk=
-github.com/yottachain/YTFS v0.0.0-20200413030805-fb2cbd8731ee h1:K1UUiI+Y/epX+kMxH4Brgbu6tLuUw3Gbr7Nw3mYI/Kc=
-github.com/yottachain/YTFS v0.0.0-20200413030805-fb2cbd8731ee/go.mod h1:3lB+bELyOsvE0EXwN66qhKXQfxb4lLFZmj432bWtpFI=
+github.com/yottachain/YTFS v0.0.0-20200415105217-6c923477030b h1:aF5CblMpgCyzNTK9Iuu3a9W5tAsq9dpFzU2vqI/PsVI=
+github.com/yottachain/YTFS v0.0.0-20200415105217-6c923477030b/go.mod h1:3lB+bELyOsvE0EXwN66qhKXQfxb4lLFZmj432bWtpFI=
 github.com/yottachain/YTHost v1.0.2-0.20200415101344-3af1e5777154 h1:Mocg7n4eEs6of81x4UV9Dm0M6Oh5GJ8xPcnbFcX1rLY=
 github.com/yottachain/YTHost v1.0.2-0.20200415101344-3af1e5777154/go.mod h1:tOQF+wmFK4O5RMmNTrDPYWtjy2JmxMdCZeu4VH+tLt4=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc h1:DMB8zfN2YUoO9KQAx/qO1+rM3A4aL5rW/t474eFMs6w=
