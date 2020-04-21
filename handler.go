@@ -29,7 +29,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 3000),
+		make(chan *wRequest, 30000),
 	}
 }
 
@@ -69,6 +69,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 	_, err := wh.YTFS().BatchPut(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
+	} else {
+		log.Printf("[ytfs]flush failure:%d\n", number)
 	}
 
 	for _, rq := range rqs {
