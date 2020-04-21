@@ -47,8 +47,8 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 	}
 	select {
 	case wh.RequestQueue <- rq:
-	case <-ctx.Done():
-		return fmt.Errorf("push time out")
+	default:
+		return fmt.Errorf("task busy")
 	}
 	select {
 	case err := <-rq.Error:
