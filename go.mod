@@ -41,7 +41,7 @@ require (
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTFS v0.0.0-20200413030805-fb2cbd8731ee
-	github.com/yottachain/YTHost v1.0.2-0.20200420040715-505d36ea1098
+	github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect
 	google.golang.org/grpc v1.21.0 // indirect

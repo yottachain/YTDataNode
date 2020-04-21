@@ -337,8 +337,8 @@ github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812 h1:XG9TtLosanL
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812/go.mod h1:jDJUVGeQ1clW7k9OTRBAFtCMwGs9B9fGQ9QY64SKqlk=
 github.com/yottachain/YTFS v0.0.0-20200413030805-fb2cbd8731ee h1:K1UUiI+Y/epX+kMxH4Brgbu6tLuUw3Gbr7Nw3mYI/Kc=
 github.com/yottachain/YTFS v0.0.0-20200413030805-fb2cbd8731ee/go.mod h1:3lB+bELyOsvE0EXwN66qhKXQfxb4lLFZmj432bWtpFI=
-github.com/yottachain/YTHost v1.0.2-0.20200420040715-505d36ea1098 h1:SVr6C44e5q1gNkILJDnhKXpWyvx5CDZ41IN71nvuh5Q=
-github.com/yottachain/YTHost v1.0.2-0.20200420040715-505d36ea1098/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
+github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a h1:kYM388CiSzz3j7ec6LeNu/gVZpm9qYLoxsyB/hfaHU4=
+github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc h1:DMB8zfN2YUoO9KQAx/qO1+rM3A4aL5rW/t474eFMs6w=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 go.etcd.io/bbolt v1.3.2 h1:Z/90sZLPOeCy2PwprqkFa25PdkusRzaj9P8zm/KNyvk=
