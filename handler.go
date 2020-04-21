@@ -29,7 +29,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 3000),
+		make(chan *wRequest, 30000),
 	}
 }
 
@@ -47,8 +47,9 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 	}
 	select {
 	case wh.RequestQueue <- rq:
+		log.Println("[task]push task success")
 	default:
-		return fmt.Errorf("task busy")
+		return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
 	case err := <-rq.Error:
@@ -69,6 +70,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 	_, err := wh.YTFS().BatchPut(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
+	} else {
+		log.Printf("[ytfs]flush failure:%s\n", err.Error())
 	}
 
 	for _, rq := range rqs {
