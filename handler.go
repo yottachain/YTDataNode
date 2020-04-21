@@ -123,6 +123,8 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	resCode := wh.saveSlice(ctx, msg)
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	} else {
+		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
