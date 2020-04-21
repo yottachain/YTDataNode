@@ -29,7 +29,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 1000),
+		make(chan *wRequest, 3000),
 	}
 }
 
@@ -39,14 +39,23 @@ type wRequest struct {
 	Error chan error
 }
 
-func (wh *WriteHandler) push(key common.IndexTableKey, data []byte) error {
+func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
 	rq := &wRequest{
 		key,
 		data,
 		make(chan error),
 	}
-	wh.RequestQueue <- rq
-	return <-rq.Error
+	select {
+	case wh.RequestQueue <- rq:
+	case <-ctx.Done():
+		return fmt.Errorf("push time out")
+	}
+	select {
+	case err := <-rq.Error:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("get error time out")
+	}
 }
 func (wh *WriteHandler) batchWrite(number int) {
 	rqmap := make(map[common.IndexTableKey][]byte, number)
@@ -58,7 +67,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 
 	_, err := wh.YTFS().BatchPut(rqmap)
-	if err == nil{
+	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	}
 
@@ -108,7 +117,10 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	proto.Unmarshal(msgData, &msg)
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
-	resCode := wh.saveSlice(msg)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	// 添加超时
+	resCode := wh.saveSlice(ctx, msg)
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
@@ -120,7 +132,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	return res2client
 }
 
-func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
+func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		// buys
@@ -156,7 +168,7 @@ func (wh *WriteHandler) saveSlice(msg message.UploadShardRequest) int32 {
 	// 3. 将数据写入YTFS-disk
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
-	err = wh.push(common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
