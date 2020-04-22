@@ -71,6 +71,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 	}
 
+	log.Printf("[ytfs]flush start:%d\n", number)
 	_, err := wh.YTFS().BatchPut(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
@@ -79,7 +80,11 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 
 	for _, rq := range rqs {
-		rq.Error <- err
+		select {
+		case rq.Error <- err:
+		default:
+			continue
+		}
 	}
 }
 
