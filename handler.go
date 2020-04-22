@@ -62,9 +62,13 @@ func (wh *WriteHandler) batchWrite(number int) {
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	for i := 0; i < number; i++ {
-		rq := <-wh.RequestQueue
-		rqmap[rq.Key] = rq.Data
-		rqs[i] = rq
+		select {
+		case rq := <-wh.RequestQueue:
+			rqmap[rq.Key] = rq.Data
+			rqs[i] = rq
+		default:
+			continue
+		}
 	}
 
 	_, err := wh.YTFS().BatchPut(rqmap)
