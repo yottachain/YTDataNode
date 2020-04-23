@@ -93,9 +93,11 @@ func (wh *WriteHandler) Run() {
 	go func() {
 		var flushInterval time.Duration = time.Millisecond * 100
 		for {
-			<-time.After(flushInterval)
-			if n := len(wh.RequestQueue); n > 0 {
-				wh.batchWrite(n)
+			select {
+			case <-time.After(flushInterval):
+				if n := len(wh.RequestQueue); n > 0 {
+					wh.batchWrite(n)
+				}
 			}
 		}
 	}()
@@ -165,6 +167,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("token check fail：", tk.String())
 		return 105
 	}
+	defer wh.Upt.Delete(tk)
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
 	//	// 获取BP公钥

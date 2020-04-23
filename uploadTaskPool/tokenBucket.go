@@ -1,7 +1,6 @@
 package uploadTaskPool
 
 import (
-	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
 	"time"
 )
@@ -41,9 +40,23 @@ func (tb *TokenBucket) Check(tk *Token) bool {
 	tb.Lock()
 	defer tb.Unlock()
 
+	for _, v := range tb.tks {
+		if v != nil && tk.String() == v.String() {
+			if tk.IsOuttime(tb.ttl) {
+				return false
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func (tb *TokenBucket) Delete(tk *Token) bool {
+	tb.Lock()
+	defer tb.Unlock()
+
 	for k, v := range tb.tks {
 		if v != nil && tk.String() == v.String() {
-			log.Println("[uploadTaskPool] check token success", tk.String(), v.String())
 			tb.tks[k] = nil
 			if tk.IsOuttime(tb.ttl) {
 				return false

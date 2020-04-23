@@ -39,6 +39,10 @@ func (upt *UploadTaskPool) Check(tk *Token) bool {
 	return upt.tb.Check(tk)
 }
 
+func (upt *UploadTaskPool) Delete(tk *Token) bool {
+	return upt.tb.Delete(tk)
+}
+
 func (upt *UploadTaskPool) FillToken(ctx context.Context) {
 	for {
 		select {
