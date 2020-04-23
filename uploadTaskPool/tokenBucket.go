@@ -53,3 +53,13 @@ func (tb *TokenBucket) Check(tk *Token) bool {
 	}
 	return false
 }
+
+func (tb *TokenBucket) Len() int {
+	var l int
+	for _, v := range tb.tks {
+		if v != nil {
+			l = l + 1
+		}
+	}
+	return l
+}

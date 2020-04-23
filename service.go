@@ -30,18 +30,18 @@ func (sn *storageNode) Service() {
 
 	rms = service.NewRelayManage(sn.Host())
 
-	//maxConn := sn.Config().MaxConn
-	//if maxConn == 0 {
-	//	maxConn = 1000
-	//}
+	maxConn := sn.Config().MaxConn
+	if maxConn == 0 {
+		maxConn = 100
+	}
 	//
 	tokenInterval := sn.Config().TokenInterval
 	if tokenInterval == 0 {
-		tokenInterval = 10
+		tokenInterval = 50
 	}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := NewWriteHandler(sn, uploadTaskPool.New(500, time.Second*10, time.Millisecond*tokenInterval))
+	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval))
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
