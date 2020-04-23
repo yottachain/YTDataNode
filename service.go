@@ -41,10 +41,10 @@ func (sn *storageNode) Service() {
 	//}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := NewWriteHandler(sn, uploadTaskPool.New(500, time.Second*10, 10*time.Millisecond))
+	wh := NewWriteHandler(sn, uploadTaskPool.New(500, time.Second*10, time.Millisecond))
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		return wh.GetToken(data), nil
+		return wh.GetToken(data, head.RemotePeerID), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.Handle(data), nil
