@@ -32,12 +32,12 @@ func (sn *storageNode) Service() {
 
 	maxConn := sn.Config().MaxConn
 	if maxConn == 0 {
-		maxConn = 100
+		maxConn = 500
 	}
 	//
 	tokenInterval := sn.Config().TokenInterval
 	if tokenInterval == 0 {
-		tokenInterval = 50
+		tokenInterval = 10
 	}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
