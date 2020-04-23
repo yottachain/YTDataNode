@@ -1,48 +1,53 @@
 package uploadTaskPool
 
 import (
-	"context"
+	"sync"
 	"time"
 )
 
 type TokenBucket struct {
-	tkchan chan *Token
-	cap    int
-	ttl    time.Duration
+	tks []*Token
+	cap int
+	ttl time.Duration
+	sync.Mutex
 }
 
 func NewTokenBucket(size int, ttl time.Duration) *TokenBucket {
 	var tb = TokenBucket{
-		make(chan *Token, size),
+		make([]*Token, size),
 		size,
 		ttl,
+		sync.Mutex{},
 	}
 	return &tb
 }
 
-func (tb *TokenBucket) Get(ctx context.Context) *Token {
-	var tk *Token
-	select {
-	case tk = <-tb.tkchan:
-		tk.Tm = time.Now()
-	//case <-ctx.Done():
-	//	tk = nil
-	default:
-		tk = nil
-	}
-	return tk
-}
+func (tb *TokenBucket) Get() *Token {
+	tb.Lock()
+	defer tb.Unlock()
 
-func (tb *TokenBucket) Put(tk *Token) bool {
-	if len(tb.tkchan) < tb.cap {
-		tk.Reset()
-		tb.tkchan <- tk
-		return true
-	} else {
-		return false
+	for k, v := range tb.tks {
+		if v == nil || v.IsOuttime(tb.ttl) {
+			tb.tks[k] = NewToken()
+			tb.tks[k].Reset()
+			return tb.tks[k]
+		}
 	}
+	return nil
 }
 
 func (tb *TokenBucket) Check(tk *Token) bool {
-	return !tk.IsOuttime(tb.ttl)
+	tb.Lock()
+	defer tb.Unlock()
+
+	for k, v := range tb.tks {
+		if v != nil && tk.UUID.String() == v.UUID.String() {
+			tb.tks[k] = nil
+			if tk.IsOuttime(tb.ttl) {
+				return false
+			}
+			return true
+		}
+	}
+	return false
 }

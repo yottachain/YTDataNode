@@ -89,7 +89,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 }
 
 func (wh *WriteHandler) Run() {
-	wh.Upt.FillQueue()
+	go wh.Upt.FillToken(context.Background())
 	go func() {
 		var flushInterval time.Duration = time.Millisecond * 100
 		for {
@@ -101,10 +101,10 @@ func (wh *WriteHandler) Run() {
 	}()
 }
 
-func (wh *WriteHandler) GetToken(data []byte) []byte {
+func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
-	tk, err := wh.Upt.GetTokenFromWaitQueue(ctx)
+	tk, err := wh.Upt.Get(ctx, id)
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {

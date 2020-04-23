@@ -3,6 +3,7 @@ package uploadTaskPool
 import (
 	"bytes"
 	"encoding/gob"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/satori/go.uuid"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 type Token struct {
 	UUID uuid.UUID
+	PID  peer.ID
 	Tm   time.Time
 }
 
@@ -80,5 +82,5 @@ func (tk *Token) IsOuttime(ttl time.Duration) bool {
 }
 
 func (tk *Token) Reset() {
-	tk.Tm = time.Time{}
+	tk.Tm = time.Now()
 }

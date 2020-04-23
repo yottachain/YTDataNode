@@ -13,18 +13,18 @@ func TestNewTokenFromString(t *testing.T) {
 }
 
 func TestUploadTaskPool_Check(t *testing.T) {
-	utp := New(10, 10*time.Second, 1*time.Millisecond)
-	utp.FillQueue()
+	tb := NewTokenBucket(1000, 1*time.Second)
 	//for {
 	//	tk, _ := utp.GetTokenFromWaitQueue(context.Background())
 	//	//utp.Put(tk)
 	//	fmt.Println(utp.Check(tk))
 	//}
-	tk, _ := utp.GetTokenFromWaitQueue(context.Background())
-	<-time.After(1 * time.Second)
-	t.Log(utp.Check(tk))
-	<-time.After(10 * time.Second)
-	t.Log(utp.Check(tk))
+	tk := tb.Get(context.Background())
+	//<-time.After(4 * time.Second)
+	t.Log(tb.Check(tk))
+	t.Log(tb.Check(tk))
+	//<-time.After(10 * time.Second)
+	//t.Log(tb.Check(tk))
 }
 
 func TestTime(t *testing.T) {
