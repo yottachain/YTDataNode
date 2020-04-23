@@ -165,15 +165,15 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("token check fail：", tk.String())
 		return 105
 	}
-	// 1. 验证BP签名
-	// if ok, err := msg.VerifyBPSIGN(
-	// 	// 获取BP公钥
-	// 	host.PubKey(wh.Host().Peerstore().PubKey(wh.GetBP(msg.BPDID))),
-	// 	wh.Host().ID().Pretty(),
-	// ); err != nil || ok == false {
-	// 	log.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
-	// 	return 100
-	// }
+	//1. 验证BP签名
+	//if ok, err := msg.VerifyBPSIGN(
+	//	// 获取BP公钥
+	//	host.PubKey(wh.Host().Peerstore().PubKey(wh.GetBP(msg.BPDID))),
+	//	wh.Host().ID().Pretty(),
+	//); err != nil || ok == false {
+	//	log.Println(fmt.Errorf("Verify BPSIGN fail:%s", err))
+	//	return 100
+	//}
 	// 2. 验证数据Hash
 	if msg.VerifyVHF(msg.DAT) == false {
 		log.Println(fmt.Errorf("Verify VHF fail"))
