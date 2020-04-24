@@ -131,7 +131,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	proto.Unmarshal(msgData, &msg)
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 	// 添加超时
 	resCode := wh.saveSlice(ctx, msg)
