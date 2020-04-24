@@ -1,6 +1,7 @@
 package uploadTaskPool
 
 import (
+	"bytes"
 	"sync"
 	"time"
 )
@@ -41,7 +42,7 @@ func (tb *TokenBucket) Check(tk *Token) bool {
 	defer tb.Unlock()
 
 	for _, v := range tb.tks {
-		if v != nil && tk.String() == v.String() {
+		if v != nil && bytes.Equal(tk.UUID.Bytes(), v.UUID.Bytes()) {
 			if tk.IsOuttime(tb.ttl) {
 				return false
 			}
@@ -56,7 +57,7 @@ func (tb *TokenBucket) Delete(tk *Token) bool {
 	defer tb.Unlock()
 
 	for k, v := range tb.tks {
-		if v != nil && tk.String() == v.String() {
+		if v != nil && bytes.Equal(tk.UUID.Bytes(), v.UUID.Bytes()) {
 			tb.tks[k] = nil
 			if tk.IsOuttime(tb.ttl) {
 				return false
