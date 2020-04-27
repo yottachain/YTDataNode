@@ -8,23 +8,21 @@ import (
 )
 
 func TestNewTokenFromString(t *testing.T) {
-	tk, _ := NewTokenFromString("As5KQYFqzvsushMvPjrxTfc3CUiZyXXbRiR3H5zm9vYwbWh32BxofN9PGVWpw6KYTn6Nrd227V2cE1QuD4BP4iV1tt5zFyqVgrmkrhUTziG2z4VwkHhvY3RVkz7rtMUe79suAJBCRSnRLFSzps9XdRoLPGYtfA4TUu7nRUFy")
+	tk, _ := NewTokenFromString("nAU9XybwS5BhSub1iJT2PoxdWRCLT8AMgauishw2vWA2XzykSGm8XkDN2Ybr86nEkrFQbc7SfAWrWDs6x6rYS7HALrh5vmLnSVbYPMpFkhqe45GShDCF5ooWHEaRHsC7qB95iSwCzw7RWFWe9U6rJTLk9khy4aJHSwdcJHuXP6AvTFU6YVbuNRbPsU5o1LLLhsTpcbKMpYTFQXdjuX3h36odcQV2LrCSZeaGUriM8coeLTPM")
 	t.Log(tk.Tm)
 }
 
 func TestUploadTaskPool_Check(t *testing.T) {
-	tb := NewTokenBucket(1000, 1*time.Second)
-	//for {
-	//	tk, _ := utp.GetTokenFromWaitQueue(context.Background())
-	//	//utp.Put(tk)
-	//	fmt.Println(utp.Check(tk))
-	//}
-	tk := tb.Get(context.Background())
-	//<-time.After(4 * time.Second)
-	t.Log(tb.Check(tk))
-	t.Log(tb.Check(tk))
-	//<-time.After(10 * time.Second)
-	//t.Log(tb.Check(tk))
+	tp := New(10, time.Second*5, time.Millisecond*100)
+	go tp.FillToken(context.Background())
+
+	//go func() {
+	//	for {
+	//		tk, err := tp.Get(context.Background(), peer.ID("11"))
+	//		fmt.Printf("tk: %s ,err: %s \n", tk.String(), err)
+	//	}
+	//}()
+	select {}
 }
 
 func TestTime(t *testing.T) {

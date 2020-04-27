@@ -28,7 +28,8 @@ func (tb *TokenBucket) Get() *Token {
 	defer tb.Unlock()
 
 	for k, v := range tb.tks {
-		if v == nil || v.IsOuttime(tb.ttl) {
+		// pid != "" 代表token被发放到具体客户端
+		if v == nil || (v.PID != "" && v.IsOuttime(tb.ttl)) {
 			tb.tks[k] = NewToken()
 			tb.tks[k].Reset()
 			return tb.tks[k]
@@ -50,6 +51,18 @@ func (tb *TokenBucket) Check(tk *Token) bool {
 		}
 	}
 	return false
+}
+
+func (tb *TokenBucket) findToken(tk *Token) int {
+	for k, v := range tb.tks {
+		if v != nil && bytes.Equal(tk.UUID.Bytes(), v.UUID.Bytes()) {
+			if tk.IsOuttime(tb.ttl) {
+				return -1
+			}
+			return k
+		}
+	}
+	return -1
 }
 
 func (tb *TokenBucket) Delete(tk *Token) bool {
