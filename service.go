@@ -40,21 +40,11 @@ func (sn *storageNode) Service() {
 	}
 	go gc.UpdateService(context.Background(), time.Minute)
 
-	maxConn := gc.MaxConn
-	if maxConn == 0 {
-		maxConn = 1000
-	}
-	//
-	tokenInterval := gc.TokenInterval
-	if tokenInterval == 0 {
-		tokenInterval = 5
-	}
-
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval)
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
 
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {
-		utp = uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval)
+		utp = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
 		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval)
 	}
 

@@ -14,6 +14,14 @@ type UploadTaskPool struct {
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
+	// 默认值
+	if size == 0 {
+		size = 500
+	}
+	if fillInterval == 0 {
+		fillInterval = 10
+	}
+
 	upt := new(UploadTaskPool)
 
 	upt.tb = NewTokenBucket(size, ttl)
