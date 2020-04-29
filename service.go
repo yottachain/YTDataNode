@@ -2,6 +2,10 @@ package node
 
 import (
 	"bufio"
+	"context"
+	"fmt"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
 	"regexp"
@@ -30,18 +34,32 @@ func (sn *storageNode) Service() {
 
 	rms = service.NewRelayManage(sn.Host())
 
-	maxConn := sn.Config().MaxConn
+	gc := config.NewGConfig(sn.config)
+	if err := gc.Get(); err != nil {
+		log.Printf("[gconfig] update error:%s\n", err.Error())
+	}
+	go gc.UpdateService(context.Background(), time.Minute)
+
+	maxConn := gc.MaxConn
 	if maxConn == 0 {
 		maxConn = 1000
 	}
 	//
-	tokenInterval := sn.Config().TokenInterval
+	tokenInterval := gc.TokenInterval
 	if tokenInterval == 0 {
 		tokenInterval = 5
 	}
 
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval)
+
+	// 每次更新重置utp
+	gc.OnUpdate = func(c config.Gcfg) {
+		utp = uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval)
+		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval)
+	}
+
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := NewWriteHandler(sn, uploadTaskPool.New(maxConn, time.Second*10, time.Millisecond*tokenInterval))
+	wh := NewWriteHandler(sn, utp)
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
@@ -183,6 +201,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
 	msg.Tx = GetXX("T")
+
+	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
+	log.Println("[report] other:", msg.Other)
 
 	if rce.Len() == 0 {
 		msg.Rebuilding = 0

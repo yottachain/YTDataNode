@@ -4,17 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"strings"
-	"time"
-
-	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/spf13/viper"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -46,18 +44,16 @@ func init() {
 
 // Config 配置
 type Config struct {
-	ID            string `json:"ID"`
-	privKey       ci.PrivKey
-	PubKey        string
-	BPList        []peerInfo    `json:"BPList"`
-	Adminacc      string        `json:"Adminacc"`
-	Relay         bool          `json:"Relay"`
-	ListenAddr    string        `json:"ListenAddr"`
-	APIListen     string        `json:"APIListen"`
-	IndexID       uint32        `json:"IndexID"`
-	PoolID        string        `json:"PoolID"`
-	MaxConn       int           `json:"MaxConn"`
-	TokenInterval time.Duration `json:"TokenInterval"`
+	ID         string `json:"ID"`
+	privKey    ci.PrivKey
+	PubKey     string
+	BPList     []peerInfo `json:"BPList"`
+	Adminacc   string     `json:"Adminacc"`
+	Relay      bool       `json:"Relay"`
+	ListenAddr string     `json:"ListenAddr"`
+	APIListen  string     `json:"APIListen"`
+	IndexID    uint32     `json:"IndexID"`
+	PoolID     string     `json:"PoolID"`
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
 }

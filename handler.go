@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"time"
 
@@ -149,6 +150,9 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 }
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
+	// 计数
+	statistics.DefaultStat.AddSaveRequestCount()
+
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		// buys
@@ -196,6 +200,8 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 	log.Println("return msg", 0)
 
+	// 成功计数
+	statistics.DefaultStat.AddSaveSuccessCount()
 	return 0
 }
 

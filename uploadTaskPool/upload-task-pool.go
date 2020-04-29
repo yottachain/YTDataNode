@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
-	log "github.com/yottachain/YTDataNode/logger"
 	"time"
 )
 
@@ -47,10 +46,10 @@ func (upt *UploadTaskPool) FillToken(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			return
 		case <-time.After(upt.fillTokenInterval):
 			if tk := upt.tb.Get(); tk != nil {
 				upt.tkc <- tk
-				log.Printf("fill token tokenbucket len(%d)", upt.tb.Len())
 			}
 		}
 	}

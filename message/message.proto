@@ -78,6 +78,7 @@ message StatusRepReq {
     uint32 realSpace=12;
     uint64 tx=13;
     uint64 rx=14;
+    string Other=15;
 }
 
 message StatusRepResp {
