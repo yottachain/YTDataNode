@@ -41,15 +41,17 @@ func (sn *storageNode) Service() {
 	go gc.UpdateService(context.Background(), time.Minute)
 
 	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
-
+	var wh *WriteHandler
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {
 		utp = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
 		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
+		wh = NewWriteHandler(sn, utp)
+		wh.Run()
 	}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
-	wh := NewWriteHandler(sn, utp)
+	wh = NewWriteHandler(sn, utp)
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil

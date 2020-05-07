@@ -61,6 +61,7 @@ func (upt *UploadTaskPool) FillToken(ctx context.Context) {
 		case <-time.After(upt.fillTokenInterval):
 			if tk := upt.tb.Get(); tk != nil {
 				upt.tkc <- tk
+				//fmt.Println("fill token", upt.tb.Len())
 			}
 		}
 	}
