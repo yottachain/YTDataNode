@@ -44,7 +44,7 @@ func (sn *storageNode) Service() {
 	var wh *WriteHandler
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {
-		utp = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
+		utp = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
 		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
 		wh = NewWriteHandler(sn, utp)
 		wh.Run()

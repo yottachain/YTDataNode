@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewTokenFromString(t *testing.T) {
-	tk, _ := NewTokenFromString("nAU9XybwS5BhSub1iJT2PoxdWRCLT8AMgauishw2vWA2XzykSGm8XkDN2Ybr86nEkrFQbc7SfAWrWDs6x6rYS7HALrh5vmLnSVbYPMpFkhqe45GShDCF5ooWHEaRHsC7qB95iSwCzw7RWFWe9U6rJTLk9khy4aJHSwdcJHuXP6AvTFU6YVbuNRbPsU5o1LLLhsTpcbKMpYTFQXdjuX3h36odcQV2LrCSZeaGUriM8coeLTPM")
+	tk, _ := NewTokenFromString("nATevdrWzjgGogypcG91S4QLdYxZAnE2bWWcf93WZd2Gt9YXN8LrS8Zrj3G9WLKAPVovfwLzBE7D84kxD73M49G7YNwcGkmqPiMbxzAtnM5BXw9Ld1DHvopiH2nGWhXDXm62ZeHiSPXAzKNRdisW4izvM3knfJu1iphURHp4KCdzWJSdRxwPZnoiczoZytmeu6NRun1NXmHZywYUcUEPCX5pUrz3CoWLFj7JYW8YGQGadoKd")
 	t.Log(tk.Tm)
 }
 
