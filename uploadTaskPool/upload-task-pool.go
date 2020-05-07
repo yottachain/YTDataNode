@@ -21,10 +21,13 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	if fillInterval == 0 {
 		fillInterval = 10
 	}
+	if ttl == 0 {
+		ttl = 10
+	}
 
 	upt := new(UploadTaskPool)
 
-	upt.tb = NewTokenBucket(size, ttl)
+	upt.tb = NewTokenBucket(size, ttl*time.Second)
 	upt.tkc = make(chan *Token, size)
 	upt.fillTokenInterval = fillInterval
 

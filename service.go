@@ -40,7 +40,7 @@ func (sn *storageNode) Service() {
 	}
 	go gc.UpdateService(context.Background(), time.Minute)
 
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
 
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {

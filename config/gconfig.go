@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	log "github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -19,6 +20,8 @@ type UpdateHandler func(gc Gcfg)
 type Gcfg struct {
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
+	TTL           time.Duration `json:"TTL"`
+	//AllowBack     bool          `json:"AllowBack"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -81,7 +84,9 @@ func (gc *GConfig) UpdateService(ctx context.Context, intervale time.Duration) {
 			return
 		default:
 			<-time.After(intervale)
-			gc.Get()
+			if err := gc.Get(); err != nil {
+				log.Println("[gconfig] error", err.Error())
+			}
 		}
 	}
 }
