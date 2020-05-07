@@ -45,7 +45,7 @@ func (sn *storageNode) Service() {
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {
 		utp = uploadTaskPool.New(gc.MaxConn, time.Second*10, time.Millisecond*gc.TokenInterval)
-		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval)
+		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
 	}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
