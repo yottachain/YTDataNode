@@ -58,7 +58,7 @@ var DefaultStat Stat
 
 func InitDefaultStat() {
 
-	func() {
+	go func() {
 		fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
 		if err != nil {
 			log.Println("[stat]", err.Error())
