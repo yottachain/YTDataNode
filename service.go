@@ -32,6 +32,9 @@ var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
 
+	// 初始化统计
+	statistics.InitDefaultStat()
+
 	rms = service.NewRelayManage(sn.Host())
 
 	gc := config.NewGConfig(sn.config)

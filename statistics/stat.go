@@ -56,7 +56,7 @@ func (s *Stat) String() string {
 
 var DefaultStat Stat
 
-func init() {
+func InitDefaultStat() {
 
 	go func() {
 		fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
