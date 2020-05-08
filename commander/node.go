@@ -176,7 +176,7 @@ func updateService(c **exec.Cmd) {
 	for {
 		dcmd := *c
 
-		time.Sleep(time.Minute * 10)
+		time.Sleep(time.Minute * 1)
 		log.Println("尝试更新")
 		if err := update.Update(); err == nil {
 			log.Println("更新完成尝试重启")
