@@ -7,13 +7,12 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"time"
 )
 
-const (
-	update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
-)
+var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 
 type UpdateHandler func(gc Gcfg)
 
@@ -36,6 +35,11 @@ type GConfig struct {
 
 // Get 远程获取配置并更新
 func (gc *GConfig) Get() error {
+	gurl, ok := os.LookupEnv("gconfig_url")
+	if ok {
+		update_url = gurl
+		log.Println("[gurl]", update_url)
+	}
 
 	request, err := http.NewRequest("GET", update_url, nil)
 	if err != nil {
