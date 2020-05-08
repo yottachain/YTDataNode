@@ -92,6 +92,10 @@ func (gc *GConfig) UpdateService(ctx context.Context, intervale time.Duration) {
 }
 
 func NewGConfig(cfg *Config) *GConfig {
+	if cfg == nil {
+		cfg = &Config{}
+	}
+
 	var gc GConfig
 	gc.base = cfg
 

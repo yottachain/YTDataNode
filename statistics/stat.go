@@ -57,27 +57,30 @@ func (s *Stat) String() string {
 var DefaultStat Stat
 
 func init() {
-	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
-	if err != nil {
-		log.Println("[stat]", err.Error())
-		return
-	}
 
-	buf, err := ioutil.ReadAll(fl)
-	if err != nil {
-		log.Println("[stat]", err.Error())
-		return
-	}
-	fl.Close()
-
-	if len(buf) > 0 {
-		var ns Stat
-		if err := json.Unmarshal(buf, &ns); err != nil {
+	go func() {
+		fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
+		if err != nil {
 			log.Println("[stat]", err.Error())
 			return
 		}
-		DefaultStat = ns
-	}
+
+		buf, err := ioutil.ReadAll(fl)
+		if err != nil {
+			log.Println("[stat]", err.Error())
+			return
+		}
+		fl.Close()
+
+		if len(buf) > 0 {
+			var ns Stat
+			if err := json.Unmarshal(buf, &ns); err != nil {
+				log.Println("[stat]", err.Error())
+				return
+			}
+			DefaultStat = ns
+		}
+	}()
 
 	go func() {
 		for {
