@@ -31,11 +31,11 @@ var daemonCmd = &cobra.Command{
 		} else {
 			commander.Daemon()
 		}
-		defer func() {
-			if err := recover(); err != nil {
-				log.Println(err)
-			}
-		}()
+		//defer func() {
+		//	if err := recover(); err != nil {
+		//		log.Println(err)
+		//	}
+		//}()
 	},
 }
 
@@ -93,12 +93,12 @@ var logCmd = &cobra.Command{
 }
 
 func main() {
-	defer func() {
-		err := recover()
-		if err != nil {
-			log.Println("Error:", err)
-		}
-	}()
+	//defer func() {
+	//	err := recover()
+	//	if err != nil {
+	//		log.Println("Error:", err)
+	//	}
+	//}()
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
