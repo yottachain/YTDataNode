@@ -108,6 +108,13 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.Get(ctx, id)
+
+	// 如果 剩余空间不足10个分片停止发放token
+	if wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize)-wh.YTFS().Len() < 10 {
+		tk = nil
+		err = fmt.Errorf("YTFS： space is not enough")
+	}
+
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {
@@ -122,6 +129,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	}
 	resbuf, _ := proto.Marshal(&res)
 	log.Printf("[task pool]get token return [%s]\n", tk.String())
+
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
 }
 
