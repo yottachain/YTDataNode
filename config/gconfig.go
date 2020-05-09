@@ -52,7 +52,7 @@ func (gc *GConfig) Get() error {
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil || resp.StatusCode != 200 {
-		return fmt.Errorf("%d%s", resp.StatusCode, err.Error())
+		return fmt.Errorf("%d%s", resp.StatusCode, err)
 	}
 
 	resBuf, err := ioutil.ReadAll(resp.Body)

@@ -63,7 +63,7 @@ func (rm *RelayManager) Service() {
 			defer func() {
 				err := recover()
 				if err != nil {
-					log.Println("Error:", err)
+					log.Println("Relay Error:", err)
 				}
 			}()
 			rm.ping()
