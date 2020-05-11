@@ -171,6 +171,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	yp := util.GetYTFSPath()
 	ys, err := ytfs.Open(yp, cfg.Options)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, fmt.Errorf("YTFS storage init faile")
 	}
 	sn.ytfs = ys
