@@ -114,7 +114,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 		tk = nil
 		err = fmt.Errorf("YTFS： space is not enough", t, u)
 	} else {
-		log.Println("t,u:", t, u)
+		log.Println("[YTFS] total:", t, "used", u)
 	}
 
 	var res message.NodeCapacityResponse
