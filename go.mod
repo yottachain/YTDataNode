@@ -40,7 +40,7 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
-	github.com/yottachain/YTFS v0.0.0-20200427060748-5e6146d89942
+	github.com/yottachain/YTFS v0.0.0-20200512112526-964c604b0d05
 	github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 	go.etcd.io/bbolt v1.3.2 // indirect

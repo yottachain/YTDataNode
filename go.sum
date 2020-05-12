@@ -335,8 +335,8 @@ github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 h1:ESFSdwY
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812 h1:XG9TtLosanLdwqSoporMr8OASUOjxuaj6cJDlut1c9s=
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812/go.mod h1:jDJUVGeQ1clW7k9OTRBAFtCMwGs9B9fGQ9QY64SKqlk=
-github.com/yottachain/YTFS v0.0.0-20200427060748-5e6146d89942 h1:tZQ3lXQ0MXRXpM0oc434hRAgM6D7MWOPIEhY6Cu/GrA=
-github.com/yottachain/YTFS v0.0.0-20200427060748-5e6146d89942/go.mod h1:3lB+bELyOsvE0EXwN66qhKXQfxb4lLFZmj432bWtpFI=
+github.com/yottachain/YTFS v0.0.0-20200512112526-964c604b0d05 h1:0dDSrSvrAj1fH+qWgyZqD89Wd1goQMzOjKBr7knr+EE=
+github.com/yottachain/YTFS v0.0.0-20200512112526-964c604b0d05/go.mod h1:3lB+bELyOsvE0EXwN66qhKXQfxb4lLFZmj432bWtpFI=
 github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a h1:kYM388CiSzz3j7ec6LeNu/gVZpm9qYLoxsyB/hfaHU4=
 github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc h1:DMB8zfN2YUoO9KQAx/qO1+rM3A4aL5rW/t474eFMs6w=
