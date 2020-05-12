@@ -110,7 +110,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	tk, err := wh.Upt.Get(ctx, id)
 
 	// 如果 剩余空间不足10个分片停止发放token
-	if t, u := wh.YTFS().DiskAndUseCap(); u+wh.YTFS().Meta().DataBlockSize*10 >= t {
+	if t, u := wh.YTFS().DiskAndUseCap(); t != 0 && u+wh.YTFS().Meta().DataBlockSize*10 >= t {
 		tk = nil
 		err = fmt.Errorf("YTFS： space is not enough", t, u)
 	}
