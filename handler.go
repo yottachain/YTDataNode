@@ -19,6 +19,8 @@ import (
 	"github.com/yottachain/YTFS/common"
 )
 
+var disableWrite = false
+
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
@@ -110,11 +112,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	tk, err := wh.Upt.Get(ctx, id)
 
 	// 如果 剩余空间不足10个分片停止发放token
-	if t, u := wh.YTFS().DiskAndUseCap(); t != 0 && u+wh.YTFS().Meta().DataBlockSize*10 >= t {
+	if  disableWrite || wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len() + 10) {
 		tk = nil
-		err = fmt.Errorf("YTFS： space is not enough", t, u)
-	} else {
-		log.Println("[YTFS] total:", t, "used", u)
+		err = fmt.Errorf("YTFS： space is not enough")
 	}
 
 	var res message.NodeCapacityResponse
@@ -206,6 +206,11 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 			return 102
 		}
 		log.Println("数据写入错误error:", err)
+
+		// 如果数据不能写入，禁止发放token
+		if err.Error() == "write /dev/sda: no space left on device" {
+			disableWrite = true
+		}
 		return 101
 	}
 	log.Println("return msg", 0)
