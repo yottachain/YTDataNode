@@ -32,7 +32,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 10),
+		make(chan *wRequest, 1),
 	}
 }
 
@@ -94,7 +94,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 func (wh *WriteHandler) Run() {
 	go wh.Upt.FillToken(context.Background())
 	go func() {
-		var flushInterval time.Duration = time.Millisecond * 10
+		var flushInterval time.Duration = time.Millisecond * 1
 		for {
 			select {
 			case <-time.After(flushInterval):
