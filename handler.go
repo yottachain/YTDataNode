@@ -32,7 +32,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 10),
+		make(chan *wRequest, 1000),
 	}
 }
 
