@@ -32,7 +32,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 10),
+		make(chan *wRequest, 1000),
 	}
 }
 
@@ -80,6 +80,12 @@ func (wh *WriteHandler) batchWrite(number int) {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else {
 		log.Printf("[ytfs]flush failure:%s\n", err.Error())
+		statistics.DefaultStat.Lock()
+		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
+		if statistics.DefaultStat.YTFSErrorCount > 100 {
+			disableWrite = true
+		}
+		statistics.DefaultStat.Unlock()
 	}
 
 	for _, rq := range rqs {
@@ -208,12 +214,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 			return 102
 		}
 		log.Println("数据写入错误error:", err.Error())
-		statistics.DefaultStat.Lock()
-		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
-		if statistics.DefaultStat.YTFSErrorCount > 100 {
-			disableWrite = true
-		}
-		statistics.DefaultStat.Unlock()
 		return 101
 	}
 	log.Println("return msg", 0)
