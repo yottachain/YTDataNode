@@ -32,7 +32,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 	return &WriteHandler{
 		sn,
 		utp,
-		make(chan *wRequest, 1),
+		make(chan *wRequest, 10),
 	}
 }
 
@@ -94,7 +94,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 func (wh *WriteHandler) Run() {
 	go wh.Upt.FillToken(context.Background())
 	go func() {
-		var flushInterval time.Duration = time.Millisecond * 1
+		var flushInterval time.Duration = time.Millisecond * 10
 		for {
 			select {
 			case <-time.After(flushInterval):
@@ -204,16 +204,16 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
-		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 			return 102
 		}
-		log.Println("数据写入错误error:", err)
-
-		// 如果数据不能写入，禁止发放token
-		if err.Error() == "write /dev/sda: no space left on device" || err.Error() == "YTFS: Range is full" {
+		log.Println("数据写入错误error:", err.Error())
+		statistics.DefaultStat.Lock()
+		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
+		if statistics.DefaultStat.YTFSErrorCount > 100 {
 			disableWrite = true
 		}
+		statistics.DefaultStat.Unlock()
 		return 101
 	}
 	log.Println("return msg", 0)
