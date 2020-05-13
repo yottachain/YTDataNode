@@ -93,17 +93,17 @@ func (wh *WriteHandler) batchWrite(number int) {
 
 func (wh *WriteHandler) Run() {
 	go wh.Upt.FillToken(context.Background())
-	go func() {
-		var flushInterval time.Duration = time.Millisecond * 100
-		for {
-			select {
-			case <-time.After(flushInterval):
-				if n := len(wh.RequestQueue); n > 0 {
-					wh.batchWrite(n)
-				}
-			}
-		}
-	}()
+	//go func() {
+	//	var flushInterval time.Duration = time.Millisecond * 100
+	//	for {
+	//		select {
+	//		case <-time.After(flushInterval):
+	//			if n := len(wh.RequestQueue); n > 0 {
+	//				wh.batchWrite(n)
+	//			}
+	//		}
+	//	}
+	//}()
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
@@ -199,7 +199,9 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	// 3. 将数据写入YTFS-disk
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
-	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
+	// 关闭批量写
+	//err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		log.Println(fmt.Errorf("Write data slice fail:%s", err))
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
