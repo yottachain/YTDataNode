@@ -210,7 +210,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("数据写入错误error:", err)
 
 		// 如果数据不能写入，禁止发放token
-		if err.Error() == "write /dev/sda: no space left on device" {
+		if err.Error() == "write /dev/sda: no space left on device" || err.Error() == "YTFS: Range is full" {
 			disableWrite = true
 		}
 		return 101
