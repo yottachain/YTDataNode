@@ -6,9 +6,11 @@ import (
 )
 
 type Stat struct {
-	SaveRequestCount uint64 `json:"SaveRequestCount"`
-	SaveSuccessCount uint64 `json:"SaveSuccessCount"`
-	YTFSErrorCount   uint64 `json:"ytfs_error_count"`
+	SaveRequestCount     uint64 `json:"SaveRequestCount"`
+	SaveSuccessCount     uint64 `json:"SaveSuccessCount"`
+	YTFSErrorCount       uint64 `json:"ytfs_error_count"`
+	TokenQueueLen        int    `json:"TokenQueueLen"`
+	AvailableTokenNumber int    `json:"AvailableTokenNumber""`
 	sync.RWMutex
 }
 

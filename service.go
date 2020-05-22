@@ -44,6 +44,7 @@ func (sn *storageNode) Service() {
 	go gc.UpdateService(context.Background(), time.Minute)
 
 	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
+	statistics.DefaultStat.TokenQueueLen = gc.MaxConn
 	var wh *WriteHandler
 	// 每次更新重置utp
 	gc.OnUpdate = func(c config.Gcfg) {
@@ -160,7 +161,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn, rce)
+			Report(sn, rce, utp)
 			time.Sleep(time.Second * 60)
 		}
 	}()
@@ -169,7 +170,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine) {
+func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadTaskPool) {
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -198,6 +199,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Rx = GetXX("R")
 	msg.Tx = GetXX("T")
 
+	statistics.DefaultStat.AvailableTokenNumber = pool.FreeTokenLen()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
