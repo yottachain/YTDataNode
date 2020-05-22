@@ -66,3 +66,7 @@ func (upt *UploadTaskPool) FillToken(ctx context.Context) {
 		}
 	}
 }
+
+func (upt *UploadTaskPool) FreeTokenLen() int {
+	return len(upt.tkc)
+}

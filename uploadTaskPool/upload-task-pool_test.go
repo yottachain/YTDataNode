@@ -26,8 +26,7 @@ func TestUploadTaskPool_Check(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	for {
-		fmt.Println(time.Time{}.Unix())
-		<-time.After(time.Second * 3)
-	}
+	c := make(chan struct{}, 10)
+	c <- struct{}{}
+	fmt.Println(len(c))
 }

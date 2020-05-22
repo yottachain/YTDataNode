@@ -81,11 +81,14 @@ func (tb *TokenBucket) Delete(tk *Token) bool {
 	return false
 }
 
-func (tb *TokenBucket) Len() int {
+func (tb *TokenBucket) FreeTokenLen() int {
+	tb.Lock()
+	defer tb.Unlock()
+
 	var l int
 	for _, v := range tb.tks {
-		if v != nil {
-			l = l + 1
+		if v == nil || v.PID == "" || (v.PID != "" && v.IsOuttime(tb.ttl)) {
+			l++
 		}
 	}
 	return l
