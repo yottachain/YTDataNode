@@ -47,8 +47,7 @@ message DownloadShardResponse{
    bytes data=1;
 }
 
-message NodeRegReq {                           
-
+message NodeRegReq {
     string nodeid= 1;                           
     string owner=2;                              
     uint64 maxDataSpace=3;                 
@@ -92,7 +91,7 @@ message StringMsg{
 
 message SpotCheckTaskList{
     string taskId = 1;
-     int32 snid=2;
+    int32 snid=2;
     repeated SpotCheckTask taskList=3;
 }
 
@@ -167,6 +166,17 @@ message MultiTaskDescription{
 message MultiTaskOpResult{
     repeated bytes id = 1;
     repeated int32 RES=2;
+}
+
+//msgid=0x4bc6
+message ListDNIReq{
+    string nextid= 1;
+    int32 count=2;
+}
+//msgid=0xd6cb
+message ListDNIResp{
+    repeated bytes vnflist=1;
+    string nextid= 2;
 }
 
 //MessageID:0x1b32

@@ -19,9 +19,15 @@ import (
 	"github.com/yottachain/YTDataNode/remoteDebug"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
+	//"github.com/yottachain/YTDataNode/util"
+	//"os"
+	//"path"
+//	"time"
+
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-
+	"github.com/yottachain/YTDataNode/slicecompare"
+	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
@@ -56,7 +62,17 @@ func (sn *storageNode) Service() {
 	}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
+
 	wh = NewWriteHandler(sn, utp)
+
+	sc := slicecompare.NewSliceComparer()
+	tmp_db, err := sc.OpenLevelDB(sc.File_TmpDB)
+    if err != nil {
+    	log.Println(err)
+    	return
+	}
+	wh.db = tmp_db
+
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
@@ -163,6 +179,57 @@ func (sn *storageNode) Service() {
 		for {
 			Report(sn, rce, utp)
 			time.Sleep(time.Second * 60)
+		}
+	}()
+
+	go func(){
+		return
+		 for {
+				<-time.After(60 * time.Second)
+            	for{
+					nextidtodownld, _ := slicecompare.GetValueFromFile(sc.NextIdxFile)
+					downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
+					downloadrq, _ := proto.Marshal(downloadsnlist)
+					bpindex := sn.GetBP()
+            		if msgresp, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil{
+				     	log.Println("[slicecompare] SendBPMsg error:", err)
+			    	}else{
+						log.Println("[slicecompare] hash list recieved")
+				     	msgData := msgresp[2:]
+					 	var msg message.ListDNIResp
+					 	var err error
+
+					 	if err = proto.Unmarshal(msgData, &msg); err != nil {
+						 	log.Println(err)
+					 	}
+
+					if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
+						 log.Println(err)
+					}
+					 if len(msg.Vnflist)/22 < 1000{
+						 break
+					 }
+			    }
+			}
+		}
+	}()
+
+	go func() {
+		return
+		for {
+			<-time.After(180 * time.Second)
+			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	go func(){
+		return
+		cfs := confirmSlice.ConfirmSler{sn}
+		for {
+			<-time.After(90 * time.Second)
+			cfs.ConfirmSlice()
 		}
 	}()
 }
