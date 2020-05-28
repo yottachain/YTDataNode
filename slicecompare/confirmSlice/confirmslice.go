@@ -18,6 +18,8 @@ import (
 )
 
 var nUseForVarify string = "/gc/n_file"
+var hash1Str = "1111111111111111"
+var hash0Str = "0000000000000000"
 
 type ConfirmSler struct {
 	stni.StorageNode
@@ -31,8 +33,11 @@ func init(){
 func (cfs *ConfirmSler)SliceHashVarify(n, m, h, nv uint64, fl *os.File) error {
 	var i uint64
 	var indexKey [16]byte
-	ni := nv
+	var totalidx_varify = nv
+	ni := nv/m                 //range zoom index
+	itermIdx := nv%m
 	buf := make([]byte,16,16)
+	begin := true
 
 VERIFYSTA:
 	log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,ni=%v",n,m,ni)
@@ -42,13 +47,13 @@ VERIFYSTA:
 		return nil
 	}
 
-	if ni > nv + 200 {
-		log.Println("[confirmslice] Has verified 200 zones, will to return!")
-		return nil
-	}
-
 	pos := ni*(4+m*20) + h + 4
 	for i = 0; i < m; i++ {
+		if begin {
+			i = itermIdx
+			pos = pos + 20 * i
+			begin = false
+		}
 		fl.Seek(int64(pos),io.SeekStart)
 		k, err := fl.Read(buf)
 		if (err != nil) || (k != 16) {
@@ -59,7 +64,7 @@ VERIFYSTA:
 		copy(indexKey[:], buf[0:16])
 		pos = pos + 20
 
-		if base58.Encode(indexKey[:]) == "1111111111111111"{
+		if base58.Encode(indexKey[:]) == hash0Str || base58.Encode(indexKey[:]) == hash1Str{
 			if i % 48 == 0 {
 				log.Printf("[confirmslice] the hash not valide,n=%v,m=%v,ni=%v,VHF=%v",n,m,ni,base58.Encode(indexKey[:]))
 			}
@@ -77,13 +82,16 @@ VERIFYSTA:
 		}else{
 			log.Println("[confirmslice][hashdataerror] data verify failed")
 		}
-	}
 
-	if  ni < nv + 200  {
-		ni++
-		slicecompare.SaveValueToFile(strconv.FormatUint(ni,10),nUseForVarify)
-		goto VERIFYSTA
+		totalidx_varify++
+		if totalidx_varify >= nv + 1000{
+			log.Println("[confirmslice] Has verified 10000 item, will to return!")
+			slicecompare.SaveValueToFile(strconv.FormatUint(totalidx_varify,10),nUseForVarify)
+			return nil
+		}
 	}
+	ni++
+	goto VERIFYSTA
 
 	return nil
 }

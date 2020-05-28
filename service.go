@@ -225,10 +225,9 @@ func (sn *storageNode) Service() {
 	}()
 
 	go func(){
-		return
 		cfs := confirmSlice.ConfirmSler{sn}
 		for {
-			<-time.After(90 * time.Second)
+			<-time.After(1200 * time.Second)
 			cfs.ConfirmSlice()
 		}
 	}()
