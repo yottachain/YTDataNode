@@ -11,6 +11,7 @@ type Stat struct {
 	YTFSErrorCount       uint64 `json:"ytfs_error_count"`
 	TokenQueueLen        int    `json:"TokenQueueLen"`
 	AvailableTokenNumber int    `json:"AvailableTokenNumber""`
+	UseKvDb              bool   `json:"UseKvDb"`
 	sync.RWMutex
 }
 

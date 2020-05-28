@@ -75,6 +75,7 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts.TotalVolumn = 2 << 41
 	opts.IndexTableCols = 1 << 14
 	opts.IndexTableRows = 1 << 28
+	opts.UseKvDb = true
 	return opts
 }
 
