@@ -400,7 +400,7 @@ func preRegister(tx *eos.SignedTransaction) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf(resp.Status)
 	}
-	//log.Println(string(buf))
+	log.Println(string(buf))
 	return nil
 }
 
