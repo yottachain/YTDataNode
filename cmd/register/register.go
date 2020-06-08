@@ -374,9 +374,7 @@ func addPool(tx *eos.SignedTransaction) error {
 	}
 
 	res,err:=ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("%s\n",res)
-	}
+	log.Println(res,err.Error())
 
 	return nil
 }
@@ -407,9 +405,7 @@ func preRegister(tx *eos.SignedTransaction) error {
 	}
 
 	res,err:=ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("%s\n",res)
-	}
+	log.Println(res,err.Error())
 	//log.Println(string(buf))
 	return nil
 }
