@@ -97,6 +97,8 @@ func main(){
 		atomic.AddUint64(&num,uint64(len(tb)))
 	}
 	fmt.Println("rbdkv_success")
+	cfg.UseKvDb = true
+	cfg.Save()
 	end<- struct{}{}
 }
 
