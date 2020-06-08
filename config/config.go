@@ -102,7 +102,7 @@ func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 		IndexTableRows: uint32(n),
 		DataBlockSize:  d,
 		TotalVolumn:    size,
-		UseKvDb:true,
+		UseKvDb:        true,
 	}
 	return opts
 }

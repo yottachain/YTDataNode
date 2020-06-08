@@ -172,7 +172,17 @@ getMC:
 		fmt.Println("请输入范围8～20的数", mc)
 		goto getMC
 	}
-	commander.InitBySignleStorage(size*GB, 1<<mc)
+
+	var yOrN byte
+	fmt.Println("是否使用rocksdb (y)：y/n?")
+	fmt.Scanf("%c\n", &yOrN)
+	switch yOrN {
+	case 'n','N':
+		commander.InitBySignleStorage(size*GB, 1<<mc,false)
+	default:
+		commander.InitBySignleStorage(size*GB, 1<<mc,true)
+	}
+
 	_cfg, err := config.ReadConfig()
 	if err != nil {
 		return nil, err
@@ -370,8 +380,12 @@ func addPool(tx *eos.SignedTransaction) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf(resp.Status)
+		res,err:=ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s,%s,%s",resp.Status,res,err.Error())
 	}
+
+	res,err:=ioutil.ReadAll(resp.Body)
+	log.Println(res,err.Error())
 
 	return nil
 }
@@ -398,8 +412,11 @@ func preRegister(tx *eos.SignedTransaction) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf(resp.Status)
+		res,err:=ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s,%s,%s",resp.Status,res,err.Error())
 	}
+
+
 	//log.Println(string(buf))
 	return nil
 }
