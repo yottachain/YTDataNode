@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/yottachain/YTDataNode/install"
 	"net"
 	"os"
 	"os/exec"
@@ -26,6 +27,8 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
 	Run: func(cmd *cobra.Command, args []string) {
+		install.InstallLib()
+
 		if isDaemon {
 			commander.DaemonWithBackground()
 		} else {
@@ -65,6 +68,14 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		commander.InitBySignleStorage(size, 1<<mc)
 		log.Println("YTFS init success")
+	},
+}
+
+var installLibCmd = &cobra.Command{
+	Use: "install",
+	Short:"安装lib",
+	Run: func(cmd *cobra.Command, args []string) {
+		install.InstallLib()
 	},
 }
 
@@ -114,6 +125,7 @@ func main() {
 	RootCommand.AddCommand(update.UpdateCMD)
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
+	RootCommand.AddCommand(installLibCmd)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 }
