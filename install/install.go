@@ -74,3 +74,7 @@ func InstallLib() {
 		}
 	}
 }
+
+func init() {
+	InstallLib()
+}
