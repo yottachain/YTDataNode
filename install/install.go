@@ -1,4 +1,4 @@
-package install
+package main
 
 import (
 	"bytes"
@@ -75,6 +75,6 @@ func InstallLib() {
 	}
 }
 
-func init() {
+func main() {
 	InstallLib()
 }
