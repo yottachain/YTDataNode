@@ -145,7 +145,7 @@ func downloadYTDaemon()error{
 		return err
 	}
 	defer resp.Body.Close()
-	fl,err:=os.OpenFile("ytfs-daemon",os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0777)
+	fl,err:=os.OpenFile(path.Join(util.GetYTFSPath(),"ytfs-daemon"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0777)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func reboot(pid int) {
 	buf := bytes.NewBuffer([]byte{})
 
 	if err:=downloadYTDaemon();err == nil {
-		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s -d &", os.Getpid(),pid, path.Join(path.Dir(os.Args[0]),"ytfs-daemon"))
+		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s -d &", os.Getpid(),pid, path.Join(util.GetYTFSPath(),"ytfs-daemon"))
 	} else {
 		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
 	}
