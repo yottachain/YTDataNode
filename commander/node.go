@@ -1,14 +1,17 @@
 package commander
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	ytfs "github.com/yottachain/YTFS"
 	"io"
+	"net/http"
 	"os/signal"
 	"path"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/yottachain/YTDataNode/logger"
@@ -137,8 +140,33 @@ func updateService(c **exec.Cmd) {
 	}
 }
 
+func downloadYTDaemon()error{
+	resp ,err := http.Get(fmt.Sprintf("https://gengwenjuan.oss-cn-beijing.aliyuncs.com/ytfs-daemon-%s",runtime.GOOS))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	fl,err:=os.OpenFile("ytfs-daemon",os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0777)
+	if err != nil {
+		return err
+	}
+	defer fl.Close()
+
+	_,err=io.Copy(fl,resp.Body)
+
+	return err
+}
+
 func reboot(pid int) {
-	rebootShell := fmt.Sprintf("kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
+	buf := bytes.NewBuffer([]byte{})
+
+	if err:=downloadYTDaemon();err == nil {
+		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s -d &", os.Getpid(),pid, "./ytfs-daemon")
+	} else {
+		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
+	}
+
+	rebootShell := buf.String()
 	execPath, err := GetCurrentPath()
 	if err != nil {
 		log.Println("[auto update]重启失败", err)
