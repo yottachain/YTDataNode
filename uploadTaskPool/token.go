@@ -43,7 +43,7 @@ func (tk *Token) FillFromString(tkstring string) error {
 
 func NewToken() *Token {
 	tk := new(Token)
-	id := uuid.NewV4()
+	id,_ := uuid.NewV4()
 
 	tk.UUID = id
 	tk.Tm = time.Time{}

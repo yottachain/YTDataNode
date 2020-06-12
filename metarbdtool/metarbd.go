@@ -3,15 +3,16 @@ package main
 import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
-	"github.com/tecbot/gorocksdb"
-
+	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTFS/storage"
+	"github.com/tecbot/gorocksdb"
+	ydcommon "github.com/yottachain/YTFS/common"
 	"log"
+	"path"
 	"sync/atomic"
 	"time"
-	"path"
-	"github.com/yottachain/YTDataNode/util"
-//	"github.com/yottachain/YT"
+	"encoding/binary"
+
 )
 
 var num uint64
@@ -22,15 +23,37 @@ var ti *storage.TableIterator
 var preTime time.Time
 var glbti storage.TableIterator
 
-type KvDB struct{
+var Mdb *KvDB
+
+var mdbFileName = "/maindb"
+var ytPosKey    = "yt_rocks_pos_key"
+var ytBlkSzKey  = "yt_blk_size_key"
+
+type KvDB struct {
 	Rdb *gorocksdb.DB
 	ro  *gorocksdb.ReadOptions
 	wo  *gorocksdb.WriteOptions
+	PosKey ydcommon.IndexTableKey
+	PosIdx ydcommon.IndexTableValue
 }
 
-var Mdb *KvDB
+func setKVtoDB(mdb *KvDB, key string, value uint32) error {
+	HKey := ydcommon.BytesToHash([]byte(key))
+	PosKey := ydcommon.IndexTableKey(HKey)
 
-func openKVDB(DBPath string) (kvdb *KvDB,err error){
+	valbuf := make([]byte,4)
+
+	fmt.Println("setKVtoDB key=",key," value=",value)
+	binary.LittleEndian.PutUint32(valbuf, value)
+	err := mdb.Rdb.Put(mdb.wo,PosKey[:],valbuf)
+	if err != nil {
+		fmt.Println("update write pos to metadatafile err:", err)
+	}
+	return err
+}
+
+func openKVDB(DBPath string) (kvdb *KvDB, err error) {
+
 	// 使用 gorocksdb 连接 RocksDB
 	bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
 	bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
@@ -41,59 +64,77 @@ func openKVDB(DBPath string) (kvdb *KvDB,err error){
 	db, err := gorocksdb.OpenDb(opts, DBPath)
 	if err != nil {
 		fmt.Println("[kvdb] open rocksdb error")
-		return nil,err
+		return nil, err
 	}
 
 	// 创建输入输出流
 	ro := gorocksdb.NewDefaultReadOptions()
 	wo := gorocksdb.NewDefaultWriteOptions()
-	return &KvDB {
-		Rdb: db,
-		ro:  ro,
-		wo:  wo,
-	},err
+
+	//diskPoskey := ydcommon.BytesToHash([]byte(ytPosKey))
+	//val,err := db.Get(ro,diskPoskey[:])
+	//posIdx := binary.LittleEndian.Uint32(val.Data())
+	return &KvDB{
+		Rdb   :  db,
+		ro    :  ro,
+		wo    :  wo,
+		//PosKey:  ydcommon.IndexTableKey(diskPoskey),
+		//PosIdx:  ydcommon.IndexTableValue(posIdx),
+	}, err
 }
 
 func init(){
-//	var glbti storage.TableIterator
 	preTime = time.Now()
 	end = make(chan struct{})
 	cfg,_=config.ReadConfig()
-	pathname1 := path.Join(util.GetYTFSPath(),"index.db")
-	pathname2 := path.Join(util.GetYTFSPath(),"metadata.db")
-	fmt.Println("pathname2=",pathname2)
-	ti,_=storage.GetTableIterator2(pathname1,pathname2,cfg.Options,glbti)
-	fmt.Println("init  ti=",ti)
+	pathname := path.Join(util.GetYTFSPath(),"index.db")
+//	pathname2 := path.Join(util.GetYTFSPath(),"metadata.db")
+//	fmt.Println("pathname2=",pathname2)
+	ti,_=storage.GetTableIterator(pathname,cfg.Options)
+//	ti,_=storage.GetTableIterator2(pathname1,pathname2,cfg.Options,glbti)
+	fmt.Println("init  ti_pos=",ti.Len())
+	fmt.Println("init  ti_blksize=",ti.BlockSize())
 //	db,err := OpenFile(path.Join(util.GetYTFSPath(),"maindb"),nil)
 	mdb,err := openKVDB(path.Join(util.GetYTFSPath(),"maindb"))
 	if err != nil {
-		println("[rebuildkv] open rocksdb err!!")
+		fmt.Println("[rebuildkv] open rocksdb err!!")
 		panic(err)
 	}
     Mdb = mdb
+    Pos := ti.Len()
+    fmt.Println("[rebuildkv] current pos=",Pos)
+    err = setKVtoDB(mdb,ytPosKey,uint32(Pos))
+	if err != nil {
+		fmt.Println("[rebuildkv] set start Pos to DB err:",err)
+		panic(err)
+	}
+	BlkSize := ti.BlockSize()
+	err = setKVtoDB(mdb,ytBlkSzKey,BlkSize)
+	fmt.Println("[rebuildkv] current blksize=",BlkSize)
+	if err != nil {
+		fmt.Println("[rebuildkv] set blocksize to DB err:",err)
+		panic(err)
+	}
 }
 
 func main(){
-//	init_env()
 	go printSpeed()
+	fmt.Println("main  ti pos=",ti.Len())
 	for {
-		fmt.Println("main  ti=",ti)
-//		fmt.Println("ti",ti.)
 		tb,err:=ti.GetNoNilTableBytes()
 		if err !=nil {
 			println("[rebuildkv]  get Table from indexdb err, ", err.Error())
 			break
 		}
-//		Wbatch := new(gorocksdb.WriteBatch)
+
 		for key,val := range tb {
 			err = Mdb.Rdb.Put(Mdb.wo, key[:], val)
 			if err != nil {
-				println("[rebuildkv]  batch write to rocksdb err!!")
-				log.Println(err)
+				println("[rebuildkv]  batch write to rocksdb err:",err)
 				fmt.Println("rbdkv_error")
 			}
 		}
-//		err=Mdb.Rdb.Write(Mdb.wo,Wbatch)
+
 		atomic.AddUint64(&num,uint64(len(tb)))
 	}
 	fmt.Println("rbdkv_success")

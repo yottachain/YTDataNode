@@ -75,6 +75,7 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts.TotalVolumn = 2 << 41
 	opts.IndexTableCols = 1 << 14
 	opts.IndexTableRows = 1 << 28
+	opts.UseKvDb = true
 	return opts
 }
 
@@ -101,6 +102,7 @@ func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 		IndexTableRows: uint32(n),
 		DataBlockSize:  d,
 		TotalVolumn:    size,
+		UseKvDb:        true,
 	}
 	return opts
 }
@@ -376,7 +378,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 42
+	return 30
 }
 
 func Version() uint32 {
