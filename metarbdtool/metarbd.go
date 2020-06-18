@@ -89,7 +89,8 @@ func init(){
 	cfg,_=config.ReadConfig()
 	pathname := path.Join(util.GetYTFSPath(),"index.db")
 //	pathname2 := path.Join(util.GetYTFSPath(),"metadata.db")
-//	fmt.Println("pathname2=",pathname2)
+	fmt.Println("pathname=",pathname)
+	cfg.Options.UseKvDb = true
 	ti,_=storage.GetTableIterator(pathname,cfg.Options)
 //	ti,_=storage.GetTableIterator2(pathname1,pathname2,cfg.Options,glbti)
 	fmt.Println("init  ti_pos=",ti.Len())
