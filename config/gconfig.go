@@ -51,8 +51,8 @@ func (gc *GConfig) Get() error {
 	request.Header.Add("Pool-ID", gc.base.PoolID)
 
 	resp, err := http.DefaultClient.Do(request)
-	if err != nil || resp.StatusCode != 200 {
-		return fmt.Errorf("%d%s", resp.StatusCode, err)
+	if err != nil {
+		return fmt.Errorf("%s", err)
 	}
 
 	resBuf, err := ioutil.ReadAll(resp.Body)
