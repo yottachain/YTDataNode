@@ -374,13 +374,6 @@ func addPool(tx *eos.SignedTransaction) error {
 		return fmt.Errorf("%s,%s,%v",resp.Status,res,err)
 	}
 
-	res,err:=ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(res,err.Error())
-	} else {
-		log.Println(res)
-	}
-
 	return nil
 }
 
