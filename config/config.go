@@ -378,7 +378,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 43
+	return 44
 }
 
 func Version() uint32 {
