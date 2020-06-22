@@ -23,7 +23,7 @@ require (
 	github.com/spf13/viper v1.2.1
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
-	github.com/yottachain/YTFS v0.0.0-20200612024422-8966dc0fc202
+	github.com/yottachain/YTFS v0.0.0-20200622102422-2f8a3e635e72
 	github.com/yottachain/YTHost v1.0.2-0.20200421075459-15b3e110c71a
 	github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc
 )
