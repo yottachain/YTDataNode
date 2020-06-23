@@ -31,6 +31,7 @@ const (
     MsgIDListDNIResp           msgType = 0xd6cb
 	MsgIDDownloadYTFSFile      msgType = 0x1b32
 	MsgIDSleepReturn           msgType = 0xe75c
+	MsgIDSelfVarify            msgType = 0xd97a
 )
 
 type msgType int32
