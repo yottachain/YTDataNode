@@ -96,7 +96,7 @@ VERIFYSTA:
 	return nil
 }
 
-func (cfs *ConfirmSler)ConfirmSlice() {
+func (cfs *ConfirmSler)ConfirmSlice() []byte{
 	dir := util.GetYTFSPath()
 	fileName := path.Join(dir, "index.db")
 	fl, err := os.Open(fileName)
@@ -104,7 +104,7 @@ func (cfs *ConfirmSler)ConfirmSlice() {
 
 	if err != nil {
 		log.Println("[confirmslice] open index.db error:", err.Error())
-		return
+		return nil
 	}
 
 	header := ydcommon.Header{}
@@ -114,13 +114,13 @@ func (cfs *ConfirmSler)ConfirmSlice() {
 	k, err := fl.Read(buf)
 	if (err != nil) || (k != (int)(unsafe.Sizeof(ydcommon.Header{}))) {
 		log.Println("[confirmslice][error] read header of db error, ",err)
-		return
+		return nil
 	}
 	bufReader := bytes.NewBuffer(buf)
 	err = binary.Read(bufReader, binary.LittleEndian, &header)
 	if err != nil {
 		log.Println("[confirmslice][error] read bufReader data to header error, ",err)
-		return
+		return nil
 	}
 
 	h := uint64(header.HashOffset)
@@ -132,5 +132,5 @@ func (cfs *ConfirmSler)ConfirmSlice() {
     if err != nil {
 		log.Println("[confirmslice][error] SliceHashVarify error!")
 	}
-    return
+    return []byte("ok")
 }

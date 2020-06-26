@@ -122,12 +122,12 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSelfVarify.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		err := remoteDebug.Handle(data)
-		if err != nil {
-			log.Println("[debug]", err)
-		}
-		return message.MsgIDVoidResponse.Bytes(), err
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVarifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		cfs := confirmSlice.ConfirmSler{sn}
+		cfs.ConfirmSlice()
+		return append(message.MsgIDSelfVarifyResp.Bytes(), []byte("ok")...), nil
+		//sch := SpotCheckHandler{sn}
+		//return sch.Handle(data), nil
 	})
 
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
