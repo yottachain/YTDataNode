@@ -67,7 +67,12 @@ func (Sck *Scker)SelfCheck() message.SelfVarifyResp {
 	pathTabIdxfile := path.Join(util.GetYTFSPath(),nTabVarifyedFile)
 
 	for{
-		tab,_ := ti.GetNoNilTableBytes()
+		tab,err := ti.GetNoNilTableBytes()
+		if err != nil {
+			SetValuetoFile(strconv.FormatUint(uint64(0),10),pathTabIdxfile)
+			break
+		}
+
 		for key,_ := range tab {
 			varifyedNum++
 			resData, err := Sck.YTFS().Get(key)
