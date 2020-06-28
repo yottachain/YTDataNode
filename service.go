@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/selfcheck"
+	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
@@ -123,10 +123,9 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVarifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		Sck := selfcheck.Scker{sn}
-		resp:=Sck.SelfCheck()
-		response,_ := proto.Marshal(&resp)
-		return append(message.MsgIDSelfVarifyResp.Bytes(), response...), nil
+		cfs := confirmSlice.ConfirmSler{sn}
+		resp:=cfs.ConfirmSlice()
+		return append(message.MsgIDSelfVarifyResp.Bytes(), resp...), nil
 	})
 
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {

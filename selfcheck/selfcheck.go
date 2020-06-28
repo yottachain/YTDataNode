@@ -23,7 +23,7 @@ type Scker struct {
 	sni.StorageNode
 }
 
-func CheckInit(){
+func init(){
 //	StartTime := time.Now()
 //	fmt.Println("StartTime:",StartTime)
 	cfg,_ := config.ReadConfig()
@@ -68,13 +68,13 @@ func SetValuetoFile(filePath string, value string) error{
 }
 
 func (Sck *Scker)SelfCheck() message.SelfVarifyResp {
-	CheckInit()
-
 	errNum := 0
 	varifyedNum := 0
 	beginTab := ti.GetBeginTab()
 	nowTab := ti.GetBeginTab()
 	pathTabIdxfile := path.Join(util.GetYTFSPath(),nTabVarifyedFile)
+
+
 
 	for{
 		tab,err := ti.GetNoNilTableBytes()
