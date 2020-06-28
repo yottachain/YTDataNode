@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/selfcheck"
-	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
@@ -24,7 +23,7 @@ import (
 	//"github.com/yottachain/YTDataNode/util"
 	//"os"
 	//"path"
-//	"time"
+	//	"time"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
@@ -230,14 +229,6 @@ func (sn *storageNode) Service() {
 			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
 				log.Println("error:", err)
 			}
-		}
-	}()
-
-	go func(){
-		cfs := confirmSlice.ConfirmSler{sn}
-		for {
-			<-time.After(1200 * time.Second)
-			cfs.ConfirmSlice()
 		}
 	}()
 }
