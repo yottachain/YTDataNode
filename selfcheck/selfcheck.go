@@ -37,6 +37,8 @@ func init(){
     val,_ := strconv.ParseUint(strVal,10,64)
     fmt.Println("init val=",val)
     SetValuetoTableIter(uint32(val),ti)
+    begin := ti.GetBeginTab()
+    fmt.Println("begin=",begin)
 }
 
 func SetValuetoTableIter(value uint32,ti *storage.TableIterator){
