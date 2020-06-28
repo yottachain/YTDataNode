@@ -2,7 +2,7 @@ package selfcheck
 
 import(
 	"fmt"
-	"github.com/linux-go/go1.13.5.linux-amd64/go/src/strings"
+	"strings"
 	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTFS/storage"
 	"strconv"
