@@ -69,6 +69,7 @@ func (Sck *Scker)SelfCheck() message.SelfVarifyResp {
 	for{
 		tab,err := ti.GetNoNilTableBytes()
 		if err != nil {
+			SetValuetoTableIter(0,ti)
 			SetValuetoFile(strconv.FormatUint(uint64(0),10),pathTabIdxfile)
 			break
 		}
