@@ -7,7 +7,7 @@ import(
 	"strconv"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/message"
-	"time"
+//	"time"
 	"path"
 	"io/ioutil"
 	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
@@ -23,15 +23,19 @@ type Scker struct {
 }
 
 func init(){
-	StartTime := time.Now()
-	fmt.Println("StartTime:",StartTime)
+//	StartTime := time.Now()
+//	fmt.Println("StartTime:",StartTime)
 	cfg,_ := config.ReadConfig()
 	resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
 	pathname := path.Join(util.GetYTFSPath(),"index.db")
 	ti,_ = storage.GetTableIterator(pathname,cfg.Options)
 	pathTabIdxfile := path.Join(util.GetYTFSPath(),nTabVarifyedFile)
-	strVal,_ := GetValueFromFile(pathTabIdxfile)
+	strVal,err := GetValueFromFile(pathTabIdxfile)
+	if err != nil {
+		fmt.Println("GetValueFromFile error")
+	}
     val,_ := strconv.ParseUint(strVal,10,64)
+    fmt.Println("init val=",val)
     SetValuetoTableIter(uint32(val),ti)
 }
 
