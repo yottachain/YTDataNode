@@ -177,7 +177,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 		return
 	}
 	bp := sn.Config().BPList[sn.GetBP()]
-	log.Println("bplist:",sn.Config().BPList,"bpindex:",sn.GetBP(),bp)
+	//log.Println("bplist:",sn.Config().BPList,"bpindex:",sn.GetBP(),bp)
 	msg.Addrs = sn.Addrs()
 	if rms.Addr() != "" && first == false {
 		msg.Addrs = append(sn.Addrs(), rms.Addr())
