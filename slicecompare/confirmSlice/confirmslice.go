@@ -5,13 +5,13 @@ import (
 	"encoding/binary"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/slicecompare"
 	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
 	ydcommon "github.com/yottachain/YTFS/common"
-//	"github.com/yottachain/YTDataNode/config"
 	"io"
 	"os"
 	"path"
@@ -104,7 +104,7 @@ OUT:
 
 func (cfs *ConfirmSler)ConfirmSlice() []byte{
 	var resp message.SelfVarifyResp
-	//cfg,err := config.ReadConfig()
+	cfg,err := config.ReadConfig()
 	dir := util.GetYTFSPath()
 	fileName := path.Join(dir, "index.db")
 	fl_IdxDB, err := os.Open(fileName)
@@ -136,14 +136,14 @@ func (cfs *ConfirmSler)ConfirmSlice() []byte{
     m := uint64(header.RangeCoverage)
     str_pos,_ := slicecompare.GetValueFromFile(VarifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
-	 cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
-//    varyfiedNum,errCount := cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
-    //resp.Numth = strconv.FormatUint(varyfiedNum,10)
-    //resp.ErrNum = strconv.FormatUint(errCount,10)
-    //resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
-	resp.Numth = strconv.FormatUint(3000,10)
-	resp.ErrNum = strconv.FormatUint(9,10)
-	resp.Id = strconv.FormatUint(183,10)
+	// cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
+    varyfiedNum,errCount := cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
+    resp.Numth = strconv.FormatUint(varyfiedNum,10)
+    resp.ErrNum = strconv.FormatUint(errCount,10)
+    resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
+	//resp.Numth = strconv.FormatUint(3000,10)
+	//resp.ErrNum = strconv.FormatUint(9,10)
+	//resp.Id = strconv.FormatUint(183,10)
     resData,_ := proto.Marshal(&resp)
     //if err != nil {
 	//	log.Println("[confirmslice][error] SliceHashVarify error!")
