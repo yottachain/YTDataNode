@@ -2,6 +2,7 @@ package selfcheck
 
 import(
 	"fmt"
+	"github.com/linux-go/go1.13.5.linux-amd64/go/src/strings"
 	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTFS/storage"
 	"strconv"
@@ -34,6 +35,7 @@ func init(){
 	if err != nil {
 		fmt.Println("GetValueFromFile error")
 	}
+	strVal=strings.Replace(strVal," ","",-1)
     val,_ := strconv.ParseUint(strVal,10,64)
     fmt.Println("init val=",val)
     SetValuetoTableIter(uint32(val),ti)
