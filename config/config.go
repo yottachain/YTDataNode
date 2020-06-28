@@ -336,7 +336,7 @@ func (cfg *Config) GetBPIndex() int {
 	}
 	bpindex := id % uint32(bpnum)
 
-	log.Printf("len bplist:%d ,id %d, bpindex %d\n", bpnum, id, bpindex)
+	//log.Printf("len bplist:%d ,id %d, bpindex %d\n", bpnum, id, bpindex)
 	return int(bpindex)
 }
 
@@ -380,7 +380,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 47
+	return 48
 }
 
 func Version() uint32 {
