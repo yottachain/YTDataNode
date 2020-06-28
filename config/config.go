@@ -335,6 +335,8 @@ func (cfg *Config) GetBPIndex() int {
 		return 0
 	}
 	bpindex := id % uint32(bpnum)
+
+	log.Printf("len bplist:%d ,id %d, bpindex %d\n", bpnum, id, bpindex)
 	return int(bpindex)
 }
 
