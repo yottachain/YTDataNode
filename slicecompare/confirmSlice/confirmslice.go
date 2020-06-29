@@ -57,10 +57,16 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 				pos = pos + 20*i
 				begin = false
 			}
+			varifyedItem++
+			if varifyedItem >= start_Item+1000 {
+				log.Println("[confirmslice] Has verified 1000 item, will to return!")
+				slicecompare.SaveValueToFile(strconv.FormatUint(varifyedItem, 10), VarifyedNumFile)
+				goto OUT
+			}
+
 			fl_IdxDB.Seek(int64(pos), io.SeekStart)
 			k, err := fl_IdxDB.Read(buf)
 			if (err != nil) || (k != 16) {
-				log.Printf("[confirmslice] [error] read hash from index.db to buf,k=%d", k)
 				continue
 			}
 
@@ -68,16 +74,13 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 			pos = pos + 20
 
 			if base58.Encode(indexKey[:]) == hash0Str || base58.Encode(indexKey[:]) == hash1Str {
-				if i % 1000 == 0 {
-					log.Printf("[confirmslice] the hash not valide,n=%v,m=%v,n_Rangeth=%v,VHF=%v",n,m,n_Rangeth,base58.Encode(indexKey[:]))
-				}
-				//continue
+				continue
 			}
 
 			resData, err := cfs.YTFS().Get(indexKey)
 			if err != nil {
 				log.Println("[confirmslice] error:", err, " VHF:", base58.Encode(indexKey[:]))
-				//continue
+				continue
 			}
 
 			if ! message.VerifyVHF(resData, indexKey[:]) {
@@ -87,13 +90,6 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 				}else{
 				log.Println("[confirmslice]verify failed,VHF:", base58.Encode(indexKey[:]))
 				errCount++
-			}
-
-			varifyedItem++
-			if varifyedItem >= start_Item+1000 {
-				log.Println("[confirmslice] Has verified 1000 item, will to return!")
-				slicecompare.SaveValueToFile(strconv.FormatUint(varifyedItem, 10), VarifyedNumFile)
-				goto OUT
 			}
 		}
 		n_Rangeth++
@@ -136,17 +132,10 @@ func (cfs *ConfirmSler)ConfirmSlice() []byte{
     m := uint64(header.RangeCoverage)
     str_pos,_ := slicecompare.GetValueFromFile(VarifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
-	// cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
     varyfiedNum,errCount := cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
     resp.Numth = strconv.FormatUint(varyfiedNum,10)
     resp.ErrNum = strconv.FormatUint(errCount,10)
     resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
-	//resp.Numth = strconv.FormatUint(3000,10)
-	//resp.ErrNum = strconv.FormatUint(9,10)
-	//resp.Id = strconv.FormatUint(183,10)
     resData,_ := proto.Marshal(&resp)
-    //if err != nil {
-	//	log.Println("[confirmslice][error] SliceHashVarify error!")
-	//}
     return resData
 }
