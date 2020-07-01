@@ -44,7 +44,7 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 
 	for {
 		log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
-		if n_Rangeth > n {
+		if n_Rangeth > (n + 1) {
 			log.Println("[confirmslice] all hash in indexdb has verified, will to return!")
 			slicecompare.SaveValueToFile(strconv.FormatUint(0, 10), VarifyedNumFile)
 			goto OUT
