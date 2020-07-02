@@ -70,6 +70,18 @@ func (am *AddrsManager) UpdateAddrs() {
 			am.addrs = append(am.addrs, pubma)
 			am.updateTime = time.Now()
 		}
+
+		if ip,ok:=os.LookupEnv("local_host_ip");ok {
+			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
+			laddr = strings.Replace(laddr, "\n", "", -1)
+			lma, err := multiaddr.NewMultiaddr(laddr)
+			if err != nil {
+				log.Println("fomate local ip fail:", err, laddr)
+			} else {
+				am.addrs = append(am.addrs, lma)
+			}
+		}
+
 		am.updateTime = time.Now()
 	}
 }
