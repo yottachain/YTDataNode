@@ -39,9 +39,8 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 	var varifyedItem = start_Item
 	n_Rangeth := start_Item/m                 //range zoom index
 	m_Itermth := start_Item%m
-	buf := make([]byte,16,16)
+	buf := make([]byte,20,20)
 	begin := true
-
 	for {
 		log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
 		if n_Rangeth > (n + 1) {
@@ -59,6 +58,7 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 			}
 			varifyedItem++
 			if varifyedItem >= start_Item+1000 {
+
 				log.Println("[confirmslice] Has verified 1000 item, will to return!")
 				slicecompare.SaveValueToFile(strconv.FormatUint(varifyedItem, 10), VarifyedNumFile)
 				goto OUT
@@ -88,7 +88,7 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 						log.Printf("[confirmslice][hashdataok] n=%d,m=%d,n_Rangeth=%d,VHF=%s", n, m, n_Rangeth, base58.Encode(indexKey[:]))
 					}
 				}else{
-				log.Println("[confirmslice]verify failed,VHF:", base58.Encode(indexKey[:]))
+				log.Println("[confirmslice][hashdataerr]verify failed,VHF:", base58.Encode(indexKey[:]))
 				errCount++
 			}
 		}

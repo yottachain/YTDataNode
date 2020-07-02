@@ -37,7 +37,7 @@ type addrInfo struct {
 }
 
 func loginit() *log.Logger{
-	file := "./" + time.Now().Format("20200701") + ".txt"
+	file := "./" + time.Now().Format("20200701") + ".log"
 	logFile, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
 	if nil != err {
 		panic(err)
