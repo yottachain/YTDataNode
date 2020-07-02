@@ -51,6 +51,20 @@ func (am *AddrsManager) UpdateAddrs() {
 	am.addrs = am.sn.Host().Addrs()
 	resp, err := http.Get("http://123.57.81.177/self-ip")
 	if err != nil {
+		port, ok := os.LookupEnv("nat_port")
+		if ok == false {
+			port = "9001"
+		}
+		if ip,ok:=os.LookupEnv("local_host_ip");ok {
+			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
+			laddr = strings.Replace(laddr, "\n", "", -1)
+			lma, err := multiaddr.NewMultiaddr(laddr)
+			if err != nil {
+				log.Println("fomate local ip fail:", err, laddr)
+			} else {
+				am.addrs = append(am.addrs, lma)
+			}
+		}
 		log.Println("get public ip fail")
 	} else {
 		pubip, err := ioutil.ReadAll(resp.Body)
@@ -69,17 +83,6 @@ func (am *AddrsManager) UpdateAddrs() {
 		} else {
 			am.addrs = append(am.addrs, pubma)
 			am.updateTime = time.Now()
-		}
-
-		if ip,ok:=os.LookupEnv("local_host_ip");ok {
-			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
-			laddr = strings.Replace(laddr, "\n", "", -1)
-			lma, err := multiaddr.NewMultiaddr(laddr)
-			if err != nil {
-				log.Println("fomate local ip fail:", err, laddr)
-			} else {
-				am.addrs = append(am.addrs, lma)
-			}
 		}
 
 		am.updateTime = time.Now()
