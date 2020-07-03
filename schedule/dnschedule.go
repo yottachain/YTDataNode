@@ -87,28 +87,10 @@ func main(){
 func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint) {
 	var respMsg message.SelfVarifyResp
 
-	//Id := "16Uiu2HAkxDxpFT8Wo6gosEQGUdQhkyNJeDFAmRHYryW1tmCiT9UD"
-	//sAddr := "/ip4/172.17.0.4/tcp/9001"
-
-	//peerid,err := peer.Decode(Id)
-	//sma,err := multiaddr.NewMultiaddr(sAddr)
-	//
-	//ma,err := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/9001")
-	//if err != nil {
-	//	fmt.Println("multiaddr error:",err)
-	//	return
-	//}
-	//
-	//host,err := host.NewHost(option.ListenAddr(ma))
-	//if err != nil{
-	//	fmt.Println("NewHost error",err)
-	//	return
-	//}
-
 	ctx,cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeout))
 	defer cancel()
 
-	clt,err := hst.Connect(ctx,info.NodeID,info.Addrs)
+	clt,err := hst.ClientStore().Get(ctx,info.NodeID,info.Addrs)
 	defer clt.Close()
 	if err != nil {
 		loger.Println("connet to server error:",err)
@@ -182,15 +164,3 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 
 	return
 }
-
-//func main(){
-//	client,err := rpc.DialHTTP("tcp","172.17.0.4:9001")
-//	if err != nil {
-//		fmt.Println("DialHTTP error",err)
-//		panic(err)
-//	}
-//	request := message.SelfVarifyReq{Id:"183"}
-//	response := message.SelfVarifyResp{}
-//	client.Call("",request,&response)
-//
-//}
