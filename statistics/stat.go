@@ -11,6 +11,7 @@ type Stat struct {
 	YTFSErrorCount       uint64 `json:"ytfs_error_count"`
 	TokenQueueLen        int    `json:"TokenQueueLen"`
 	AvailableTokenNumber int    `json:"AvailableTokenNumber""`
+	SentToken            uint64 `json:"SentToken"`
 	sync.RWMutex
 }
 
@@ -43,6 +44,7 @@ func (s *Stat) JsonEncode() []byte {
 }
 
 func (s *Stat) String() string {
+
 	var res = ""
 
 	buf := s.JsonEncode()

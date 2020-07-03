@@ -113,6 +113,7 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.Get(ctx, id)
@@ -134,6 +135,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	// 如果token为空 返回 假
 	if res.AllocId == "" {
 		res.Writable = false
+	} else {
+		statistics.DefaultStat.Lock()
+		defer statistics.DefaultStat.Unlock()
+		statistics.DefaultStat.SentToken++
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
