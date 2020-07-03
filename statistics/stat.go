@@ -12,6 +12,7 @@ type Stat struct {
 	TokenQueueLen        int    `json:"TokenQueueLen"`
 	AvailableTokenNumber int    `json:"AvailableTokenNumber""`
 	SentToken            uint64 `json:"SentToken"`
+	UseKvDb              bool   `json:"UseKvDb"`
 	sync.RWMutex
 }
 

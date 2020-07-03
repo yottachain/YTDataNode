@@ -201,6 +201,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	msg.Tx = GetXX("T")
 
 	statistics.DefaultStat.AvailableTokenNumber = pool.FreeTokenLen()
+	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
