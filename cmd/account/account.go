@@ -136,6 +136,13 @@ var changePoolIDCmd = &cobra.Command{
 	Short: "更改矿池ID",
 	Run: func(cmd *cobra.Command, args []string) {
 		var valuestring string
+
+		info, err := getPoolInfo(cfg.PoolID)
+		if err != nil {
+			fmt.Println("操作失败:", err)
+			return
+		}
+
 	input:
 		fmt.Println("请输入矿池id")
 		fmt.Scanln(&valuestring)
@@ -157,7 +164,7 @@ var changePoolIDCmd = &cobra.Command{
 				"active",
 			},
 			eos.PermissionLevel{
-				ad.NewPoolID,
+				eos.AN(info[0].PoolOwner),
 				"active",
 			},
 		}
