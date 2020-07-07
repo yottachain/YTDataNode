@@ -98,7 +98,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 }
 
 func (wh *WriteHandler) Run() {
-	go wh.Upt.FillToken(context.Background())
+	go wh.Upt.FillToken()
 	go func() {
 		var flushInterval time.Duration = time.Millisecond * 10
 		for {
