@@ -114,3 +114,7 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	utp.fillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
 }
+
+func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
+	return time.Second / utp.fillTokenInterval
+}

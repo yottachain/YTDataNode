@@ -3,16 +3,18 @@ package statistics
 import (
 	"encoding/json"
 	"sync"
+	"time"
 )
 
 type Stat struct {
-	SaveRequestCount     uint64 `json:"SaveRequestCount"`
-	SaveSuccessCount     uint64 `json:"SaveSuccessCount"`
-	YTFSErrorCount       uint64 `json:"ytfs_error_count"`
-	TokenQueueLen        int    `json:"TokenQueueLen"`
-	AvailableTokenNumber int    `json:"AvailableTokenNumber""`
-	SentToken            uint64 `json:"SentToken"`
-	UseKvDb              bool   `json:"UseKvDb"`
+	SaveRequestCount     uint64        `json:"SaveRequestCount"`
+	SaveSuccessCount     uint64        `json:"SaveSuccessCount"`
+	YTFSErrorCount       uint64        `json:"ytfs_error_count"`
+	TokenQueueLen        int           `json:"TokenQueueLen"`
+	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
+	SentToken            uint64        `json:"SentToken"`
+	UseKvDb              bool          `json:"UseKvDb"`
+	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
 	sync.RWMutex
 }
 
