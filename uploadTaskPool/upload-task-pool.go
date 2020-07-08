@@ -2,24 +2,28 @@ package uploadTaskPool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/util"
+	"os"
+	"path"
 	"sync/atomic"
 	"time"
 )
 
 type UploadTaskPool struct {
-	tkc               chan *Token
-	ttl               time.Duration
-	fillTokenInterval time.Duration
+	Tkc               chan *Token   `json:"tkc"`
+	TTL               time.Duration `json:"ttl"`
+	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
 	// 默认值
 	if size == 0 {
-		size = 200
+		size = 300
 	}
 	if fillInterval == 0 {
 		fillInterval = 10
@@ -31,16 +35,17 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt := new(UploadTaskPool)
 
 	//upt.tb = NewTokenBucket(size, ttl*time.Second)
-	upt.tkc = make(chan *Token, size)
-	upt.fillTokenInterval = fillInterval
-	upt.ttl = ttl
+	upt.Tkc = make(chan *Token, size)
+	upt.FillTokenInterval = fillInterval
+	upt.TTL = ttl
 
+	upt.Load()
 	return upt
 }
 
 func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
 	select {
-	case tk := <-upt.tkc:
+	case tk := <-upt.Tkc:
 		tk.Reset()
 		tk.PID = pid
 
@@ -52,7 +57,7 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error)
 }
 
 func (upt *UploadTaskPool) Check(tk *Token) bool {
-	return time.Now().Sub(tk.Tm) < upt.ttl
+	return time.Now().Sub(tk.Tm) < upt.TTL
 }
 
 func (upt *UploadTaskPool) Delete(tk *Token) bool {
@@ -65,11 +70,11 @@ func (upt *UploadTaskPool) FillToken() {
 	upt.AutoChangeTokenInterval()
 
 	for {
-		<-time.After(upt.fillTokenInterval)
+		<-time.After(upt.FillTokenInterval)
 
 		tk := NewToken()
 		tk.Reset()
-		upt.tkc <- tk
+		upt.Tkc <- tk
 	}
 }
 
@@ -80,9 +85,9 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 			decreaseTd := time.Minute * 10
 			<-time.After(decreaseTd)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
-			if atomic.LoadInt64(&upt.sentToken) > int64(decreaseTd/upt.fillTokenInterval*3/20) {
+			if atomic.LoadInt64(&upt.sentToken) > int64(decreaseTd/upt.FillTokenInterval*3/20) {
 				log.Printf("[token] 触发token减少 未消耗token %d\n", atomic.LoadInt64(&upt.sentToken))
-				upt.ChangeTKFillInterval(upt.fillTokenInterval + (upt.fillTokenInterval / 10))
+				upt.ChangeTKFillInterval(upt.FillTokenInterval + (upt.FillTokenInterval / 10))
 			}
 		}
 	}()
@@ -92,29 +97,55 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if atomic.LoadInt64(&upt.sentToken) < int64(increaseTd/upt.fillTokenInterval*19/20) {
+			if atomic.LoadInt64(&upt.sentToken) < int64(increaseTd/upt.FillTokenInterval*19/20) {
 				log.Printf("[token] 触发token增加 未消耗token %d\n", atomic.LoadInt64(&upt.sentToken))
-				upt.ChangeTKFillInterval(upt.fillTokenInterval - (upt.fillTokenInterval / 5))
+				upt.ChangeTKFillInterval(upt.FillTokenInterval - (upt.FillTokenInterval / 5))
 			}
 		}
 	}()
 }
 
 func (upt *UploadTaskPool) FreeTokenLen() int {
-	return len(upt.tkc)
+	return len(upt.Tkc)
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	if duration > (time.Millisecond * 50) {
 		duration = time.Millisecond * 50
 	}
-	if duration < (time.Millisecond * 5) {
-		duration = time.Millisecond * 5
+	if duration < (time.Millisecond * 2) {
+		duration = time.Millisecond * 2
 	}
-	utp.fillTokenInterval = duration
+	utp.FillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
-	return time.Second / utp.fillTokenInterval
+	return time.Second / utp.FillTokenInterval
+}
+
+func (upt *UploadTaskPool) Save() {
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), ".utp_params.json"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer fl.Close()
+
+	ec := json.NewEncoder(fl)
+	ec.Encode(upt)
+}
+
+func (upt *UploadTaskPool) Load() {
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), ".utp_params.json"), os.O_RDONLY, 0644)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer fl.Close()
+
+	ec := json.NewDecoder(fl)
+	if err = ec.Decode(upt); err != nil {
+		log.Printf("[utp]读取历史记录成功 %v \n", upt)
+	}
 }
