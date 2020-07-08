@@ -2,9 +2,7 @@ package node
 
 import (
 	"bufio"
-	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
@@ -37,23 +35,23 @@ func (sn *storageNode) Service() {
 
 	rms = service.NewRelayManage(sn.Host())
 
-	gc := config.NewGConfig(sn.config)
-	if err := gc.Get(); err != nil {
-		log.Printf("[gconfig] update error:%s\n", err.Error())
-	}
-	go gc.UpdateService(context.Background(), time.Minute)
+	//gc := config.NewGConfig(sn.config)
+	//if err := gc.Get(); err != nil {
+	//	log.Printf("[gconfig] update error:%s\n", err.Error())
+	//}
+	//go gc.UpdateService(context.Background(), time.Minute)
 
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
-	statistics.DefaultStat.TokenQueueLen = gc.MaxConn
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(200, time.Second*10, time.Millisecond*10)
+	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
-	// 每次更新重置utp
-	gc.OnUpdate = func(c config.Gcfg) {
-		//utp = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
-		log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
-		//wh = NewWriteHandler(sn, utp)
-		//wh.Run()
-		os.Exit(0)
-	}
+	//// 每次更新重置utp
+	//gc.OnUpdate = func(c config.Gcfg) {
+	//	//utp = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
+	//	log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
+	//	//wh = NewWriteHandler(sn, utp)
+	//	//wh.Run()
+	//	os.Exit(0)
+	//}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 	wh = NewWriteHandler(sn, utp)
@@ -202,6 +200,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 
 	statistics.DefaultStat.AvailableTokenNumber = pool.FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
+	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
