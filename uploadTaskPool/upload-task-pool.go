@@ -14,7 +14,7 @@ import (
 )
 
 type UploadTaskPool struct {
-	Tkc               chan *Token   `json:"tkc"`
+	tkc               chan *Token
 	TTL               time.Duration `json:"ttl"`
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
@@ -25,27 +25,29 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	if size == 0 {
 		size = 300
 	}
-	if fillInterval == 0 {
-		fillInterval = 10
-	}
-	if ttl == 0 {
-		ttl = 10
-	}
 
 	upt := new(UploadTaskPool)
 
 	//upt.tb = NewTokenBucket(size, ttl*time.Second)
-	upt.Tkc = make(chan *Token, size)
+	upt.tkc = make(chan *Token, size)
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
 
 	upt.Load()
+
+	if upt.FillTokenInterval == 0 {
+		upt.FillTokenInterval = 10
+	}
+	if upt.TTL == 0 {
+		upt.TTL = 10
+	}
+
 	return upt
 }
 
 func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
 	select {
-	case tk := <-upt.Tkc:
+	case tk := <-upt.tkc:
 		tk.Reset()
 		tk.PID = pid
 
@@ -74,7 +76,7 @@ func (upt *UploadTaskPool) FillToken() {
 
 		tk := NewToken()
 		tk.Reset()
-		upt.Tkc <- tk
+		upt.tkc <- tk
 	}
 }
 
@@ -106,7 +108,7 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 }
 
 func (upt *UploadTaskPool) FreeTokenLen() int {
-	return len(upt.Tkc)
+	return len(upt.tkc)
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
@@ -133,7 +135,11 @@ func (upt *UploadTaskPool) Save() {
 	defer fl.Close()
 
 	ec := json.NewEncoder(fl)
-	ec.Encode(upt)
+	err = ec.Encode(upt)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func (upt *UploadTaskPool) Load() {
@@ -145,7 +151,9 @@ func (upt *UploadTaskPool) Load() {
 	defer fl.Close()
 
 	ec := json.NewDecoder(fl)
-	if err = ec.Decode(upt); err != nil {
-		log.Printf("[utp]读取历史记录成功 %v \n", upt)
+	if err := ec.Decode(upt); err != nil {
+		log.Printf("[utp]读取历史记录失败 %v \n", err)
+		return
 	}
+	log.Printf("[utp]读取历史记录成功 %v \n", upt)
 }
