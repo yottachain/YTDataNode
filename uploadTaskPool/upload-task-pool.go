@@ -88,7 +88,7 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 	go func() {
 		for {
 			// 每10分钟衰减一次 token
-			decreaseTd := time.Second * 10
+			decreaseTd := time.Minute * 5
 			<-time.After(decreaseTd)
 			sentTokenN := atomic.LoadInt64(&upt.sentToken)
 			requestCountN := atomic.LoadInt64(&upt.requestCount)
@@ -101,13 +101,13 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 	}()
 	go func() {
 		for {
-			increaseTd := time.Second * 30
+			increaseTd := time.Minute * 30
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			sentTokenN := atomic.LoadInt64(&upt.sentToken)
 			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if sentTokenN-requestCountN < sentTokenN*19/20 {
+			if (sentTokenN - requestCountN) < sentTokenN*19/20 {
 				log.Printf("[token] 触发token增加 [%d,%d] \n", sentTokenN, requestCountN)
 				upt.ChangeTKFillInterval(upt.FillTokenInterval - (upt.FillTokenInterval / 5))
 			}
