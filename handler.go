@@ -194,7 +194,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("token check fail：", tk.String())
 		return 105
 	}
-	defer wh.Upt.Delete(tk)
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
 	//	// 获取BP公钥
@@ -224,6 +223,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	log.Println("return msg", 0)
 
 	// 成功计数
+	defer wh.Upt.Delete(tk)
 	statistics.DefaultStat.AddSaveSuccessCount()
 	return 0
 }

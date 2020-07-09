@@ -15,7 +15,7 @@ type Stat struct {
 	SentToken            uint64        `json:"SentToken"`
 	UseKvDb              bool          `json:"UseKvDb"`
 	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
-	UpTime               time.Time     `json:"UpTime"`
+	UpTime               int64         `json:"UpTime"`
 	sync.RWMutex
 }
 
@@ -62,7 +62,7 @@ func (s *Stat) String() string {
 var DefaultStat Stat
 
 func InitDefaultStat() {
-	DefaultStat.UpTime = time.Now()
+	DefaultStat.UpTime = time.Now().Unix()
 
 	//go func() {
 	//	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)

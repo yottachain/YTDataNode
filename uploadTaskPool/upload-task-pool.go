@@ -63,6 +63,9 @@ func (upt *UploadTaskPool) Check(tk *Token) bool {
 }
 
 func (upt *UploadTaskPool) Delete(tk *Token) bool {
+	if atomic.LoadInt64(&upt.sentToken) < 1 {
+		return false
+	}
 	atomic.AddInt64(&upt.sentToken, -1)
 	return false
 }
