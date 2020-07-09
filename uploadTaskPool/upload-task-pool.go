@@ -18,6 +18,7 @@ type UploadTaskPool struct {
 	TTL               time.Duration `json:"ttl"`
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
+	requestCount      int64
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
@@ -66,7 +67,7 @@ func (upt *UploadTaskPool) Delete(tk *Token) bool {
 	if atomic.LoadInt64(&upt.sentToken) < 1 {
 		return false
 	}
-	atomic.AddInt64(&upt.sentToken, -1)
+	atomic.AddInt64(&upt.requestCount, 1)
 	return false
 }
 
@@ -87,23 +88,27 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 	go func() {
 		for {
 			// 每10分钟衰减一次 token
-			decreaseTd := time.Minute * 10
+			decreaseTd := time.Second * 10
 			<-time.After(decreaseTd)
+			sentTokenN := atomic.LoadInt64(&upt.sentToken)
+			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
-			if atomic.LoadInt64(&upt.sentToken) > int64(decreaseTd/upt.FillTokenInterval*3/20) {
-				log.Printf("[token] 触发token减少 未消耗token %d\n", atomic.LoadInt64(&upt.sentToken))
+			if (sentTokenN - requestCountN) > sentTokenN*3/20 {
+				log.Printf("[token] 触发token减少 [%d,%d] \n", sentTokenN, requestCountN)
 				upt.ChangeTKFillInterval(upt.FillTokenInterval + (upt.FillTokenInterval / 10))
 			}
 		}
 	}()
 	go func() {
 		for {
-			increaseTd := time.Hour
+			increaseTd := time.Second * 30
 			// 小时增加一次token
 			<-time.After(increaseTd)
+			sentTokenN := atomic.LoadInt64(&upt.sentToken)
+			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if atomic.LoadInt64(&upt.sentToken) < int64(increaseTd/upt.FillTokenInterval*19/20) {
-				log.Printf("[token] 触发token增加 未消耗token %d\n", atomic.LoadInt64(&upt.sentToken))
+			if sentTokenN-requestCountN < sentTokenN*19/20 {
+				log.Printf("[token] 触发token增加 [%d,%d] \n", sentTokenN, requestCountN)
 				upt.ChangeTKFillInterval(upt.FillTokenInterval - (upt.FillTokenInterval / 5))
 			}
 		}
@@ -123,6 +128,7 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	}
 	utp.FillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
+	atomic.StoreInt64(&utp.requestCount, 0)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
