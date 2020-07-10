@@ -24,7 +24,7 @@ type UploadTaskPool struct {
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
 	// 默认值
 	if size == 0 {
-		size = 300
+		size = 500
 	}
 
 	upt := new(UploadTaskPool)
