@@ -30,7 +30,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt := new(UploadTaskPool)
 
 	//upt.tb = NewTokenBucket(size, ttl*time.Second)
-	upt.tkc = make(chan *Token, size)
+	upt.tkc = make(chan *Token, time.Second/fillInterval)
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
 
@@ -129,6 +129,7 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	utp.FillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
 	atomic.StoreInt64(&utp.requestCount, 0)
+	utp.tkc = make(chan *Token, time.Second/duration)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
