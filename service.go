@@ -41,7 +41,7 @@ func (sn *storageNode) Service() {
 	//}
 	//go gc.UpdateService(context.Background(), time.Minute)
 
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(200, time.Second*10, time.Millisecond*10)
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(500, time.Second*10, time.Millisecond*10)
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
 	//// 每次更新重置utp
