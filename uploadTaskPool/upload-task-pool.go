@@ -129,7 +129,11 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	utp.FillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
 	atomic.StoreInt64(&utp.requestCount, 0)
-	utp.tkc = make(chan *Token, time.Second/duration)
+	size := time.Second / duration * 10
+	if size > 500 {
+		size = 500
+	}
+	utp.tkc = make(chan *Token, size)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
@@ -166,4 +170,8 @@ func (upt *UploadTaskPool) Load() {
 		return
 	}
 	log.Printf("[utp]读取历史记录成功 %v \n", upt)
+}
+
+func (upt *UploadTaskPool) GetParams() (int64, int64) {
+	return atomic.LoadInt64(&upt.sentToken), atomic.LoadInt64(&upt.requestCount)
 }
