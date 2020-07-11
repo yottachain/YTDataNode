@@ -7,15 +7,17 @@ import (
 )
 
 type Stat struct {
-	SaveRequestCount     uint64        `json:"SaveRequestCount"`
-	SaveSuccessCount     uint64        `json:"SaveSuccessCount"`
+	SaveRequestCount     int64         `json:"SaveRequestCount"`
+	SaveSuccessCount     int64         `json:"SaveSuccessCount"`
 	YTFSErrorCount       uint64        `json:"ytfs_error_count"`
 	TokenQueueLen        int           `json:"TokenQueueLen"`
 	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
-	SentToken            uint64        `json:"SentToken"`
+	SentToken            int64         `json:"SentToken"`
 	UseKvDb              bool          `json:"UseKvDb"`
 	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
 	UpTime               int64         `json:"UpTime"`
+	AvgrageToken         int64         `json:'AvgrageToken'`
+	ReportCount          int64
 	sync.RWMutex
 }
 

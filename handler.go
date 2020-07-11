@@ -138,7 +138,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	} else {
 		statistics.DefaultStat.Lock()
 		defer statistics.DefaultStat.Unlock()
-		statistics.DefaultStat.SentToken++
+		statistics.DefaultStat.AvgrageToken++
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
@@ -173,8 +173,6 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 }
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
-	// 计数
-	statistics.DefaultStat.AddSaveRequestCount()
 
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
@@ -224,7 +222,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 	// 成功计数
 	defer wh.Upt.Delete(tk)
-	statistics.DefaultStat.AddSaveSuccessCount()
 	return 0
 }
 
