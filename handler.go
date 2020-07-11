@@ -136,6 +136,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	if res.AllocId == "" {
 		res.Writable = false
 	} else {
+		statistics.DefaultStat.Lock()
+		defer statistics.DefaultStat.Unlock()
+		statistics.DefaultStat.AvgrageToken++
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {

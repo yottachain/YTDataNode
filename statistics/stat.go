@@ -16,6 +16,8 @@ type Stat struct {
 	UseKvDb              bool          `json:"UseKvDb"`
 	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
 	UpTime               int64         `json:"UpTime"`
+	AvgrageToken         int64         `json:'AvgrageToken'`
+	ReportCount          int64
 	sync.RWMutex
 }
 
