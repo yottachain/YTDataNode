@@ -80,6 +80,18 @@ func AddCounnectCount(id peer.ID) {
 	}
 }
 
+func SubCounnectCount(id peer.ID) {
+	ConnectMapMux.Lock()
+	defer ConnectMapMux.Unlock()
+
+	if _, ok := ConnectCountMap[id]; ok {
+		ConnectCountMap[id]--
+		if ConnectCountMap[id] <= 0 {
+			delete(ConnectCountMap, id)
+		}
+	}
+}
+
 func GetConnectionNumber() int {
 	ConnectMapMux.Lock()
 	defer ConnectMapMux.Unlock()

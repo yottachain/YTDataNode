@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
@@ -129,6 +130,7 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	utp.FillTokenInterval = duration
 	atomic.StoreInt64(&utp.sentToken, 0)
 	atomic.StoreInt64(&utp.requestCount, 0)
+	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
 	size := time.Second / duration * 10
 	if size > 500 {
 		size = 500
