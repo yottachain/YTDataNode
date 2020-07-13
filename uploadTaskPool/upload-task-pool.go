@@ -133,7 +133,6 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	if size > 500 {
 		size = 500
 	}
-	utp.tkc = make(chan *Token, size)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
