@@ -131,6 +131,7 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	atomic.StoreInt64(&utp.sentToken, 0)
 	atomic.StoreInt64(&utp.requestCount, 0)
 	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+	statistics.DefaultStat.Mean()
 	size := time.Second / duration * 10
 	if size > 500 {
 		size = 500
