@@ -207,6 +207,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
 	statistics.DefaultStat.Unlock()
+	statistics.DefaultStat.Mean()
 
 	pool.Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
