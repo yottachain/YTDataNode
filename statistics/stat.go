@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"encoding/json"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"sync"
 	"time"
 )
@@ -16,6 +17,7 @@ type Stat struct {
 	UseKvDb              bool          `json:"UseKvDb"`
 	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
 	UpTime               int64         `json:"UpTime"`
+	Connection           int           `json:"Connection"`
 	AverageToken         int64         `json:"AverageToken"`
 	SentTokenNum         int64
 	ReportTime           time.Time
@@ -64,6 +66,26 @@ func (s *Stat) Mean() {
 }
 
 var DefaultStat Stat
+var ConnectCountMap = make(map[peer.ID]int)
+var ConnectMapMux = &sync.Mutex{}
+
+func AddCounnectCount(id peer.ID) {
+	ConnectMapMux.Lock()
+	defer ConnectMapMux.Unlock()
+
+	if _, ok := ConnectCountMap[id]; ok {
+		ConnectCountMap[id]++
+	} else {
+		ConnectCountMap[id] = 0
+	}
+}
+
+func GetConnectionNumber() int {
+	ConnectMapMux.Lock()
+	defer ConnectMapMux.Unlock()
+
+	return len(ConnectCountMap)
+}
 
 func InitDefaultStat() {
 	DefaultStat.UpTime = time.Now().Unix()
