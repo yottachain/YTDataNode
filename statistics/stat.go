@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"encoding/json"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"sync"
 	"time"
 )
@@ -16,22 +17,11 @@ type Stat struct {
 	UseKvDb              bool          `json:"UseKvDb"`
 	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
 	UpTime               int64         `json:"UpTime"`
-	AvgrageToken         int64         `json:'AvgrageToken'`
-	ReportCount          int64
+	Connection           int           `json:"Connection"`
+	AverageToken         int64         `json:"AverageToken"`
+	SentTokenNum         int64
+	ReportTime           time.Time
 	sync.RWMutex
-}
-
-func (s *Stat) AddSaveRequestCount() {
-	s.Lock()
-	defer s.Unlock()
-
-	s.SaveRequestCount = s.SaveRequestCount + 1
-}
-func (s *Stat) AddSaveSuccessCount() {
-	s.Lock()
-	defer s.Unlock()
-
-	s.SaveSuccessCount = s.SaveSuccessCount + 1
 }
 
 func (s *Stat) JsonEncode() []byte {
@@ -60,11 +50,46 @@ func (s *Stat) String() string {
 
 	return res
 }
+func (s *Stat) Mean() {
+	s.Lock()
+	defer s.Unlock()
+
+	td := int64(time.Now().Sub(s.ReportTime).Seconds())
+	if td <= 0 {
+		return
+	}
+
+	s.AverageToken = s.SentTokenNum / td
+
+	s.SentTokenNum = 0
+	s.ReportTime = time.Now()
+}
 
 var DefaultStat Stat
+var ConnectCountMap = make(map[peer.ID]int)
+var ConnectMapMux = &sync.Mutex{}
+
+func AddCounnectCount(id peer.ID) {
+	ConnectMapMux.Lock()
+	defer ConnectMapMux.Unlock()
+
+	if _, ok := ConnectCountMap[id]; ok {
+		ConnectCountMap[id]++
+	} else {
+		ConnectCountMap[id] = 0
+	}
+}
+
+func GetConnectionNumber() int {
+	ConnectMapMux.Lock()
+	defer ConnectMapMux.Unlock()
+
+	return len(ConnectCountMap)
+}
 
 func InitDefaultStat() {
 	DefaultStat.UpTime = time.Now().Unix()
+	DefaultStat.ReportTime = time.Now()
 
 	//go func() {
 	//	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)

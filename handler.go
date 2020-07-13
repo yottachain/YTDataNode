@@ -138,7 +138,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	} else {
 		statistics.DefaultStat.Lock()
 		defer statistics.DefaultStat.Unlock()
-		statistics.DefaultStat.AvgrageToken++
+		statistics.DefaultStat.SentTokenNum++
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
@@ -150,6 +150,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte) []byte {
+	statistics.DefaultStat.Lock()
+	statistics.DefaultStat.SaveRequestCount++
+	statistics.DefaultStat.Unlock()
+
 	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)

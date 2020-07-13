@@ -203,10 +203,10 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
-	statistics.DefaultStat.ReportCount++
-	statistics.DefaultStat.AvgrageToken = statistics.DefaultStat.AvgrageToken / statistics.DefaultStat.ReportCount
-	statistics.DefaultStat.ReportCount = 1
+	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
 	statistics.DefaultStat.Unlock()
+	statistics.DefaultStat.Mean()
+
 	pool.Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
