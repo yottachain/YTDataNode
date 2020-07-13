@@ -14,8 +14,6 @@ func TestStat_AddSaveRequestCount(t *testing.T) {
 			return
 		default:
 			<-time.After(time.Millisecond * 100)
-			go DefaultStat.AddSaveRequestCount()
-			go DefaultStat.AddSaveRequestCount()
 		}
 	}
 }

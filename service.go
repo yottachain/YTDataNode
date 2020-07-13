@@ -60,6 +60,8 @@ func (sn *storageNode) Service() {
 		return wh.GetToken(data, head.RemotePeerID), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		statistics.AddCounnectCount(head.RemotePeerID)
+		defer statistics.SubCounnectCount(head.RemotePeerID)
 		return wh.Handle(data), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
