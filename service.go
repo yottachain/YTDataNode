@@ -117,10 +117,10 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSelfVarifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		cfs := confirmSlice.ConfirmSler{sn}
-		resp:=cfs.ConfirmSlice()
-		return append(message.MsgIDSelfVarifyResp.Bytes(), resp...), nil
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		vfs := verifySlice.VerifySler{sn}
+		resp:=vfs.VerifySlice()
+		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
 	})
 
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {

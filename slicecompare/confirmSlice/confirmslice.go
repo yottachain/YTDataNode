@@ -1,4 +1,4 @@
-package confirmSlice
+package verifySlice
 
 import (
 	"bytes"
@@ -19,24 +19,24 @@ import (
 	"unsafe"
 )
 
-var VarifyedNumFile string = "/gc/n_file"
+var VerifyedNumFile string = "/gc/n_file"
 var hash1Str = "1111111111111111"
 var hash0Str = "0000000000000000"
 
-type ConfirmSler struct {
+type VerifySler struct {
 	sni.StorageNode
 }
 
 func init(){
 	slicecompare.InitDir(slicecompare.SliceCompareDir)
-	slicecompare.ForInit(VarifyedNumFile,"0")
+	slicecompare.ForInit(VerifyedNumFile,"0")
 }
 
-func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.File) (uint64,uint64) {
+func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.File) (uint64,uint64) {
 	var i uint64
 	var errCount uint64
 	var indexKey [16]byte
-	var varifyedItem = start_Item
+	var verifyedItem = start_Item
 	n_Rangeth := start_Item/m                 //range zoom index
 	m_Itermth := start_Item%m
 	buf := make([]byte,20,20)
@@ -45,7 +45,7 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 		log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
 		if n_Rangeth > (n + 1) {
 			log.Println("[confirmslice] all hash in indexdb has verified, will to return!")
-			slicecompare.SaveValueToFile(strconv.FormatUint(0, 10), VarifyedNumFile)
+			slicecompare.SaveValueToFile(strconv.FormatUint(0, 10), VerifyedNumFile)
 			goto OUT
 		}
 
@@ -56,11 +56,11 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 				pos = pos + 20*i
 				begin = false
 			}
-			varifyedItem++
-			if varifyedItem >= start_Item+1000 {
+			verifyedItem++
+			if verifyedItem >= start_Item+1000 {
 
 				log.Println("[confirmslice] Has verified 1000 item, will to return!")
-				slicecompare.SaveValueToFile(strconv.FormatUint(varifyedItem, 10), VarifyedNumFile)
+				slicecompare.SaveValueToFile(strconv.FormatUint(verifyedItem, 10), VerifyedNumFile)
 				goto OUT
 			}
 
@@ -77,7 +77,7 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 				continue
 			}
 
-			resData, err := cfs.YTFS().Get(indexKey)
+			resData, err := vfs.YTFS().Get(indexKey)
 			if err != nil {
 				log.Println("[confirmslice] error:", err, " VHF:", base58.Encode(indexKey[:]))
 				continue
@@ -95,11 +95,11 @@ func (cfs *ConfirmSler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.
 		n_Rangeth++
 	}
 OUT:
-	return varifyedItem,errCount
+	return verifyedItem,errCount
 }
 
-func (cfs *ConfirmSler)ConfirmSlice() []byte{
-	var resp message.SelfVarifyResp
+func (vfs *VerifySler)VerifySlice() []byte{
+	var resp message.SelfVerifyResp
 	cfg,err := config.ReadConfig()
 	dir := util.GetYTFSPath()
 	fileName := path.Join(dir, "index.db")
@@ -130,9 +130,9 @@ func (cfs *ConfirmSler)ConfirmSlice() []byte{
 	h := uint64(header.HashOffset)
 	n := uint64(header.RangeCapacity)
     m := uint64(header.RangeCoverage)
-    str_pos,_ := slicecompare.GetValueFromFile(VarifyedNumFile)
+    str_pos,_ := slicecompare.GetValueFromFile(VerifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
-    varyfiedNum,errCount := cfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
+    varyfiedNum,errCount := vfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
     resp.Numth = strconv.FormatUint(varyfiedNum,10)
     resp.ErrNum = strconv.FormatUint(errCount,10)
     resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)

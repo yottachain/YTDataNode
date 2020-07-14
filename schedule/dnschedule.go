@@ -85,7 +85,7 @@ func main(){
 }
 
 func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint) {
-	var respMsg message.SelfVarifyResp
+	var respMsg message.SelfVerifyResp
 
 	ctx,cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeout))
 	defer cancel()
@@ -97,7 +97,7 @@ func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint)
 		return
 	}
 
-	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVarifyReq.Value(), []byte("111111111111111")); err != nil {
+	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVerifyReq.Value(), []byte("111111111111111")); err != nil {
 		loger.Println("sendmsg error:",err)
 	} else {
 		loger.Println("res:",res)
