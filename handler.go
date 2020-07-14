@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -113,6 +114,7 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
+	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
@@ -136,9 +138,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	if res.AllocId == "" {
 		res.Writable = false
 	} else {
-		statistics.DefaultStat.Lock()
-		defer statistics.DefaultStat.Unlock()
-		statistics.DefaultStat.SentTokenNum++
+		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {

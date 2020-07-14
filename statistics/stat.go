@@ -21,6 +21,7 @@ type Stat struct {
 	AverageToken         int64         `json:"AverageToken"`
 	SentTokenNum         int64
 	ReportTime           time.Time
+	RequestToken         int64
 	sync.RWMutex
 }
 
