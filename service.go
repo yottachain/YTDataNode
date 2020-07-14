@@ -57,7 +57,7 @@ func (sn *storageNode) Service() {
 
 	wh = NewWriteHandler(sn, utp)
 
-	fmt.Println("delete compareslice test!!")
+	log.Println("delete compareslice test!!")
 	//sc := slicecompare.NewSliceComparer()
 	//tmp_db, err := sc.OpenLevelDB(sc.File_TmpDB)
 
@@ -180,6 +180,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
+			fmt.Println("delete compareslice test")
 			Report(sn, rce, utp)
 			time.Sleep(time.Second * 60)
 		}
