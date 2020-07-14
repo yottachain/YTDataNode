@@ -20,7 +20,6 @@ import (
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-	"github.com/yottachain/YTDataNode/slicecompare"
 	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
@@ -58,13 +57,15 @@ func (sn *storageNode) Service() {
 
 	wh = NewWriteHandler(sn, utp)
 
-	sc := slicecompare.NewSliceComparer()
-	tmp_db, err := sc.OpenLevelDB(sc.File_TmpDB)
-    if err != nil {
-    	log.Println(err)
-    	return
-	}
-	wh.db = tmp_db
+	fmt.Println("delete compareslice test!!")
+	//sc := slicecompare.NewSliceComparer()
+	//tmp_db, err := sc.OpenLevelDB(sc.File_TmpDB)
+
+    //if err != nil {
+    //	log.Println(err)
+    //	return
+	//}
+	//wh.db = tmp_db
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -184,47 +185,47 @@ func (sn *storageNode) Service() {
 		}
 	}()
 
-	go func(){
-		return
-		 for {
-				<-time.After(60 * time.Second)
-            	for{
-					nextidtodownld, _ := slicecompare.GetValueFromFile(sc.NextIdxFile)
-					downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
-					downloadrq, _ := proto.Marshal(downloadsnlist)
-					bpindex := sn.GetBP()
-            		if msgresp, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil{
-				     	log.Println("[slicecompare] SendBPMsg error:", err)
-			    	}else{
-						log.Println("[slicecompare] hash list recieved")
-				     	msgData := msgresp[2:]
-					 	var msg message.ListDNIResp
-					 	var err error
-
-					 	if err = proto.Unmarshal(msgData, &msg); err != nil {
-						 	log.Println(err)
-					 	}
-
-					if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
-						 log.Println(err)
-					}
-					 if len(msg.Vnflist)/22 < 1000{
-						 break
-					 }
-			    }
-			}
-		}
-	}()
-
-	go func() {
-		return
-		for {
-			<-time.After(180 * time.Second)
-			if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
-				log.Println("error:", err)
-			}
-		}
-	}()
+	//go func(){
+	//	return
+	//	 for {
+	//			<-time.After(60 * time.Second)
+    //        	for{
+	//				nextidtodownld, _ := slicecompare.GetValueFromFile(sc.NextIdxFile)
+	//				downloadsnlist := &message.ListDNIReq{Nextid: nextidtodownld, Count: sc.Entrycountdownld}
+	//				downloadrq, _ := proto.Marshal(downloadsnlist)
+	//				bpindex := sn.GetBP()
+    //        		if msgresp, err := sn.SendBPMsg(bpindex, message.MsgIDListDNIReq.Value(), downloadrq); err != nil{
+	//			     	log.Println("[slicecompare] SendBPMsg error:", err)
+	//		    	}else{
+	//					log.Println("[slicecompare] hash list recieved")
+	//			     	msgData := msgresp[2:]
+	//				 	var msg message.ListDNIResp
+	//				 	var err error
+	//
+	//				 	if err = proto.Unmarshal(msgData, &msg); err != nil {
+	//					 	log.Println(err)
+	//				 	}
+	//
+	//				if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
+	//					 log.Println(err)
+	//				}
+	//				 if len(msg.Vnflist)/22 < 1000{
+	//					 break
+	//				 }
+	//		    }
+	//		}
+	//	}
+	//}()
+	//
+	//go func() {
+	//	return
+	//	for {
+	//		<-time.After(180 * time.Second)
+	//		if err := sc.SaveEntryInDBToDel(tmp_db, sc.File_ToDelDB,sc.CompareTimes); err != nil {
+	//			log.Println("error:", err)
+	//		}
+	//	}
+	//}()
 }
 
 var first = true
