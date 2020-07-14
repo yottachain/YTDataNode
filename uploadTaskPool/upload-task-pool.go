@@ -10,9 +10,41 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
+	"sync"
 	"sync/atomic"
 	"time"
 )
+
+type delayStat struct {
+	D time.Duration
+	C int64
+	sync.RWMutex
+}
+
+func (s *delayStat) Avg() time.Duration {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.C == 0 {
+		return 0
+	}
+	defer func() {
+		s.C = 1
+	}()
+	return s.D / time.Duration(s.C)
+}
+
+func (s *delayStat) Add(duration time.Duration) {
+	s.Lock()
+	defer s.Unlock()
+
+	s.D += duration
+	s.C++
+}
+
+func NewStat() *delayStat {
+	return &delayStat{}
+}
 
 type UploadTaskPool struct {
 	tkc               chan *Token
@@ -20,6 +52,7 @@ type UploadTaskPool struct {
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
 	requestCount      int64
+	Delay             *delayStat
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
@@ -34,6 +67,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt.tkc = make(chan *Token, time.Second/fillInterval)
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
+	upt.Delay = NewStat()
 
 	upt.Load()
 
@@ -69,6 +103,7 @@ func (upt *UploadTaskPool) Delete(tk *Token) bool {
 		return false
 	}
 	atomic.AddInt64(&upt.requestCount, 1)
+	upt.Delay.Add(time.Now().Sub(tk.Tm))
 	return false
 }
 

@@ -22,6 +22,7 @@ type Stat struct {
 	SentTokenNum         int64
 	ReportTime           time.Time
 	RequestToken         int64
+	Delay                int64
 	sync.RWMutex
 }
 
