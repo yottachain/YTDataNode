@@ -180,12 +180,12 @@ message ListDNIResp{
 }
 
 //msgid = 0xd97a
-message SelfVarifyReq{
+message SelfVerifyReq{
     string  id =1;
 }
 
 //msgid = 0x58b7
-message SelfVarifyResp{
+message SelfVerifyResp{
     string  id =1;
     string  Numth =2;
     string  errNum =3;

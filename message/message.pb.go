@@ -1363,39 +1363,39 @@ func (m *ListDNIResp) GetNextid() string {
 }
 
 //msgid = 0xd97a
-type SelfVarifyReq struct {
+type SelfVerifyReq struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *SelfVarifyReq) Reset()         { *m = SelfVarifyReq{} }
-func (m *SelfVarifyReq) String() string { return proto.CompactTextString(m) }
-func (*SelfVarifyReq) ProtoMessage()    {}
-func (*SelfVarifyReq) Descriptor() ([]byte, []int) {
+func (m *SelfVerifyReq) Reset()         { *m = SelfVerifyReq{} }
+func (m *SelfVerifyReq) String() string { return proto.CompactTextString(m) }
+func (*SelfVerifyReq) ProtoMessage()    {}
+func (*SelfVerifyReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_33c57e4bae7b9afd, []int{24}
 }
 
-func (m *SelfVarifyReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SelfVarifyReq.Unmarshal(m, b)
+func (m *SelfVerifyReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SelfVerifyReq.Unmarshal(m, b)
 }
-func (m *SelfVarifyReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SelfVarifyReq.Marshal(b, m, deterministic)
+func (m *SelfVerifyReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SelfVerifyReq.Marshal(b, m, deterministic)
 }
-func (m *SelfVarifyReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SelfVarifyReq.Merge(m, src)
+func (m *SelfVerifyReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SelfVerifyReq.Merge(m, src)
 }
-func (m *SelfVarifyReq) XXX_Size() int {
-	return xxx_messageInfo_SelfVarifyReq.Size(m)
+func (m *SelfVerifyReq) XXX_Size() int {
+	return xxx_messageInfo_SelfVerifyReq.Size(m)
 }
-func (m *SelfVarifyReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_SelfVarifyReq.DiscardUnknown(m)
+func (m *SelfVerifyReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_SelfVerifyReq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_SelfVarifyReq proto.InternalMessageInfo
+var xxx_messageInfo_SelfVerifyReq proto.InternalMessageInfo
 
-func (m *SelfVarifyReq) GetId() string {
+func (m *SelfVerifyReq) GetId() string {
 	if m != nil {
 		return m.Id
 	}
@@ -1403,7 +1403,7 @@ func (m *SelfVarifyReq) GetId() string {
 }
 
 //msgid = 0x58b7
-type SelfVarifyResp struct {
+type SelfVerifyResp struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Numth                string   `protobuf:"bytes,2,opt,name=Numth,proto3" json:"Numth,omitempty"`
 	ErrNum               string   `protobuf:"bytes,3,opt,name=errNum,proto3" json:"errNum,omitempty"`
@@ -1412,46 +1412,46 @@ type SelfVarifyResp struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *SelfVarifyResp) Reset()         { *m = SelfVarifyResp{} }
-func (m *SelfVarifyResp) String() string { return proto.CompactTextString(m) }
-func (*SelfVarifyResp) ProtoMessage()    {}
-func (*SelfVarifyResp) Descriptor() ([]byte, []int) {
+func (m *SelfVerifyResp) Reset()         { *m = SelfVerifyResp{} }
+func (m *SelfVerifyResp) String() string { return proto.CompactTextString(m) }
+func (*SelfVerifyResp) ProtoMessage()    {}
+func (*SelfVerifyResp) Descriptor() ([]byte, []int) {
 	return fileDescriptor_33c57e4bae7b9afd, []int{25}
 }
 
-func (m *SelfVarifyResp) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SelfVarifyResp.Unmarshal(m, b)
+func (m *SelfVerifyResp) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SelfVerifyResp.Unmarshal(m, b)
 }
-func (m *SelfVarifyResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SelfVarifyResp.Marshal(b, m, deterministic)
+func (m *SelfVerifyResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SelfVerifyResp.Marshal(b, m, deterministic)
 }
-func (m *SelfVarifyResp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SelfVarifyResp.Merge(m, src)
+func (m *SelfVerifyResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SelfVerifyResp.Merge(m, src)
 }
-func (m *SelfVarifyResp) XXX_Size() int {
-	return xxx_messageInfo_SelfVarifyResp.Size(m)
+func (m *SelfVerifyResp) XXX_Size() int {
+	return xxx_messageInfo_SelfVerifyResp.Size(m)
 }
-func (m *SelfVarifyResp) XXX_DiscardUnknown() {
-	xxx_messageInfo_SelfVarifyResp.DiscardUnknown(m)
+func (m *SelfVerifyResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_SelfVerifyResp.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_SelfVarifyResp proto.InternalMessageInfo
+var xxx_messageInfo_SelfVerifyResp proto.InternalMessageInfo
 
-func (m *SelfVarifyResp) GetId() string {
+func (m *SelfVerifyResp) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *SelfVarifyResp) GetNumth() string {
+func (m *SelfVerifyResp) GetNumth() string {
 	if m != nil {
 		return m.Numth
 	}
 	return ""
 }
 
-func (m *SelfVarifyResp) GetErrNum() string {
+func (m *SelfVerifyResp) GetErrNum() string {
 	if m != nil {
 		return m.ErrNum
 	}
@@ -1651,8 +1651,8 @@ func init() {
 	proto.RegisterType((*MultiTaskOpResult)(nil), "message.MultiTaskOpResult")
 	proto.RegisterType((*ListDNIReq)(nil), "message.ListDNIReq")
 	proto.RegisterType((*ListDNIResp)(nil), "message.ListDNIResp")
-	proto.RegisterType((*SelfVarifyReq)(nil), "message.SelfVarifyReq")
-	proto.RegisterType((*SelfVarifyResp)(nil), "message.SelfVarifyResp")
+	proto.RegisterType((*SelfVerifyReq)(nil), "message.SelfVerifyReq")
+	proto.RegisterType((*SelfVerifyResp)(nil), "message.SelfVerifyResp")
 	proto.RegisterType((*DownloadYTFSFile)(nil), "message.DownloadYTFSFile")
 	proto.RegisterType((*UploadShardRequestTest)(nil), "message.UploadShardRequestTest")
 }
@@ -1722,13 +1722,13 @@ var fileDescriptor_33c57e4bae7b9afd = []byte{
 	0x7d, 0x0d, 0x60, 0xc6, 0x63, 0x38, 0x1e, 0x15, 0xaf, 0x05, 0x5f, 0xea, 0xca, 0x6b, 0x81, 0xc8,
 	0x24, 0x3a, 0xc1, 0x1e, 0xda, 0xdf, 0x01, 0x04, 0xe4, 0x5b, 0xd8, 0x2d, 0x6d, 0x55, 0x86, 0xeb,
 	0x28, 0xb9, 0xaf, 0x90, 0x2b, 0x60, 0xc5, 0xad, 0x5b, 0x75, 0x4b, 0x3e, 0x81, 0x4e, 0xc8, 0xe3,
-	0xfb, 0x5b, 0x26, 0xc5, 0xfd, 0x73, 0x7d, 0x7b, 0xb7, 0x0c, 0x5f, 0x32, 0x86, 0xbd, 0xea, 0x81,
+	0xfb, 0x5b, 0x2e, 0xc5, 0xfd, 0x73, 0x7d, 0x7b, 0xb7, 0x0c, 0x5f, 0x32, 0x86, 0xbd, 0xea, 0x81,
 	0xda, 0x13, 0xd2, 0x2a, 0x46, 0x76, 0xbc, 0x98, 0xeb, 0x59, 0xf1, 0x8e, 0x21, 0x30, 0x01, 0xb9,
 	0x94, 0xe3, 0xc5, 0xdc, 0xde, 0x34, 0x8b, 0xc8, 0x4f, 0x70, 0x50, 0xbc, 0xa4, 0xdf, 0x5f, 0x9f,
 	0x87, 0xe7, 0x22, 0xc6, 0x47, 0x34, 0x61, 0x73, 0x6e, 0x7d, 0xa2, 0x6c, 0x46, 0x52, 0x71, 0xf9,
 	0xc8, 0xe5, 0x6a, 0x23, 0xad, 0x14, 0xc6, 0x62, 0xfa, 0xb3, 0xc8, 0xd0, 0x77, 0x93, 0xa2, 0x6c,
 	0x2a, 0xab, 0xc4, 0xb4, 0xb8, 0xc5, 0x4a, 0x4c, 0xc9, 0x9f, 0x0e, 0x1c, 0x6d, 0xfe, 0x73, 0x5d,
 	0xff, 0x67, 0xff, 0xbb, 0x0c, 0xb7, 0x30, 0xe6, 0x3c, 0xc3, 0x47, 0xa8, 0x43, 0x73, 0x70, 0xb7,
-	0x8d, 0xff, 0xb3, 0x5f, 0xfe, 0x15, 0x00, 0x00, 0xff, 0xff, 0x90, 0xa9, 0xaa, 0x60, 0xe0, 0x0a,
+	0x8d, 0xff, 0xb3, 0x5f, 0xfe, 0x15, 0x00, 0x00, 0xff, 0xff, 0xf1, 0x51, 0x9b, 0x9b, 0xe0, 0x0a,
 	0x00, 0x00,
 }
