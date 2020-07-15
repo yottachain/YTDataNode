@@ -3,13 +3,18 @@ package node
 import (
 	"context"
 	"fmt"
+
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"sync/atomic"
+
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
@@ -27,13 +32,15 @@ type WriteHandler struct {
 	StorageNode
 	Upt          *uploadTaskPool.UploadTaskPool
 	RequestQueue chan *wRequest
+	db           *leveldb.DB
 }
 
 func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
 	return &WriteHandler{
-		sn,
-		utp,
-		make(chan *wRequest, 1000),
+        sn,
+        utp,
+        make(chan *wRequest, 1000),
+        nil,
 	}
 }
 
@@ -62,14 +69,18 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		return fmt.Errorf("get error time out")
 	}
 }
+
 func (wh *WriteHandler) batchWrite(number int) {
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
 	for i := 0; i < number; i++ {
 		select {
 		case rq := <-wh.RequestQueue:
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
+			hashkey[i] = rq.Key[:]
 		default:
 			continue
 		}
@@ -88,6 +99,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 		statistics.DefaultStat.Unlock()
 	}
+	_, err = wh.YTFS().BatchPut(rqmap)
+	log.Printf("[ytfs]flush success:%d\n", number)
 
 	for _, rq := range rqs {
 		select {
@@ -167,6 +180,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
 		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+
 	}
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
