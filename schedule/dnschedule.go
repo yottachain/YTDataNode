@@ -3,23 +3,20 @@ package main
 import (
 	"encoding/json"
 	"flag"
-//	"fmt"
+	"os"
+	"strconv"
+	//	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	ma "github.com/multiformats/go-multiaddr"
-	"os"
-
-	//	"github.com/yottachain/YTAschedule/logger"
 	"github.com/yottachain/YTDataNode/message"
 	host "github.com/yottachain/YTHost"
 	"github.com/yottachain/YTHost/hostInterface"
 	"golang.org/x/net/context"
 	"io/ioutil"
-	"net/http"
-	"strconv"
-	"time"
 	"log"
+	"net/http"
+	"time"
 )
 
 var urlIP string
@@ -33,7 +30,7 @@ var loger *log.Logger
 type addrInfo struct {
 	DnNum	  uint32
 	NodeID    peer.ID
-	Addrs 	  []ma.Multiaddr
+	Addrs 	  []multiaddr.Multiaddr
 }
 
 func loginit() *log.Logger{
@@ -42,7 +39,7 @@ func loginit() *log.Logger{
 	if nil != err {
 		panic(err)
 	}
-	loger := log.New(logFile, "[varify]", log.LstdFlags|log.Lshortfile|log.LUTC)
+	loger := log.New(logFile, "[verify]", log.LstdFlags|log.Lshortfile|log.LUTC)
 	return loger
 }
 
@@ -121,10 +118,11 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 	}
 
 	buf,err:=ioutil.ReadAll(resp.Body)
+//	fmt.Println("buf:",buf)
 	defer resp.Body.Close()
 
 	type peerInfo struct {
-		IP string `json:"ip"`
+		IP []string `json:"ip"`
 		ID string `json:"id"`
 		NodeID string `json:"nodeid"`
 	}
@@ -135,6 +133,11 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 	if err != nil{
 		loger.Println("Unmarshal error:",err)
 	}
+
+//	fmt.Println("list:",list)
+//	for _,item := range list{
+//		fmt.Println("id:",item.ID," ip:",item.IP[0])
+//	}
 
 	if err != nil {
 		loger.Println(err.Error())
@@ -148,13 +151,11 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 			continue
 		}
 
-		ma,err := multiaddr.NewMultiaddr(item.IP)
+		ma,err := multiaddr.NewMultiaddr(item.IP[0])
 		if err != nil {
 			continue
 		}
-		//log.Println("NodeID:",item.NodeID,"item.IP",item.IP,"item.ID",item.ID)
-		//log.Println("nodeid:",nodeid,"ma:",ma,"dnnum:",item.ID)
-
+	
 		res = append(res,addrInfo{
 			uint32(id),
 			nodeid,
