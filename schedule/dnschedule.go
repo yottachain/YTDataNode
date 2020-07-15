@@ -97,7 +97,7 @@ func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint)
 	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVerifyReq.Value(), []byte("111111111111111")); err != nil {
 		loger.Println("sendmsg error:",err)
 	} else {
-		loger.Println("res:",res)
+//		loger.Println("res:",res)
 		err = proto.Unmarshal(res[2:],&respMsg)
 		if err != nil{
 			loger.Println("err:",err,"respMsg:",respMsg)
@@ -118,7 +118,6 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 	}
 
 	buf,err:=ioutil.ReadAll(resp.Body)
-//	fmt.Println("buf:",buf)
 	defer resp.Body.Close()
 
 	type peerInfo struct {
@@ -133,11 +132,6 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 	if err != nil{
 		loger.Println("Unmarshal error:",err)
 	}
-
-//	fmt.Println("list:",list)
-//	for _,item := range list{
-//		fmt.Println("id:",item.ID," ip:",item.IP[0])
-//	}
 
 	if err != nil {
 		loger.Println(err.Error())
@@ -155,7 +149,7 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 		if err != nil {
 			continue
 		}
-	
+
 		res = append(res,addrInfo{
 			uint32(id),
 			nodeid,
