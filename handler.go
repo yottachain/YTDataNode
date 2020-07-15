@@ -191,11 +191,13 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("token check error：", err.Error())
 		return 105
 	}
+	wh.Upt.NetLenticy.Add(time.Now().Sub(tk.Tm))
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", tk.String())
 		return 105
 	}
+
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
 	//	// 获取BP公钥
@@ -213,6 +215,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	// 3. 将数据写入YTFS-disk
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
+	putStartTime := time.Now()
 	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
@@ -225,6 +228,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	log.Println("return msg", 0)
 
 	// 成功计数
+	wh.Upt.DiskLenticy.Add(time.Now().Sub(putStartTime))
 	defer wh.Upt.Delete(tk)
 	return 0
 }

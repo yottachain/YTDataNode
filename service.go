@@ -206,7 +206,8 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.Delay = int64(pool.Delay.Avg())
+	statistics.DefaultStat.NetLenticy = int64(pool.NetLenticy.Avg())
+	statistics.DefaultStat.DiskLenticy = int64(pool.DiskLenticy.Avg())
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 
