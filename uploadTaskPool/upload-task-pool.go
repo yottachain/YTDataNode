@@ -52,8 +52,8 @@ type UploadTaskPool struct {
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
 	requestCount      int64
-	NetLenticy        *delayStat
-	DiskLenticy       *delayStat
+	NetLatency        *delayStat
+	DiskLatency       *delayStat
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
@@ -68,8 +68,8 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt.tkc = make(chan *Token, time.Second/fillInterval)
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
-	upt.NetLenticy = NewStat()
-	upt.DiskLenticy = NewStat()
+	upt.NetLatency = NewStat()
+	upt.DiskLatency = NewStat()
 
 	upt.Load()
 
