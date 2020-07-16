@@ -113,7 +113,9 @@ func main(){
 	for {
 		tb,err:=ti.GetNoNilTableBytes()
 		if err !=nil {
-			log.Println("get Table from indexdb err: ", err)
+			if err.Error() != "table_end"{
+				log.Println("get Table from indexdb err: ", err)
+			}
 			break
 		}
 
