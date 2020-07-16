@@ -2,6 +2,7 @@ package node
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
@@ -105,43 +106,43 @@ func (sn *storageNode) Service() {
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
-	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
-	//	go func(data []byte) {
-	//		var msg message.MultiTaskDescription
-	//		if err := proto.Unmarshal(data, &msg); err != nil {
-	//			log.Println("[recover error]", err)
-	//		}
-	//		for _, v := range msg.Tasklist {
-	//			if bytes.Equal(message.MsgIDLRCTaskDescription.Bytes(), v[0:2]) {
-	//				var tmsg message.TaskDescription
-	//				err := proto.Unmarshal(v[2:], &tmsg)
-	//				if err != nil {
-	//					log.Println("[recover error]", err)
-	//					continue
-	//				}
-	//
-	//				var res message.TaskOpResult
-	//				res.RES = 0
-	//				res.Id = tmsg.Id
-	//
-	//				bpid := tmsg.Id[12]
-	//
-	//				resData, err := proto.Marshal(&res)
-	//				if err != nil {
-	//					log.Println("[recover error]", err)
-	//					continue
-	//				}
-	//
-	//				_, err = sn.SendBPMsg(int(bpid), message.MsgIDTaskOPResult.Value(), resData)
-	//				if err != nil {
-	//					log.Println("[recover error]", err)
-	//					continue
-	//				}
-	//			}
-	//		}
-	//	}(requestData)
-	//	return message.MsgIDVoidResponse.Bytes(), nil
-	//})
+	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
+		go func(data []byte) {
+			var msg message.MultiTaskDescription
+			if err := proto.Unmarshal(data, &msg); err != nil {
+				log.Println("[recover error]", err)
+			}
+			for _, v := range msg.Tasklist {
+				if bytes.Equal(message.MsgIDLRCTaskDescription.Bytes(), v[0:2]) {
+					var tmsg message.TaskDescription
+					err := proto.Unmarshal(v[2:], &tmsg)
+					if err != nil {
+						log.Println("[recover error]", err)
+						continue
+					}
+
+					var res message.TaskOpResult
+					res.RES = 0
+					res.Id = tmsg.Id
+
+					bpid := tmsg.Id[12]
+
+					resData, err := proto.Marshal(&res)
+					if err != nil {
+						log.Println("[recover error]", err)
+						continue
+					}
+
+					_, err = sn.SendBPMsg(int(bpid), message.MsgIDTaskOPResult.Value(), resData)
+					if err != nil {
+						log.Println("[recover error]", err)
+						continue
+					}
+				}
+			}
+		}(requestData)
+		return message.MsgIDVoidResponse.Bytes(), nil
+	})
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.UploadShardRequestTest
 		if err := proto.Unmarshal(data, &msg); err == nil {
