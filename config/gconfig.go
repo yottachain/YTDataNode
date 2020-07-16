@@ -17,6 +17,10 @@ var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 type UpdateHandler func(gc Gcfg)
 
 type Gcfg struct {
+	MaxToken      int           `json:"MaxToken"`
+	MinToken      int           `json:"MinToken"`
+	Increase      int           `json:"Increase"`
+	Decrease      int           `json:"Decrease"`
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	TTL           time.Duration `json:"TTL"`
@@ -28,7 +32,6 @@ func (g Gcfg) IsEqua(ng Gcfg) bool {
 }
 
 type GConfig struct {
-	base *Config
 	Gcfg
 	OnUpdate UpdateHandler
 }
@@ -45,10 +48,6 @@ func (gc *GConfig) Get() error {
 	if err != nil {
 		return err
 	}
-
-	request.Header.Add("Peer-ID", gc.base.ID)
-	request.Header.Add("Index-ID", fmt.Sprintf("%d", gc.base.IndexID))
-	request.Header.Add("Pool-ID", gc.base.PoolID)
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -95,13 +94,14 @@ func (gc *GConfig) UpdateService(ctx context.Context, intervale time.Duration) {
 	}
 }
 
-func NewGConfig(cfg *Config) *GConfig {
-	if cfg == nil {
-		cfg = &Config{}
-	}
-
+func NewGConfig() *GConfig {
 	var gc GConfig
-	gc.base = cfg
-
+	gc.MaxToken = 500
+	gc.MinToken = 20
+	gc.TokenInterval = 10
+	gc.Increase = 5
+	gc.Decrease = 30
+	gc.MaxConn = 500
+	gc.TTL = 10
 	return &gc
 }
