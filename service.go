@@ -125,11 +125,7 @@ func (sn *storageNode) Service() {
 					res.RES = 0
 					res.Id = tmsg.Id
 
-					if len(tmsg.Id) < 13 {
-						log.Println("[recover error] task parse error", tmsg)
-						continue
-					}
-					bpid := tmsg.Id[12]
+					bpid := msg.SnID
 
 					resData, err := proto.Marshal(&res)
 					if err != nil {
