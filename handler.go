@@ -191,7 +191,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("token check error：", err.Error())
 		return 105
 	}
-	wh.Upt.NetLenticy.Add(time.Now().Sub(tk.Tm))
+	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", tk.String())
@@ -228,7 +228,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	log.Println("return msg", 0)
 
 	// 成功计数
-	wh.Upt.DiskLenticy.Add(time.Now().Sub(putStartTime))
+	wh.Upt.DiskLatency.Add(time.Now().Sub(putStartTime))
 	defer wh.Upt.Delete(tk)
 	return 0
 }
