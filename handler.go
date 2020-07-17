@@ -3,13 +3,9 @@ package node
 import (
 	"context"
 	"fmt"
-
 	"github.com/yottachain/YTDataNode/statistics"
-	"log"
 	"sync/atomic"
-
 	"time"
-
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 
