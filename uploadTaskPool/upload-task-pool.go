@@ -130,9 +130,11 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 			sentTokenN := atomic.LoadInt64(&upt.sentToken)
 			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
-			if (sentTokenN - requestCountN) > sentTokenN*3/20 {
+			if sentTokenN > 100 && ((sentTokenN - requestCountN) > sentTokenN*3/20) {
 				log.Printf("[token] 触发token减少 [%d,%d] \n", sentTokenN, requestCountN)
-				upt.ChangeTKFillInterval(upt.FillTokenInterval + (upt.FillTokenInterval / 10))
+				// 衰减量 是失败百分比
+				decrement := upt.FillTokenInterval * time.Duration(sentTokenN-requestCountN) / time.Duration(sentTokenN)
+				upt.ChangeTKFillInterval(upt.FillTokenInterval + decrement)
 			}
 		}
 	}()
