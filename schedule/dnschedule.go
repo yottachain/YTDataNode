@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"strconv"
+
 	//	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -21,11 +22,24 @@ import (
 
 var urlIP string
 var port  string
+var codeType string
 var times uint
 var timeout uint
 var timeinterval uint
 var loger *log.Logger
 //type ID  string
+
+type gPeerInfo struct{
+	IP []string `json:"ip"`
+	ID string `json:"id"`
+	NodeID string `json:"nodeid"`
+}
+
+type jPeerInfo struct {
+	IP string `json:"ip"`
+	ID string `json:"id"`
+	NodeID string `json:"nodeid"`
+}
 
 type addrInfo struct {
 	DnNum	  uint32
@@ -45,10 +59,11 @@ func loginit() *log.Logger{
 
 func main(){
 //	flag.StringVar(&urlIP,"ip","39.105.184.162","sn address")
+	flag.StringVar(&codeType,"code","go","sn code type(go or java)")
 	flag.StringVar(&urlIP,"ip","172.17.0.2","sn address")
 	flag.StringVar(&port,"p","8082","sn serve port")
 	flag.UintVar(&times,"n",10,"times need to do varify once for all datanode")
-	flag.UintVar(&timeout,"t",600,"timeout(s) for connection")
+	flag.UintVar(&timeout,"t",20,"timeout(s) for connection")
 	flag.UintVar(&timeinterval,"iv",10,"time interval for start varify")
 	flag.Parse()
 
@@ -67,7 +82,11 @@ func main(){
 			<- time.After(time.Second * time.Duration(timeinterval))
 			for _,item := range dnList {
 				if item.DnNum % uint32(times) == i {
-					SendCompareVarifyOrder(hst,item,timeout)
+					err = SendCompareVarifyOrder(hst,item,timeout)
+					if err != nil{
+						log.Println("error", err)
+						continue
+					}
 					loger.Println("item:",item)
 				}
 			}
@@ -81,17 +100,20 @@ func main(){
 //	fmt.Println("dnList:",dnList)
 }
 
-func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint) {
+func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint) error{
 	var respMsg message.SelfVerifyResp
 
 	ctx,cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeout))
 	defer cancel()
 
 	clt,err := hst.ClientStore().Get(ctx,info.NodeID,info.Addrs)
-	defer clt.Close()
+	if clt != nil{
+		defer clt.Close()
+	}
+
 	if err != nil {
 		loger.Println("connet to server error:",err)
-		return
+		return err
 	}
 
 	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVerifyReq.Value(), []byte("111111111111111")); err != nil {
@@ -101,43 +123,14 @@ func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint)
 		err = proto.Unmarshal(res[2:],&respMsg)
 		if err != nil{
 			loger.Println("err:",err,"respMsg:",respMsg)
-			return
+			return err
 		}
 		loger.Println("response nodeid:",respMsg.Id,"table idx:",respMsg.Numth,"err account:",respMsg.ErrNum)
 	}
+	return err
 }
 
-func GetAddrsBook(snAddr, port string)(res []addrInfo){
-	url := "http://"+snAddr+":"+port+"/active_nodes"
-	loger.Println("url:",url)
-	resp,err:=http.Get(url)
-//	resp,err:=http.Get("http://39.105.184.162:8082/active_nodes")
-	if err != nil {
-		loger.Println(err.Error())
-		return nil
-	}
-
-	buf,err:=ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-
-	type peerInfo struct {
-		IP []string `json:"ip"`
-		ID string `json:"id"`
-		NodeID string `json:"nodeid"`
-	}
-
-	var list =make([]peerInfo,0)
-
-	err = json.Unmarshal(buf,&list)
-	if err != nil{
-		loger.Println("Unmarshal error:",err)
-	}
-
-	if err != nil {
-		loger.Println(err.Error())
-		return nil
-	}
-
+func getGoDnList(list []gPeerInfo) (res []addrInfo){
 	for _,item:= range list {
 		id,_ := strconv.ParseUint(item.ID,10,32)
 		nodeid,err := peer.Decode(item.NodeID)
@@ -156,6 +149,60 @@ func GetAddrsBook(snAddr, port string)(res []addrInfo){
 			[]multiaddr.Multiaddr{ma},
 		})
 	}
+	return res
+}
 
+func getJvDnList(list []jPeerInfo) (res []addrInfo){
+	for _,item:= range list {
+		id,_ := strconv.ParseUint(item.ID,10,32)
+		nodeid,err := peer.Decode(item.NodeID)
+		if err != nil {
+			continue
+		}
+
+		ma,err := multiaddr.NewMultiaddr(item.IP)
+		if err != nil {
+			continue
+		}
+
+		res = append(res,addrInfo{
+			uint32(id),
+			nodeid,
+			[]multiaddr.Multiaddr{ma},
+		})
+	}
+	return res
+}
+
+func GetAddrsBook(snAddr, port string)(res []addrInfo){
+	url := "http://"+snAddr+":"+port+"/active_nodes"
+	loger.Println("url:",url)
+	resp,err:=http.Get(url)
+//	resp,err:=http.Get("http://39.105.184.162:8082/active_nodes")
+	if err != nil {
+		loger.Println(err.Error())
+		return nil
+	}
+
+	buf,err:=ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	if codeType == "java" {
+		var jlist = make([]jPeerInfo,0)
+		err = json.Unmarshal(buf,&jlist)
+		if err != nil {
+			loger.Println(err.Error())
+			panic(err)
+		}
+		res = getJvDnList(jlist)
+	}else{
+		var glist = make([]gPeerInfo,0)
+		err = json.Unmarshal(buf,&glist)
+		if err != nil {
+			loger.Println(err.Error())
+			panic(err)
+		}
+		res = getGoDnList(glist)
+	}
 	return
 }
