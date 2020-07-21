@@ -16,12 +16,12 @@ import (
 )
 
 type delayStat struct {
-	D time.Duration
+	D int64
 	C int64
 	sync.RWMutex
 }
 
-func (s *delayStat) Avg() time.Duration {
+func (s *delayStat) Avg() int64 {
 	s.Lock()
 	defer s.Unlock()
 
@@ -31,14 +31,14 @@ func (s *delayStat) Avg() time.Duration {
 	defer func() {
 		s.C = 1
 	}()
-	return s.D / time.Duration(s.C)
+	return s.D / s.C
 }
 
 func (s *delayStat) Add(duration time.Duration) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.D += duration
+	s.D += duration.Milliseconds()
 	s.C++
 }
 
@@ -160,7 +160,10 @@ func (upt *UploadTaskPool) FreeTokenLen() int {
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	if duration > (time.Millisecond * 100) {
-		duration = time.Millisecond * 100
+		duration = utp.FillTokenInterval + 10
+	}
+	if duration > (time.Millisecond * 200) {
+		duration = time.Millisecond * 200
 	}
 	if duration < (time.Millisecond * 2) {
 		duration = time.Millisecond * 2
