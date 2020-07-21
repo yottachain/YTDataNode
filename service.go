@@ -2,7 +2,6 @@ package node
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
@@ -83,21 +82,21 @@ func (sn *storageNode) Service() {
 
 	go rce.Run()
 
-	// _ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-	// 	if err := rce.HandleMuilteTaskMsg(data); err == nil {
-	// 		log.Println("[recover]success")
-	// 	} else {
-	// 		log.Println("[recover]error", err)
-	// 	}
+	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		if err := rce.HandleMuilteTaskMsg(data); err == nil {
+			log.Println("[recover]success")
+		} else {
+			log.Println("[recover]error", err)
+		}
 
-	// 	// 记录上次数据
-	// 	//go func() {
-	// 	//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	// 	//	defer fd.Close()
-	// 	//	fd.Write(data)
-	// 	//}()
-	// 	return message.MsgIDVoidResponse.Bytes(), nil
-	// })
+		// 记录上次数据
+		//go func() {
+		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		//	defer fd.Close()
+		//	fd.Write(data)
+		//}()
+		return message.MsgIDVoidResponse.Bytes(), nil
+	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle(data)
@@ -106,43 +105,48 @@ func (sn *storageNode) Service() {
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
-	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
-		go func(data []byte) {
-			var msg message.MultiTaskDescription
-			if err := proto.Unmarshal(data, &msg); err != nil {
-				log.Println("[recover error]", err)
-			}
-			for _, v := range msg.Tasklist {
-				if bytes.Equal(message.MsgIDLRCTaskDescription.Bytes(), v[0:2]) {
-					var tmsg message.TaskDescription
-					err := proto.Unmarshal(v[2:], &tmsg)
-					if err != nil {
-						log.Println("[recover error]", err)
-						continue
-					}
-
-					var res message.TaskOpResult
-					res.RES = 0
-					res.Id = tmsg.Id
-
-					bpid := msg.SnID
-
-					resData, err := proto.Marshal(&res)
-					if err != nil {
-						log.Println("[recover error]", err)
-						continue
-					}
-
-					_, err = sn.SendBPMsg(int(bpid), message.MsgIDTaskOPResult.Value(), resData)
-					if err != nil {
-						log.Println("[recover error]", err)
-						continue
-					}
-				}
-			}
-		}(requestData)
-		return message.MsgIDVoidResponse.Bytes(), nil
-	})
+	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
+	//
+	//	go func(data []byte) {
+	//		var msg message.MultiTaskDescription
+	//		if err := proto.Unmarshal(data, &msg); err != nil {
+	//			log.Println("[recover error]", err)
+	//		}
+	//		log.Printf("[recover] 收到重建请求 sn %d\n", msg.SnID)
+	//		defer log.Printf("[recover] 结束重建请求 sn %d\n", msg.SnID)
+	//		for _, v := range msg.Tasklist {
+	//			if bytes.Equal(message.MsgIDLRCTaskDescription.Bytes(), v[0:2]) {
+	//				var tmsg message.TaskDescription
+	//				err := proto.Unmarshal(v[2:], &tmsg)
+	//				log.Printf("[recover:%d]执行重建任务 \n", tmsg.Id)
+	//				if err != nil {
+	//					log.Printf("[recover:%d]error %v", tmsg.Id, err)
+	//					continue
+	//				}
+	//
+	//				var res message.TaskOpResult
+	//				res.RES = 0
+	//				res.Id = tmsg.Id
+	//
+	//				bpid := msg.SnID
+	//
+	//				resData, err := proto.Marshal(&res)
+	//				if err != nil {
+	//					log.Printf("[recover:%d]error %v", tmsg.Id, err)
+	//					continue
+	//				}
+	//
+	//				_, err = sn.SendBPMsg(int(bpid), message.MsgIDTaskOPResult.Value(), resData)
+	//				if err != nil {
+	//					log.Printf("[recover:%d]error %v", tmsg.Id, err)
+	//					continue
+	//				}
+	//				log.Printf("[recover:%d]执行重建任务完成 \n", tmsg.Id)
+	//			}
+	//		}
+	//	}(requestData)
+	//	return message.MsgIDVoidResponse.Bytes(), nil
+	//})
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.UploadShardRequestTest
 		if err := proto.Unmarshal(data, &msg); err == nil {
