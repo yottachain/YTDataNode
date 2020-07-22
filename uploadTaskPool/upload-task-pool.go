@@ -40,6 +40,11 @@ func (s *delayStat) Add(duration time.Duration) {
 
 	s.D += duration.Milliseconds()
 	s.C++
+
+	if s.C > 100 {
+		s.D = s.D / s.C
+		s.C = 1
+	}
 }
 
 func NewStat() *delayStat {
