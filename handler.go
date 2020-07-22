@@ -53,7 +53,7 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
 	default:
-		return fmt.Errorf("task busy", len(wh.RequestQueue))
+		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
 	case err := <-rq.Error:
@@ -130,7 +130,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	res.Writable = true
 	if err != nil {
 		res.Writable = false
-		log.Println(err)
 	} else {
 		res.AllocId = tk.String()
 	}

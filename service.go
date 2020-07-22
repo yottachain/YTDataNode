@@ -62,7 +62,6 @@ func (sn *storageNode) Service() {
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)
 		defer statistics.SubCounnectCount(head.RemotePeerID)
-		log.Printf("收到数据包 size %d\n", len(data))
 		return wh.Handle(data), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
