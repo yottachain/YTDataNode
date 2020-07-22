@@ -53,7 +53,7 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
 	default:
-		return fmt.Errorf("task busy", len(wh.RequestQueue))
+		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
 	case err := <-rq.Error:
@@ -130,7 +130,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	res.Writable = true
 	if err != nil {
 		res.Writable = false
-		log.Println(err)
 	} else {
 		res.AllocId = tk.String()
 	}
@@ -192,6 +191,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 105
 	}
 	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
+	log.Printf("[netlatency add %d ms\n]", time.Now().Sub(tk.Tm).Milliseconds())
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", tk.String())
