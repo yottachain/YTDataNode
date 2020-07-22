@@ -191,6 +191,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 105
 	}
 	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
+	log.Printf("[netlatency add %d ms\n]", time.Now().Sub(tk.Tm).Milliseconds())
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", tk.String())

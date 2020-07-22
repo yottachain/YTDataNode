@@ -164,11 +164,8 @@ func (upt *UploadTaskPool) FreeTokenLen() int {
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
-	if duration > (time.Millisecond * 100) {
-		duration = utp.FillTokenInterval + 10
-	}
-	if duration > (time.Millisecond * 200) {
-		duration = time.Millisecond * 200
+	if duration > (time.Millisecond * 1000) {
+		duration = time.Millisecond * 1000
 	}
 	if duration < (time.Millisecond * 2) {
 		duration = time.Millisecond * 2
