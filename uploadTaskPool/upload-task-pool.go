@@ -178,7 +178,8 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
 	atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
 
-	utp.MakeTokenQueue()
+	utp.Save()
+	os.Exit(0)
 }
 
 func (utp *UploadTaskPool) MakeTokenQueue() {
