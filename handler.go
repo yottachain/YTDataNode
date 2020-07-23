@@ -206,12 +206,12 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		recover()
 		return 105
 	}
-	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
-		log.Println("token check fail：", tk.String())
+		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
 		return 105
 	}
+	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
 
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
@@ -242,8 +242,13 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 	log.Println("return msg", 0)
 
+	diskltc := time.Now().Sub(putStartTime)
 	// 成功计数
-	wh.Upt.DiskLatency.Add(time.Now().Sub(putStartTime))
+	wh.Upt.DiskLatency.Add(diskltc)
+	if diskltc > time.Second*10 {
+		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
+	}
+
 	defer wh.Upt.Delete(tk)
 	return 0
 }
