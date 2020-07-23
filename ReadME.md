@@ -49,4 +49,7 @@ vim ~/YTFS/node-config.json
 #   api监听地址
   "APIListen": ":9002",
 }
+
 ```
+
+当前版本1.0.2 功能：调整性能
