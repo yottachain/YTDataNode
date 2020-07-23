@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/statistics"
+	yhservice "github.com/yottachain/YTHost/service"
 	"log"
 	"sync/atomic"
 	"time"
@@ -148,7 +149,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 }
 
 // Handle 获取回调处理函数
-func (wh *WriteHandler) Handle(msgData []byte) []byte {
+func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.SaveRequestCount++
 	statistics.DefaultStat.Unlock()
@@ -159,6 +160,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()
 	// 添加超时
 	resCode := wh.saveSlice(ctx, msg)
@@ -188,6 +190,10 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check error：", err.Error())
+		pid := ctx.Value("pid").(peer.ID)
+
+		wh.Host().ClientStore().Close(pid)
+		recover()
 		return 105
 	}
 	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
