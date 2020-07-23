@@ -62,7 +62,7 @@ func (sn *storageNode) Service() {
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)
 		defer statistics.SubCounnectCount(head.RemotePeerID)
-		return wh.Handle(data), nil
+		return wh.Handle(data, head), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
