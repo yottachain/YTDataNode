@@ -52,7 +52,7 @@ func NewStat() *delayStat {
 }
 
 type UploadTaskPool struct {
-	tkc               chan *Token
+	tkc               *chan *Token
 	TTL               time.Duration `json:"ttl"`
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
@@ -70,7 +70,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt := new(UploadTaskPool)
 
 	//upt.tb = NewTokenBucket(size, ttl*time.Second)
-	upt.tkc = make(chan *Token, time.Second/fillInterval)
+
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
 	upt.NetLatency = NewStat()
@@ -85,12 +85,14 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 		upt.TTL = 10
 	}
 
+	upt.MakeTokenQueue()
+
 	return upt
 }
 
 func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
 	select {
-	case tk := <-upt.tkc:
+	case tk := <-*upt.tkc:
 		tk.Reset()
 		tk.PID = pid
 
@@ -122,7 +124,7 @@ func (upt *UploadTaskPool) FillToken() {
 
 		tk := NewToken()
 		tk.Reset()
-		upt.tkc <- tk
+		*upt.tkc <- tk
 	}
 }
 
@@ -160,7 +162,7 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 }
 
 func (upt *UploadTaskPool) FreeTokenLen() int {
-	return len(upt.tkc)
+	return len(*upt.tkc)
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
@@ -175,10 +177,18 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 	atomic.StoreInt64(&utp.requestCount, 0)
 	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
 	atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
-	size := time.Second / duration * 10
+
+	utp.MakeTokenQueue()
+}
+
+func (utp *UploadTaskPool) MakeTokenQueue() {
+	size := time.Second / utp.FillTokenInterval * 3
 	if size > 500 {
 		size = 500
 	}
+
+	tkc := make(chan *Token, size)
+	utp.tkc = &tkc
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
