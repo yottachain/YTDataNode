@@ -28,10 +28,9 @@ func (s *delayStat) Avg() int64 {
 	if s.C == 0 {
 		return 0
 	}
-	defer func() {
-		s.C = 1
-	}()
-	return s.D / s.C
+	s.D = s.D / s.C
+	s.C = 1
+	return s.D
 }
 
 func (s *delayStat) Add(duration time.Duration) {
