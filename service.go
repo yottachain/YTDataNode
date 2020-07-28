@@ -2,7 +2,9 @@ package node
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
@@ -29,6 +31,12 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
+	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
+		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
+		config.Gconfig.Save()
+		os.Exit(0)
+	}
 
 	// 初始化统计
 	statistics.InitDefaultStat()
