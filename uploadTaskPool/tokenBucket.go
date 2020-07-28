@@ -26,7 +26,6 @@ func NewTokenBucket(size int, ttl time.Duration) *TokenBucket {
 func (tb *TokenBucket) Get() *Token {
 	tb.Lock()
 	defer tb.Unlock()
-
 	for k, v := range tb.tks {
 		// pid != "" 代表token被发放到具体客户端
 		if v == nil || (v.PID != "" && v.IsOuttime(tb.ttl)) {
