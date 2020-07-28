@@ -1,7 +1,11 @@
 package config
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/gob"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	log "github.com/yottachain/YTDataNode/logger"
@@ -94,6 +98,15 @@ func (gc *GConfig) UpdateService(ctx context.Context, intervale time.Duration) {
 			}
 		}
 	}
+}
+func (gc *GConfig) MD5() string {
+	md5ec := md5.New()
+	md5ec.Reset()
+	buf := bytes.NewBuffer([]byte{})
+	ec := gob.NewEncoder(buf)
+	ec.Encode(gc.Gcfg)
+	md5ec.Write(buf.Bytes())
+	return hex.EncodeToString(md5ec.Sum(nil))
 }
 
 func (gc *GConfig) Load() {

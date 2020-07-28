@@ -24,6 +24,7 @@ type Stat struct {
 	RequestToken         int64
 	NetLatency           int64
 	DiskLatency          int64
+	GconfigMd5           string
 	sync.RWMutex
 }
 

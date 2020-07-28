@@ -59,6 +59,7 @@ type UploadTaskPool struct {
 	requestCount      int64
 	NetLatency        *delayStat
 	DiskLatency       *delayStat
+	waitCount         int64
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
@@ -92,6 +93,16 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 }
 
 func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
+	atomic.AddInt64(&upt.waitCount, 1)
+	defer func() {
+		atomic.AddInt64(&upt.waitCount, -1)
+	}()
+
+	// 如果队列长度大于等待token直接返回
+	if time.Duration(config.Gconfig.TokenWait)*time.Millisecond < time.Duration(atomic.LoadInt64(&upt.waitCount))*upt.FillTokenInterval {
+		ctx, _ = context.WithTimeout(ctx, 0)
+	}
+
 	select {
 	case tk := <-upt.tkc:
 		tk.Reset()
