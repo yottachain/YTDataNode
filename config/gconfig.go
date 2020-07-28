@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/util"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"reflect"
 	"time"
 )
@@ -17,10 +19,14 @@ var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 type UpdateHandler func(gc Gcfg)
 
 type Gcfg struct {
-	MaxConn       int           `json:"MaxConn"`
-	TokenInterval time.Duration `json:"TokenInterval"`
-	TTL           time.Duration `json:"TTL"`
-	//AllowBack     bool          `json:"AllowBack"`
+	MaxToken          int   `json:"MaxToken"`
+	MinToken          int   `json:"MinToken"`
+	TTL               int64 `json:"TTL"`
+	Increase          int64 `json:"Increase"`
+	IncreaseThreshold int64 `json:"IncreaseThreshold"`
+	Decrease          int64 `json:"Decrease"`
+	DecreaseThreshold int64 `json:"DecreaseThreshold"`
+	TokenWait         int64 `json:"TokenWait"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -28,7 +34,6 @@ func (g Gcfg) IsEqua(ng Gcfg) bool {
 }
 
 type GConfig struct {
-	base *Config
 	Gcfg
 	OnUpdate UpdateHandler
 }
@@ -45,10 +50,6 @@ func (gc *GConfig) Get() error {
 	if err != nil {
 		return err
 	}
-
-	request.Header.Add("Peer-ID", gc.base.ID)
-	request.Header.Add("Index-ID", fmt.Sprintf("%d", gc.base.IndexID))
-	request.Header.Add("Pool-ID", gc.base.PoolID)
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -95,13 +96,64 @@ func (gc *GConfig) UpdateService(ctx context.Context, intervale time.Duration) {
 	}
 }
 
-func NewGConfig(cfg *Config) *GConfig {
-	if cfg == nil {
-		cfg = &Config{}
+func (gc *GConfig) Load() {
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), ".gconfig"), os.O_RDONLY, 0644)
+	if err != nil {
+		log.Printf("[gconfig]%s\n", err.Error())
+		return
+	}
+	defer fl.Close()
+	dc := json.NewDecoder(fl)
+	err = dc.Decode(&gc.Gcfg)
+	if err != nil {
+		log.Printf("[gconfig]%s\n", err.Error())
+		return
+	}
+	log.Printf("[gconfig]读取配置 %v\n", gc.Gcfg)
+}
+
+func (gc *GConfig) Save() {
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), ".gconfig"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("[gconfig]%s\n", err.Error())
+		return
+	}
+	defer fl.Close()
+	ec := json.NewEncoder(fl)
+	err = ec.Encode(&gc.Gcfg)
+	if err != nil {
+		log.Printf("[gconfig]%s\n", err.Error())
+		return
+	}
+}
+
+func NewGConfig() *GConfig {
+
+	var gc = GConfig{
+		Gcfg: Gcfg{
+			MaxToken:          500,
+			MinToken:          1,
+			TTL:               10,
+			Increase:          30,
+			IncreaseThreshold: 95,
+			Decrease:          5,
+			DecreaseThreshold: 80,
+			TokenWait:         1000,
+		},
+		OnUpdate: nil,
 	}
 
-	var gc GConfig
-	gc.base = cfg
-
+	gc.Load()
 	return &gc
+}
+
+var Gconfig = NewGConfig()
+
+func init() {
+	go Gconfig.UpdateService(context.Background(), time.Minute)
+	Gconfig.OnUpdate = func(gc Gcfg) {
+		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
+		Gconfig.Save()
+		os.Exit(0)
+	}
 }
