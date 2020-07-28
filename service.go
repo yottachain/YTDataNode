@@ -4,7 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+<<<<<<< HEAD
 	"github.com/yottachain/YTDataNode/config"
+=======
+	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
+>>>>>>> 168b5efd17170f72ac294d86e873491c0859c42b
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
@@ -21,7 +25,6 @@ import (
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-
 	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
@@ -62,7 +65,10 @@ func (sn *storageNode) Service() {
 	//}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
+
 	wh = NewWriteHandler(sn, utp)
+
+
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
@@ -113,6 +119,13 @@ func (sn *storageNode) Service() {
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		vfs := verifySlice.VerifySler{sn}
+		resp:=vfs.VerifySlice()
+		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
+	})
+
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//	go func(data []byte) {
 	//		var msg message.MultiTaskDescription

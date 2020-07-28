@@ -13,6 +13,13 @@ import (
 )
 
 // VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
+func VerifyVHF(data []byte, vhf []byte) bool {
+	sha := crypto.MD5.New()
+	sha.Write(data)
+	return bytes.Equal(sha.Sum(nil), vhf)
+}
+
+// VerifyVHF 验证 DAT sha3 256 和vhf 是否相等
 func (req *UploadShardRequest) VerifyVHF(data []byte) bool {
 	sha := crypto.MD5.New()
 	sha.Write(data)
