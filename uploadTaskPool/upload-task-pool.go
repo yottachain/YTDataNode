@@ -100,18 +100,27 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error)
 
 	// 如果队列长度大于等待token直接返回
 	if time.Duration(config.Gconfig.TokenWait)*time.Millisecond < time.Duration(atomic.LoadInt64(&upt.waitCount))*upt.FillTokenInterval {
-		ctx, _ = context.WithTimeout(ctx, 0)
-	}
+		select {
+		case tk := <-upt.tkc:
+			tk.Reset()
+			tk.PID = pid
 
-	select {
-	case tk := <-upt.tkc:
-		tk.Reset()
-		tk.PID = pid
+			atomic.AddInt64(&upt.sentToken, 1)
+			return tk, nil
+		default:
 
-		atomic.AddInt64(&upt.sentToken, 1)
-		return tk, nil
-	case <-ctx.Done():
-		return nil, fmt.Errorf("task busy")
+		}
+	} else {
+		select {
+		case tk := <-upt.tkc:
+			tk.Reset()
+			tk.PID = pid
+
+			atomic.AddInt64(&upt.sentToken, 1)
+			return tk, nil
+		case <-ctx.Done():
+			return nil, fmt.Errorf("task busy")
+		}
 	}
 }
 
