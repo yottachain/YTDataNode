@@ -150,10 +150,4 @@ func NewGConfig() *GConfig {
 var Gconfig = NewGConfig()
 
 func init() {
-	go Gconfig.UpdateService(context.Background(), time.Minute)
-	Gconfig.OnUpdate = func(gc Gcfg) {
-		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
-		Gconfig.Save()
-		os.Exit(0)
-	}
 }
