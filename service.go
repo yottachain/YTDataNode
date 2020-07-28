@@ -65,7 +65,6 @@ func (sn *storageNode) Service() {
 
 	wh = NewWriteHandler(sn, utp)
 
-
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
@@ -119,7 +118,7 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		vfs := verifySlice.VerifySler{sn}
-		resp:=vfs.VerifySlice()
+		resp := vfs.VerifySlice()
 		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
 	})
 
