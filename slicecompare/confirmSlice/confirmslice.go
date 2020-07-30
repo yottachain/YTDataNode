@@ -66,8 +66,8 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
 
 			fl_IdxDB.Seek(int64(pos), io.SeekStart)
 			k, err := fl_IdxDB.Read(buf)
-			if (err != nil) || (k != 16) {
-				fmt.Println("",err)
+			if (err != nil) || (k != 20) {
+				fmt.Println("[confirmslice]get index error:",err)
 				continue
 			}
 
@@ -80,7 +80,8 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
 
 			resData, err := vfs.YTFS().Get(indexKey)
 			if err != nil {
-				log.Println("[confirmslice] error:", err, " VHF:", base58.Encode(indexKey[:]))
+				errCount++
+				log.Println("[confirmslice] get data error:", err, " VHF:", base58.Encode(indexKey[:]))
 				continue
 			}
 
