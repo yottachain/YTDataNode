@@ -260,9 +260,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 	if err != nil{
 		fmt.Println("Unmarshal error:",err)
 	}
-
-	log.Println("msgData:",msgData);
-	log.Println("msg:",msg)
+	
 	log.Println("get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
 		log.Println("error: msg.VHF is empty!")
