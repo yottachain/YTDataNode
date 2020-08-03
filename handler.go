@@ -259,7 +259,7 @@ type DownloadHandler struct {
 }
 
 // Handle 获取处理器
-func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
+func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	var msg message.DownloadShardRequest
 	var err error
 	var resData []byte
@@ -302,7 +302,7 @@ OUT2:
 		log.Println("Marshar response data fail:", err)
 	}
 	//	log.Println("return msg", 0)
-	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
+	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
 }
 
 // SpotCheckHandler 下载处理器
