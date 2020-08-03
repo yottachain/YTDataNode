@@ -22,8 +22,9 @@ type Stat struct {
 	SentTokenNum         int64
 	ReportTime           time.Time
 	RequestToken         int64
-	NetLenticy           int64
-	DiskLenticy          int64
+	NetLatency           int64
+	DiskLatency          int64
+	GconfigMd5           string
 	sync.RWMutex
 }
 

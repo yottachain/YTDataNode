@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
@@ -16,30 +17,34 @@ import (
 )
 
 type delayStat struct {
-	D time.Duration
+	D int64
 	C int64
 	sync.RWMutex
 }
 
-func (s *delayStat) Avg() time.Duration {
+func (s *delayStat) Avg() int64 {
 	s.Lock()
 	defer s.Unlock()
 
 	if s.C == 0 {
 		return 0
 	}
-	defer func() {
-		s.C = 1
-	}()
-	return s.D / time.Duration(s.C)
+	s.D = s.D / s.C
+	s.C = 1
+	return s.D
 }
 
 func (s *delayStat) Add(duration time.Duration) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.D += duration
+	s.D += duration.Milliseconds()
 	s.C++
+
+	if s.C > 100 {
+		s.D = s.D / s.C
+		s.C = 1
+	}
 }
 
 func NewStat() *delayStat {
@@ -52,8 +57,9 @@ type UploadTaskPool struct {
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
 	requestCount      int64
-	NetLenticy        *delayStat
-	DiskLenticy       *delayStat
+	NetLatency        *delayStat
+	DiskLatency       *delayStat
+	waitCount         int64
 }
 
 func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPool {
@@ -65,11 +71,11 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt := new(UploadTaskPool)
 
 	//upt.tb = NewTokenBucket(size, ttl*time.Second)
-	upt.tkc = make(chan *Token, time.Second/fillInterval)
+
 	upt.FillTokenInterval = fillInterval
 	upt.TTL = ttl
-	upt.NetLenticy = NewStat()
-	upt.DiskLenticy = NewStat()
+	upt.NetLatency = NewStat()
+	upt.DiskLatency = NewStat()
 
 	upt.Load()
 
@@ -80,10 +86,19 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 		upt.TTL = 10
 	}
 
+	upt.TTL = time.Duration(config.Gconfig.TTL) * time.Second
+	upt.MakeTokenQueue()
+
 	return upt
 }
 
 func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
+	atomic.AddInt64(&upt.waitCount, 1)
+	defer func() {
+		atomic.AddInt64(&upt.waitCount, -1)
+	}()
+
+	// 如果队列长度大于等待token直接返回
 	select {
 	case tk := <-upt.tkc:
 		tk.Reset()
@@ -125,26 +140,28 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 	go func() {
 		for {
 			// 每10分钟衰减一次 token
-			decreaseTd := time.Minute * 5
+			decreaseTd := time.Minute * time.Duration(config.Gconfig.Decrease)
 			<-time.After(decreaseTd)
 			sentTokenN := atomic.LoadInt64(&upt.sentToken)
 			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
-			if (sentTokenN - requestCountN) > sentTokenN*3/20 {
+			if sentTokenN > 100 && ((sentTokenN - requestCountN) > sentTokenN*(100-config.Gconfig.DecreaseThreshold)/100) {
 				log.Printf("[token] 触发token减少 [%d,%d] \n", sentTokenN, requestCountN)
-				upt.ChangeTKFillInterval(upt.FillTokenInterval + (upt.FillTokenInterval / 10))
+				// 衰减量 是失败百分比
+				decrement := upt.FillTokenInterval * time.Duration(sentTokenN-requestCountN) / time.Duration(sentTokenN)
+				upt.ChangeTKFillInterval(upt.FillTokenInterval + decrement)
 			}
 		}
 	}()
 	go func() {
 		for {
-			increaseTd := time.Minute * 30
+			increaseTd := time.Minute * time.Duration(config.Gconfig.Increase)
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			sentTokenN := atomic.LoadInt64(&upt.sentToken)
 			requestCountN := atomic.LoadInt64(&upt.requestCount)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if (sentTokenN - requestCountN) < sentTokenN*1/20 {
+			if (sentTokenN - requestCountN) < sentTokenN*config.Gconfig.IncreaseThreshold/100 {
 				log.Printf("[token] 触发token增加 [%d,%d] \n", sentTokenN, requestCountN)
 				upt.ChangeTKFillInterval(upt.FillTokenInterval - (upt.FillTokenInterval / 5))
 			}
@@ -157,21 +174,33 @@ func (upt *UploadTaskPool) FreeTokenLen() int {
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
-	if duration > (time.Millisecond * 50) {
-		duration = time.Millisecond * 50
+	makeZero := true
+	if duration > (time.Second / time.Duration(config.Gconfig.MinToken)) {
+		duration = time.Second / time.Duration(config.Gconfig.MinToken)
+		makeZero = false
 	}
-	if duration < (time.Millisecond * 2) {
-		duration = time.Millisecond * 2
+	if duration < (time.Second / time.Duration(config.Gconfig.MaxToken)) {
+		duration = time.Second / time.Duration(config.Gconfig.MaxToken)
+		makeZero = false
 	}
 	utp.FillTokenInterval = duration
-	atomic.StoreInt64(&utp.sentToken, 0)
-	atomic.StoreInt64(&utp.requestCount, 0)
-	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
-	atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
-	size := time.Second / duration * 10
+	if makeZero {
+		atomic.StoreInt64(&utp.sentToken, 0)
+		atomic.StoreInt64(&utp.requestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	}
+
+	utp.Save()
+	os.Exit(0)
+}
+
+func (utp *UploadTaskPool) MakeTokenQueue() {
+	size := time.Second / utp.FillTokenInterval * 3
 	if size > 500 {
 		size = 500
 	}
+	utp.tkc = make(chan *Token, size)
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {

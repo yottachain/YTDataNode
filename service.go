@@ -2,7 +2,10 @@ package node
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
@@ -19,7 +22,6 @@ import (
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-
 	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
@@ -29,6 +31,12 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
+	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
+		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
+		config.Gconfig.Save()
+		os.Exit(0)
+	}
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -54,7 +62,9 @@ func (sn *storageNode) Service() {
 	//}
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
+
 	wh = NewWriteHandler(sn, utp)
+
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return wh.GetToken(data, head.RemotePeerID), nil
@@ -62,7 +72,7 @@ func (sn *storageNode) Service() {
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)
 		defer statistics.SubCounnectCount(head.RemotePeerID)
-		return wh.Handle(data), nil
+		return wh.Handle(data, head), nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
@@ -105,6 +115,13 @@ func (sn *storageNode) Service() {
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		vfs := verifySlice.VerifySler{sn}
+		resp := vfs.VerifySlice()
+		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
+	})
+
 	//_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(requestData []byte, head yhservice.Head) ([]byte, error) {
 	//
 	//	go func(data []byte) {
@@ -211,10 +228,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.NetLenticy = int64(pool.NetLenticy.Avg())
-	statistics.DefaultStat.DiskLenticy = int64(pool.DiskLenticy.Avg())
+	statistics.DefaultStat.NetLatency = pool.NetLatency.Avg()
+	statistics.DefaultStat.DiskLatency = pool.DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
+	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 
 	pool.Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())

@@ -1,7 +1,6 @@
 package uploadTaskPool
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -13,8 +12,6 @@ func TestNewTokenFromString(t *testing.T) {
 }
 
 func TestUploadTaskPool_Check(t *testing.T) {
-	tp := New(10, time.Second*5, time.Millisecond*100)
-	go tp.FillToken(context.Background())
 
 	//go func() {
 	//	for {
@@ -26,7 +23,11 @@ func TestUploadTaskPool_Check(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	c := make(chan struct{}, 10)
-	c <- struct{}{}
-	fmt.Println(len(c))
+	ds := delayStat{}
+	for {
+		fmt.Println(ds.Avg())
+		starttime := time.Now()
+		<-time.After(time.Second)
+		ds.Add(time.Now().Sub(starttime))
+	}
 }

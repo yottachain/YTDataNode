@@ -3,13 +3,16 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/statistics"
-	"log"
+	yhservice "github.com/yottachain/YTHost/service"
+	"strconv"
 	"sync/atomic"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/mr-tron/base58/base58"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
@@ -27,6 +30,7 @@ type WriteHandler struct {
 	StorageNode
 	Upt          *uploadTaskPool.UploadTaskPool
 	RequestQueue chan *wRequest
+	db           *leveldb.DB
 }
 
 func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
@@ -34,6 +38,7 @@ func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteH
 		sn,
 		utp,
 		make(chan *wRequest, 1000),
+		nil,
 	}
 }
 
@@ -53,7 +58,7 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
 	default:
-		return fmt.Errorf("task busy", len(wh.RequestQueue))
+		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
 	case err := <-rq.Error:
@@ -62,14 +67,18 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		return fmt.Errorf("get error time out")
 	}
 }
+
 func (wh *WriteHandler) batchWrite(number int) {
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
 	for i := 0; i < number; i++ {
 		select {
 		case rq := <-wh.RequestQueue:
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
+			hashkey[i] = rq.Key[:]
 		default:
 			continue
 		}
@@ -88,6 +97,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 		statistics.DefaultStat.Unlock()
 	}
+	_, err = wh.YTFS().BatchPut(rqmap)
+	log.Printf("[ytfs]flush success:%d\n", number)
 
 	for _, rq := range rqs {
 		select {
@@ -115,7 +126,6 @@ func (wh *WriteHandler) Run() {
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
-
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.Get(ctx, id)
@@ -130,7 +140,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	res.Writable = true
 	if err != nil {
 		res.Writable = false
-		log.Println(err)
 	} else {
 		res.AllocId = tk.String()
 	}
@@ -149,7 +158,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 }
 
 // Handle 获取回调处理函数
-func (wh *WriteHandler) Handle(msgData []byte) []byte {
+func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.SaveRequestCount++
 	statistics.DefaultStat.Unlock()
@@ -160,6 +169,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()
 	// 添加超时
 	resCode := wh.saveSlice(ctx, msg)
@@ -168,6 +178,7 @@ func (wh *WriteHandler) Handle(msgData []byte) []byte {
 	} else {
 		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
+
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
@@ -189,14 +200,18 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check error：", err.Error())
+		pid := ctx.Value("pid").(peer.ID)
+
+		wh.Host().ClientStore().Close(pid)
+		recover()
 		return 105
 	}
-	wh.Upt.NetLenticy.Add(time.Now().Sub(tk.Tm))
 	if !wh.Upt.Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
-		log.Println("token check fail：", tk.String())
+		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
 		return 105
 	}
+	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
 
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
@@ -227,8 +242,13 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 	log.Println("return msg", 0)
 
+	diskltc := time.Now().Sub(putStartTime)
 	// 成功计数
-	wh.Upt.DiskLenticy.Add(time.Now().Sub(putStartTime))
+	wh.Upt.DiskLatency.Add(diskltc)
+	if diskltc > time.Second*10 {
+		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
+	}
+
 	defer wh.Upt.Delete(tk)
 	return 0
 }
@@ -241,9 +261,22 @@ type DownloadHandler struct {
 // Handle 获取处理器
 func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 	var msg message.DownloadShardRequest
+	var err error
+	var resData []byte
+	res := message.DownloadShardResponse{}
+
 	var indexKey [16]byte
-	proto.Unmarshal(msgData, &msg)
+	err = proto.Unmarshal(msgData, &msg)
+	if err != nil {
+		fmt.Println("Unmarshal error:", err)
+	}
+
 	log.Println("get vhf:", base58.Encode(msg.VHF))
+	if len(msg.VHF) == 0 {
+		log.Println("error: msg.VHF is empty!")
+		resData = []byte(strconv.Itoa(200))
+		goto OUT2
+	}
 
 	for k, v := range msg.VHF {
 		if k >= 16 {
@@ -251,20 +284,24 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 		}
 		indexKey[k] = v
 	}
-	res := message.DownloadShardResponse{}
-	resData, err := dh.YTFS().Get(common.IndexTableKey(indexKey))
+
+	//res := message.DownloadShardResponse{}
+	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
 	if msg.VerifyVHF(resData) {
 		log.Println("data verify success")
 	}
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		//		resData = []byte(strconv.Itoa(201))
 	}
+
+OUT2:
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
 	}
-	log.Println("return msg", 0)
+	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
 }
 
