@@ -3,6 +3,7 @@ package verifySlice
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/config"
@@ -57,16 +58,16 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
 				begin = false
 			}
 			verifyedItem++
-			if verifyedItem >= start_Item+1000 {
-
-				log.Println("[confirmslice] Has verified 1000 item, will to return!")
+			if verifyedItem >= start_Item+2000 {
+				log.Println("[confirmslice] Has verified 2000 item, will to return!")
 				slicecompare.SaveValueToFile(strconv.FormatUint(verifyedItem, 10), VerifyedNumFile)
 				goto OUT
 			}
 
 			fl_IdxDB.Seek(int64(pos), io.SeekStart)
 			k, err := fl_IdxDB.Read(buf)
-			if (err != nil) || (k != 16) {
+			if (err != nil) || (k != 20) {
+				fmt.Println("[confirmslice]get index error:",err)
 				continue
 			}
 
@@ -79,17 +80,18 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
 
 			resData, err := vfs.YTFS().Get(indexKey)
 			if err != nil {
-				log.Println("[confirmslice] error:", err, " VHF:", base58.Encode(indexKey[:]))
+				errCount++
+				log.Println("[confirmslice] get data error:", err, " VHF:", base58.Encode(indexKey[:]))
 				continue
 			}
 
-			if ! message.VerifyVHF(resData, indexKey[:]) {
-					if i % 1000 == 0 {
+			if message.VerifyVHF(resData, indexKey[:]) {
+				if i % 1000 == 0 {
 						log.Printf("[confirmslice][hashdataok] n=%d,m=%d,n_Rangeth=%d,VHF=%s", n, m, n_Rangeth, base58.Encode(indexKey[:]))
-					}
-				}else{
-				log.Println("[confirmslice][hashdataerr]verify failed,VHF:", base58.Encode(indexKey[:]))
+				}
+			}else{
 				errCount++
+				log.Println("[confirmslice][hashdataerr]verify failed,VHF:", base58.Encode(indexKey[:]))
 			}
 		}
 		n_Rangeth++
