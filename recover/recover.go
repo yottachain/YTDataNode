@@ -24,21 +24,16 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
-type Task struct {
-	SnID int32
-	Data []byte
-}
-
 type RecoverEngine struct {
 	sn         node.StorageNode
-	queue      chan *Task
+	queue      chan []byte
 	replyQueue chan *TaskMsgResult
 	le         *LRCEngine
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
 	var re = new(RecoverEngine)
-	re.queue = make(chan *Task, max_task_num)
+	re.queue = make(chan []byte, max_task_num)
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.le = NewLRCEngine(re.getShard)
@@ -139,15 +134,12 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 type TaskMsgResult struct {
 	ID   []byte
 	RES  int32
-	BPID int32
+	BPID byte
 }
 
-func (re *RecoverEngine) PutTask(task []byte, snid int32) error {
+func (re *RecoverEngine) PutTask(task []byte) error {
 	select {
-	case re.queue <- &Task{
-		SnID: snid,
-		Data: task,
-	}:
+	case re.queue <- task:
 	default:
 	}
 	return nil
@@ -161,7 +153,7 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	}
 	log.Printf("[recover]multi recover task start, pack size %d\n", len(mtdMsg.Tasklist))
 	for _, task := range mtdMsg.Tasklist {
-		if err := re.PutTask(task, mtdMsg.SnID); err != nil {
+		if err := re.PutTask(task); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -171,20 +163,16 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 func (re *RecoverEngine) Run() {
 	go func() {
 		for {
-			ts := <-re.queue
-			msg := ts.Data
+			msg := <-re.queue
 			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
 				res := re.execRCTask(msg[2:])
-				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 				log.Printf("[recover]LRC start\n")
 				res := re.execLRCTask(msg[2:])
-				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else {
 				res := re.execCPTask(msg[2:])
-				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			}
 		}
@@ -217,7 +205,7 @@ func (re *RecoverEngine) reply(res *TaskMsgResult) error {
 
 //
 func (re *RecoverEngine) MultiReply() error {
-	var resmsg = make(map[int32]message.MultiTaskOpResult)
+	var resmsg = make(map[byte]message.MultiTaskOpResult)
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
@@ -257,6 +245,7 @@ func (re *RecoverEngine) execRCTask(msgData []byte) *TaskMsgResult {
 		res.RES = 1
 	}
 	res.ID = msg.Id
+	res.BPID = msg.Id[12]
 	if err := re.recoverShard(&msg); err != nil {
 		res.RES = 1
 	} else {
@@ -276,6 +265,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
 	}
 
 	res.ID = msg.Id
+	res.BPID = msg.Id[12]
 	res.RES = 1
 	log.Printf("[recover]LRC 分片恢复开始%s", base58.Encode(msg.Id))
 	defer log.Printf("[recover]LRC 分片恢复结束%s", base58.Encode(msg.Id))
@@ -327,6 +317,7 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 		log.Printf("[recover]解析错误%s\n", err.Error())
 	}
 	result.ID = msg.Id
+	result.BPID = msg.Id[12]
 	result.RES = 1
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
