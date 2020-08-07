@@ -159,7 +159,7 @@ message TaskOpResult{
 
 //MessageID:2cb0
 message MultiTaskDescription{
-    repeated bytes tasklist=2;
+    repeated bytes tasklist=1;
 }
 
 //MessageID:1b31
