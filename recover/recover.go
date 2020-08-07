@@ -94,7 +94,7 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	copy(vhf[:], description.Hashs[description.RecoverId])
 	//err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
 	_, err = re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shards[int(description.RecoverId)]})
-	if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
+	if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 		log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(description.Id), err.Error())
 		return err
 	}
