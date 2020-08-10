@@ -20,12 +20,15 @@ import (
 	"time"
 )
 
+
 var urlIP string
 var port  string
 var codeType string
 var times uint
 var timeout uint
 var timeinterval uint
+var startDN uint
+
 var loger *log.Logger
 //type ID  string
 
@@ -62,6 +65,7 @@ func main(){
 	flag.StringVar(&codeType,"code","go","sn code type(go or java)")
 	flag.StringVar(&urlIP,"ip","172.17.0.2","sn address")
 	flag.StringVar(&port,"p","8082","sn serve port")
+	flag.UintVar(&startDN,"sd",6500,"the begin datanode id to start verify")
 	flag.UintVar(&times,"n",10,"times need to do varify once for all datanode")
 	flag.UintVar(&timeout,"t",20,"timeout(s) for connection")
 	flag.UintVar(&timeinterval,"iv",10,"time interval for start varify")
@@ -81,6 +85,10 @@ func main(){
 		for {
 			<- time.After(time.Second * time.Duration(timeinterval))
 			for _,item := range dnList {
+				if item.DnNum < uint32(startDN){
+					continue
+				}
+
 				if item.DnNum % uint32(times) == i {
 					err = SendCompareVarifyOrder(hst,item,timeout)
 					if err != nil{
