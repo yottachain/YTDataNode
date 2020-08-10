@@ -4,7 +4,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	_ "net/http/pprof"
+	"sync"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mr-tron/base58/base58"
@@ -13,9 +20,6 @@ import (
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTFS/common"
 	lrcpkg "github.com/yottachain/YTLRC"
-	_ "net/http/pprof"
-	"sync"
-	"time"
 )
 
 const (
@@ -24,16 +28,21 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
+type Task struct {
+	SnID int32
+	Data []byte
+}
+
 type RecoverEngine struct {
 	sn         node.StorageNode
-	queue      chan []byte
+	queue      chan *Task
 	replyQueue chan *TaskMsgResult
 	le         *LRCEngine
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
 	var re = new(RecoverEngine)
-	re.queue = make(chan []byte, max_task_num)
+	re.queue = make(chan *Task, max_task_num)
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.le = NewLRCEngine(re.getShard)
@@ -83,8 +92,9 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	log.Printf("[recover:%s]datas recover success\n", base58.Encode(description.Id))
 	var vhf [16]byte
 	copy(vhf[:], description.Hashs[description.RecoverId])
-	err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
-	if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
+	//err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
+	_, err = re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shards[int(description.RecoverId)]})
+	if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 		log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(description.Id), err.Error())
 		return err
 	}
@@ -92,7 +102,10 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 }
 
 func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
-
+	btid, err := base58.Decode(taskID)
+	if err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
@@ -123,23 +136,26 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
-		log.Printf("[recover:%s]get shard [%s] error[%d] %s\n", taskID, base58.Encode(hash), *n, err.Error())
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
 	*n = *n + 1
-	log.Printf("[recover:%s]get shard [%s] success[%d]\n", taskID, base58.Encode(hash), *n)
+	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
 	return res.Data, nil
 }
 
 type TaskMsgResult struct {
 	ID   []byte
 	RES  int32
-	BPID byte
+	BPID int32
 }
 
-func (re *RecoverEngine) PutTask(task []byte) error {
+func (re *RecoverEngine) PutTask(task []byte, snid int32) error {
 	select {
-	case re.queue <- task:
+	case re.queue <- &Task{
+		SnID: snid,
+		Data: task,
+	}:
 	default:
 	}
 	return nil
@@ -147,13 +163,19 @@ func (re *RecoverEngine) PutTask(task []byte) error {
 
 // 多重建任务消息处理
 func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
+	log.Printf("[recover]received multi recover task, pack size %d\n", len(msgData))
 	var mtdMsg message.MultiTaskDescription
 	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
 		return err
 	}
 	log.Printf("[recover]multi recover task start, pack size %d\n", len(mtdMsg.Tasklist))
 	for _, task := range mtdMsg.Tasklist {
-		if err := re.PutTask(task); err != nil {
+		bys := task[12:14]
+		bytebuff := bytes.NewBuffer(bys)
+		var snID uint16
+		binary.Read(bytebuff, binary.BigEndian, &snID)
+		//log.Printf("[recover]task bytes is %s, SN ID is %d\n", hex.EncodeToString(task[0:14]), int32(snID))
+		if err := re.PutTask(task, int32(snID)); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -163,16 +185,20 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 func (re *RecoverEngine) Run() {
 	go func() {
 		for {
-			msg := <-re.queue
+			ts := <-re.queue
+			msg := ts.Data
 			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
 				res := re.execRCTask(msg[2:])
+				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 				log.Printf("[recover]LRC start\n")
 				res := re.execLRCTask(msg[2:])
+				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else {
 				res := re.execCPTask(msg[2:])
+				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			}
 		}
@@ -205,7 +231,7 @@ func (re *RecoverEngine) reply(res *TaskMsgResult) error {
 
 //
 func (re *RecoverEngine) MultiReply() error {
-	var resmsg = make(map[byte]message.MultiTaskOpResult)
+	var resmsg = make(map[int32]message.MultiTaskOpResult)
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
@@ -245,7 +271,6 @@ func (re *RecoverEngine) execRCTask(msgData []byte) *TaskMsgResult {
 		res.RES = 1
 	}
 	res.ID = msg.Id
-	res.BPID = msg.Id[12]
 	if err := re.recoverShard(&msg); err != nil {
 		res.RES = 1
 	} else {
@@ -265,14 +290,14 @@ func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
 	}
 
 	res.ID = msg.Id
-	res.BPID = msg.Id[12]
 	res.RES = 1
-	log.Printf("[recover]LRC 分片恢复开始%s", base58.Encode(msg.Id))
-	defer log.Printf("[recover]LRC 分片恢复结束%s", base58.Encode(msg.Id))
+	log.Printf("[recover]LRC 分片恢复开始%d", BytesToInt64(msg.Id[0:8]))
+	defer log.Printf("[recover]LRC 分片恢复结束%d", BytesToInt64(msg.Id[0:8]))
 
 	lrc := lrcpkg.Shardsinfo{}
 
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
+	log.Printf("[recover]LRC original count is %d", lrc.OriginalCount)
 	lrc.RecoverNum = 13
 	lrc.Lostindex = uint16(msg.RecoverId)
 	h, err := re.le.GetLRCHandler(&lrc)
@@ -280,13 +305,13 @@ func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
 		log.Printf("[recover]LRC 获取Handler失败%s", err)
 		return &res
 	}
-
+	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
 	recoverData, err := h.Recover(msg)
 	if err != nil {
 		log.Printf("[recover]LRC 恢复失败%s", err)
 		return &res
 	}
-
+	log.Printf("[recover]LRC 恢复的分片数据: %s", hex.EncodeToString(recoverData[0:128]))
 	m5 := md5.New()
 	m5.Write(recoverData)
 	hash := m5.Sum(nil)
@@ -298,7 +323,8 @@ func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
 
 	var key [common.HashLength]byte
 	copy(key[:], hash)
-	if err := re.sn.YTFS().Put(common.IndexTableKey(key), recoverData); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+	//if err := re.sn.YTFS().Put(common.IndexTableKey(key), recoverData); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		log.Printf("[recover]LRC 保存已恢复分片失败%s\n", err)
 		return &res
 	}
@@ -317,7 +343,6 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 		log.Printf("[recover]解析错误%s\n", err.Error())
 	}
 	result.ID = msg.Id
-	result.BPID = msg.Id[12]
 	result.RES = 1
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -329,9 +354,10 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
+			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
+			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
-			if err != nil && err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
+			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 				log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
 				result.RES = 1
 			} else {
@@ -341,4 +367,12 @@ func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
 		}
 	}
 	return &result
+}
+
+//BytesToInt64 convet byte slice to int64
+func BytesToInt64(bys []byte) int64 {
+	bytebuff := bytes.NewBuffer(bys)
+	var data int64
+	binary.Read(bytebuff, binary.BigEndian, &data)
+	return data
 }
