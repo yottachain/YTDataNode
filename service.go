@@ -76,7 +76,7 @@ func (sn *storageNode) Service() {
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
-		return dh.Handle(data, head.RemotePeerID), nil
+		return dh.Handle(data, head.RemotePeerID)
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil

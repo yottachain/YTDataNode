@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
-	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -35,10 +35,10 @@ type WriteHandler struct {
 
 func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
 	return &WriteHandler{
-        sn,
-        utp,
-        make(chan *wRequest, 1000),
-        nil,
+		sn,
+		utp,
+		make(chan *wRequest, 1000),
+		nil,
 	}
 }
 
@@ -126,8 +126,7 @@ func (wh *WriteHandler) Run() {
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 	tk, err := wh.Upt.Get(ctx, id)
 
@@ -178,8 +177,8 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
 		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
-
 	}
+
 	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
@@ -260,11 +259,25 @@ type DownloadHandler struct {
 }
 
 // Handle 获取处理器
-func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
+func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	var msg message.DownloadShardRequest
+	var err error
+	var resData []byte
+	res := message.DownloadShardResponse{}
+
 	var indexKey [16]byte
-	proto.Unmarshal(msgData, &msg)
+	err = proto.Unmarshal(msgData, &msg)
+	if err != nil {
+		fmt.Println("Unmarshal error:", err)
+		return nil, err
+	}
+
 	log.Println("get vhf:", base58.Encode(msg.VHF))
+	if len(msg.VHF) == 0 {
+		log.Println("error: msg.VHF is empty!")
+		resData = []byte(strconv.Itoa(200))
+		return nil, fmt.Errorf("msg.VHF is empty!")
+	}
 
 	for k, v := range msg.VHF {
 		if k >= 16 {
@@ -272,21 +285,26 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) []byte {
 		}
 		indexKey[k] = v
 	}
-	res := message.DownloadShardResponse{}
-	resData, err := dh.YTFS().Get(common.IndexTableKey(indexKey))
+
+	//res := message.DownloadShardResponse{}
+	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
 	if msg.VerifyVHF(resData) {
 		log.Println("data verify success")
 	}
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		//		resData = []byte(strconv.Itoa(201))
+		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
+
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
+		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
-	log.Println("return msg", 0)
-	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...)
+	//	log.Println("return msg", 0)
+	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
 }
 
 // SpotCheckHandler 下载处理器

@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -75,7 +76,9 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts.TotalVolumn = 2 << 41
 	opts.IndexTableCols = 1 << 14
 	opts.IndexTableRows = 1 << 28
-	opts.UseKvDb = true
+	if runtime.GOOS == "linux" {
+		opts.UseKvDb = true
+	}
 	return opts
 }
 
@@ -380,7 +383,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 76
+	return 80
 }
 
 func Version() uint32 {

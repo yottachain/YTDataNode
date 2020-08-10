@@ -174,17 +174,22 @@ func (upt *UploadTaskPool) FreeTokenLen() int {
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
+	makeZero := true
 	if duration > (time.Second / time.Duration(config.Gconfig.MinToken)) {
 		duration = time.Second / time.Duration(config.Gconfig.MinToken)
+		makeZero = false
 	}
 	if duration < (time.Second / time.Duration(config.Gconfig.MaxToken)) {
 		duration = time.Second / time.Duration(config.Gconfig.MaxToken)
+		makeZero = false
 	}
 	utp.FillTokenInterval = duration
-	atomic.StoreInt64(&utp.sentToken, 0)
-	atomic.StoreInt64(&utp.requestCount, 0)
-	atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
-	atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	if makeZero {
+		atomic.StoreInt64(&utp.sentToken, 0)
+		atomic.StoreInt64(&utp.requestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	}
 
 	utp.Save()
 	os.Exit(0)
