@@ -269,13 +269,14 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	err = proto.Unmarshal(msgData, &msg)
 	if err != nil {
 		fmt.Println("Unmarshal error:", err)
+		return nil, err
 	}
 
 	log.Println("get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
 		log.Println("error: msg.VHF is empty!")
 		resData = []byte(strconv.Itoa(200))
-		goto OUT2
+		return nil, fmt.Errorf("msg.VHF is empty!")
 	}
 
 	for k, v := range msg.VHF {
@@ -293,13 +294,14 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
+		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 
-OUT2:
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
+		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
