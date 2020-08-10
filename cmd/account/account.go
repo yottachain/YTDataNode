@@ -138,12 +138,6 @@ var changePoolIDCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var valuestring string
 
-		info, err := getPoolInfo(cfg.PoolID)
-		if err != nil {
-			fmt.Println("操作失败:", err)
-			return
-		}
-
 	input:
 		fmt.Println("请输入矿池id")
 		fmt.Scanln(&valuestring)
@@ -159,6 +153,18 @@ var changePoolIDCmd = &cobra.Command{
 			NewPoolID: eos.AN(valuestring),
 		}
 
+		actionData, err := transaction.GetActionData(ad)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		info, err := getPoolInfo(string(ad.NewPoolID))
+		if err != nil {
+			fmt.Println("操作失败:", err)
+			return
+		}
+
 		p := []eos.PermissionLevel{
 			eos.PermissionLevel{
 				eos.AN(cfg.Adminacc),
@@ -169,25 +175,28 @@ var changePoolIDCmd = &cobra.Command{
 				"active",
 			},
 		}
-		request, err := transaction.NewSignedTransactionRequest(
-			ad,
-			"hddpool12345",
-			"mchgstrpool",
+
+		action := &eos.Action{
+			eos.AN("hddpool12345"),
+			eos.ActN("mchgstrpool"),
 			p,
-			&opt,
-		)
+			*actionData,
+		}
+		sigedTx, err := transaction.GetSignedTransAction(action, &opt)
 		if err != nil {
 			fmt.Println(err)
-		} else {
-			res, err := request.Send(cfg.GetAPIAddr() + "/ChangePoolID")
-			if err != nil {
-				fmt.Println("操作失败:", err, string(res))
-				return
-			}
-			cfg.PoolID = string(ad.NewPoolID)
-			cfg.Save()
-			fmt.Printf("操作成功，矿池ID替换为:%s\n", ad.NewPoolID)
+			return
 		}
+
+		request := &transaction.TransactionRequest{sigedTx}
+		res, err := request.Send(cfg.GetAPIAddr() + "/ChangePoolID")
+		if err != nil {
+			fmt.Println("操作失败:", err, string(res))
+			return
+		}
+		cfg.PoolID = string(ad.NewPoolID)
+		cfg.Save()
+		fmt.Printf("操作成功，矿池ID替换为:%s\n", ad.NewPoolID)
 	},
 }
 
