@@ -107,6 +107,11 @@ func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 		TotalVolumn:    size,
 		UseKvDb:        true,
 	}
+
+	if runtime.GOOS == "windows" {
+		opts.UseKvDb = false
+	}
+
 	return opts
 }
 
@@ -383,7 +388,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 80
+	return 81
 }
 
 func Version() uint32 {
