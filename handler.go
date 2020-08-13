@@ -345,6 +345,10 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
+			if len(shardData) < 2 {
+				log.Printf("抽查失败:返回消息为空")
+				return false
+			}
 			if err := proto.Unmarshal(shardData[2:], &share); err != nil {
 				log.Println("error:", err)
 			} else {
