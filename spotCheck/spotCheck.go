@@ -44,9 +44,10 @@ func (sc *SpotChecker) check(task *message.SpotCheckTask) {
 	if sc.TaskHandler == nil {
 		return
 	}
+	sc.Lock()
 	defer sc.Unlock()
 	result := sc.TaskHandler(task)
-	sc.Lock()
+
 	sc.progress = sc.progress + 1
 	if result != true {
 		for i := 0; i < 5; i++ {
