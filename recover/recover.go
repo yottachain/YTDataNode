@@ -29,8 +29,9 @@ const (
 )
 
 type Task struct {
-	SnID int32
-	Data []byte
+	SnID        int32
+	Data        []byte
+	ExpriedTime int64
 }
 
 type RecoverEngine struct {
@@ -146,16 +147,18 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 }
 
 type TaskMsgResult struct {
-	ID   []byte
-	RES  int32
-	BPID int32
+	ID          []byte
+	RES         int32
+	BPID        int32
+	ExpriedTime int64
 }
 
-func (re *RecoverEngine) PutTask(task []byte, snid int32) error {
+func (re *RecoverEngine) PutTask(task []byte, snid int32, expried int64) error {
 	select {
 	case re.queue <- &Task{
-		SnID: snid,
-		Data: task,
+		SnID:        snid,
+		Data:        task,
+		ExpriedTime: expried,
 	}:
 	default:
 	}
@@ -176,7 +179,12 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		var snID uint16
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 		//log.Printf("[recover]task bytes is %s, SN ID is %d\n", hex.EncodeToString(task[0:14]), int32(snID))
-		if err := re.PutTask(task, int32(snID)); err != nil {
+
+		// 如果大于过期时间跳过
+		if time.Now().Unix() > mtdMsg.ExpiredTime {
+			continue
+		}
+		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -189,16 +197,16 @@ func (re *RecoverEngine) Run() {
 			ts := <-re.queue
 			msg := ts.Data
 			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
-				res := re.execRCTask(msg[2:])
+				res := re.execRCTask(msg[2:], ts.ExpriedTime)
 				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 				log.Printf("[recover]LRC start\n")
-				res := re.execLRCTask(msg[2:])
+				res := re.execLRCTask(msg[2:], ts.ExpriedTime)
 				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			} else {
-				res := re.execCPTask(msg[2:])
+				res := re.execCPTask(msg[2:], ts.ExpriedTime)
 				res.BPID = ts.SnID
 				re.PutReplyQueue(res)
 			}
@@ -256,6 +264,7 @@ func (re *RecoverEngine) MultiReply() error {
 			log.Printf("[recover]marsnal failed %s\n", err.Error())
 			continue
 		} else {
+			v.NodeID = int32(re.sn.Config().IndexID)
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
 			log.Println("[recover] multi reply success")
 		}
@@ -264,8 +273,9 @@ func (re *RecoverEngine) MultiReply() error {
 	return nil
 }
 
-func (re *RecoverEngine) execRCTask(msgData []byte) *TaskMsgResult {
+func (re *RecoverEngine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
 	var res TaskMsgResult
+	res.ExpriedTime = expried
 	var msg message.TaskDescription
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
 		log.Printf("[recover]proto解析错误%s", err)
@@ -280,9 +290,10 @@ func (re *RecoverEngine) execRCTask(msgData []byte) *TaskMsgResult {
 	return &res
 }
 
-func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
+func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResult {
 
 	var res TaskMsgResult
+	res.ExpriedTime = expried
 	var msg message.TaskDescription
 
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
@@ -336,9 +347,10 @@ func (re *RecoverEngine) execLRCTask(msgData []byte) *TaskMsgResult {
 }
 
 // 副本集任务
-func (re *RecoverEngine) execCPTask(msgData []byte) *TaskMsgResult {
+func (re *RecoverEngine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	var msg message.TaskDescriptionCP
 	var result TaskMsgResult
+	result.ExpriedTime = expried
 	err := proto.UnmarshalMerge(msgData, &msg)
 	if err != nil {
 		log.Printf("[recover]解析错误%s\n", err.Error())
