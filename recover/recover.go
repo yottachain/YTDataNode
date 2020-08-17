@@ -129,6 +129,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
