@@ -90,7 +90,7 @@ message StringMsg{
 }
 
 message SpotCheckTaskList{
-    string taskID = 1;
+    string taskId = 1;
     repeated SpotCheckTask taskList = 2;
     int64 timestamp = 3;
 }
