@@ -160,12 +160,15 @@ message TaskOpResult{
 //MessageID:2cb0
 message MultiTaskDescription{
     repeated bytes tasklist=1;
+    int64 expiredTime = 2;
 }
 
 //MessageID:1b31
 message MultiTaskOpResult{
     repeated bytes id = 1;
     repeated int32 RES=2;
+    int32 NodeID = 3;
+    int64 expiredTime = 4;
 }
 //msgid=0x4bc6
 message ListDNIReq{
