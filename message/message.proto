@@ -90,9 +90,9 @@ message StringMsg{
 }
 
 message SpotCheckTaskList{
-    string taskId = 1;
-    int32 snid=2;
-    repeated SpotCheckTask taskList=3;
+    string taskID = 1;
+    repeated SpotCheckTask taskList = 2;
+    int64 timestamp = 3;
 }
 
 message SpotCheckTask{
