@@ -266,7 +266,7 @@ func (re *RecoverEngine) MultiReply() error {
 		} else {
 			v.NodeID = int32(re.sn.Config().IndexID)
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-			log.Println("[recover] multi reply success")
+			log.Printf("[recover] multi reply success %v\n", resmsg)
 		}
 	}
 
