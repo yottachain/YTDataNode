@@ -246,7 +246,11 @@ func (re *RecoverEngine) MultiReply() error {
 		for i := 0; i < max_reply_num; i++ {
 			select {
 			case res := <-re.replyQueue:
+				if resmsg[res.BPID] == nil {
+					resmsg[res.BPID] = &message.MultiTaskOpResult{}
+				}
 				_r := resmsg[res.BPID]
+
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				resmsg[res.BPID] = _r
