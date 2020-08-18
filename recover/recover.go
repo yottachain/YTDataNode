@@ -240,7 +240,7 @@ func (re *RecoverEngine) reply(res *TaskMsgResult) error {
 
 //
 func (re *RecoverEngine) MultiReply() error {
-	var resmsg = make(map[int32]message.MultiTaskOpResult)
+	var resmsg = make(map[int32]*message.MultiTaskOpResult)
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
@@ -260,11 +260,11 @@ func (re *RecoverEngine) MultiReply() error {
 		fmt.Println("待上报重建消息：", len(resmsg))
 	}
 	for k, v := range resmsg {
-		if data, err := proto.Marshal(&v); err != nil {
+		v.NodeID = int32(re.sn.Config().IndexID)
+		if data, err := proto.Marshal(v); err != nil {
 			log.Printf("[recover]marsnal failed %s\n", err.Error())
 			continue
 		} else {
-			v.NodeID = int32(re.sn.Config().IndexID)
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
 			log.Printf("[recover] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
 		}
