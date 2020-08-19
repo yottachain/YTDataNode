@@ -253,6 +253,7 @@ func (re *RecoverEngine) MultiReply() error {
 
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
+				_r.ExpiredTime = res.ExpriedTime
 				resmsg[res.BPID] = _r
 
 			case <-time.After(max_reply_wait_time):
