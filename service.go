@@ -8,8 +8,10 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -101,12 +103,12 @@ func (sn *storageNode) Service() {
 			log.Println("[recover]error", err)
 		}
 
-		// 记录上次数据
-		//go func() {
-		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		//	defer fd.Close()
-		//	fd.Write(data)
-		//}()
+		//记录上次数据
+		go func() {
+			fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+			defer fd.Close()
+			fd.Write(data)
+		}()
 		return message.MsgIDVoidResponse.Bytes(), nil
 	})
 
