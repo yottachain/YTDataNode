@@ -29,12 +29,13 @@ func NewLRCEngine(gsfunc GetShardFunc) *LRCEngine {
 }
 
 type LRCHandler struct {
-	le *LRCEngine
-	si *lrcpkg.Shardsinfo
+	le     *LRCEngine
+	si     *lrcpkg.Shardsinfo
+	shards [][]byte
 }
 
 func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, error) {
-	lrch := LRCHandler{le, shardsinfo}
+	lrch := LRCHandler{le, shardsinfo, nil}
 	if h := le.lrc.GetRCHandle(shardsinfo); h == nil {
 		return nil, fmt.Errorf("LRC get handler failed")
 	}
@@ -49,6 +50,7 @@ func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
 	defer log.Printf("[recover]recover idx end %d\n", lrch.si.Lostindex)
 	var n byte
 start:
+	lrch.shards = make([][]byte, 0)
 	n++
 	log.Println("尝试第", n, "次")
 
@@ -75,6 +77,7 @@ start:
 			if status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard); status < 0 {
 				goto start
 			}
+			lrch.shards = append(lrch.shards, shard)
 		}
 	}
 
@@ -85,4 +88,8 @@ start:
 	} else {
 		return nil, fmt.Errorf("rebuild data failed %d", status)
 	}
+}
+
+func (lrch *LRCHandler) GetShards() [][]byte {
+	return lrch.shards
 }
