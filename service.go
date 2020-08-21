@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,6 +33,8 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
+	exec.Command("rm -rf recover*").Output()
+
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
@@ -101,7 +104,7 @@ func (sn *storageNode) Service() {
 			log.Println("[recover]error", err)
 		}
 
-		// 记录上次数据
+		//记录上次数据
 		//go func() {
 		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		//	defer fd.Close()
