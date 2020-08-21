@@ -242,3 +242,9 @@ func (upt *UploadTaskPool) Load() {
 func (upt *UploadTaskPool) GetParams() (int64, int64) {
 	return atomic.LoadInt64(&upt.sentToken), atomic.LoadInt64(&upt.requestCount)
 }
+
+var utp *UploadTaskPool = New(500, time.Second*10, time.Millisecond*10)
+
+func Utp() *UploadTaskPool {
+	return utp
+}

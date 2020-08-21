@@ -271,6 +271,11 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		fmt.Println("Unmarshal error:", err)
 		return nil, err
 	}
+	if msg.AllocId != "" {
+		if tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId); err == nil {
+			defer uploadTaskPool.Utp().Delete(tk)
+		}
+	}
 
 	log.Println("get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
