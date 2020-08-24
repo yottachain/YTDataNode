@@ -115,7 +115,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
 	// todo: 这里需要单独处理，连接自己失败的错误
