@@ -115,7 +115,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		return nil, err
 	}
 	// todo: 这里需要单独处理，连接自己失败的错误
@@ -140,7 +140,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		return nil, err
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
@@ -148,8 +148,9 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
-	*n = *n + 1
+
 	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
+	*n = *n + 1
 	return res.Data, nil
 }
 
