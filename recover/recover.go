@@ -138,6 +138,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
