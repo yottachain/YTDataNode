@@ -11,6 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"path"
 	"sync"
 	"time"
@@ -338,6 +339,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	// 校验hash失败
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
 		log.Printf("[recover]LRC 校验HASH失败%s %s\n", base58.Encode(hash), base58.Encode(msg.Hashs[msg.RecoverId]))
+		exec.Command("rm -rf recover*").Output()
 		for k, v := range h.GetShards() {
 			fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("recover-shard-%d", k)), os.O_CREATE|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
