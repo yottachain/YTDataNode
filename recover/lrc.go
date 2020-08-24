@@ -62,7 +62,7 @@ start:
 		indexs = append(indexs, i.Value.(int16))
 	}
 
-	log.Println("[recover]need shard list", indexs)
+	log.Println("[recover]need shard list", indexs, len(indexs))
 
 	for _, idx := range indexs {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
