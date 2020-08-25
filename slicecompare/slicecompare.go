@@ -8,6 +8,8 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
 	"io/ioutil"
+	"net/url"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -258,4 +260,20 @@ func cleanDB(nameOfDB string){
 				return
 		}
 	}
+}
+
+func main(){
+	params := url.Values{}
+	Url, _:= url.Parse("https://www.baidu.com/")
+	params.Set("count","2000")
+	params.Set("start","00000000000000000")
+	params.Set("nodeid","9000")
+
+	Url.RawQuery = params.Encode()
+	urlPath := Url.String()
+	fmt.Println(urlPath) //等同于https://www.xxx.com?age=23&name=zhaofan
+	resp,_ := http.Get(urlPath)
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
 }

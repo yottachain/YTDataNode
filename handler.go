@@ -13,6 +13,8 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
+
 	"github.com/yottachain/YTDataNode/spotCheck"
 	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
@@ -69,6 +71,7 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 }
 
 func (wh *WriteHandler) batchWrite(number int) {
+	sc := slicecompare.NewSliceComparer()
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
@@ -84,8 +87,14 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 	}
 
+	err := sc.SaveRecordToTmpDB(hashkey, wh.db)
+	if err != nil {
+		log.Println("SaveRecordToTmpDB error")
+		goto OUT
+	}
+
 	log.Printf("[ytfs]flush start:%d\n", number)
-	_, err := wh.YTFS().BatchPut(rqmap)
+	_, err = wh.YTFS().BatchPut(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else {
@@ -100,6 +109,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	_, err = wh.YTFS().BatchPut(rqmap)
 	log.Printf("[ytfs]flush success:%d\n", number)
 
+OUT:
 	for _, rq := range rqs {
 		select {
 		case rq.Error <- err:
