@@ -70,14 +70,22 @@ start:
 
 		peer := td.Locations[idx]
 		shard, err := lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
+
+		// if there is some error, we should to try again
 		if err != nil {
-			// todo: retry
-			continue
-		} else {
-			if status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard); status < 0 {
-				goto start
-			}
-			lrch.shards = append(lrch.shards, shard)
+			shard, err = lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
+            if err != nil {
+            	if n < 3{
+					goto start
+				}else{
+					continue
+				}
+            }
+		}
+
+		status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard)
+		if status < 0{
+			goto start
 		}
 	}
 
