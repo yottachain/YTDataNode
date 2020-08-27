@@ -64,7 +64,9 @@ start:
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
 
+	k := 0
 	for _, idx := range indexs {
+		k++
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
@@ -75,27 +77,27 @@ start:
 		if err != nil {
 			shard, err = lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
             if err != nil {
-            	if n < 3{
-					goto start
-				}else{
 					continue
-				}
             }
 		}
 
 		status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard)
-		if status < 0{
-			goto start
+		if status > 0{
+			data, status2 := lrch.le.lrc.GetRebuildData(lrch.si)
+			if status2 > 0 {
+				return data, nil
+			}
+		}else if status < 0 {
+			if n < 3 {
+				goto start
+			}
+		}else {
+			if k >= len(indexs) && n < 3 {
+				goto start
+			}
 		}
 	}
-
-	data, status := lrch.le.lrc.GetRebuildData(lrch.si)
-
-	if status > 0 {
-		return data, nil
-	} else {
-		return nil, fmt.Errorf("rebuild data failed %d", status)
-	}
+	return nil, fmt.Errorf("rebuild data failed")
 }
 
 func (lrch *LRCHandler) GetShards() [][]byte {
