@@ -4,6 +4,7 @@ package message;
 
 //msgid=0xc487
 message NodeCapacityRequest{
+    int32 RequestMsgID = 1;
 }
 
 //msgid=0xe684

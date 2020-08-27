@@ -147,7 +147,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	if res.AllocId == "" {
 		res.Writable = false
 	} else {
-		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
+		if data != nil && len(data) > 0 {
+		} else {
+			atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
+		}
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
