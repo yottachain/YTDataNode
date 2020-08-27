@@ -11,6 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"path"
 	"sync"
 	"time"
@@ -114,6 +115,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
 	// todo: 这里需要单独处理，连接自己失败的错误
@@ -131,12 +133,14 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	msg.VHF = hash
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
+		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		return nil, err
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
@@ -144,8 +148,9 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
-	*n = *n + 1
+
 	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
+	*n = *n + 1
 	return res.Data, nil
 }
 
@@ -338,6 +343,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	// 校验hash失败
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
 		log.Printf("[recover]LRC 校验HASH失败%s %s\n", base58.Encode(hash), base58.Encode(msg.Hashs[msg.RecoverId]))
+		exec.Command("rm -rf recover*").Output()
 		for k, v := range h.GetShards() {
 			fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("recover-shard-%d", k)), os.O_CREATE|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {

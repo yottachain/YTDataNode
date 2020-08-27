@@ -10,7 +10,6 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,7 +32,6 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 
 func (sn *storageNode) Service() {
-	exec.Command("rm -rf recover*").Output()
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
