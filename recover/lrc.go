@@ -44,11 +44,11 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 }
 
 func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
-	defer lrch.le.lrc.FreeHandle(lrch.si)
+	defer lrch.le.lrc.FreeHandle()
 
 	log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
 	defer log.Printf("[recover]recover idx end %d\n", lrch.si.Lostindex)
-	var n byte
+	var n uint16
 start:
 	lrch.shards = make([][]byte, 0)
 	n++
@@ -75,24 +75,31 @@ start:
 
 		// if there is some error, we should to try again
 		if err != nil {
+			fmt.Println("[recover]first getshard error:",err)
 			shard, err = lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
-            if err != nil {
+            if err != nil || len(shard) == 0 {
+            	fmt.Println("[recover]second getshard error:",err,"len shard=",len(shard))
 					continue
             }
+		}
+
+		if len(shard) == 0 {
+			log.Println("[ytlrc] shard is empty!!")
+			continue
 		}
 
 		status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard)
 		if status > 0{
 			data, status2 := lrch.le.lrc.GetRebuildData(lrch.si)
-			if status2 > 0 {
+			if status2 > 0 {        //rebuild success
 				return data, nil
 			}
-		}else if status < 0 {
+		}else if status < 0 {     //rebuild failed
 			if n < 3 {
 				goto start
 			}
 		}else {
-			if k >= len(indexs) && n < 3 {
+			if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
 				goto start
 			}
 		}
