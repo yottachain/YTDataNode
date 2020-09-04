@@ -164,6 +164,8 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 			if (sentTokenN - requestCountN) < sentTokenN*config.Gconfig.IncreaseThreshold/100 {
 				log.Printf("[token] 触发token增加 [%d,%d] \n", sentTokenN, requestCountN)
 				upt.ChangeTKFillInterval(upt.FillTokenInterval - (upt.FillTokenInterval / 5))
+			} else {
+				log.Printf("[token] 未触发增加toekn %d,%d,%d\n", sentTokenN, requestCountN, config.Gconfig.IncreaseThreshold)
 			}
 		}
 	}()
