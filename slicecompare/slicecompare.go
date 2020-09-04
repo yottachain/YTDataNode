@@ -239,6 +239,10 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB stri
 	return err
 }
 
+func reportForRebuild(){
+
+}
+
 func SaveValueToFile(Value string, FileName string) error {
     filePath := util.GetYTFSPath() + FileName
 	err := ioutil.WriteFile(filePath,[]byte(Value),0666)
