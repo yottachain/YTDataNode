@@ -80,7 +80,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt.Load()
 
 	if upt.FillTokenInterval == 0 {
-		upt.FillTokenInterval = 10
+		upt.FillTokenInterval = 1000
 	}
 	if upt.TTL == 0 {
 		upt.TTL = 10
