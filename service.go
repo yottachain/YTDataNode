@@ -69,7 +69,9 @@ func (sn *storageNode) Service() {
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		return wh.GetToken(data, head.RemotePeerID), nil
+		res := wh.GetToken(data, head.RemotePeerID)
+		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
+		return res, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)
