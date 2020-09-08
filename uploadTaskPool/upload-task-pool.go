@@ -80,7 +80,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	upt.Load()
 
 	if upt.FillTokenInterval == 0 {
-		upt.FillTokenInterval = 1000
+		upt.FillTokenInterval = 10
 	}
 	if upt.TTL == 0 {
 		upt.TTL = 10
@@ -92,7 +92,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	return upt
 }
 
-func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error) {
+func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool) (*Token, error) {
 	atomic.AddInt64(&upt.waitCount, 1)
 	defer func() {
 		atomic.AddInt64(&upt.waitCount, -1)
@@ -104,7 +104,9 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID) (*Token, error)
 		tk.Reset()
 		tk.PID = pid
 
-		atomic.AddInt64(&upt.sentToken, 1)
+		if needStat {
+			atomic.AddInt64(&upt.sentToken, 1)
+		}
 		return tk, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("task busy")
@@ -243,4 +245,10 @@ func (upt *UploadTaskPool) Load() {
 
 func (upt *UploadTaskPool) GetParams() (int64, int64) {
 	return atomic.LoadInt64(&upt.sentToken), atomic.LoadInt64(&upt.requestCount)
+}
+
+var utp *UploadTaskPool = New(500, time.Second*10, time.Millisecond*10)
+
+func Utp() *UploadTaskPool {
+	return utp
 }

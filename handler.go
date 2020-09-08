@@ -128,7 +128,15 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
-	tk, err := wh.Upt.Get(ctx, id)
+
+	var needStat bool = false
+	if data != nil && len(data) > 0 {
+		needStat = false
+	} else {
+		needStat = true
+	}
+
+	tk, err := wh.Upt.Get(ctx, id, needStat)
 
 	// 如果 剩余空间不足10个分片停止发放token
 	if disableWrite || wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len()+10) {
@@ -270,6 +278,11 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	if err != nil {
 		fmt.Println("Unmarshal error:", err)
 		return nil, err
+	}
+	if msg.AllocId != "" {
+		if tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId); err == nil {
+			defer uploadTaskPool.Utp().Delete(tk)
+		}
 	}
 
 	log.Println("get vhf:", base58.Encode(msg.VHF))

@@ -4,6 +4,7 @@ package message;
 
 //msgid=0xc487
 message NodeCapacityRequest{
+    int32 RequestMsgID = 1;
 }
 
 //msgid=0xe684
@@ -41,6 +42,7 @@ message UploadShard2CResponse {
 
 message DownloadShardRequest {
    bytes VHF=1;
+   string allocId=2;
 }
 
 message DownloadShardResponse{
@@ -93,6 +95,7 @@ message SpotCheckTaskList{
     string taskId = 1;
     int32 snid=2;
     repeated SpotCheckTask taskList=3;
+    string allocId=4;
 }
 
 message SpotCheckTask{
@@ -161,6 +164,7 @@ message TaskOpResult{
 message MultiTaskDescription{
     repeated bytes tasklist=1;
     int64 expiredTime = 2;
+    string allocId=3;
 }
 
 //MessageID:1b31
