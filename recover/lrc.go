@@ -44,7 +44,7 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 }
 
 func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
-	defer lrch.le.lrc.FreeHandle(lrch.si)
+	defer lrch.le.lrc.FreeHandle()
 
 	log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
 	defer log.Printf("[recover]recover idx end %d\n", lrch.si.Lostindex)
