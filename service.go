@@ -9,6 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -37,6 +38,8 @@ func (sn *storageNode) Service() {
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
 		config.Gconfig.Save()
+		// 随机等待重启，错开高峰
+		time.Sleep(time.Duration(rand.Int63n(300)) * time.Second)
 		os.Exit(0)
 	}
 
