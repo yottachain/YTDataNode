@@ -9,6 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -37,6 +38,8 @@ func (sn *storageNode) Service() {
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
 		config.Gconfig.Save()
+		// 随机等待重启，错开高峰
+		time.Sleep(time.Duration(rand.Int63n(300)) * time.Second)
 		os.Exit(0)
 	}
 
@@ -69,7 +72,9 @@ func (sn *storageNode) Service() {
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		return wh.GetToken(data, head.RemotePeerID), nil
+		res := wh.GetToken(data, head.RemotePeerID)
+		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
+		return res, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)

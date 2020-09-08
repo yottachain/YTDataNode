@@ -31,6 +31,7 @@ type Gcfg struct {
 	Decrease          int64 `json:"Decrease"`
 	DecreaseThreshold int64 `json:"DecreaseThreshold"`
 	TokenWait         int64 `json:"TokenWait"`
+	TokenReturnWait   int64 `json:"TokenReturnWait"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
