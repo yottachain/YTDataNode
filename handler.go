@@ -147,6 +147,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	// 如果token为空 返回 假
 	if res.AllocId == "" {
 		res.Writable = false
+		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
 	}
