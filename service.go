@@ -39,7 +39,7 @@ func (sn *storageNode) Service() {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
 		config.Gconfig.Save()
 		// 随机等待重启，错开高峰
-		time.Sleep(time.Duration(rand.Int63n(300)) * time.Second)
+		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
 		os.Exit(0)
 	}
 
@@ -73,7 +73,6 @@ func (sn *storageNode) Service() {
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		res := wh.GetToken(data, head.RemotePeerID)
-		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 		return res, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
