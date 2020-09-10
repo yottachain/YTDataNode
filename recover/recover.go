@@ -134,11 +134,22 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	getTokenData, _ := proto.Marshal(&getToken)
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancels()
+	tokenstart := time.Now()
+
+RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 	proto.Unmarshal(tok[2:], &resGetToken)
-	if err != nil || !resGetToken.Writable {
+	if err != nil  {
 		log.Printf("[recover:%d]get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
+	}
+
+	if !resGetToken.Writable {
+		if time.Now().Sub(tokenstart).Seconds() > 10 {
+			log.Println("[recover] get token err! resGetToken.AllocId=",resGetToken.AllocId)
+			return nil,err
+		}
+		goto RETRY
 	}
 
 	var msg message.DownloadShardRequest
