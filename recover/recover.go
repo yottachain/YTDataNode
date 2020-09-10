@@ -127,6 +127,13 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	//	}
 	//	return nil, err
 	//}
+	//var getToken message.NodeCapacityRequest
+	//var resGetToken message.NodeCapacityResponse
+	//getToken.RequestMsgID = message.MsgIDDownloadShardRequest.Value()
+	//getTokenData, _ := proto.Marshal(&getToken)
+	//ctxto, cancels := context.WithTimeout(context.Background(), time.Second*5)
+	//defer cancels()
+
 
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
