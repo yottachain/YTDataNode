@@ -68,6 +68,7 @@ start:
 	k := 0
 	for _, idx := range indexs {
 		k++
+
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
