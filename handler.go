@@ -130,9 +130,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var GTMsg message.NodeCapacityRequest
 	var needStat bool = true
 	err := proto.Unmarshal(data, &GTMsg)
-	if err == nil && GTMsg.RequestMsgID != 0 {
+	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
 		needStat = false
-		log.Printf("[get token]%o, data %d\n", GTMsg.RequestMsgID, len(data))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
