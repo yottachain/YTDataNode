@@ -106,6 +106,8 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool) 
 
 		if needStat {
 			atomic.AddInt64(&upt.sentToken, 1)
+		} else {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadTokenRequest, 1)
 		}
 		return tk, nil
 	case <-ctx.Done():
