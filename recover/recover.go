@@ -39,10 +39,10 @@ type Task struct {
 }
 
 type RecoverEngine struct {
-	sn         node.StorageNode
-	queue      chan *Task
-	replyQueue chan *TaskMsgResult
-	le         *LRCEngine
+	sn           node.StorageNode
+	queue        chan *Task
+	replyQueue   chan *TaskMsgResult
+	le           *LRCEngine
 	successShard uint64
 	failShard    uint64
 	failToken    uint64
@@ -61,6 +61,22 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 
 func (re *RecoverEngine) Len() uint32 {
 	return uint32(len(re.queue))
+}
+
+type RecoverStat struct {
+	Success   uint64 `json:"Success"`
+	FailShard uint64 `json:"FailShard"`
+	FailToken uint64 `json:"FailToken"`
+	FailConn  uint64 `json:"failConn"`
+}
+
+func (re *RecoverEngine) GetStat() *RecoverStat {
+	return &RecoverStat{
+		re.successShard,
+		re.failShard,
+		re.failToken,
+		re.failConn,
+	}
 }
 
 func (re *RecoverEngine) recoverShard(description *message.TaskDescription) error {
@@ -144,7 +160,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 	proto.Unmarshal(tok[2:], &resGetToken)
-	if err != nil  {
+	if err != nil {
 		log.Printf("[recover:%d]get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.failToken++
 		return nil, err
@@ -152,9 +168,9 @@ RETRY:
 
 	if !resGetToken.Writable {
 		if time.Now().Sub(tokenstart).Seconds() > 10 {
-			log.Println("[recover] get token err! resGetToken.AllocId=",resGetToken.AllocId)
+			log.Println("[recover] get token err! resGetToken.AllocId=", resGetToken.AllocId)
 			re.failToken++
-			return nil,err
+			return nil, err
 		}
 		goto RETRY
 	}
@@ -162,7 +178,7 @@ RETRY:
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
 	msg.VHF = hash
-    msg.AllocId = resGetToken.AllocId
+	msg.AllocId = resGetToken.AllocId
 
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
@@ -184,7 +200,7 @@ RETRY:
 		re.failShard++
 		return nil, err
 	}
-    re.successShard++
+	re.successShard++
 	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
 	*n = *n + 1
 	return res.Data, nil
