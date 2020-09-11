@@ -132,7 +132,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID != 0 {
 		needStat = false
-		log.Printf("[get token]%s, data %d\n", GTMsg.RequestMsgID, len(data))
+		log.Printf("[get token]%o, data %d\n", GTMsg.RequestMsgID, len(data))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
