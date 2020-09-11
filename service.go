@@ -47,7 +47,6 @@ func (sn *storageNode) Service() {
 	//}
 	//go gc.UpdateService(context.Background(), time.Minute)
 
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.New(500, time.Second*10, time.Millisecond*1000)
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
 		config.Gconfig.Save()
@@ -55,6 +54,7 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
 		os.Exit(0)
 	}
+	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.Utp()
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
 	//// 每次更新重置utp
