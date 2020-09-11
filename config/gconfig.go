@@ -152,7 +152,8 @@ func NewGConfig() *GConfig {
 			IncreaseThreshold: 95,
 			Decrease:          5,
 			DecreaseThreshold: 80,
-			TokenWait:         1000,
+			TokenWait:         800,
+			TokenReturnWait:   800,
 		},
 		OnUpdate: nil,
 	}

@@ -1,9 +1,8 @@
 package config
 
 import (
-	"context"
+	"fmt"
 	"testing"
-	"time"
 )
 
 func TestGConfig_Get(t *testing.T) {
@@ -11,6 +10,6 @@ func TestGConfig_Get(t *testing.T) {
 }
 
 func TestGConfig_UpdateServicet(t *testing.T) {
-	Gconfig.UpdateService(context.Background(), time.Second*3)
+	fmt.Println(Gconfig.MD5())
 	select {}
 }
