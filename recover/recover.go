@@ -43,6 +43,10 @@ type RecoverEngine struct {
 	queue      chan *Task
 	replyQueue chan *TaskMsgResult
 	le         *LRCEngine
+	successShard uint64
+	failShard    uint64
+	failToken    uint64
+	failConn     uint64
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
@@ -115,6 +119,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
+		re.failConn++
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
@@ -141,12 +146,14 @@ RETRY:
 	proto.Unmarshal(tok[2:], &resGetToken)
 	if err != nil  {
 		log.Printf("[recover:%d]get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+		re.failToken++
 		return nil, err
 	}
 
 	if !resGetToken.Writable {
 		if time.Now().Sub(tokenstart).Seconds() > 10 {
 			log.Println("[recover] get token err! resGetToken.AllocId=",resGetToken.AllocId)
+			re.failToken++
 			return nil,err
 		}
 		goto RETRY
@@ -160,6 +167,7 @@ RETRY:
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		re.failToken++
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
@@ -167,14 +175,16 @@ RETRY:
 
 	if err != nil {
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		re.failShard++
 		return nil, err
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
 		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		re.failShard++
 		return nil, err
 	}
-
+    re.successShard++
 	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
 	*n = *n + 1
 	return res.Data, nil
