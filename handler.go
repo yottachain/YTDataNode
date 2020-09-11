@@ -127,13 +127,15 @@ func (wh *WriteHandler) Run() {
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
-	defer cancel()
-
+	var GTMsg message.NodeCapacityRequest
 	var needStat bool = true
-	if data != nil && len(data) > 0 {
+	err := proto.Unmarshal(data, &GTMsg)
+	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
 		needStat = false
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
+	defer cancel()
 
 	tk, err := wh.Upt.Get(ctx, id, needStat)
 
