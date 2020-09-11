@@ -107,7 +107,6 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool) 
 		if needStat {
 			atomic.AddInt64(&upt.sentToken, 1)
 		} else {
-			atomic.AddInt64(&statistics.DefaultStat.OtherTokenRequest, 1)
 		}
 		return tk, nil
 	case <-ctx.Done():
@@ -198,7 +197,6 @@ func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
 		atomic.StoreInt64(&utp.requestCount, 0)
 		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
 		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
-		atomic.StoreInt64(&statistics.DefaultStat.OtherTokenRequest, 0)
 	}
 
 	utp.Save()
