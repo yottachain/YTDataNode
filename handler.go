@@ -129,11 +129,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
-	var needStat bool = false
+	var needStat bool = true
 	if data != nil && len(data) > 0 {
 		needStat = false
-	} else {
-		needStat = true
 	}
 
 	tk, err := wh.Upt.Get(ctx, id, needStat)
