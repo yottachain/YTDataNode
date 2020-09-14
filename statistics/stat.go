@@ -3,6 +3,7 @@ package statistics
 import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p-core/peer"
+	recover2 "github.com/yottachain/YTDataNode/recover"
 	"sync"
 	"time"
 )
@@ -25,6 +26,7 @@ type Stat struct {
 	NetLatency           int64
 	DiskLatency          int64
 	GconfigMd5           string
+	RebuildShardStat     *recover2.RecoverStat
 	sync.RWMutex
 }
 
