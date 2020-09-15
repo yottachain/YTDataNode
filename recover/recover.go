@@ -120,7 +120,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
 		re.failConn++
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
 
@@ -145,15 +145,16 @@ RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 	proto.Unmarshal(tok[2:], &resGetToken)
 	if err != nil  {
-		log.Printf("[recover:%d]get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.failToken++
+		log.Printf("[recover:%d] failToken [%v] get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
 
 	if !resGetToken.Writable {
 		if time.Now().Sub(tokenstart).Seconds() > 10 {
-			log.Println("[recover] get token err! resGetToken.AllocId=",resGetToken.AllocId)
 			re.failToken++
+			err = fmt.Errorf("faild to get token")
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
 			return nil,err
 		}
 		goto RETRY
@@ -166,26 +167,26 @@ RETRY:
 
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		re.failToken++
+		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		re.failShard++
+		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		return nil, err
 	}
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
-		log.Printf("[recover:%d]get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		re.failShard++
+		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
     re.successShard++
-	log.Printf("[recover:%d]get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), base64.StdEncoding.EncodeToString(hash), *n)
+	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 	*n = *n + 1
 	return res.Data, nil
 }
