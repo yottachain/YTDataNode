@@ -230,15 +230,15 @@ func (sn *storageNode) Service() {
 						 	log.Println(err)
 					 	}
 
-					if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
-						 log.Println(err)
-					}
-					 if len(msg.Vnflist)/22 < 1000{
-						 break
-					 }
-			    }
-			}
-		}
+						if err = sc.CompareEntryWithSnTables(msg.Vnflist, tmp_db, sc.File_SnDB, sc.NextIdxFile, sc.ComparedIdxFile, msg.Nextid, &sc.CompareTimes); err != nil{
+							log.Println(err)
+						}
+						if len(msg.Vnflist)/22 < 1000{
+							break
+						}
+			    	}
+				}
+		 }
 	}()
 
 	go func() {
