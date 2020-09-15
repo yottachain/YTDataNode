@@ -9,6 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -34,11 +35,6 @@ var rms *service.RelayManager
 func (sn *storageNode) Service() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
-	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
-		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
-		config.Gconfig.Save()
-		os.Exit(0)
-	}
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -51,8 +47,14 @@ func (sn *storageNode) Service() {
 	//}
 	//go gc.UpdateService(context.Background(), time.Minute)
 
+	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
+		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
+		config.Gconfig.Save()
+		// 随机等待重启，错开高峰
+		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
+		os.Exit(0)
+	}
 	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.Utp()
-
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
 	//// 每次更新重置utp
@@ -70,7 +72,8 @@ func (sn *storageNode) Service() {
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		return wh.GetToken(data, head.RemotePeerID), nil
+		res := wh.GetToken(data, head.RemotePeerID)
+		return res, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		statistics.AddCounnectCount(head.RemotePeerID)
@@ -237,6 +240,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
+	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
 
 	pool.Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())

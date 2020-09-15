@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
 	"strconv"
@@ -126,15 +127,15 @@ func (wh *WriteHandler) Run() {
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
-	ctx, cancel := context.WithTimeout(context.Background(), 0)
-	defer cancel()
-
-	var needStat bool = false
-	if data != nil && len(data) > 0 {
+	var GTMsg message.NodeCapacityRequest
+	var needStat bool = true
+	err := proto.Unmarshal(data, &GTMsg)
+	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
 		needStat = false
-	} else {
-		needStat = true
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
+	defer cancel()
 
 	tk, err := wh.Upt.Get(ctx, id, needStat)
 
@@ -154,6 +155,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	// 如果token为空 返回 假
 	if res.AllocId == "" {
 		res.Writable = false
+		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
 	}

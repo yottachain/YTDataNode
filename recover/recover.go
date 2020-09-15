@@ -39,10 +39,10 @@ type Task struct {
 }
 
 type RecoverEngine struct {
-	sn         node.StorageNode
-	queue      chan *Task
-	replyQueue chan *TaskMsgResult
-	le         *LRCEngine
+	sn           node.StorageNode
+	queue        chan *Task
+	replyQueue   chan *TaskMsgResult
+	le           *LRCEngine
 	successShard uint64
 	failShard    uint64
 	failToken    uint64
@@ -61,6 +61,22 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 
 func (re *RecoverEngine) Len() uint32 {
 	return uint32(len(re.queue))
+}
+
+type RecoverStat struct {
+	Success   uint64 `json:"Success"`
+	FailShard uint64 `json:"FailShard"`
+	FailToken uint64 `json:"FailToken"`
+	FailConn  uint64 `json:"failConn"`
+}
+
+func (re *RecoverEngine) GetStat() *RecoverStat {
+	return &RecoverStat{
+		re.successShard,
+		re.failShard,
+		re.failToken,
+		re.failConn,
+	}
 }
 
 func (re *RecoverEngine) recoverShard(description *message.TaskDescription) error {
@@ -163,7 +179,7 @@ RETRY:
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
 	msg.VHF = hash
-    msg.AllocId = resGetToken.AllocId
+	msg.AllocId = resGetToken.AllocId
 
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
@@ -185,8 +201,10 @@ RETRY:
 		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
 	}
+
     re.successShard++
 	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.successShard, base64.StdEncoding.EncodeToString(hash), *n)
+
 	*n = *n + 1
 	return res.Data, nil
 }
