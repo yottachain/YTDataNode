@@ -115,7 +115,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*9)
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
@@ -137,7 +137,7 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDDownloadShardRequest.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
-	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*5)
+	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*7)
 	defer cancels()
 	tokenstart := time.Now()
 
@@ -151,7 +151,7 @@ RETRY:
 	}
 
 	if !resGetToken.Writable {
-		if time.Now().Sub(tokenstart).Seconds() > 10 {
+		if time.Now().Sub(tokenstart).Seconds() > 5 {
 			re.failToken++
 			err = fmt.Errorf("faild to get token")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)

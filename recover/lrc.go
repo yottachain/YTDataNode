@@ -69,7 +69,7 @@ start:
 	for _, idx := range indexs {
 		k++
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
 		peer := td.Locations[idx]
