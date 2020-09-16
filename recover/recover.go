@@ -99,7 +99,7 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			shard, err := re.getShard(ctx, v.NodeId, base58.Encode(description.Id), v.Addrs, description.Hashs[k], &number)
+			shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(description.Id), v.Addrs, description.Hashs[k], &number)
 			if err == nil {
 				shards[k] = shard
 			} else {
@@ -126,7 +126,11 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	return nil
 }
 
-func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
+func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
+	return nil,nil    //refer to getShard
+}
+
+func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
 	btid, err := base58.Decode(taskID)
 	if err != nil {
 		return nil, err
@@ -159,17 +163,31 @@ func (re *RecoverEngine) getShard(ctx context.Context, id string, taskID string,
 
 RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
-	proto.Unmarshal(tok[2:], &resGetToken)
-	if err != nil  {
-		re.failToken++
-		log.Printf("[recover:%d] failToken [%v] get shard [%s] get token error[%d] %s addr %v id %d\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		return nil, err
+
+	if err != nil || len(tok) < 3 {
+		if time.Now().Sub(tokenstart).Seconds() > 5 {
+			re.failToken++
+			err = fmt.Errorf("faild to get token")
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
+			return nil,err
+		}
+		goto RETRY
+	}
+
+	err = proto.Unmarshal(tok[2:], &resGetToken)
+	if err != nil {
+		if time.Now().Sub(tokenstart).Seconds() > 5 {
+			re.failToken++
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
+			return nil,err
+		}
+		goto RETRY
 	}
 
 	if !resGetToken.Writable {
 		if time.Now().Sub(tokenstart).Seconds() > 5 {
 			re.failToken++
-			err = fmt.Errorf("faild to get token")
+			err = fmt.Errorf("resGetToken.Writable is false")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
 			return nil,err
 		}
@@ -190,11 +208,12 @@ RETRY:
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
-	if err != nil {
+	if err != nil || len(shardBuf) < 3{
 		re.failShard++
 		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		return nil, err
 	}
+
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
 		re.failShard++
@@ -440,7 +459,7 @@ func (re *RecoverEngine) execCPTask(msgData []byte, expried int64) *TaskMsgResul
 	var number int
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
-		shard, err := re.getShard(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
+		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
 		// 如果没有发生错误，分片下载成功，就存储分片
 		if err == nil {
 			var vhf [16]byte

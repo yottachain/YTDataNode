@@ -7,17 +7,18 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
-	"time"
 )
 
 type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
 
+type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
+
 type LRCEngine struct {
 	lrc      lrcpkg.Shardsinfo
-	GetShard GetShardFunc
+	GetShard GetShardFuncLrc
 }
 
-func NewLRCEngine(gsfunc GetShardFunc) *LRCEngine {
+func NewLRCEngine(gsfunc GetShardFuncLrc) *LRCEngine {
 	var le LRCEngine
 	le.lrc = lrcpkg.Shardsinfo{}
 
@@ -69,16 +70,16 @@ start:
 	for _, idx := range indexs {
 		k++
 
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
+		//ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		//defer cancel()
 
 		peer := td.Locations[idx]
-		shard, err := lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
+		shard, err := lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
 
 		// if there is some error, we should to try again
 		if err != nil {
 			fmt.Println("[recover]first getshard error:",err)
-			shard, err = lrch.le.GetShard(ctx, peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
+			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
             if err != nil || len(shard) == 0 {
             	fmt.Println("[recover]second getshard error:",err,"len shard=",len(shard))
 					continue
