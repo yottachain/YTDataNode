@@ -137,7 +137,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	defer cancel()
 
-	tk, err := wh.Upt.Get(ctx, id, needStat)
+	tk, err := wh.Upt.Get(ctx, id, needStat, 0)
 
 	// 如果 剩余空间不足10个分片停止发放token
 	if disableWrite || wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len()+10) {

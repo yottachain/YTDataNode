@@ -16,6 +16,42 @@ import (
 	"time"
 )
 
+type TokenQueue struct {
+	Num          int32
+	LevelRequest map[int32]chan *Token
+}
+
+func NewTokenQueue(Num int32) *TokenQueue {
+	tq := new(TokenQueue)
+	tq.LevelRequest = make(map[int32]chan *Token)
+	tq.Num = Num
+	return tq
+}
+
+func (tq *TokenQueue) Get(level int32) chan *Token {
+	lm, ok := tq.LevelRequest[level]
+	if !ok {
+		lm = make(chan *Token, tq.Num)
+		tq.LevelRequest[level] = lm
+	}
+	return lm
+}
+
+func (tq *TokenQueue) Add() chan struct{} {
+	var res chan struct{}
+	var maxLevel int32
+	for i, lq := range tq.LevelRequest {
+		if i >= maxLevel && len(lq) > 0 {
+			func(maxLevel *int32, i int32) {
+				*maxLevel = i
+			}(&maxLevel, i)
+		}
+	}
+	tq.LevelRequest[maxLevel] <- NewToken()
+	res <- struct{}{}
+	return res
+}
+
 type delayStat struct {
 	D int64
 	C int64
@@ -52,7 +88,7 @@ func NewStat() *delayStat {
 }
 
 type UploadTaskPool struct {
-	tkc               *chan *Token
+	tkc               *TokenQueue
 	TTL               time.Duration `json:"ttl"`
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
 	sentToken         int64
@@ -92,7 +128,7 @@ func New(size int, ttl time.Duration, fillInterval time.Duration) *UploadTaskPoo
 	return upt
 }
 
-func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool) (*Token, error) {
+func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool, level int32) (*Token, error) {
 	atomic.AddInt64(&upt.waitCount, 1)
 	defer func() {
 		atomic.AddInt64(&upt.waitCount, -1)
@@ -100,10 +136,9 @@ func (upt *UploadTaskPool) Get(ctx context.Context, pid peer.ID, needStat bool) 
 
 	// 如果队列长度大于等待token直接返回
 	select {
-	case tk := <-*upt.tkc:
+	case tk := <-upt.tkc.Get(level):
 		tk.Reset()
 		tk.PID = pid
-
 		if needStat {
 			atomic.AddInt64(&upt.sentToken, 1)
 		} else {
@@ -136,7 +171,7 @@ func (upt *UploadTaskPool) FillToken() {
 		tk := NewToken()
 		tk.Reset()
 		select {
-		case *upt.tkc <- tk:
+		case <-upt.tkc.Add():
 		default:
 		}
 	}
@@ -178,7 +213,7 @@ func (upt *UploadTaskPool) AutoChangeTokenInterval() {
 }
 
 func (upt *UploadTaskPool) FreeTokenLen() int {
-	return len(*upt.tkc)
+	return int(upt.tkc.Num)
 }
 
 func (utp *UploadTaskPool) ChangeTKFillInterval(duration time.Duration) {
@@ -208,11 +243,7 @@ func (utp *UploadTaskPool) MakeTokenQueue() {
 	if size > 500 {
 		size = 500
 	}
-	tkc := make(chan *Token, size)
-	if utp.tkc != nil {
-		close(*utp.tkc)
-	}
-	utp.tkc = &tkc
+	utp.tkc = NewTokenQueue(int32(config.Gconfig.MaxToken))
 }
 
 func (utp *UploadTaskPool) GetTFillTKSpeed() time.Duration {
