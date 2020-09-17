@@ -81,5 +81,7 @@ func (tk *Token) IsOuttime(ttl time.Duration) bool {
 }
 
 func (tk *Token) Reset() {
-	tk.Tm = time.Now()
+	if tk != nil {
+		tk.Tm = time.Now()
+	}
 }
