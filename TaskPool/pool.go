@@ -51,6 +51,7 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 
 	pt.TTL = time.Duration(config.Gconfig.TTL) * time.Second
 	pt.MakeTokenQueue()
+	pt.name = name
 
 	return pt
 }
@@ -182,7 +183,7 @@ func (pt *TaskPool) GetTFillTKSpeed() time.Duration {
 func (pt *TaskPool) Save() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Println("[task pool]", err)
 		return
 	}
 	defer fl.Close()
@@ -198,7 +199,7 @@ func (pt *TaskPool) Save() {
 func (pt *TaskPool) Load() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_RDONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Println("[task pool]", err)
 		return
 	}
 	defer fl.Close()
