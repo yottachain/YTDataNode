@@ -3,6 +3,7 @@ package TaskPool
 import (
 	"container/list"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -45,6 +46,7 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 	if tq.requestQueue.Len() == 0 {
 		tq.requestQueue.PushFront(request)
 	} else if tq.requestQueue.Len() >= int(tq.Num) {
+		fmt.Println("error", tq.requestQueue.Len(), tq.Num)
 		request.res <- nil
 	}
 
@@ -79,7 +81,11 @@ func (tq *TokenQueue) Run() {
 				head := tq.requestQueue.Remove(tq.requestQueue.Front())
 				if head != nil {
 					tk.Reset()
-					head.(*getTokenRequest).res <- tk
+					select {
+					case head.(*getTokenRequest).res <- tk:
+					default:
+
+					}
 				}
 			} else {
 				tq.tc <- tk
