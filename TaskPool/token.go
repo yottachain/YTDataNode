@@ -40,7 +40,6 @@ func (tk *Token) FillFromString(tkstring string) error {
 	dd := gob.NewDecoder(buf)
 	return dd.Decode(tk)
 }
-
 func NewToken() *Token {
 	tk := new(Token)
 	id := uuid.NewV4()

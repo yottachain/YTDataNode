@@ -51,6 +51,7 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 
 	pt.TTL = time.Duration(config.Gconfig.TTL) * time.Second
 	pt.MakeTokenQueue()
+	pt.name = name
 
 	return pt
 }
@@ -64,9 +65,13 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	// 如果队列长度大于等待token直接返回
 	select {
 	case tk := <-pt.tkc.Get(level):
-		tk.Reset()
-		tk.PID = pid
-		atomic.AddInt64(&pt.sentToken, 1)
+		if tk != nil {
+			tk.Reset()
+			tk.PID = pid
+			atomic.AddInt64(&pt.sentToken, 1)
+		} else {
+			return nil, fmt.Errorf("task busy")
+		}
 		return tk, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("task busy")
@@ -91,13 +96,7 @@ func (pt *TaskPool) FillToken() {
 
 	for {
 		<-time.After(pt.FillTokenInterval)
-
-		tk := NewToken()
-		tk.Reset()
-		select {
-		case <-pt.tkc.Add():
-		default:
-		}
+		pt.tkc.Add()
 	}
 }
 
@@ -182,7 +181,7 @@ func (pt *TaskPool) GetTFillTKSpeed() time.Duration {
 func (pt *TaskPool) Save() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Println("[task pool]", err)
 		return
 	}
 	defer fl.Close()
@@ -198,7 +197,7 @@ func (pt *TaskPool) Save() {
 func (pt *TaskPool) Load() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_RDONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		log.Println("[task pool]", err)
 		return
 	}
 	defer fl.Close()
