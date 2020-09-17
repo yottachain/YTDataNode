@@ -1,37 +1,68 @@
 package TaskPool
 
+import (
+	"container/list"
+	"time"
+)
+
 type TokenQueue struct {
 	Num          int32
-	LevelRequest map[int32]chan *Token
+	tc           chan *Token
+	requestQueue *list.List
+}
+
+type getTokenRequest struct {
+	Level int32
+	res   chan *Token
 }
 
 func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
-	tq.LevelRequest = make(map[int32]chan *Token)
+	tq.tc = make(chan *Token, Num)
 	tq.Num = Num
+	tq.requestQueue = list.New()
+	tq.Run()
 	return tq
 }
 
 func (tq *TokenQueue) Get(level int32) chan *Token {
-	lm, ok := tq.LevelRequest[level]
-	if !ok {
-		lm = make(chan *Token, tq.Num)
-		tq.LevelRequest[level] = lm
+	gtq := new(getTokenRequest)
+	gtq.Level = level
+	gtq.res = make(chan *Token)
+	if tq.requestQueue.Len() >= int(tq.Num) {
+		gtq.res <- nil
+		return gtq.res
 	}
-	return lm
-}
-
-func (tq *TokenQueue) Add() chan struct{} {
-	var res chan struct{}
-	var maxLevel int32
-	for i, lq := range tq.LevelRequest {
-		if i >= maxLevel && len(lq) > 0 {
-			func(maxLevel *int32, i int32) {
-				*maxLevel = i
-			}(&maxLevel, i)
+	walk := tq.requestQueue.Front()
+	for {
+		if walk.Value.(*getTokenRequest).Level < gtq.Level {
+			break
+		}
+		if walk.Next() != nil {
+			walk = walk.Next()
 		}
 	}
-	tq.LevelRequest[maxLevel] <- NewToken()
-	res <- struct{}{}
-	return res
+
+	tq.requestQueue.InsertBefore(gtq, walk)
+	return gtq.res
+}
+
+func (tq *TokenQueue) Run() {
+	for {
+		if tq.requestQueue.Len() > 0 {
+			tk := <-tq.tc
+			gtq := tq.requestQueue.Remove(tq.requestQueue.Front())
+			gtq.(*getTokenRequest).res <- tk
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func (tq *TokenQueue) Add() {
+	tk := NewToken()
+	tk.Reset()
+	select {
+	case tq.tc <- tk:
+	default:
+	}
 }
