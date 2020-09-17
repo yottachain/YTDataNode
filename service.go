@@ -197,7 +197,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn, rce, utp)
+			Report(sn, rce)
 			time.Sleep(time.Second * 60)
 		}
 	}()
