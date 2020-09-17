@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -14,13 +15,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
-	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
@@ -54,7 +55,13 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
 		os.Exit(0)
 	}
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.Utp()
+	var utp *TaskPool.TaskPool = TaskPool.Utp()
+	// 统计归零
+	utp.OnChange(func(pt *TaskPool.TaskPool) {
+		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	})
+
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
 	//// 每次更新重置utp
@@ -68,7 +75,7 @@ func (sn *storageNode) Service() {
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
-	wh = NewWriteHandler(sn, utp)
+	wh = NewWriteHandler(sn)
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -199,7 +206,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadTaskPool) {
+func Report(sn *storageNode, rce *rc.RecoverEngine, pool *TaskPool.TaskPool) {
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
