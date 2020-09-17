@@ -214,8 +214,8 @@ func (pt *TaskPool) GetParams() (int64, int64) {
 	return atomic.LoadInt64(&pt.sentToken), atomic.LoadInt64(&pt.requestCount)
 }
 
-var uploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*1000)
-var downloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*1000)
+var uploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
+var downloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
 
 // 上行token任务池
 func Utp() *TaskPool {
