@@ -28,12 +28,14 @@ type TaskPool struct {
 }
 
 func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *TaskPool {
+
 	// 默认值
 	if size == 0 {
 		size = 500
 	}
 
 	pt := new(TaskPool)
+	pt.name = name
 
 	pt.FillTokenInterval = fillInterval
 	pt.TTL = ttl
@@ -51,7 +53,6 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 
 	pt.TTL = time.Duration(config.Gconfig.TTL) * time.Second
 	pt.MakeTokenQueue()
-	pt.name = name
 
 	return pt
 }

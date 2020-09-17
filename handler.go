@@ -110,6 +110,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 
 func (wh *WriteHandler) Run() {
 	go TaskPool.Utp().FillToken()
+	go TaskPool.Dtp().FillToken()
 	go func() {
 		var flushInterval time.Duration = time.Millisecond * 10
 		for {
