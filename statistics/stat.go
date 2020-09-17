@@ -9,24 +9,25 @@ import (
 )
 
 type Stat struct {
-	SaveRequestCount     int64         `json:"SaveRequestCount"`
-	SaveSuccessCount     int64         `json:"SaveSuccessCount"`
-	YTFSErrorCount       uint64        `json:"ytfs_error_count"`
-	TokenQueueLen        int           `json:"TokenQueueLen"`
-	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
-	SentToken            int64         `json:"SentToken"`
-	UseKvDb              bool          `json:"UseKvDb"`
-	TokenFillSpeed       time.Duration `json:"TokenFillSpeed"`
-	UpTime               int64         `json:"UpTime"`
-	Connection           int           `json:"Connection"`
-	AverageToken         int64         `json:"AverageToken"`
-	SentTokenNum         int64
-	ReportTime           time.Time
-	RequestToken         int64
-	NetLatency           int64
-	DiskLatency          int64
-	GconfigMd5           string
-	RebuildShardStat     *recover2.RecoverStat
+	SaveRequestCount       int64         `json:"SaveRequestCount"`
+	SaveSuccessCount       int64         `json:"SaveSuccessCount"`
+	YTFSErrorCount         uint64        `json:"ytfs_error_count"`
+	TokenQueueLen          int           `json:"TokenQueueLen"`
+	AvailableTokenNumber   int           `json:"AvailableTokenNumber""`
+	SentToken              int64         `json:"SentToken"`
+	UseKvDb                bool          `json:"UseKvDb"`
+	TokenFillSpeed         time.Duration `json:"TokenFillSpeed"`
+	UpTime                 int64         `json:"UpTime"`
+	Connection             int           `json:"Connection"`
+	AverageToken           int64         `json:"AverageToken"`
+	SentTokenNum           int64
+	ReportTime             time.Time
+	RequestToken           int64
+	NetLatency             int64
+	DiskLatency            int64
+	GconfigMd5             string
+	RebuildShardStat       *recover2.RecoverStat
+	DownloadTokenFillSpeed time.Duration
 	sync.RWMutex
 }
 

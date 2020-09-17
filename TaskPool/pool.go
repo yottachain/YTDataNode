@@ -10,81 +10,9 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
-	"sync"
 	"sync/atomic"
 	"time"
 )
-
-type TokenQueue struct {
-	Num          int32
-	LevelRequest map[int32]chan *Token
-}
-
-func NewTokenQueue(Num int32) *TokenQueue {
-	tq := new(TokenQueue)
-	tq.LevelRequest = make(map[int32]chan *Token)
-	tq.Num = Num
-	return tq
-}
-
-func (tq *TokenQueue) Get(level int32) chan *Token {
-	lm, ok := tq.LevelRequest[level]
-	if !ok {
-		lm = make(chan *Token, tq.Num)
-		tq.LevelRequest[level] = lm
-	}
-	return lm
-}
-
-func (tq *TokenQueue) Add() chan struct{} {
-	var res chan struct{}
-	var maxLevel int32
-	for i, lq := range tq.LevelRequest {
-		if i >= maxLevel && len(lq) > 0 {
-			func(maxLevel *int32, i int32) {
-				*maxLevel = i
-			}(&maxLevel, i)
-		}
-	}
-	tq.LevelRequest[maxLevel] <- NewToken()
-	res <- struct{}{}
-	return res
-}
-
-type delayStat struct {
-	D int64
-	C int64
-	sync.RWMutex
-}
-
-func (s *delayStat) Avg() int64 {
-	s.Lock()
-	defer s.Unlock()
-
-	if s.C == 0 {
-		return 0
-	}
-	s.D = s.D / s.C
-	s.C = 1
-	return s.D
-}
-
-func (s *delayStat) Add(duration time.Duration) {
-	s.Lock()
-	defer s.Unlock()
-
-	s.D += duration.Milliseconds()
-	s.C++
-
-	if s.C > 100 {
-		s.D = s.D / s.C
-		s.C = 1
-	}
-}
-
-func NewStat() *delayStat {
-	return &delayStat{}
-}
 
 type TaskPool struct {
 	name              string
@@ -106,8 +34,6 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 	}
 
 	pt := new(TaskPool)
-
-	//upt.tb = NewTokenBucket(size, ttl*time.Second)
 
 	pt.FillTokenInterval = fillInterval
 	pt.TTL = ttl
@@ -292,9 +218,12 @@ func (pt *TaskPool) GetParams() (int64, int64) {
 var uploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*1000)
 var downloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*1000)
 
+// 上行token任务池
 func Utp() *TaskPool {
 	return uploadTP
 }
+
+// 下行token任务池
 func Dtp() *TaskPool {
 	return uploadTP
 }

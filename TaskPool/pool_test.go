@@ -1,7 +1,9 @@
 package TaskPool
 
 import (
+	"context"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
 	"testing"
 	"time"
 )
@@ -12,14 +14,12 @@ func TestNewTokenFromString(t *testing.T) {
 }
 
 func TestUploadTaskPool_Check(t *testing.T) {
-
-	//go func() {
-	//	for {
-	//		tk, err := tp.Get(context.Background(), peer.ID("11"))
-	//		fmt.Printf("tk: %s ,err: %s \n", tk.String(), err)
-	//	}
-	//}()
-	select {}
+	tk, err := Utp().Get(context.Background(), peer.ID("111"), 0)
+	if err != nil {
+		t.Fatalf(err.Error())
+	} else {
+		t.Log(tk.String())
+	}
 }
 
 func TestTime(t *testing.T) {

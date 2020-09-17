@@ -206,7 +206,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine, pool *TaskPool.TaskPool) {
+func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -237,19 +237,20 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *TaskPool.TaskPool) {
 	msg.Tx = GetXX("T")
 
 	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.AvailableTokenNumber = pool.FreeTokenLen()
+	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
-	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
+	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
+	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
+	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.NetLatency = pool.NetLatency.Avg()
-	statistics.DefaultStat.DiskLatency = pool.DiskLatency.Avg()
+	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
+	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
 
-	pool.Save()
+	TaskPool.Utp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
