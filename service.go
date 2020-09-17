@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -14,13 +15,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
-	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
@@ -54,7 +55,13 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
 		os.Exit(0)
 	}
-	var utp *uploadTaskPool.UploadTaskPool = uploadTaskPool.Utp()
+	var utp *TaskPool.TaskPool = TaskPool.Utp()
+	// 统计归零
+	utp.OnChange(func(pt *TaskPool.TaskPool) {
+		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	})
+
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
 	//// 每次更新重置utp
@@ -68,7 +75,7 @@ func (sn *storageNode) Service() {
 
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
-	wh = NewWriteHandler(sn, utp)
+	wh = NewWriteHandler(sn)
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -190,7 +197,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn, rce, utp)
+			Report(sn, rce)
 			time.Sleep(time.Second * 60)
 		}
 	}()
@@ -199,7 +206,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadTaskPool) {
+func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -230,19 +237,20 @@ func Report(sn *storageNode, rce *rc.RecoverEngine, pool *uploadTaskPool.UploadT
 	msg.Tx = GetXX("T")
 
 	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.AvailableTokenNumber = pool.FreeTokenLen()
+	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.TokenFillSpeed = pool.GetTFillTKSpeed()
-	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = pool.GetParams()
+	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
+	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
+	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.NetLatency = pool.NetLatency.Avg()
-	statistics.DefaultStat.DiskLatency = pool.DiskLatency.Avg()
+	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
+	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
 
-	pool.Save()
+	TaskPool.Utp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 

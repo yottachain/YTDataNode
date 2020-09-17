@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
@@ -15,7 +16,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
-	"github.com/yottachain/YTDataNode/uploadTaskPool"
 
 	"github.com/yottachain/YTDataNode/message"
 
@@ -29,15 +29,13 @@ var disableWrite = false
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	Upt          *uploadTaskPool.UploadTaskPool
 	RequestQueue chan *wRequest
 	db           *leveldb.DB
 }
 
-func NewWriteHandler(sn StorageNode, utp *uploadTaskPool.UploadTaskPool) *WriteHandler {
+func NewWriteHandler(sn StorageNode) *WriteHandler {
 	return &WriteHandler{
 		sn,
-		utp,
 		make(chan *wRequest, 1000),
 		nil,
 	}
@@ -111,7 +109,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 }
 
 func (wh *WriteHandler) Run() {
-	go wh.Upt.FillToken()
+	go TaskPool.Utp().FillToken()
 	go func() {
 		var flushInterval time.Duration = time.Millisecond * 10
 		for {
@@ -128,16 +126,16 @@ func (wh *WriteHandler) Run() {
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	var GTMsg message.NodeCapacityRequest
-	var needStat bool = true
+	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
-		needStat = false
+		xtp = TaskPool.Dtp()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	defer cancel()
 
-	tk, err := wh.Upt.Get(ctx, id, needStat)
+	tk, err := xtp.Get(ctx, id, 0)
 
 	// 如果 剩余空间不足10个分片停止发放token
 	if disableWrite || wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len()+10) {
@@ -205,7 +203,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		return 105
 	}
-	tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId)
+	tk, err := TaskPool.NewTokenFromString(msg.AllocId)
 	if err != nil {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
@@ -216,12 +214,12 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		recover()
 		return 105
 	}
-	if !wh.Upt.Check(tk) {
+	if !TaskPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
 		return 105
 	}
-	wh.Upt.NetLatency.Add(time.Now().Sub(tk.Tm))
+	TaskPool.Utp().NetLatency.Add(time.Now().Sub(tk.Tm))
 
 	//1. 验证BP签名
 	//if ok, err := msg.VerifyBPSIGN(
@@ -254,12 +252,12 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 	diskltc := time.Now().Sub(putStartTime)
 	// 成功计数
-	wh.Upt.DiskLatency.Add(diskltc)
+	TaskPool.Utp().DiskLatency.Add(diskltc)
 	if diskltc > time.Second*10 {
 		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
 	}
 
-	defer wh.Upt.Delete(tk)
+	defer TaskPool.Utp().Delete(tk)
 	return 0
 }
 
@@ -281,9 +279,10 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		fmt.Println("Unmarshal error:", err)
 		return nil, err
 	}
+
 	if msg.AllocId != "" {
-		if tk, err := uploadTaskPool.NewTokenFromString(msg.AllocId); err == nil {
-			defer uploadTaskPool.Utp().Delete(tk)
+		if tk, err := TaskPool.NewTokenFromString(msg.AllocId); err == nil {
+			defer TaskPool.Dtp().Delete(tk)
 		}
 	}
 
