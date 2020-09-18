@@ -9,9 +9,11 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 	"log"
 	"math/rand"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -52,6 +54,8 @@ func (sn *storageNode) Service() {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
 		config.Gconfig.Save()
 		// 随机等待重启，错开高峰
+		os.Remove(path.Join(util.GetYTFSPath(), ".utp_params.json"))
+		os.Remove(path.Join(util.GetYTFSPath(), ".dtp_params.json"))
 		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
 		os.Exit(0)
 	}
@@ -72,7 +76,6 @@ func (sn *storageNode) Service() {
 	//	//wh.Run()
 	//	os.Exit(0)
 	//}
-
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
 	wh = NewWriteHandler(sn)
