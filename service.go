@@ -56,7 +56,7 @@ func (sn *storageNode) Service() {
 		// 随机等待重启，错开高峰
 		os.Remove(path.Join(util.GetYTFSPath(), ".utp_params.json"))
 		os.Remove(path.Join(util.GetYTFSPath(), ".dtp_params.json"))
-		time.Sleep(time.Duration(rand.Int63n(1800)) * time.Second)
+		time.Sleep(time.Duration(rand.Int63n(10)) * time.Second)
 		os.Exit(0)
 	}
 	var utp *TaskPool.TaskPool = TaskPool.Utp()
