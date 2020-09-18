@@ -50,20 +50,24 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 		request.res <- nil
 	}
 
-	walk := tq.requestQueue.Back()
-	if request.Level <= walk.Value.(*getTokenRequest).Level {
+	if tq.requestQueue.Back() == nil {
 		tq.requestQueue.PushBack(request)
 	} else {
-		for {
-			if walk.Value.(*getTokenRequest).Level < request.Level {
-				if walk.Prev() != nil {
-					walk = walk.Prev()
+		walk := tq.requestQueue.Back()
+		if request.Level <= walk.Value.(*getTokenRequest).Level {
+			tq.requestQueue.PushBack(request)
+		} else {
+			for {
+				if walk.Value.(*getTokenRequest).Level < request.Level {
+					if walk.Prev() != nil {
+						walk = walk.Prev()
+					}
+				} else {
+					break
 				}
-			} else {
-				break
 			}
+			tq.requestQueue.InsertAfter(request, walk)
 		}
-		tq.requestQueue.InsertAfter(request, walk)
 	}
 
 	return request.res
