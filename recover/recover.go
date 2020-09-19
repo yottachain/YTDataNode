@@ -274,8 +274,8 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	return nil
 }
 
-func (re *RecoverEngine)processTask(req Request){
-	ts := req.Tsk
+func (re *RecoverEngine)processTask(ts *Task){
+//	ts := req.Tsk
 	msg := ts.Data
 	if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
 		res := re.execRCTask(msg[2:], ts.ExpriedTime)
