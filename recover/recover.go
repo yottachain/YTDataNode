@@ -30,6 +30,7 @@ const (
 	max_reply_num       = 1000
 	max_task_num        = 1000
 	max_reply_wait_time = time.Second * 60
+	max_concurrent_LRC  = 10
 )
 
 type Task struct {
@@ -271,6 +272,35 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		}
 	}
 	return nil
+}
+
+func processTaskQ(re *RecoverEngine){
+	ts := <-re.queue
+	msg := ts.Data
+	if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
+		res := re.execRCTask(msg[2:], ts.ExpriedTime)
+		res.BPID = ts.SnID
+		re.PutReplyQueue(res)
+	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
+		log.Printf("[recover]LRC start\n")
+		res := re.execLRCTask(msg[2:], ts.ExpriedTime)
+		res.BPID = ts.SnID
+		re.PutReplyQueue(res)
+	} else {
+		res := re.execCPTask(msg[2:], ts.ExpriedTime)
+		res.BPID = ts.SnID
+		re.PutReplyQueue(res)
+	}
+}
+
+func (re *RecoverEngine) Run2(){
+	for i := 0; i < max_concurrent_LRC; i++{
+		go processTaskQ(re)
+	}
+
+	for {
+		re.MultiReply()
+	}
 }
 
 func (re *RecoverEngine) Run() {
