@@ -274,8 +274,8 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	return nil
 }
 
-func processTaskQ(re *RecoverEngine){
-	ts := <-re.queue
+func (re *RecoverEngine)processTask(req Request){
+	ts := req.Tsk
 	msg := ts.Data
 	if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
 		res := re.execRCTask(msg[2:], ts.ExpriedTime)
@@ -293,15 +293,15 @@ func processTaskQ(re *RecoverEngine){
 	}
 }
 
-func (re *RecoverEngine) Run2(){
-	for i := 0; i < max_concurrent_LRC; i++{
-		go processTaskQ(re)
-	}
-
-	for {
-		re.MultiReply()
-	}
-}
+//func (re *RecoverEngine) Run2(){
+////	for i := 0; i < max_concurrent_LRC; i++{
+////		go processTask(re)
+////	}
+////
+////	for {
+////		re.MultiReply()
+////	}
+////}
 
 func (re *RecoverEngine) Run() {
 	go func() {
