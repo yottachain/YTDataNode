@@ -128,17 +128,23 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
-	err := proto.Unmarshal(data, &GTMsg)
 	var neesStat = true
+	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
 		xtp = TaskPool.Dtp()
 		neesStat = false
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
+	if config.Gconfig.TokenWait == 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	}
 	defer cancel()
 
 	tk, err := xtp.Get(ctx, id, 0)
+	if err != nil {
+		fmt.Println("[get token]", err.Error())
+	}
 
 	// 如果 剩余空间不足10个分片停止发放token
 	if disableWrite || wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len()+10) {
@@ -149,6 +155,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {
+		fmt.Println("[get token]", err.Error())
 		res.Writable = false
 	} else {
 		res.AllocId = tk.String()
@@ -165,6 +172,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
 		log.Printf("[task pool]get token return [%s]\n", tk.String())
+	} else {
+		log.Println("[get token]", tk.String())
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)

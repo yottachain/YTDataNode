@@ -10,6 +10,7 @@ import (
 
 func TestUploadTaskPool_Check(t *testing.T) {
 	go Utp().FillToken()
+	go Dtp().FillToken()
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
@@ -18,7 +19,8 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	}()
 	for {
 		ctx, _ := context.WithTimeout(context.Background(), time.Second)
-		tk, err := Utp().Get(ctx, peer.ID("111"), 0)
+		tk, err := Dtp().Get(ctx, peer.ID("111"), 0)
+		tk, err = Dtp().Get(ctx, peer.ID("111"), 0)
 
 		if err != nil {
 			fmt.Println(err.Error())
