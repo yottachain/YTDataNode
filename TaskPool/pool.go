@@ -172,7 +172,7 @@ func (pt *TaskPool) MakeTokenQueue() {
 	if size > 500 {
 		size = 500
 	}
-	pt.tkc = NewTokenQueue(int32(size))
+	pt.tkc = NewTokenQueue(int32(config.Gconfig.MaxToken))
 }
 
 func (pt *TaskPool) GetTFillTKSpeed() time.Duration {
