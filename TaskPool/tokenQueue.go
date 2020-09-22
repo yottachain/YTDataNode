@@ -1,108 +1,41 @@
 package TaskPool
 
-import (
-	"container/list"
-	"context"
-	"fmt"
-	"sync"
-	"time"
-)
-
 type TokenQueue struct {
-	Num          int32
-	tc           chan *Token
-	requestQueue *list.List
-	Cancel       context.CancelFunc
-	sync.RWMutex
+	tc  chan *Token
+	tc2 chan *Token
 }
 
-type getTokenRequest struct {
-	Level int32
-	res   chan *Token
-}
-
-func newGetTKRequest(level int32) *getTokenRequest {
-	return &getTokenRequest{
-		Level: level,
-		res:   make(chan *Token),
-	}
+func (tq *TokenQueue) Len() int {
+	return len(tq.tc) + len(tq.tc2)
 }
 
 func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
 	tq.tc = make(chan *Token, Num)
-	tq.Num = Num
-	tq.requestQueue = list.New()
-	tq.RWMutex = sync.RWMutex{}
-	go tq.Run()
+	tq.tc2 = make(chan *Token)
 	return tq
 }
 
 func (tq *TokenQueue) Get(level int32) chan *Token {
-	tq.Lock()
-	defer tq.Unlock()
-
-	request := newGetTKRequest(level)
-	if tq.requestQueue.Len() == 0 {
-		tq.requestQueue.PushFront(request)
-	} else if tq.requestQueue.Len() >= int(tq.Num) {
-		fmt.Println("error", tq.requestQueue.Len(), tq.Num)
-		request.res <- nil
-	}
-
-	if tq.requestQueue.Back() == nil {
-		tq.requestQueue.PushBack(request)
-	} else {
-		walk := tq.requestQueue.Back()
-		if request.Level <= walk.Value.(*getTokenRequest).Level {
-			tq.requestQueue.PushBack(request)
-		} else {
-			for {
-				if walk.Value.(*getTokenRequest).Level < request.Level {
-					if walk.Prev() != nil {
-						walk = walk.Prev()
-					}
-				} else {
-					break
-				}
-			}
-			tq.requestQueue.InsertAfter(request, walk)
-		}
-	}
-
-	return request.res
-}
-
-func (tq *TokenQueue) Run() {
-	ctx, cancel := context.WithCancel(context.Background())
-	tq.Cancel = cancel
-	for {
+	if level == 1 {
+		tc := make(chan *Token, 1)
 		select {
-		case <-ctx.Done():
-			return
-		case tk := <-tq.tc:
-			if tq.requestQueue.Len() > 0 {
-				head := tq.requestQueue.Remove(tq.requestQueue.Front())
-				if head != nil {
-					tk.Reset()
-					select {
-					case head.(*getTokenRequest).res <- tk:
-					default:
+		case tc <- <-tq.tc2:
+		case tc <- <-tq.tc:
 
-					}
-				}
-			} else {
-				tq.tc <- tk
-				time.Sleep(time.Millisecond * 100)
-			}
+		default:
+
 		}
+		return tc
 	}
+	return tq.tc
 }
 
 func (tq *TokenQueue) Add() {
 	tk := NewToken()
 	tk.Reset()
 	select {
+	case tq.tc2 <- tk:
 	case tq.tc <- tk:
 	default:
 	}

@@ -137,7 +137,7 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 }
 
 func (pt *TaskPool) FreeTokenLen() int {
-	return int(pt.tkc.Num)
+	return pt.tkc.Len()
 }
 
 func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
@@ -171,9 +171,6 @@ func (pt *TaskPool) MakeTokenQueue() {
 	size := time.Second / pt.FillTokenInterval * 3
 	if size > 500 {
 		size = 500
-	}
-	if pt.tkc != nil && pt.tkc.Cancel != nil {
-		pt.tkc.Cancel()
 	}
 	pt.tkc = NewTokenQueue(int32(config.Gconfig.MaxToken))
 }
@@ -228,5 +225,5 @@ func Utp() *TaskPool {
 
 // 下行token任务池
 func Dtp() *TaskPool {
-	return uploadTP
+	return downloadTP
 }
