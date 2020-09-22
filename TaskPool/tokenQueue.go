@@ -31,7 +31,6 @@ func (tq *TokenQueue) Add() {
 	tk := NewToken()
 	tk.Reset()
 	select {
-	case tq.tc2 <- tk:
 	case tq.tc <- tk:
 	default:
 	}
