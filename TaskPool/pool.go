@@ -69,6 +69,7 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	}
 	select {
 	case tk := <-pt.tkc.Get(level):
+		tk.Reset()
 		return tk, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("context timeout")
