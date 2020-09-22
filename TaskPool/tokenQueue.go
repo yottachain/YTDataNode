@@ -29,9 +29,5 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 
 func (tq *TokenQueue) Add() {
 	tk := NewToken()
-	tk.Reset()
-	select {
-	case tq.tc <- tk:
-	default:
-	}
+	tq.tc <- tk
 }
