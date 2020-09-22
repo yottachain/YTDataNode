@@ -2,11 +2,12 @@ package recover
 
 import (
 	"time"
+	log "github.com/yottachain/YTDataNode/logger"
 )
 
 var poolG chan int
 var totalCap int = 200
-var realConCurrent int = 10     //can be changed by write-weight and config
+var realConCurrent int = 1     //can be changed by write-weight and config
 
 //type Request struct {
 //	 Tsk     *Task
@@ -34,8 +35,10 @@ func (re *RecoverEngine)processRequests(){
 		requestT :=<- re.queue
 		if len(poolG) > 0 {
 			<- poolG
+            log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
 			go re.doRequest(requestT)
 		} else {
+			log.Println("[recover] create_gorutine pool is full, len_poolG=",len(poolG))
 			//requestT.Response <- []string{"goroutine pool is full"}
 			<- time.After(time.Second * 60)
 		}
