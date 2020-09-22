@@ -227,6 +227,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		recover()
 		return 105
 	}
+	defer TaskPool.Utp().Delete(tk)
 	if !TaskPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
@@ -270,7 +271,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
 	}
 
-	defer TaskPool.Utp().Delete(tk)
 	return 0
 }
 
