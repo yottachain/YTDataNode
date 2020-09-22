@@ -142,7 +142,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 
 	tk, err := xtp.Get(ctx, id, 0)
 	if err != nil {
-		fmt.Println("[get token]", err.Error())
+		fmt.Println("[get token] error:", err.Error())
 	}
 
 	// 如果 剩余空间不足10个分片停止发放token
@@ -154,7 +154,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {
-		fmt.Println("[get token]", err.Error())
+		fmt.Println("[get token] error:", err.Error())
 		res.Writable = false
 	} else {
 		res.AllocId = tk.String()
