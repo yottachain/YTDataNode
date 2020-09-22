@@ -134,7 +134,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 		xtp = TaskPool.Dtp()
 		neesStat = false
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	if config.Gconfig.TokenWait == 0 {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)

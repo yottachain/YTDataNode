@@ -36,7 +36,7 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	}()
 	time.Sleep(time.Second)
 	for {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second)
+		ctx, _ := context.WithTimeout(context.Background(), 1)
 		_, err := Dtp().Get(ctx, peer.ID("222"), 1)
 
 		if err != nil {
