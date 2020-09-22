@@ -11,38 +11,35 @@ import (
 func TestUploadTaskPool_Check(t *testing.T) {
 	go Utp().FillToken()
 	go Dtp().FillToken()
-	go func() {
+	//go func() {
+	//	for {
+	//		time.Sleep(time.Second * 5)
+	//		Utp().MakeTokenQueue()
+	//	}
+	//}()
+	func() {
 		for {
-			time.Sleep(time.Second * 5)
-			Utp().MakeTokenQueue()
-		}
-	}()
-	go func() {
-		for {
-			ctx, _ := context.WithTimeout(context.Background(), time.Second)
-			_, err := Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				fmt.Println("000")
-			}
+			go func() {
+				ctx, _ := context.WithTimeout(context.Background(), time.Second)
+				tk, err := Utp().Get(ctx, peer.ID("111"), 0)
+				if err != nil {
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("000", tk.String())
+				}
+			}()
+			time.Sleep(time.Millisecond * 1)
 		}
 	}()
 	time.Sleep(time.Second)
-	for {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second)
-		_, err := Dtp().Get(ctx, peer.ID("222"), 1)
-
-		if err != nil {
-			fmt.Println(err.Error())
-		} else {
-			fmt.Println("111")
-		}
-	}
+	//for {
+	//	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	//	_, err := Dtp().Get(ctx, peer.ID("222"), 1)
+	//
+	//	if err != nil {
+	//		fmt.Println(err.Error())
+	//	} else {
+	//		fmt.Println("111")
+	//	}
+	//}
 }
