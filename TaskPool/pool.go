@@ -96,7 +96,6 @@ func (pt *TaskPool) FillToken() {
 	for {
 		<-time.After(pt.FillTokenInterval)
 		pt.tkc.Add()
-		pt.tkc.Add()
 	}
 }
 
