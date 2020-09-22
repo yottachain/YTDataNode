@@ -193,6 +193,9 @@ func (sn *storageNode) Service() {
 		res.RES = 0
 
 		buf, err := proto.Marshal(&res)
+		tk := TaskPool.NewToken()
+		tk.FillFromString(msg.AllocId)
+		TaskPool.Utp().Delete(tk)
 
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
