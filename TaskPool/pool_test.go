@@ -17,32 +17,27 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	//		Utp().MakeTokenQueue()
 	//	}
 	//}()
-	go func() {
+	func() {
 		for {
+
 			ctx, _ := context.WithTimeout(context.Background(), time.Second)
-			_, err := Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
-			_, err = Dtp().Get(ctx, peer.ID("111"), 0)
+			tk, err := Utp().Get(ctx, peer.ID("111"), 0)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				fmt.Println("000")
+				fmt.Println("000", tk.String())
 			}
 		}
 	}()
 	time.Sleep(time.Second)
-	for {
-		ctx, _ := context.WithTimeout(context.Background(), time.Second)
-		_, err := Dtp().Get(ctx, peer.ID("222"), 1)
-
-		if err != nil {
-			fmt.Println(err.Error())
-		} else {
-			fmt.Println("111")
-		}
-	}
+	//for {
+	//	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	//	_, err := Dtp().Get(ctx, peer.ID("222"), 1)
+	//
+	//	if err != nil {
+	//		fmt.Println(err.Error())
+	//	} else {
+	//		fmt.Println("111")
+	//	}
+	//}
 }

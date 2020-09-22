@@ -66,16 +66,9 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	// 如果队列长度大于等待token直接返回
 	select {
 	case tk := <-pt.tkc.Get(level):
-		if tk != nil {
-			tk.Reset()
-			tk.PID = pid
-			atomic.AddInt64(&pt.sentToken, 1)
-		} else {
-			return nil, fmt.Errorf("task busy")
-		}
 		return tk, nil
 	case <-ctx.Done():
-		return nil, fmt.Errorf("task busy")
+		return nil, fmt.Errorf("context timeout")
 	}
 }
 
