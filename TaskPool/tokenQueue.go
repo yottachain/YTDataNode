@@ -17,16 +17,12 @@ func NewTokenQueue(Num int32) *TokenQueue {
 }
 
 func (tq *TokenQueue) Get(level int32) chan *Token {
+	select {
+	case tq.tc2 <- <-tq.tc:
+	default:
+	}
 	if level == 1 {
-		tc := make(chan *Token, 1)
-		select {
-		case tc <- <-tq.tc2:
-		case tc <- <-tq.tc:
-
-		default:
-
-		}
-		return tc
+		return tq.tc2
 	}
 	return tq.tc
 }
