@@ -11,6 +11,7 @@ import (
 )
 
 func TestUploadTaskPool_Check(t *testing.T) {
+
 	go Utp().FillToken()
 	//go Dtp().FillToken()
 	//go func() {
@@ -33,12 +34,13 @@ func TestUploadTaskPool_Check(t *testing.T) {
 				//time.Sleep(time.Millisecond)
 				go func() {
 					ctx, _ := context.WithTimeout(context.Background(), time.Second)
-					_, err := Utp().Get(ctx, peer.ID("111"), 0)
+					tk, err := Utp().Get(ctx, peer.ID("111"), 0)
 					if err != nil {
 						atomic.AddInt64(&errNum, 1)
 						//fmt.Println(err.Error())
 					} else {
 						atomic.AddInt64(&num, 1)
+						fmt.Println(tk)
 					}
 				}()
 			}
