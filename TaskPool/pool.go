@@ -64,7 +64,7 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	}()
 
 	// 如果队列长度大于等待token直接返回
-	if atomic.LoadInt64(&pt.waitCount) > 100 {
+	if atomic.LoadInt64(&pt.waitCount) > int64(time.Duration(config.Gconfig.TokenWait)*time.Millisecond/pt.FillTokenInterval)/2 {
 		return nil, fmt.Errorf("token buys2")
 	}
 	select {
@@ -75,10 +75,10 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 		tk.PID = pid
 		tk.Reset()
 		return tk, nil
-	//case <-ctx.Done():
-	//	return nil, fmt.Errorf("ctx time out")
-	default:
-		return nil, fmt.Errorf("token busy3")
+	case <-ctx.Done():
+		return nil, fmt.Errorf("ctx time out")
+		//default:
+		//	return nil, fmt.Errorf("token busy3")
 	}
 }
 

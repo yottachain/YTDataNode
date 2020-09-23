@@ -31,21 +31,21 @@ func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
 	tq.tc = make(chan *Token, Num)
 	tq.requestQueue = list.New()
-	//go tq.Run()
+	go tq.Run()
 	return tq
 }
 
 func (tq *TokenQueue) Get(level int32) chan *Token {
-	//req := NewRequest(level)
-	//
-	//tq.Lock()
-	//defer tq.Unlock()
-	//backE := tq.requestQueue.Back()
-	//if backE != nil && backE.Value.(*request).Level > req.Level {
-	//	req.Res <- nil
-	//}
-	//tq.requestQueue.PushBack(req)
-	return tq.tc
+	req := NewRequest(level)
+
+	tq.Lock()
+	defer tq.Unlock()
+	backE := tq.requestQueue.Back()
+	if backE != nil && backE.Value.(*request).Level > req.Level {
+		req.Res <- nil
+	}
+	tq.requestQueue.PushBack(req)
+	return req.Res
 }
 
 func (tq *TokenQueue) Run() {
