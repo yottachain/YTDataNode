@@ -43,5 +43,6 @@ func (tq *TokenQueue) Get(level int32, interval time.Duration) *Token {
 	if level == 0 && time.Now().Sub(tq.preGetTime) < interval {
 		return nil
 	}
+	tq.preGetTime = time.Now()
 	return NewToken()
 }
