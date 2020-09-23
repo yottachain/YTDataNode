@@ -20,12 +20,13 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	//	}
 	//}()
 	var num int64
+	var errNum int64
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
 	func(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println(num, ",", int64(time.Second/Utp().FillTokenInterval)*10)
+				fmt.Println(num, ",", errNum, ",", int64(time.Second/Utp().FillTokenInterval)*10)
 				os.Exit(0)
 				return
 			default:
@@ -34,6 +35,7 @@ func TestUploadTaskPool_Check(t *testing.T) {
 					ctx, _ := context.WithTimeout(context.Background(), time.Second)
 					_, err := Utp().Get(ctx, peer.ID("111"), 0)
 					if err != nil {
+						atomic.AddInt64(&errNum, 1)
 						fmt.Println(err.Error())
 					} else {
 						atomic.AddInt64(&num, 1)

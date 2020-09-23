@@ -19,6 +19,7 @@ type request struct {
 func NewRequest(level int32) *request {
 	var req = new(request)
 	req.Level = level
+	req.Res = make(chan *Token)
 	return req
 }
 
@@ -39,22 +40,23 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 
 	tq.Lock()
 	defer tq.Unlock()
-	backE := tq.requestQueue.Back()
-	if backE != nil && backE.Value.(*request).Level > req.Level {
-		req.Res <- nil
-	}
+	//backE := tq.requestQueue.Back()
+	//if backE != nil && backE.Value.(*request).Level > req.Level {
+	//	req.Res <- nil
+	//}
 	tq.requestQueue.PushBack(req)
 	return req.Res
 }
 
 func (tq *TokenQueue) Run() {
 	for {
+		tk := <-tq.tc
 		tq.RLock()
 		if tq.requestQueue.Len() > 0 {
 			reqE := tq.requestQueue.Remove(tq.requestQueue.Front())
 			if reqE != nil {
 				req := reqE.(*request)
-				req.Res <- <-tq.tc
+				req.Res <- tk
 			}
 		}
 		tq.RUnlock()
