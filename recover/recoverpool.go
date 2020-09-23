@@ -7,7 +7,7 @@ import (
 
 var poolG chan int
 var totalCap int = 200
-var realConCurrent int = 1     //can be changed by write-weight and config
+var realConCurrent int = 10     //can be changed by write-weight and config
 
 //type Request struct {
 //	 Tsk     *Task
@@ -45,6 +45,14 @@ func (re *RecoverEngine)processRequests(){
 	}
 }
 
+func (re *RecoverEngine)modifyPoolSize(){
+    for{
+    	<-time.After(time.Second * 600)
+
+    	log.Println()
+	}
+}
+
 func (re *RecoverEngine)RunPool(){
 	poolG = make(chan int, totalCap)
 	defer close(poolG)
@@ -52,6 +60,8 @@ func (re *RecoverEngine)RunPool(){
 	//defer close(requestChannelG)
 
 	go re.processRequests()
+
+	go re.modifyPoolSize()
 
 	for i := 0; i < realConCurrent; i++ {
 		poolG <- 0

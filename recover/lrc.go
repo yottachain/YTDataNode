@@ -56,7 +56,7 @@ start:
 	n++
 	log.Println("尝试第", n, "次")
 
-	sl, _ := lrch.le.lrc.GetNeededShardList(lrch.si.Handle)
+	sl, _ := lrch.si.GetNeededShardList(lrch.si.Handle)
 
 	var number int
 	var indexs []int16
@@ -93,9 +93,9 @@ start:
 			continue
 		}
 
-		status := lrch.le.lrc.AddShardData(lrch.si.Handle, shard)
+		status := lrch.si.AddShardData(lrch.si.Handle, shard)
 		if status > 0{
-			data, status2 := lrch.le.lrc.GetRebuildData(lrch.si)
+			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
 				return data, nil
 			}
