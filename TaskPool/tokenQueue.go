@@ -39,8 +39,9 @@ func NewTokenQueue(Num int32) *TokenQueue {
 func (tq *TokenQueue) Get(level int32, interval time.Duration) *Token {
 	tq.Lock()
 	defer tq.Unlock()
-	if time.Now().Sub(tq.preGetTime) < interval {
+
+	if level == 0 && time.Now().Sub(tq.preGetTime) < interval {
 		return nil
 	}
-	return nil
+	return NewToken()
 }
