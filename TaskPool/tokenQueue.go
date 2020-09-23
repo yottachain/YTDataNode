@@ -40,10 +40,10 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 
 	tq.Lock()
 	defer tq.Unlock()
-	//backE := tq.requestQueue.Back()
-	//if backE != nil && backE.Value.(*request).Level > req.Level {
-	//	req.Res <- nil
-	//}
+	backE := tq.requestQueue.Back()
+	if backE != nil && backE.Value.(*request).Level > req.Level {
+		req.Res <- nil
+	}
 	tq.requestQueue.PushBack(req)
 	return req.Res
 }
@@ -65,8 +65,5 @@ func (tq *TokenQueue) Run() {
 
 func (tq *TokenQueue) Add() {
 	tk := NewToken()
-	select {
-	case tq.tc <- tk:
-	default:
-	}
+	tq.tc <- tk
 }
