@@ -69,10 +69,13 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	//}
 	select {
 	case tk := <-pt.tkc.Get(level):
+		if tk == nil {
+			return nil, fmt.Errorf("token busy")
+		}
 		tk.PID = pid
 		tk.Reset()
 		return tk, nil
-	default:
+	case <-ctx.Done():
 		return nil, fmt.Errorf("token busy")
 	}
 }
@@ -90,12 +93,20 @@ func (pt *TaskPool) Delete(tk *Token) bool {
 }
 
 func (pt *TaskPool) FillToken() {
-	// 自动更改token速率
+	//自动更改token速率
 	pt.AutoChangeTokenInterval()
 
 	for {
+		startTime := time.Now()
 		<-time.After(pt.FillTokenInterval)
+		time2 := time.Now()
 		pt.tkc.Add()
+		time3 := time.Now()
+		fmt.Println("总时长",
+			time.Now().Sub(startTime).Milliseconds(),
+			"延迟", pt.FillTokenInterval,
+			"实际延迟", time2.Sub(startTime).Milliseconds(),
+			"入队延迟", time3.Sub(time2).Milliseconds())
 	}
 }
 

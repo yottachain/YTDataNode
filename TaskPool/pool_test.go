@@ -4,34 +4,45 @@ import (
 	"context"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestUploadTaskPool_Check(t *testing.T) {
 	go Utp().FillToken()
-	go Dtp().FillToken()
+	//go Dtp().FillToken()
 	//go func() {
 	//	for {
 	//		time.Sleep(time.Second * 5)
 	//		Utp().MakeTokenQueue()
 	//	}
 	//}()
-	func() {
+	var num int64
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	func(ctx context.Context) {
 		for {
-			go func() {
-				ctx, _ := context.WithTimeout(context.Background(), time.Second)
-				tk, err := Utp().Get(ctx, peer.ID("111"), 0)
-				if err != nil {
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println("000", tk.String())
-				}
-			}()
-			time.Sleep(time.Millisecond * 1)
+			select {
+			case <-ctx.Done():
+				fmt.Println(num, ",", int64(time.Second/Utp().FillTokenInterval)*10)
+				os.Exit(0)
+				return
+			default:
+
+				go func() {
+					ctx, _ := context.WithTimeout(context.Background(), time.Second)
+					_, err := Utp().Get(ctx, peer.ID("111"), 0)
+					if err != nil {
+						fmt.Println(err.Error())
+					} else {
+						atomic.AddInt64(&num, 1)
+					}
+				}()
+			}
 		}
-	}()
-	time.Sleep(time.Second)
+	}(ctx)
+
 	//for {
 	//	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 	//	_, err := Dtp().Get(ctx, peer.ID("222"), 1)
