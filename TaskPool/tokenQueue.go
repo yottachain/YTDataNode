@@ -1,15 +1,13 @@
 package TaskPool
 
 import (
+	"container/list"
 	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type TokenQueue struct {
-	maxTokenNum int32
-	sentToken   int32
-	preGetTime  time.Time
+	tc           chan *Token
+	requestQueue *list.List
 	sync.RWMutex
 }
 
@@ -26,23 +24,46 @@ func NewRequest(level int32) *request {
 }
 
 func (tq *TokenQueue) Len() int {
-	return int(tq.maxTokenNum - atomic.LoadInt32(&tq.sentToken))
+	return len(tq.tc)
 }
 
 func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
-	tq.maxTokenNum = Num
-	tq.preGetTime = time.Now()
+	tq.tc = make(chan *Token, Num)
+	tq.requestQueue = list.New()
+	go tq.Run()
 	return tq
 }
 
-func (tq *TokenQueue) Get(level int32, interval time.Duration) *Token {
+func (tq *TokenQueue) Get(level int32) chan *Token {
+	req := NewRequest(level)
+
 	tq.Lock()
 	defer tq.Unlock()
-
-	if level == 0 && time.Now().Sub(tq.preGetTime) < interval {
-		return nil
+	backE := tq.requestQueue.Back()
+	if backE != nil && backE.Value.(*request).Level > req.Level {
+		req.Res <- nil
 	}
-	tq.preGetTime = time.Now()
-	return NewToken()
+	tq.requestQueue.PushBack(req)
+	return req.Res
+}
+
+func (tq *TokenQueue) Run() {
+	for {
+		tk := <-tq.tc
+		tq.RLock()
+		if tq.requestQueue.Len() > 0 {
+			reqE := tq.requestQueue.Remove(tq.requestQueue.Front())
+			if reqE != nil {
+				req := reqE.(*request)
+				req.Res <- tk
+			}
+		}
+		tq.RUnlock()
+	}
+}
+
+func (tq *TokenQueue) Add() {
+	tk := NewToken()
+	tq.tc <- tk
 }
