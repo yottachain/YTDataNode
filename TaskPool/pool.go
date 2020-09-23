@@ -99,7 +99,7 @@ func (pt *TaskPool) FillToken() {
 	for {
 		startTime := time.Now()
 		time.Sleep(pt.FillTokenInterval)
-		time2 := time.Now()
+		//time2 := time.Now()
 		d := time.Now().Sub(startTime)
 		c := 0
 		for {
@@ -110,14 +110,14 @@ func (pt *TaskPool) FillToken() {
 				break
 			}
 		}
-		time3 := time.Now()
-		fmt.Println("总时长",
-			time.Now().Sub(startTime).Milliseconds(),
-			"延迟", pt.FillTokenInterval,
-			"实际延迟", time2.Sub(startTime).Milliseconds(),
-			"入队延迟", time3.Sub(time2).Milliseconds(),
-			"实际填充", c,
-		)
+		//time3 := time.Now()
+		//fmt.Println("总时长",
+		//	time.Now().Sub(startTime).Milliseconds(),
+		//	"延迟", pt.FillTokenInterval,
+		//	"实际延迟", time2.Sub(startTime).Milliseconds(),
+		//	"入队延迟", time3.Sub(time2).Milliseconds(),
+		//	"实际填充", c,
+		//)
 
 	}
 }
