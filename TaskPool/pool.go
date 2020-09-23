@@ -81,6 +81,8 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	//	return nil, fmt.Errorf("token busy")
 	//}
 	if tk := pt.tkc.Get(level, pt.FillTokenInterval); tk != nil {
+		tk.PID = pid
+		tk.Reset()
 		return tk, nil
 	}
 	return nil, fmt.Errorf("token busy")
