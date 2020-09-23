@@ -18,7 +18,7 @@ var FileLogger = &lumberjack.Logger{
 }
 
 func init() {
-	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 }
 
 func SetFileLog() {

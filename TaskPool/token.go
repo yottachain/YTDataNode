@@ -1,4 +1,4 @@
-package uploadTaskPool
+package TaskPool
 
 import (
 	"bytes"
@@ -40,7 +40,6 @@ func (tk *Token) FillFromString(tkstring string) error {
 	dd := gob.NewDecoder(buf)
 	return dd.Decode(tk)
 }
-
 func NewToken() *Token {
 	tk := new(Token)
 	id := uuid.NewV4()
@@ -82,5 +81,7 @@ func (tk *Token) IsOuttime(ttl time.Duration) bool {
 }
 
 func (tk *Token) Reset() {
-	tk.Tm = time.Now()
+	if tk != nil {
+		tk.Tm = time.Now()
+	}
 }
