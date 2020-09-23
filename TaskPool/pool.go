@@ -63,21 +63,27 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 		atomic.AddInt64(&pt.waitCount, -1)
 	}()
 
-	// 如果队列长度大于等待token直接返回
-	if atomic.LoadInt64(&pt.waitCount) > 100 {
-		return nil, fmt.Errorf("token buys2")
-	}
-	select {
-	case tk := <-pt.tkc.Get(level):
-		if tk == nil {
-			return nil, fmt.Errorf("token busy1")
-		}
-		tk.PID = pid
-		tk.Reset()
+	//// 如果队列长度大于等待token直接返回
+	//if atomic.LoadInt64(&pt.waitCount) > 100 {
+	//	return nil, fmt.Errorf("token buys2")
+	//}
+	//select {
+	//case pt.tkc.Get(level):
+	//	if tk == nil {
+	//		return nil, fmt.Errorf("token busy1")
+	//	}
+	//	tk.PID = pid
+	//	tk.Reset()
+	//	return tk, nil
+	//case <-ctx.Done():
+	//	return nil, fmt.Errorf("token busy")
+	//default:
+	//	return nil, fmt.Errorf("token busy")
+	//}
+	if tk := pt.tkc.Get(level, pt.FillTokenInterval); tk != nil {
 		return tk, nil
-	case <-ctx.Done():
-		return nil, fmt.Errorf("token busy")
 	}
+	return nil, fmt.Errorf("token busy")
 }
 
 func (pt *TaskPool) Check(tk *Token) bool {
@@ -96,18 +102,18 @@ func (pt *TaskPool) FillToken() {
 	//自动更改token速率
 	pt.AutoChangeTokenInterval()
 
-	for {
-		startTime := time.Now()
-		<-time.After(pt.FillTokenInterval)
-		time2 := time.Now()
-		pt.tkc.Add()
-		time3 := time.Now()
-		fmt.Println("总时长",
-			time.Now().Sub(startTime).Milliseconds(),
-			"延迟", pt.FillTokenInterval,
-			"实际延迟", time2.Sub(startTime).Milliseconds(),
-			"入队延迟", time3.Sub(time2).Milliseconds())
-	}
+	//for {
+	//	startTime := time.Now()
+	//	<-time.After(pt.FillTokenInterval)
+	//	time2 := time.Now()
+	//	//pt.tkc.Add()
+	//	time3 := time.Now()
+	//	fmt.Println("总时长",
+	//		time.Now().Sub(startTime).Milliseconds(),
+	//		"延迟", pt.FillTokenInterval,
+	//		"实际延迟", time2.Sub(startTime).Milliseconds(),
+	//		"入队延迟", time3.Sub(time2).Milliseconds())
+	//}
 }
 
 func (pt *TaskPool) AutoChangeTokenInterval() {

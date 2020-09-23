@@ -30,13 +30,13 @@ func TestUploadTaskPool_Check(t *testing.T) {
 				os.Exit(0)
 				return
 			default:
-
+				//time.Sleep(time.Millisecond)
 				go func() {
 					ctx, _ := context.WithTimeout(context.Background(), time.Second)
 					_, err := Utp().Get(ctx, peer.ID("111"), 0)
 					if err != nil {
 						atomic.AddInt64(&errNum, 1)
-						fmt.Println(err.Error())
+						//fmt.Println(err.Error())
 					} else {
 						atomic.AddInt64(&num, 1)
 					}
