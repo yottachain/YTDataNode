@@ -1,13 +1,13 @@
 package recover
 
 import (
-	"time"
 	log "github.com/yottachain/YTDataNode/logger"
+	"time"
 )
 
 var poolG chan int
-var totalCap int = 200
-var realConCurrent int = 10     //can be changed by write-weight and config
+var totalCap int = 2000
+var realConCurrent uint16 = 10     //can be changed by write-weight and config
 
 //type Request struct {
 //	 Tsk     *Task
@@ -46,10 +46,33 @@ func (re *RecoverEngine)processRequests(){
 }
 
 func (re *RecoverEngine)modifyPoolSize(){
+	utp := re.Upt
+	configweight := re.sn.Config().ShardRbdConcurrent
     for{
     	<-time.After(time.Second * 600)
+		tokenweight := time.Second/utp.FillTokenInterval
+        realConCurrent_N := (configweight + (uint16(tokenweight)))/2
+        if realConCurrent_N > 2000 {
+        	realConCurrent_N = 2000
+		}
 
-    	log.Println()
+		if realConCurrent_N == 0 {
+			realConCurrent_N = 10
+		}
+
+        if realConCurrent < realConCurrent_N {
+        	for k := uint16(0); k < realConCurrent_N - realConCurrent; k++{
+        		poolG <- 0
+			}
+			realConCurrent = realConCurrent_N
+		}
+
+		if realConCurrent > realConCurrent_N {
+			for k := uint16(0); k < realConCurrent - realConCurrent_N; k++{
+				<- poolG
+			}
+			realConCurrent = realConCurrent_N
+		}
 	}
 }
 
@@ -61,9 +84,9 @@ func (re *RecoverEngine)RunPool(){
 
 	go re.processRequests()
 
-	go re.modifyPoolSize()
+	//go re.modifyPoolSize()
 
-	for i := 0; i < realConCurrent; i++ {
+	for i := uint16(0); i < realConCurrent; i++ {
 		poolG <- 0
 	}
 

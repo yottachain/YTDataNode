@@ -60,6 +60,7 @@ type Config struct {
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
+	ShardRbdConcurrent  uint16    `json:ShardRbdConcurrent`
 }
 
 // DefaultYTFSOptions default config
