@@ -154,7 +154,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var res message.NodeCapacityResponse
 	res.Writable = true
 	if err != nil {
-		fmt.Println("[get token] error:", err.Error())
+		//fmt.Println("[get token] error:", err.Error())
 		res.Writable = false
 	} else {
 		res.AllocId = tk.String()
@@ -171,8 +171,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
 		log.Printf("[task pool]get token return [%s]\n", tk.String())
-	} else {
-		log.Println("[get token]", tk.String())
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
