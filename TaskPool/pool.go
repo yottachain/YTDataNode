@@ -75,10 +75,10 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 		tk.PID = pid
 		tk.Reset()
 		return tk, nil
-	case <-ctx.Done():
-		return nil, fmt.Errorf("ctx time out")
-		//default:
-		//	return nil, fmt.Errorf("token busy3")
+	//case <-ctx.Done():
+	//	return nil, fmt.Errorf("ctx time out")
+	default:
+		return nil, fmt.Errorf("token busy3")
 	}
 }
 
@@ -101,7 +101,7 @@ func (pt *TaskPool) FillToken() {
 	for {
 		startTime := time.Now()
 		<-time.After(pt.FillTokenInterval)
-		time2 := time.Now()
+		//time2 := time.Now()
 		d := time.Now().Sub(startTime)
 		c := 0
 		for {
@@ -112,14 +112,14 @@ func (pt *TaskPool) FillToken() {
 				break
 			}
 		}
-		time3 := time.Now()
-		fmt.Println("总时长",
-			time.Now().Sub(startTime).Milliseconds(),
-			"延迟", pt.FillTokenInterval,
-			"实际延迟", time2.Sub(startTime).Milliseconds(),
-			"入队延迟", time3.Sub(time2).Milliseconds(),
-			"实际填充", c,
-		)
+		//time3 := time.Now()
+		//fmt.Println("总时长",
+		//	time.Now().Sub(startTime).Milliseconds(),
+		//	"延迟", pt.FillTokenInterval,
+		//	"实际延迟", time2.Sub(startTime).Milliseconds(),
+		//	"入队延迟", time3.Sub(time2).Milliseconds(),
+		//	"实际填充", c,
+		//)
 
 	}
 }
@@ -183,7 +183,7 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 	}
 
 	pt.Save()
-	//pt.MakeTokenQueue()
+	pt.MakeTokenQueue()
 }
 
 func (pt *TaskPool) OnChange(handler func(pt *TaskPool)) {
