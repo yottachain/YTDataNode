@@ -19,7 +19,7 @@ import (
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost"
-	hostInterface "github.com/yottachain/YTHost/interface"
+	. "github.com/yottachain/YTHost/interface"
 	"github.com/yottachain/YTHost/option"
 
 	// "github.com/yottachain/P2PHost"
