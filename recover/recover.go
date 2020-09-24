@@ -31,7 +31,6 @@ const (
 	max_reply_num       = 1000
 	max_task_num        = 1000
 	max_reply_wait_time = time.Second * 60
-	max_concurrent_LRC  = 10
 )
 
 type Task struct {
@@ -158,29 +157,33 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	//}
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
-	getToken.RequestMsgID = message.MsgIDDownloadShardRequest.Value()
+	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*8)
 	defer cancels()
 
-	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*7)
-	defer cancel2()
+	localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*7)
+	defer localcancel2()
 	var localTokenW *TaskPool.Token
+	 n_TokenW := 0
 	for {
-		localTokenW, err = re.Upt.Get(ctx2, peer.ID("11111111111"), 1)
+		localTokenW, err = re.Upt.Get(localctx2, peer.ID("11111111111"), 1)
+		n_TokenW++
 		if err == nil {
 			break
-		} else {
-			log.Println("[recover] localTokenW can't get write token!!")
-			break
+		}
+		if n_TokenW > 20 {
+			err = fmt.Errorf("faild to get localTokenW")
+			log.Printf("[recover] get localTokenW err!")
+			return nil,err
 		}
 	}
 
 	tokenstart := time.Now()
 
 RETRY:
-	tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
-	//tok, err := clt.SendMsg(ctxto, message.MsgIDDownloadShardRequest.Value(), getTokenData)
+	//tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
+	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil || len(tok) < 3 {
 		if time.Now().Sub(tokenstart).Seconds() > 5 {

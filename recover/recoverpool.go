@@ -7,7 +7,7 @@ import (
 
 var poolG chan int
 var totalCap int = 2000
-var realConCurrent uint16 = 10     //can be changed by write-weight and config
+var realConCurrent uint16 = 1     //can be changed by write-weight and config
 
 //type Request struct {
 //	 Tsk     *Task
@@ -31,10 +31,9 @@ func (re *RecoverEngine) doRequest(task *Task){
 
 func (re *RecoverEngine)processRequests(){
 	for {
-		//requestT := <-requestChannelG
-		requestT :=<- re.queue
 		if len(poolG) > 0 {
 			<- poolG
+			requestT :=<- re.queue
             log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
 			go re.doRequest(requestT)
 		} else {
