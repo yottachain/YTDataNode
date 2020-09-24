@@ -167,8 +167,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	defer cancel2()
 	var localTokenW *TaskPool.Token
 	for {
-		localTokenW, err = re.Upt.Get(ctx2, peer.ID("11111111111"), 2)
+		localTokenW, err = re.Upt.Get(ctx2, peer.ID("11111111111"), 1)
 		if err == nil {
+			break
+		} else {
+			log.Println("[recover] localTokenW can't get write token!!")
 			break
 		}
 	}
