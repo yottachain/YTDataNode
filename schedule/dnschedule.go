@@ -12,7 +12,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/message"
 	host "github.com/yottachain/YTHost"
-	"github.com/yottachain/YTHost/hostInterface"
+	hostInterface "github.com/yottachain/YTHost/interface"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"log"

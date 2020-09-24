@@ -4,7 +4,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	ytfs "github.com/yottachain/YTFS"
-	. "github.com/yottachain/YTHost/hostInterface"
+	. "github.com/yottachain/YTHost/interface"
 )
 
 // Owner 归属信息

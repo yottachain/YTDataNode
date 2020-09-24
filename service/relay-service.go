@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/multiformats/go-multiaddr"
-	. "github.com/yottachain/YTHost/hostInterface"
+	. "github.com/yottachain/YTHost/interface"
 )
 
 // RelayManager 中继管理
