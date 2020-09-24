@@ -130,7 +130,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	var neesStat = true
 	err := proto.Unmarshal(data, &GTMsg)
-	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() {
+	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		xtp = TaskPool.Dtp()
 		neesStat = false
 	}
