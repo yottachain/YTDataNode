@@ -160,10 +160,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDDownloadShardRequest.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
-	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*7)
+	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*8)
 	defer cancels()
 
-	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*6)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*7)
 	defer cancel2()
 	var localTokenW *TaskPool.Token
 	for {
@@ -177,6 +177,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
+	//tok, err := clt.SendMsg(ctxto, message.MsgIDDownloadShardRequest.Value(), getTokenData)
 
 	if err != nil || len(tok) < 3 {
 		if time.Now().Sub(tokenstart).Seconds() > 5 {
