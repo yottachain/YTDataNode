@@ -13,13 +13,13 @@ import (
 func TestUploadTaskPool_Check(t *testing.T) {
 
 	go Utp().FillToken()
-	//go Dtp().FillToken()
-	//go func() {
-	//	for {
-	//		time.Sleep(time.Second * 5)
-	//		Utp().MakeTokenQueue()
-	//	}
-	//}()
+	go Dtp().FillToken()
+	go func() {
+		for {
+			time.Sleep(time.Second * 2)
+			Utp().MakeTokenQueue()
+		}
+	}()
 	var num int64
 	var errNum int64
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)

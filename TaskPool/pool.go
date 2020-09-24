@@ -75,10 +75,10 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 		tk.PID = pid
 		tk.Reset()
 		return tk, nil
-	//case <-ctx.Done():
-	//	return nil, fmt.Errorf("ctx time out")
-	default:
-		return nil, fmt.Errorf("token busy3")
+	case <-ctx.Done():
+		return nil, fmt.Errorf("ctx time out")
+		//default:
+		//	return nil, fmt.Errorf("token busy3")
 	}
 }
 
