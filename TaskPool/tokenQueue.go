@@ -41,10 +41,11 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 	tq.Lock()
 	defer tq.Unlock()
 	backE := tq.requestQueue.Back()
-	if backE != nil && backE.Value.(*request).Level > req.Level {
-		req.Res <- nil
+	if backE != nil && backE.Value.(*request).Level < req.Level {
+		tq.requestQueue.PushFront(req)
+	} else {
+		tq.requestQueue.PushBack(req)
 	}
-	tq.requestQueue.PushBack(req)
 	return req.Res
 }
 
@@ -56,7 +57,10 @@ func (tq *TokenQueue) Run() {
 			reqE := tq.requestQueue.Remove(tq.requestQueue.Front())
 			if reqE != nil {
 				req := reqE.(*request)
-				req.Res <- tk
+				select {
+				case req.Res <- tk:
+				default:
+				}
 			}
 		}
 		tq.RUnlock()
