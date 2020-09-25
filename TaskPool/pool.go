@@ -184,7 +184,7 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 	}
 
 	pt.Save()
-	pt.MakeTokenQueue()
+	//pt.MakeTokenQueue()
 }
 
 func (pt *TaskPool) OnChange(handler func(pt *TaskPool)) {
