@@ -31,7 +31,7 @@ func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
 	tq.tc = make(chan *Token, Num)
 	tq.requestQueue = list.New()
-	//go tq.Run()
+	go tq.Run()
 	return tq
 }
 
@@ -65,5 +65,8 @@ func (tq *TokenQueue) Run() {
 
 func (tq *TokenQueue) Add() {
 	tk := NewToken()
-	tq.tc <- tk
+	select {
+	case tq.tc <- tk:
+	default:
+	}
 }
