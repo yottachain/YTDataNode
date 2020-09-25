@@ -65,7 +65,7 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 
 	// 如果队列长度大于等待token直接返回
 	if atomic.LoadInt64(&pt.waitCount) > int64(time.Duration(config.Gconfig.TokenWait)*time.Millisecond/pt.FillTokenInterval)/2 {
-		return nil, fmt.Errorf("token buys")
+		return nil, fmt.Errorf("token buys queue len (%d/%d)", atomic.LoadInt64(&pt.waitCount), int64(time.Duration(config.Gconfig.TokenWait)*time.Millisecond/pt.FillTokenInterval)/2)
 	}
 	select {
 	case tk := <-pt.tkc.Get(level):

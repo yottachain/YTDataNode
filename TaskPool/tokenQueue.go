@@ -2,34 +2,27 @@ package TaskPool
 
 import (
 	"container/list"
+	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
+	"time"
 )
 
 type TokenQueue struct {
-	tc           chan *Token
+	tc           *chan *Token
 	requestQueue *list.List
+	Max          int32
 	sync.RWMutex
 }
 
-type request struct {
-	Level int32
-	Res   chan *Token
-}
-
-func NewRequest(level int32) *request {
-	var req = new(request)
-	req.Level = level
-	req.Res = make(chan *Token)
-	return req
-}
-
 func (tq *TokenQueue) Len() int {
-	return len(tq.tc)
+	return len(*tq.tc)
 }
 
 func NewTokenQueue(Num int32) *TokenQueue {
 	tq := new(TokenQueue)
-	tq.tc = make(chan *Token, Num)
+	tq.Max = Num
+	tc := make(chan *Token, Num)
+	tq.tc = &tc
 	tq.requestQueue = list.New()
 	go tq.Run()
 	return tq
@@ -41,32 +34,47 @@ func (tq *TokenQueue) Get(level int32) chan *Token {
 	tq.Lock()
 	defer tq.Unlock()
 	backE := tq.requestQueue.Back()
-	if backE != nil && backE.Value.(*request).Level > req.Level {
-		req.Res <- nil
+	if backE != nil && backE.Value.(*request).Level < req.Level {
+		tq.requestQueue.PushFront(req)
+	} else {
+		tq.requestQueue.PushBack(req)
 	}
-	tq.requestQueue.PushBack(req)
 	return req.Res
 }
 
 func (tq *TokenQueue) Run() {
 	for {
-		tk := <-tq.tc
-		tq.RLock()
-		if tq.requestQueue.Len() > 0 {
-			reqE := tq.requestQueue.Remove(tq.requestQueue.Front())
-			if reqE != nil {
-				req := reqE.(*request)
-				req.Res <- tk
+		select {
+		case tk := <-*tq.tc:
+			tq.RLock()
+			if tq.requestQueue.Len() > 0 {
+				reqE := tq.requestQueue.Remove(tq.requestQueue.Front())
+				if reqE != nil {
+					req := reqE.(*request)
+					select {
+					case req.Res <- tk:
+					default:
+					}
+				}
 			}
+			tq.RUnlock()
+		case <-time.After(time.Minute):
+			tq.Reset()
 		}
-		tq.RUnlock()
 	}
+}
+
+func (tq *TokenQueue) Reset() {
+	log.Println("[token queue]reset")
+	tc := make(chan *Token, tq.Max)
+	tq.tc = &tc
+	tq.requestQueue = list.New()
 }
 
 func (tq *TokenQueue) Add() {
 	tk := NewToken()
 	select {
-	case tq.tc <- tk:
+	case *tq.tc <- tk:
 	default:
 	}
 }
