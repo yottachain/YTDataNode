@@ -64,6 +64,10 @@ func NewID() (string, int) {
 // Daemon 启动守护进程
 func Daemon() {
 
+	if runtime.GOOS == "linux" {
+		exec.Command("ulimit", "-n", "10000").Output()
+	}
+
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
 	log.Println("YTFS daemon success:", sn.Config().Version())
@@ -139,19 +143,19 @@ func updateService(c **exec.Cmd) {
 	}
 }
 
-func downloadYTDaemon()error{
-	resp ,err := http.Get(fmt.Sprintf("https://gengwenjuan.oss-cn-beijing.aliyuncs.com/ytfs-daemon-%s",runtime.GOOS))
+func downloadYTDaemon() error {
+	resp, err := http.Get(fmt.Sprintf("https://gengwenjuan.oss-cn-beijing.aliyuncs.com/ytfs-daemon-%s", runtime.GOOS))
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	fl,err:=os.OpenFile(path.Join(util.GetYTFSPath(),"ytfs-daemon"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0777)
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), "ytfs-daemon"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		return err
 	}
 	defer fl.Close()
 
-	_,err=io.Copy(fl,resp.Body)
+	_, err = io.Copy(fl, resp.Body)
 
 	return err
 }
@@ -159,10 +163,10 @@ func downloadYTDaemon()error{
 func reboot(pid int) {
 	buf := bytes.NewBuffer([]byte{})
 
-	if err:=downloadYTDaemon();err == nil {
-		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s -d &", os.Getpid(),pid, path.Join(util.GetYTFSPath(),"ytfs-daemon"))
+	if err := downloadYTDaemon(); err == nil {
+		fmt.Fprintf(buf, "kill -9 %d;kill -9 %d;%s -d &", os.Getpid(), pid, path.Join(util.GetYTFSPath(), "ytfs-daemon"))
 	} else {
-		fmt.Fprintf(buf,"kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
+		fmt.Fprintf(buf, "kill -9 %d;kill -9 %d;%s daemon -d &", os.Getpid(), pid, os.Args[0])
 	}
 
 	rebootShell := buf.String()
