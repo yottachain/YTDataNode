@@ -174,6 +174,9 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 		duration = time.Second / time.Duration(config.Gconfig.MaxToken)
 		makeZero = false
 	}
+	if duration > time.Duration(config.Gconfig.TokenWait)/2 {
+		return
+	}
 	pt.FillTokenInterval = duration
 	if makeZero {
 		atomic.StoreInt64(&pt.sentToken, 0)
