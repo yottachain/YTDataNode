@@ -8,23 +8,22 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
+	"github.com/klauspost/reedsolomon"
+	"github.com/mr-tron/base58/base58"
+	"github.com/yottachain/YTDataNode/TaskPool"
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/message"
+	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
+	"github.com/yottachain/YTFS/common"
+	lrcpkg "github.com/yottachain/YTLRC"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"path"
 	"sync"
 	"time"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/gogo/protobuf/proto"
-	"github.com/klauspost/reedsolomon"
-	"github.com/mr-tron/base58/base58"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/message"
-	node "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTFS/common"
-	lrcpkg "github.com/yottachain/YTLRC"
-	"github.com/yottachain/YTDataNode/TaskPool"
 )
 
 const (
@@ -159,25 +158,24 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
-	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*8)
+	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancels()
 
-	localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*7)
-	defer localcancel2()
-	var localTokenW *TaskPool.Token
-	 n_TokenW := 0
-	for {
-		localTokenW, err = re.Upt.Get(localctx2, peer.ID("11111111111"), 1)
-		n_TokenW++
-		if err == nil {
-			break
-		}
-		if n_TokenW > 20 {
-			err = fmt.Errorf("faild to get localTokenW")
-			log.Printf("[recover] get localTokenW err!")
-			return nil,err
-		}
-	}
+	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
+	//defer localcancel2()
+	//var localTokenW *TaskPool.Token
+	// wtokenstart := time.Now()
+	//for {
+	//	localTokenW, err = re.Upt.Get(localctx2, peer.ID("11111111111"), 3)
+	//	if err == nil {
+	//		break
+	//	}
+	//	if time.Now().Sub(wtokenstart).Seconds() > 3 {
+	//		err = fmt.Errorf("faild to get localTokenW")
+	//		log.Printf("[recover] get localTokenW outtime!")
+	//		return nil,err
+	//	}
+	//}
 
 	tokenstart := time.Now()
 
@@ -186,11 +184,11 @@ RETRY:
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil || len(tok) < 3 {
-		if time.Now().Sub(tokenstart).Seconds() > 5 {
+		if time.Now().Sub(tokenstart).Seconds() > 10 {
 			re.failToken++
 			err = fmt.Errorf("faild to get token")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
-			re.Upt.Delete(localTokenW)
+			//re.Upt.Delete(localTokenW)
 			return nil,err
 		}
 		goto RETRY
@@ -201,7 +199,7 @@ RETRY:
 		if time.Now().Sub(tokenstart).Seconds() > 5 {
 			re.failToken++
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
-			re.Upt.Delete(localTokenW)
+			//re.Upt.Delete(localTokenW)
 			return nil,err
 		}
 		goto RETRY
@@ -212,7 +210,7 @@ RETRY:
 			re.failToken++
 			err = fmt.Errorf("resGetToken.Writable is false")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
-			re.Upt.Delete(localTokenW)
+			//re.Upt.Delete(localTokenW)
 			return nil,err
 		}
 		goto RETRY
@@ -227,7 +225,7 @@ RETRY:
 	if err != nil {
 		re.failToken++
 		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		re.Upt.Delete(localTokenW)
+		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
@@ -236,7 +234,7 @@ RETRY:
 	if err != nil || len(shardBuf) < 3{
 		re.failShard++
 		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
-		re.Upt.Delete(localTokenW)
+		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
 
@@ -244,10 +242,10 @@ RETRY:
 	if err != nil {
 		re.failShard++
 		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		re.Upt.Delete(localTokenW)
+		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
-	re.Upt.Delete(localTokenW)
+	//re.Upt.Delete(localTokenW)
     re.successShard++
 	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 
