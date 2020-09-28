@@ -44,12 +44,13 @@ type RecoverEngine struct {
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
 	successRebuild  uint64
-	failRebuild  uint64
-	successShard uint64
-	failShard    uint64
-	failToken    uint64
-	failConn     uint64
-	Upt          *TaskPool.TaskPool
+	failRebuild     uint64
+	successShard    uint64
+	failShard       uint64
+	failSendShard   uint64
+	failToken       uint64
+	failConn        uint64
+	Upt             *TaskPool.TaskPool
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
@@ -71,6 +72,7 @@ type RecoverStat struct {
 	FailRebuild  uint64  `json:"FailRebuild"`
 	Success   uint64 `json:"Success"`
 	FailShard uint64 `json:"FailShard"`
+	FailSendShard  uint64 `json:"FailSendShard"`
 	FailToken uint64 `json:"FailToken"`
 	FailConn  uint64 `json:"failConn"`
 }
@@ -81,6 +83,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.failRebuild,
 		re.successShard,
 		re.failShard,
+		re.failSendShard,
 		re.failToken,
 		re.failConn,
 	}
@@ -237,17 +240,24 @@ RETRY:
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
-	if err != nil || len(shardBuf) < 3{
+	if err != nil {
 		re.failShard++
 		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
 
+	if len(shardBuf)<3{
+        re.failSendShard++
+		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		//re.Upt.Delete(localTokenW)
+		return nil, err
+	}
+
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
-		re.failShard++
-		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		re.failSendShard++
+		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
