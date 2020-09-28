@@ -39,7 +39,7 @@ func (re *RecoverEngine)processRequests(){
 		} else {
 			log.Println("[recover] create_gorutine pool is full, len_poolG=",len(poolG))
 			//requestT.Response <- []string{"goroutine pool is full"}
-			<- time.After(time.Second * 20)
+			<- time.After(time.Second * 3)
 		}
 	}
 }
