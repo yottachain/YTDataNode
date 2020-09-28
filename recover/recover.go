@@ -136,7 +136,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*9)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*16)
 	defer cancel()
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
