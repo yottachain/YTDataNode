@@ -65,7 +65,7 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 
 	// 如果队列长度大于等待token直接返回
 	if atomic.LoadInt64(&pt.waitCount) > int64(time.Duration(config.Gconfig.TokenWait)*time.Millisecond/pt.FillTokenInterval)/2 {
-		return nil, fmt.Errorf("token buys")
+		return nil, fmt.Errorf("token buys queue len (%d/%d)", atomic.LoadInt64(&pt.waitCount), int64(time.Duration(config.Gconfig.TokenWait)*time.Millisecond/pt.FillTokenInterval)/2)
 	}
 	select {
 	case tk := <-pt.tkc.Get(level):
@@ -109,7 +109,7 @@ func (pt *TaskPool) FillToken() {
 			pt.tkc.Add()
 			c += 1
 			d = d - pt.FillTokenInterval
-			if d < pt.FillTokenInterval/2 {
+			if pt.FillTokenInterval/2 <= 0 || d < pt.FillTokenInterval/2 {
 				break
 			}
 		}
@@ -184,7 +184,7 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 	}
 
 	pt.Save()
-	pt.MakeTokenQueue()
+	//pt.MakeTokenQueue()
 }
 
 func (pt *TaskPool) OnChange(handler func(pt *TaskPool)) {

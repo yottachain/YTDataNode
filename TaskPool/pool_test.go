@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"math/rand"
 	"os"
 	"sync/atomic"
 	"testing"
@@ -17,7 +18,7 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 2)
-			Utp().MakeTokenQueue()
+			Dtp().ChangeTKFillInterval(time.Millisecond*2 - (time.Millisecond * 2 / 5))
 		}
 	}()
 	var num int64
@@ -34,13 +35,14 @@ func TestUploadTaskPool_Check(t *testing.T) {
 				//time.Sleep(time.Millisecond)
 				go func() {
 					ctx, _ := context.WithTimeout(context.Background(), time.Second)
-					tk, err := Utp().Get(ctx, peer.ID("111"), 0)
+					level := int32(rand.Intn(10))
+					tk, err := Dtp().Get(ctx, peer.ID("111"), level)
 					if err != nil {
 						atomic.AddInt64(&errNum, 1)
 						//fmt.Println(err.Error())
 					} else {
 						atomic.AddInt64(&num, 1)
-						fmt.Println(tk)
+						fmt.Println(tk, level)
 					}
 				}()
 			}
