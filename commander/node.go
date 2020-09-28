@@ -65,7 +65,7 @@ func NewID() (string, int) {
 func Daemon() {
 
 	if runtime.GOOS == "linux" {
-		exec.Command("ulimit", "-n", "10000").Output()
+		exec.Command("ulimit", "-n", "60000").Output()
 	}
 
 	ctx := context.Background()

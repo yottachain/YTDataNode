@@ -59,8 +59,8 @@ type Config struct {
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
-	UpdateURL string `json:"update_url"`
-	ShardRbdConcurrent  uint16    `json:ShardRbdConcurrent`
+	UpdateURL          string `json:"update_url"`
+	ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
 }
 
 // DefaultYTFSOptions default config
