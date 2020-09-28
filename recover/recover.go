@@ -43,6 +43,8 @@ type RecoverEngine struct {
 	queue        chan *Task
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
+	successRebuild  uint64
+	failRebuild  uint64
 	successShard uint64
 	failShard    uint64
 	failToken    uint64
@@ -65,6 +67,8 @@ func (re *RecoverEngine) Len() uint32 {
 }
 
 type RecoverStat struct {
+	SuccessRebuild  uint64 `json:"SuccessRebuild"`
+	FailRebuild  uint64  `json:"FailRebuild"`
 	Success   uint64 `json:"Success"`
 	FailShard uint64 `json:"FailShard"`
 	FailToken uint64 `json:"FailToken"`
@@ -73,6 +77,8 @@ type RecoverStat struct {
 
 func (re *RecoverEngine) GetStat() *RecoverStat {
 	return &RecoverStat{
+		re.successRebuild,
+		re.failRebuild,
 		re.successShard,
 		re.failShard,
 		re.failToken,
@@ -462,6 +468,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	recoverData, err := h.Recover(msg)
 	if err != nil {
 		log.Printf("[recover]LRC 恢复失败%s", err)
+		re.failRebuild++
 		return &res
 	}
 	log.Printf("[recover]LRC 恢复的分片数据: %s", hex.EncodeToString(recoverData[0:128]))
@@ -480,6 +487,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 			fl.Write(v)
 			fl.Close()
 		}
+		re.failRebuild++
 		log.Printf("[recover]错误分片数据已保存 %s recoverID %x hash %s\n", BytesToInt64(msg.Id[0:8]), msg.RecoverId, base58.Encode(msg.Hashs[msg.RecoverId]))
 		return &res
 	}
@@ -488,10 +496,12 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	copy(key[:], hash)
 	//if err := re.sn.YTFS().Put(common.IndexTableKey(key), recoverData); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+		re.failRebuild++
 		log.Printf("[recover]LRC 保存已恢复分片失败%s\n", err)
 		return &res
 	}
 
+	re.successRebuild++
 	log.Printf("[recover]LRC 分片恢复成功\n")
 	res.RES = 0
 	return &res
