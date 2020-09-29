@@ -24,6 +24,7 @@ import (
 	"path"
 	"sync"
 	"time"
+	"strings"
 )
 
 const (
@@ -225,6 +226,7 @@ RETRY:
 		goto RETRY
 	}
 
+
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
 	msg.VHF = hash
@@ -241,8 +243,13 @@ RETRY:
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
 	if err != nil {
-		re.failShard++
-		log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		if (strings.Contains(err.Error(),"Get data Slice fail")){
+			re.failShard++
+			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		}else{
+			re.failSendShard++
+			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		}
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
