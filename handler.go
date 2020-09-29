@@ -128,11 +128,11 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
-	var neesStat = true
+	var isUpload = true
 	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		xtp = TaskPool.Dtp()
-		neesStat = false
+		isUpload = false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	if config.Gconfig.TokenWait == 0 {
@@ -164,8 +164,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 		res.Writable = false
 		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
-		if neesStat {
+		if isUpload {
 			atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
+		} else {
+			atomic.AddInt64(&statistics.DefaultStat.SentDownloadTokenNum, 1)
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)
