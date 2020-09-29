@@ -3,11 +3,12 @@ package recover
 import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"time"
+	//"sync"
 )
 
 var poolG chan int
 var totalCap int = 2000
-var realConCurrent uint16 = 5     //can be changed by write-weight and config
+var realConCurrent uint16 = 1     //can be changed by write-weight and config
 
 //type Request struct {
 //	 Tsk     *Task
@@ -93,3 +94,7 @@ func (re *RecoverEngine)RunPool(){
 		re.MultiReply()
 	}
 }
+
+//func (re *RecoverEngine) incRbdTask(){
+//    lock.Lock()
+//}
