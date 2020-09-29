@@ -28,6 +28,10 @@ type Stat struct {
 	GconfigMd5             string
 	RebuildShardStat       *recover2.RecoverStat
 	DownloadTokenFillSpeed time.Duration
+	SentDownloadToken      int64
+	DownloadSuccessCount   int64
+	SentDownloadTokenNum   int64
+	AverageDownloadToken   int64
 	sync.RWMutex
 }
 
@@ -67,6 +71,7 @@ func (s *Stat) Mean() {
 	}
 
 	s.AverageToken = s.SentTokenNum / td
+	s.AverageDownloadToken = s.SentDownloadTokenNum / td
 
 	s.SentTokenNum = 0
 	s.ReportTime = time.Now()
