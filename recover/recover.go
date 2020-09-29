@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	//"github.com/docker/docker/pkg/locker"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mr-tron/base58/base58"
@@ -44,6 +45,7 @@ type RecoverEngine struct {
 	queue        chan *Task
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
+	rebuildTask     uint64
 	successRebuild  uint64
 	failRebuild     uint64
 	successShard    uint64
@@ -68,7 +70,10 @@ func (re *RecoverEngine) Len() uint32 {
 	return uint32(len(re.queue))
 }
 
+
+
 type RecoverStat struct {
+	RebuildTask     uint64 `json:"RebuildTask"`
 	SuccessRebuild  uint64 `json:"SuccessRebuild"`
 	FailRebuild  uint64  `json:"FailRebuild"`
 	Success   uint64 `json:"Success"`
@@ -80,6 +85,7 @@ type RecoverStat struct {
 
 func (re *RecoverEngine) GetStat() *RecoverStat {
 	return &RecoverStat{
+		re.rebuildTask,
 		re.successRebuild,
 		re.failRebuild,
 		re.successShard,
@@ -226,7 +232,6 @@ RETRY:
 		goto RETRY
 	}
 
-
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
 	msg.VHF = hash
@@ -354,6 +359,7 @@ func (re *RecoverEngine) Run() {
 	go func() {
 		for {
 			ts := <-re.queue
+			re.rebuildTask++
 			msg := ts.Data
 			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
 				res := re.execRCTask(msg[2:], ts.ExpriedTime)
@@ -567,3 +573,4 @@ func BytesToInt64(bys []byte) int64 {
 	binary.Read(bytebuff, binary.BigEndian, &data)
 	return data
 }
+
