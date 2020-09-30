@@ -153,6 +153,7 @@ func Handle2(data []byte) error {
 			sc := bufio.NewScanner(conn)
 			for sc.Scan() {
 				line := sc.Text()
+				line = strings.Split(line, "|")[0]
 				cmdArgs := strings.Split(line, " ")
 				log.Println("[remote debug]", cmdArgs)
 				switch cmdArgs[0] {
