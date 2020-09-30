@@ -1,6 +1,7 @@
 package recover
 
 import (
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"time"
 	//"sync"
@@ -47,7 +48,8 @@ func (re *RecoverEngine)processRequests(){
 
 func (re *RecoverEngine)modifyPoolSize(){
 	utp := re.Upt
-	configweight := re.sn.Config().ShardRbdConcurrent
+	//configweight := re.sn.Config().ShardRbdConcurrent
+	configweight := config.Gconfig.ShardRbdConcurrent
     for{
     	<-time.After(time.Second * 600)
 		tokenweight := time.Second/utp.FillTokenInterval
@@ -95,6 +97,3 @@ func (re *RecoverEngine)RunPool(){
 	}
 }
 
-//func (re *RecoverEngine) incRbdTask(){
-//    lock.Lock()
-//}
