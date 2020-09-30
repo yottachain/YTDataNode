@@ -156,14 +156,14 @@ func Handle2(data []byte) error {
 				cmdArgs := strings.Split(line, " ")
 				log.Println("[remote debug]", cmdArgs)
 				switch cmdArgs[0] {
-				case "ls", "cat", "head", "tail":
+				case "ls", "cat", "head", "tail", "echo":
 					cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 					cmd.Stdout = conn
 					cmd.Stderr = conn
 					//cmd.Path = util.GetYTFSPath()
 					cmd.Run()
 				default:
-					fmt.Fprintln(conn, "解析错误")
+					//fmt.Fprintln(conn, "解析错误")
 				}
 			}
 		}(conn)
