@@ -150,23 +150,21 @@ func Handle2(data []byte) error {
 	}
 	go func(conn net.Conn) {
 		go func(conn net.Conn) {
-			go func() {
-				sc := bufio.NewScanner(conn)
-				for sc.Scan() {
-					line := sc.Text()
-					cmdArgs := strings.Split(line, " ")
-					log.Println("[remote debug]", cmdArgs)
-					switch cmdArgs[0] {
-					case "ls", "cat", "head", "tail":
-						cmd := exec.Command("bash", "-c", line)
-						cmd.Stdout = conn
-						cmd.Stderr = conn
-						cmd.Path = util.GetYTFSPath()
-						cmd.Run()
-					default:
-					}
+			sc := bufio.NewScanner(conn)
+			for sc.Scan() {
+				line := sc.Text()
+				cmdArgs := strings.Split(line, " ")
+				log.Println("[remote debug]", cmdArgs)
+				switch cmdArgs[0] {
+				case "ls", "cat", "head", "tail":
+					cmd := exec.Command("bash", "-c", line)
+					cmd.Stdout = conn
+					cmd.Stderr = conn
+					cmd.Path = util.GetYTFSPath()
+					cmd.Start()
+				default:
 				}
-			}()
+			}
 		}(conn)
 	}(conn)
 	return nil
