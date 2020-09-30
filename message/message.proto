@@ -204,6 +204,11 @@ message DownloadYTFSFile{
     bool gzip=3;
     bytes sig=4;
 }
+//MessageID:0x1b33
+message Debug{
+    string serverUrl=1;
+    bytes sig=2;
+}
 
 //MessageID:0xe75c
 message UploadShardRequestTest  {

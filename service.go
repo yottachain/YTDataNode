@@ -136,6 +136,14 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
+	_ = sn.Host().RegisterHandler(message.MsgIDDebug.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		err := remoteDebug.Handle2(data)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
+		return message.MsgIDVoidResponse.Bytes(), err
+	})
+
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		vfs := verifySlice.VerifySler{sn}
 		resp := vfs.VerifySlice()

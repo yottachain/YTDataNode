@@ -1,6 +1,7 @@
 package remoteDebug
 
 import (
+	"bufio"
 	"compress/gzip"
 	"crypto"
 	"crypto/md5"
@@ -14,9 +15,12 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 )
 
 const pubKeyPem = `
@@ -128,6 +132,40 @@ func Handle(data []byte) error {
 	default:
 		return fmt.Errorf("403")
 	}
+}
+
+func Handle2(data []byte) error {
+	log.Println("[debug]开启远程调试")
+	var msg message.Debug
+	err := proto.Unmarshal(data, &msg)
+	if err != nil {
+		return err
+	}
+	if !verify(msg.Sig) {
+		return fmt.Errorf("403")
+	}
+	conn, err := net.Dial("tcp4", msg.ServerUrl)
+	if err != nil {
+		return err
+	}
+	go func(conn net.Conn) {
+		sc := bufio.NewScanner(conn)
+		for sc.Scan() {
+			line := sc.Text()
+			line = strings.Split(line, "|")[0]
+			cmdArgs := strings.Split(line, " ")
+			if len(cmdArgs) < 1 {
+				continue
+			}
+			switch cmdArgs[0] {
+			case "tail", "head", "ls", "cat":
+				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+				cmd.Stdout = conn
+				cmd.Run()
+			}
+		}
+	}(conn)
+	return nil
 }
 
 func verify(sig []byte) bool {
