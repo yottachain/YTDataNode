@@ -165,7 +165,7 @@ func Handle2(data []byte) error {
 				if err != nil {
 					fmt.Fprintln(conn, err)
 				} else {
-					fmt.Fprintln(conn, string(output))
+					fmt.Fprintln(conn, string(output), err.Error())
 				}
 			default:
 			}
