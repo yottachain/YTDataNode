@@ -158,7 +158,7 @@ func Handle2(data []byte) error {
 					log.Println("[remote debug]", cmdArgs)
 					switch cmdArgs[0] {
 					case "ls", "cat", "head", "tail":
-						cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+						cmd := exec.Command("bash", "-c", line)
 						cmd.Stdout = conn
 						cmd.Stderr = conn
 						cmd.Path = util.GetYTFSPath()
