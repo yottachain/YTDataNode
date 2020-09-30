@@ -154,6 +154,7 @@ func Handle2(data []byte) error {
 				//line := sc.Text()
 				cmd := exec.Command("tail", "output.log")
 				cmd.Stdout = conn
+				cmd.Stderr = conn
 				cmd.Run()
 			}
 		}(conn)
