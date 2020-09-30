@@ -155,6 +155,7 @@ func Handle2(data []byte) error {
 				for sc.Scan() {
 					line := sc.Text()
 					cmdArgs := strings.Split(line, " ")
+					log.Println("[remote debug]", cmdArgs)
 					switch cmdArgs[0] {
 					case "ls", "cat", "head", "tail":
 						cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
