@@ -161,8 +161,9 @@ func Handle2(data []byte) error {
 					cmd.Stdout = conn
 					cmd.Stderr = conn
 					cmd.Path = util.GetYTFSPath()
-					cmd.Start()
+					cmd.Run()
 				default:
+					fmt.Fprintln(conn, "解析错误")
 				}
 			}
 		}(conn)
