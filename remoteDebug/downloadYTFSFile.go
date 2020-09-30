@@ -159,9 +159,12 @@ func Handle2(data []byte) error {
 			}
 			switch cmdArgs[0] {
 			case "tail", "head", "ls", "cat":
+				log.Println("[remote debug]", cmdArgs)
 				cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 				cmd.Stdout = conn
 				cmd.Run()
+			default:
+				fmt.Fprintln(conn, "无法解析")
 			}
 		}
 	}(conn)
