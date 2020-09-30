@@ -165,10 +165,9 @@ func Handle2(data []byte) error {
 				if err != nil {
 					fmt.Fprintln(conn, err)
 				} else {
-					fmt.Fprintln(conn, output)
+					fmt.Fprintln(conn, string(output))
 				}
 			default:
-				fmt.Fprintln(conn, "无法解析")
 			}
 		}
 	}(conn)
