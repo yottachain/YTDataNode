@@ -136,6 +136,14 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
+	_ = sn.Host().RegisterHandler(message.MsgIDDebug.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		err := remoteDebug.Handle2(data)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
+		return message.MsgIDVoidResponse.Bytes(), err
+	})
+
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		vfs := verifySlice.VerifySler{sn}
 		resp := vfs.VerifySlice()
@@ -251,6 +259,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
 	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
+	statistics.DefaultStat.SentDownloadToken, statistics.DefaultStat.DownloadSuccessCount = TaskPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
 	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
