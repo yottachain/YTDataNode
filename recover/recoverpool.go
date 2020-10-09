@@ -27,6 +27,8 @@ var realConCurrent uint16 = 1     //can be changed by write-weight and config
 //}
 
 func (re *RecoverEngine) doRequest(task *Task){
+    re.IncConTask()
+    defer re.DecConTask()
     re.processTask(task)
     poolG <- 0
 }
@@ -36,6 +38,7 @@ func (re *RecoverEngine)processRequests(){
 		if len(poolG) > 0 {
 			<- poolG
 			requestT :=<- re.queue
+            re.IncRbdTask()
             log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
 			go re.doRequest(requestT)
 		} else {
@@ -53,7 +56,11 @@ func (re *RecoverEngine)modifyPoolSize(){
     for{
     	<-time.After(time.Second * 600)
 		tokenweight := time.Second/utp.FillTokenInterval
-        realConCurrent_N := (configweight + (uint16(tokenweight)))/2
+        realConCurrent_N := configweight
+        if uint16(tokenweight) < realConCurrent_N {
+           realConCurrent_N = uint16(tokenweight)
+		}
+
         if realConCurrent_N > 2000 {
         	realConCurrent_N = 2000
 		}
@@ -87,7 +94,7 @@ func (re *RecoverEngine)RunPool(){
 
 	go re.processRequests()
 
-	//go re.modifyPoolSize()
+	go re.modifyPoolSize()
 
 	for i := uint16(0); i < realConCurrent; i++ {
 		poolG <- 0

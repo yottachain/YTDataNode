@@ -16,11 +16,37 @@ var (
 	  FailSndShardLk sync.Mutex
 	  FailTokenLk   sync.Mutex
 	  FailConnLk  sync.Mutex
+      ConcurrentShardLk  sync.Mutex
+      ConCurrentTaskLK  sync.Mutex
 )
 
+func (re *RecoverEngine) IncConTask(){
+	ConCurrentTaskLK.Lock()
+	defer ConCurrentTaskLK.Unlock()
+	re.concurrentTask++
+}
+
+func (re *RecoverEngine) DecConTask(){
+	ConCurrentTaskLK.Lock()
+	defer ConCurrentTaskLK.Unlock()
+	re.concurrentTask--
+}
+
+func (re *RecoverEngine) IncConShard(){
+	ConcurrentShardLk.Lock()
+	defer ConcurrentShardLk.Unlock()
+	re.concurrenGetShard++
+}
+
+func (re *RecoverEngine) DecConShard(){
+	ConcurrentShardLk.Lock()
+	defer ConcurrentShardLk.Unlock()
+	re.concurrenGetShard--
+}
+
 func (re *RecoverEngine) IncFailConn(){
-	FailTokenLk.Lock()
-	defer FailTokenLk.Unlock()
+	FailConnLk.Lock()
+	defer FailConnLk.Unlock()
 	re.failConn++
 }
 

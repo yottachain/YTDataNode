@@ -46,6 +46,8 @@ type RecoverEngine struct {
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
 	rebuildTask     uint64
+	concurrentTask  uint64
+	concurrenGetShard  uint64
 	successRebuild  uint64
 	failRebuild     uint64
 	reportTask      uint64
@@ -74,22 +76,31 @@ func (re *RecoverEngine) Len() uint32 {
 }
 
 type RecoverStat struct {
-	RebuildTask     uint64 `json:"RebuildTask"`
-	SuccessRebuild  uint64 `json:"SuccessRebuild"`
-	FailRebuild  uint64  `json:"FailRebuild"`
-	ReportTask   uint64   `json:"ReportTask"`
-	GetShardWkCnt   uint64 `json:"getShardWkCnt"`
-	GailDecodeTaskID uint64  `json:"failDecodeTaskID"`
-	Success   uint64 `json:"Success"`
-	FailShard uint64 `json:"FailShard"`
-	FailSendShard  uint64 `json:"FailSendShard"`
-	FailToken uint64 `json:"FailToken"`
-	FailConn  uint64 `json:"failConn"`
+	RebuildTask     uint64 `json:"RebuildTask"`                         //下发重建的任务总数
+	ConcurrentTask  uint64  `json:"ConcurrentTask"`                     //并发进行的重建任务数
+	ConcurrenGetShard  uint64  `json:"ConcurenGetShard"`                //并发拉取分片数
+	SuccessRebuild  uint64 `json:"SuccessRebuild"`                      //成功的重建的任务总数
+	FailRebuild  uint64  `json:"FailRebuild"`                           //重建失败的任务总数
+	ReportTask   uint64   `json:"ReportTask"`                           //上报的任务总数（包括重建成功和失败的上报）
+	GetShardWkCnt   uint64 `json:"getShardWkCnt"`                       //拉取分片的总次数
+	FailDecodeTaskID uint64  `json:"failDecodeTaskID"`                  //拉取分片时，解码需拉取的分片信息的错误总数（有可能需拉取的分片信息不全）
+	Success   uint64 `json:"Success"`                                   //成功拉取的分片总数
+	FailShard uint64 `json:"FailShard"`                                 //不存在的总分片数（分片丢失）
+	FailSendShard  uint64 `json:"FailSendShard"`                        //分片存在，但是传输过程中分片丢失
+	FailToken uint64 `json:"FailToken"`                                 //拉取分片时，获取不到token的总次数
+	FailConn  uint64 `json:"failConn"`                                  //拉取分片时，无法连接的总数
 }
+
+//RebuildTask = ReportTask    （近似相等）
+//RebuildTask = SuccessRebuild + FailRebuild  （近似相等）
+//GetShardWkCnt = FailDecodeTaskID + Success + FailShard + FailSendShard + FailToken + FailConn （近似相等）
+//ConcurrentTask = ConcurrenGetShard （理想情况）
 
 func (re *RecoverEngine) GetStat() *RecoverStat {
 	return &RecoverStat{
 		re.rebuildTask,
+		re.concurrentTask,
+		re.concurrenGetShard,
 		re.successRebuild,
 		re.failRebuild,
 		re.getShardWkCnt,
@@ -161,9 +172,31 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		re.IncFailDcdTask()
 		return nil, err
 	}
+
+	if 0 == len(id) {
+		err = fmt.Errorf("zero length id")
+		re.IncFailDcdTask()
+		return nil, err
+	}
+
+	if 0 == len(addrs) {
+		err = fmt.Errorf("zero length addrs")
+		re.IncFailDcdTask()
+		return nil, err
+	}
+
+	if 0 == len(hash) {
+		err = fmt.Errorf("zero length hash")
+		re.IncFailDcdTask()
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*16)
 	defer cancel()
 	connStart := time.Now()
+
+	re.IncConShard()
+	defer re.DecConShard()
 
 CONNRTY:
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
@@ -426,6 +459,7 @@ func (re *RecoverEngine) MultiReply() error {
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
 				resmsg[res.BPID] = _r
+				re.IncReportRbdTask()
 
 			case <-time.After(max_reply_wait_time):
 				return
