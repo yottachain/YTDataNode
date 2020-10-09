@@ -369,7 +369,7 @@ func addPool(tx *eos.SignedTransaction) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(fmt.Sprintf("send to http://%s:8082/changeminerpool", BPList[bi]))
+	fmt.Println(fmt.Sprintf("send to: http://%s:8082/changeminerpool", BPList[bi]))
 	if resp.StatusCode != 200 {
 		res, err := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
