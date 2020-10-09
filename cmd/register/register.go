@@ -369,9 +369,10 @@ func addPool(tx *eos.SignedTransaction) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(fmt.Sprintf("send to http://%s:8082/changeminerpool", BPList[bi]))
 	if resp.StatusCode != 200 {
-		res,err:=ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("%s,%s,%v",resp.Status,res,err)
+		res, err := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
 	}
 
 	return nil
@@ -399,10 +400,9 @@ func preRegister(tx *eos.SignedTransaction) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		res,err:=ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("%s,%s,%v",resp.Status,res,err)
+		res, err := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
 	}
-
 
 	//log.Println(string(buf))
 	return nil
