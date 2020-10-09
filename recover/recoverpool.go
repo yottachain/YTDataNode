@@ -52,9 +52,10 @@ func (re *RecoverEngine)processRequests(){
 func (re *RecoverEngine)modifyPoolSize(){
 	utp := re.Upt
 	//configweight := re.sn.Config().ShardRbdConcurrent
-	configweight := config.Gconfig.ShardRbdConcurrent
+
     for{
     	<-time.After(time.Second * 600)
+		configweight := config.Gconfig.ShardRbdConcurrent
 		tokenweight := time.Second/utp.FillTokenInterval
         realConCurrent_N := configweight
         if uint16(tokenweight) < realConCurrent_N {
