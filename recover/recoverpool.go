@@ -3,6 +3,7 @@ package recover
 import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"time"
+	//"sync"
 )
 
 var poolG chan int
@@ -39,7 +40,7 @@ func (re *RecoverEngine)processRequests(){
 		} else {
 			log.Println("[recover] create_gorutine pool is full, len_poolG=",len(poolG))
 			//requestT.Response <- []string{"goroutine pool is full"}
-			<- time.After(time.Second * 20)
+			<- time.After(time.Second * 3)
 		}
 	}
 }
@@ -93,3 +94,7 @@ func (re *RecoverEngine)RunPool(){
 		re.MultiReply()
 	}
 }
+
+//func (re *RecoverEngine) incRbdTask(){
+//    lock.Lock()
+//}
