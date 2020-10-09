@@ -75,6 +75,7 @@ func (re *RecoverEngine)modifyPoolSize(){
 			}
 			realConCurrent = realConCurrent_N
 		}
+		log.Println("[recover] realConCurent=",realConCurrent)
 	}
 }
 
