@@ -195,9 +195,6 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	defer cancel()
 	connStart := time.Now()
 
-	re.IncConShard()
-	defer re.DecConShard()
-
 CONNRTY:
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
@@ -284,8 +281,11 @@ RETRY:
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
-	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 
+	re.IncConShard()
+	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	re.DecConShard()
+	
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
