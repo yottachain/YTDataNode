@@ -9,7 +9,7 @@ import (
 
 var locker = sync.RWMutex{}
 
-var url = "http://39.105.184.162:8082/active_nodes"
+var url = "http://39.105.184.162:8082/readable_nodes"
 
 var nodeList []Data
 
