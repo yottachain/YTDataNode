@@ -119,6 +119,12 @@ func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.PackedTr
 		action,
 	}, opt)
 
+	if len(action.Authorization) == 2 {
+		if action.Authorization[0].Actor == action.Authorization[1].Actor {
+			action.Authorization = action.Authorization[0:1]
+		}
+	}
+
 	keysnum := len(action.Authorization)
 	fmt.Printf("需要%d个私钥签名\n", keysnum)
 	kb := eos.NewKeyBag()
