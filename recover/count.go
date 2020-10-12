@@ -2,6 +2,7 @@ package recover
 
 import(
 	"sync"
+	"time"
 )
 
 
@@ -18,7 +19,27 @@ var (
 	  FailConnLk  sync.Mutex
       ConcurrentShardLk  sync.Mutex
       ConCurrentTaskLK  sync.Mutex
+      ConGetShardPoolLK sync.Mutex
 )
+
+func (re *RecoverEngine) GetConTaskPass(){
+	  for{
+	  	    <-time.After(time.Millisecond)
+			ConGetShardPoolLK.Lock()
+			if len(getShardPool) > 0{
+				<-getShardPool
+				ConCurrentTaskLK.Unlock()
+				break
+			}
+		    ConCurrentTaskLK.Unlock()
+	  }
+}
+
+func (re *RecoverEngine) ReturnConTaskPass(){
+	ConGetShardPoolLK.Lock()
+	defer ConCurrentTaskLK.Unlock()
+	getShardPool <- 0
+}
 
 func (re *RecoverEngine) IncConTask(){
 	ConCurrentTaskLK.Lock()

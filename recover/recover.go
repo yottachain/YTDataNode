@@ -191,7 +191,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*16)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	connStart := time.Now()
 
@@ -210,6 +210,8 @@ CONNRTY:
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
+
+	re.GetConTaskPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancels()
 
@@ -241,6 +243,7 @@ RETRY:
 			err = fmt.Errorf("faild to get token")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
+			re.ReturnConTaskPass()
 			return nil,err
 		}
 		goto RETRY
@@ -252,6 +255,7 @@ RETRY:
 			re.IncFailToken()
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
+			re.ReturnConTaskPass()
 			return nil,err
 		}
 		goto RETRY
@@ -263,6 +267,7 @@ RETRY:
 			err = fmt.Errorf("resGetToken.Writable is false")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
+			re.ReturnConTaskPass()
 			return nil,err
 		}
 		goto RETRY
@@ -278,14 +283,17 @@ RETRY:
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		//re.Upt.Delete(localTokenW)
+		re.ReturnConTaskPass()
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 
+
 	re.IncConShard()
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()
-	
+	re.ReturnConTaskPass()
+
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
