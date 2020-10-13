@@ -2,6 +2,8 @@ package activeNodeList
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -9,9 +11,19 @@ import (
 
 var locker = sync.RWMutex{}
 
-var url = "http://39.105.184.162:8082/readable_nodes"
+func getUrl() string {
+	var url string
+	i := rand.Intn(21)
+	if i < 10 {
+		url = fmt.Sprintf("http://sn0%d.yottachain.net:8082/readable_nodes", i)
+	} else {
+		url = fmt.Sprintf("http://sn%d.yottachain.net:8082/readable_nodes", i)
+	}
+	return url
+}
 
 var nodeList []Data
+var updateTime = time.Time{}
 
 type Data struct {
 	NodeID string `json:"nodeid"`
@@ -19,35 +31,30 @@ type Data struct {
 }
 
 func Update() {
+	url := getUrl()
 	res, err := http.Get(url)
 	if err != nil {
 		return
 	}
 	dc := json.NewDecoder(res.Body)
-	locker.Lock()
-	defer locker.Unlock()
 	err = dc.Decode(&nodeList)
 	if err != nil {
 		return
 	}
+	updateTime = time.Now()
 }
 
 func HasNodeid(id string) bool {
-	locker.RLock()
-	defer locker.RUnlock()
+	locker.Lock()
+	defer locker.Unlock()
+	if time.Now().Sub(updateTime) > time.Minute {
+		Update()
+	}
+
 	for _, v := range nodeList {
 		if v.NodeID == id {
 			return true
 		}
 	}
 	return false
-}
-
-func AutoUpdate(interval time.Duration) {
-	go func() {
-		for {
-			<-time.After(interval)
-			Update()
-		}
-	}()
 }
