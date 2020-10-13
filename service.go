@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/yottachain/YTDataNode/TaskPool"
-	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -39,7 +38,6 @@ var rms *service.RelayManager
 func (sn *storageNode) Service() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
-	activeNodeList.AutoUpdate(time.Minute)
 
 	// 初始化统计
 	statistics.InitDefaultStat()
