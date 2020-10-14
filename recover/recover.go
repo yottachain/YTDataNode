@@ -45,6 +45,7 @@ type RecoverEngine struct {
 	queue        chan *Task
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
+	tstdata      [164]lrcpkg.Shard
 	rebuildTask     uint64
 	concurrentTask  uint64
 	concurrenGetShard  uint64

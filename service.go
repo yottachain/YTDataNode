@@ -104,11 +104,13 @@ func (sn *storageNode) Service() {
 		sch := SpotCheckHandler{sn}
 		return sch.Handle(data), nil
 	})
+
 	rce, err := rc.New(sn)
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
+	rce.EncodeForRecover()
 	//go rce.Run()
 	go rce.RunPool()
 
