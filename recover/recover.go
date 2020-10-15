@@ -45,6 +45,7 @@ type RecoverEngine struct {
 	queue        chan *Task
 	replyQueue   chan *TaskMsgResult
 	le           *LRCEngine
+	tstdata      [164]lrcpkg.Shard
 	rebuildTask     uint64
 	concurrentTask  uint64
 	concurrenGetShard  uint64
@@ -525,16 +526,24 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	defer log.Printf("[recover]LRC 分片恢复结束%d", BytesToInt64(msg.Id[0:8]))
 
 	lrc := lrcpkg.Shardsinfo{}
-
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
 	log.Printf("[recover]LRC original count is %d", lrc.OriginalCount)
 	lrc.RecoverNum = 13
 	lrc.Lostindex = uint16(msg.RecoverId)
+
+	lrcshd := lrc
+	can, err:=re.PreTstRecover(lrcshd,msg)
+	if err != nil || !can {
+		return &res
+	}
+	lrc.ShardExist = lrcshd.ShardExist
+
 	h, err := re.le.GetLRCHandler(&lrc)
 	if err != nil {
 		log.Printf("[recover]LRC 获取Handler失败%s", err)
 		return &res
 	}
+
 	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
 	recoverData, err := h.Recover(msg)
 	if err != nil {
