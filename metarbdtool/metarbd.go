@@ -1,19 +1,19 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
+	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/util"
-	"github.com/yottachain/YTFS/storage"
-	"github.com/tecbot/gorocksdb"
 	ydcommon "github.com/yottachain/YTFS/common"
+	"github.com/yottachain/YTFS/storage"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"sync/atomic"
 	"time"
-	"encoding/binary"
-
 )
 
 var num uint64
@@ -22,11 +22,11 @@ var cfg *config.Config
 var end chan struct{}
 var ti *storage.TableIterator
 var preTime time.Time
-var glbti storage.TableIterator
 
 var Mdb *KvDB
 
-var mdbFileName = "/maindb"
+var oldmdbFileName = "/maindb.tmp"
+var newmdbFileName = "/maindb"
 var ytPosKey    = "yt_rocks_pos_key"
 var ytBlkSzKey  = "yt_blk_size_key"
 
@@ -36,6 +36,54 @@ type KvDB struct {
 	wo  *gorocksdb.WriteOptions
 	PosKey ydcommon.IndexTableKey
 	PosIdx ydcommon.IndexTableValue
+}
+
+func prepareRBD(){
+	initRBD()
+	cmd1 := exec.Command("/bin/bash","-c","pkill -9 ytfs")
+	out,err := cmd1.Output()
+	if err != nil{
+		if len(out) > 0{
+			panic(err)
+		}
+	}
+
+	fileName := path.Join(util.GetYTFSPath(), "flock.ytfs")
+	_,err = os.Create(fileName)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func initRBD(){
+	var err error
+	preTime = time.Now()
+	end = make(chan struct{})
+	cfg,_=config.ReadConfig()
+	pathname := path.Join(util.GetYTFSPath(),"index.db")
+	if !PathExists(pathname){
+		panic("index.db not exist!")
+	}
+
+	ti,err =storage.GetTableIterator(pathname,cfg.Options)
+	if err != nil{
+		panic(err)
+	}
+
+	oldmdbPath := path.Join(util.GetYTFSPath(),oldmdbFileName)
+	if PathExists(oldmdbPath){
+		err := os.RemoveAll(oldmdbPath)
+		if err != nil{
+			panic(err)
+		}
+	}
+
+	mdb,err := openKVDB(oldmdbPath)
+	if err != nil {
+		log.Println(" open rocksdb err!!")
+		panic(err)
+	}
+	Mdb = mdb
 }
 
 func setKVtoDB(mdb *KvDB, key string, value uint32) error {
@@ -76,65 +124,32 @@ func openKVDB(DBPath string) (kvdb *KvDB, err error) {
 	}, err
 }
 
-func init(){
-	preTime = time.Now()
-	end = make(chan struct{})
-	cfg,_=config.ReadConfig()
-	pathname := path.Join(util.GetYTFSPath(),"index.db")
-	cfg.Options.UseKvDb = true
-	ti,_=storage.GetTableIterator(pathname,cfg.Options)
-
-	mdb,err := openKVDB(path.Join(util.GetYTFSPath(),"maindb"))
-	if err != nil {
-		log.Println(" open rocksdb err!!")
-		panic(err)
+func PathExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
 	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
 
-    Mdb = mdb
-    Pos := ti.Len()
-    err = setKVtoDB(mdb,ytPosKey,uint32(Pos))
+func setValue(){
+	Pos := ti.Len()
+	err := setKVtoDB(Mdb,ytPosKey,uint32(Pos))
 	if err != nil {
 		log.Println("set start Pos to DB err:",err)
 		panic(err)
 	}
 
 	BlkSize := ti.BlockSize()
-	err = setKVtoDB(mdb,ytBlkSzKey,BlkSize)
+	err = setKVtoDB(Mdb,ytBlkSzKey,BlkSize)
 	log.Println("current blksize=",BlkSize)
 	if err != nil {
 		log.Println("set blocksize to DB err:",err)
 		panic(err)
 	}
-}
-
-func main(){
-	go printSpeed()
-
-	for {
-		tb,err:=ti.GetNoNilTableBytes()
-		if err !=nil {
-			if err.Error() != "table_end"{
-				log.Println("get Table from indexdb err: ", err)
-			}
-			break
-		}
-
-		for key,val := range tb {
-			err = Mdb.Rdb.Put(Mdb.wo, key[:], val)
-			if err != nil {
-				log.Println("rbdkv_error")
-			}
-		}
-		atomic.AddUint64(&num,uint64(len(tb)))
-	}
-
-	fileName := path.Join(util.GetYTFSPath(), "dbsafe")
-	os.Create(fileName)
-
-	log.Println("rbdkv_success")
-	cfg.UseKvDb = true
-	cfg.Save()
-	end<- struct{}{}
 }
 
 func printSpeed () {
@@ -178,4 +193,64 @@ func FormatTd(td uint64) string {
 		return fmt.Sprintf("%d 分",td/m)
 	}
 	return fmt.Sprintf("%d 秒",td)
+}
+
+func reNameFile(old,new string){
+	oldFilePath := path.Join(util.GetYTFSPath(),old)
+	newFilePath := path.Join(util.GetYTFSPath(),new)
+	err := os.Rename(oldFilePath,newFilePath)
+	if err != nil{
+		panic(err)
+	}
+}
+
+func commitDB(){
+	fileName := path.Join(util.GetYTFSPath(), "dbsafe")
+	_,err := os.Create(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	cfg.UseKvDb = true
+	err = cfg.Save()
+	if err != nil{
+		panic(err)
+	}
+
+	setValue()
+	reNameFile("index.db","index.db.bk")
+
+	fileName2 := path.Join(util.GetYTFSPath(), "flock.ytfs")
+	err = os.Remove(fileName2)
+	if err != nil{
+		panic(err)
+	}
+	reNameFile(oldmdbFileName,newmdbFileName)
+}
+
+func main(){
+	prepareRBD()
+	go printSpeed()
+	for {
+		tb,err:=ti.GetNoNilTableBytes()
+		if err !=nil {
+			if err.Error() != "table_end"{
+				log.Println("get Table from indexdb err: ", err)
+				panic(err)
+			}
+			break
+		}
+
+		for key,val := range tb {
+			err = Mdb.Rdb.Put(Mdb.wo, key[:], val)
+			if err != nil {
+				log.Println("rbdkv_error")
+				panic(err)
+			}
+		}
+		atomic.AddUint64(&num,uint64(len(tb)))
+	}
+	commitDB()
+	log.Println("rbdkv_success")
+	end<- struct{}{}
 }

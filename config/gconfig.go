@@ -33,6 +33,7 @@ type Gcfg struct {
 	TokenWait         int64 `json:"TokenWait"`
 	TokenReturnWait   int64 `json:"TokenReturnWait"`
 	Clean             bool  `json:"Clean"`
+	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
