@@ -59,7 +59,7 @@ type Config struct {
 	MaxConn       int           `json:"MaxConn"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
-	UpdateURL          string `json:"update_url"`
+	UpdateURL string `json:"update_url"`
 	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
 }
 
@@ -389,7 +389,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 109
+	return 110
 }
 
 func Version() uint32 {
