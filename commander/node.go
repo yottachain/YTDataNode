@@ -73,6 +73,7 @@ echo "* soft nproc 655350" >> /etc/security/limits.conf
 echo "* hard nproc 655350" >> /etc/security/limits.conf
 echo "* soft core unlimited" >> /etc/security/limits.conf
 echo "* hard core unlimited" >> /etc/security/limits.conf
+source /etc/security/limits.conf
 `)
 		cmd.Output()
 	}
