@@ -63,9 +63,19 @@ func NewID() (string, int) {
 
 // Daemon 启动守护进程
 func Daemon() {
-
 	if runtime.GOOS == "linux" {
-		exec.Command("ulimit", "-n", "60000").Output()
+		cmd := exec.Command("bash", "-c", "ulimit -n 60000")
+		stdin, _ := cmd.StdinPipe()
+		fmt.Fprint(stdin, `
+echo "* soft nofile 655350" > /etc/security/limits.conf
+echo "* hard nofile 655350" >> /etc/security/limits.conf
+echo "* soft nproc 655350" >> /etc/security/limits.conf
+echo "* hard nproc 655350" >> /etc/security/limits.conf
+echo "* soft core unlimited" >> /etc/security/limits.conf
+echo "* hard core unlimited" >> /etc/security/limits.conf
+source /etc/security/limits.conf
+`)
+		cmd.Output()
 	}
 
 	ctx := context.Background()

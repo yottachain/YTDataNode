@@ -357,8 +357,8 @@ github.com/yottachain/YTHost v1.0.2-0.20200918110720-68f155ccc541 h1:jZK4hDasAo+
 github.com/yottachain/YTHost v1.0.2-0.20200918110720-68f155ccc541/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc h1:DMB8zfN2YUoO9KQAx/qO1+rM3A4aL5rW/t474eFMs6w=
 github.com/yottachain/YTLRC v0.0.0-20200224075657-42eeb6c231cc/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
-github.com/yottachain/YTLRC v0.0.0-20200923024153-c43a6753e350 h1:Rgj3aPCwG9d2B1BzdKE8AheIt5sAKMIdawqcFWtDRqM=
-github.com/yottachain/YTLRC v0.0.0-20200923024153-c43a6753e350/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
+github.com/yottachain/YTLRC v0.0.0-20201015031040-8d147ff0316c h1:/CupwuodapXlEe4CgArVmivlC7qT8Xdr3Ed6iZpMx60=
+github.com/yottachain/YTLRC v0.0.0-20201015031040-8d147ff0316c/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 go.etcd.io/bbolt v1.3.2 h1:Z/90sZLPOeCy2PwprqkFa25PdkusRzaj9P8zm/KNyvk=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=

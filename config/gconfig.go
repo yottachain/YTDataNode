@@ -23,17 +23,18 @@ var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 type UpdateHandler func(gc Gcfg)
 
 type Gcfg struct {
-	MaxToken          int   `json:"MaxToken"`
-	MinToken          int   `json:"MinToken"`
-	TTL               int64 `json:"TTL"`
-	Increase          int64 `json:"Increase"`
-	IncreaseThreshold int64 `json:"IncreaseThreshold"`
-	Decrease          int64 `json:"Decrease"`
-	DecreaseThreshold int64 `json:"DecreaseThreshold"`
-	TokenWait         int64 `json:"TokenWait"`
-	TokenReturnWait   int64 `json:"TokenReturnWait"`
-	Clean             bool  `json:"Clean"`
+	MaxToken           int    `json:"MaxToken"`
+	MinToken           int    `json:"MinToken"`
+	TTL                int64  `json:"TTL"`
+	Increase           int64  `json:"Increase"`
+	IncreaseThreshold  int64  `json:"IncreaseThreshold"`
+	Decrease           int64  `json:"Decrease"`
+	DecreaseThreshold  int64  `json:"DecreaseThreshold"`
+	TokenWait          int64  `json:"TokenWait"`
+	TokenReturnWait    int64  `json:"TokenReturnWait"`
+	Clean              bool   `json:"Clean"`
 	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
+	OutlineTimeRange   int    `json:"OutlineTimeRange"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -156,6 +157,7 @@ func NewGConfig() *GConfig {
 			DecreaseThreshold: 80,
 			TokenWait:         800,
 			TokenReturnWait:   800,
+			OutlineTimeRange:  600,
 		},
 		OnUpdate: nil,
 	}
