@@ -20,7 +20,35 @@ var (
       ConcurrentShardLk  sync.Mutex
       ConCurrentTaskLK  sync.Mutex
       ConGetShardPoolLK sync.Mutex
+      FailLessShardLK  sync.Mutex
+      PassJudgeLK      sync.Mutex
+      SuccConnLk       sync.Mutex
+      SuccTokenLk      sync.Mutex
 )
+
+func (re *RecoverEngine) IncSuccToken(){
+	SuccTokenLk.Lock()
+	defer SuccTokenLk.Unlock()
+	re.successToken++
+}
+
+func (re *RecoverEngine) IncSuccConn(){
+	SuccConnLk.Lock()
+	defer SuccConnLk.Unlock()
+	re.sucessConn++
+}
+
+func (re *RecoverEngine) IncPassJudge(){
+	PassJudgeLK.Lock()
+	defer PassJudgeLK.Unlock()
+	re.passJudge++
+}
+
+func (re *RecoverEngine) IncFailLessShard(){
+	FailLessShardLK.Lock()
+	defer FailLessShardLK.Unlock()
+	re.failLessShard++
+}
 
 func (re *RecoverEngine) GetConTaskPass(){
 	  for{

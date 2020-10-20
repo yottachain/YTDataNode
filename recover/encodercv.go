@@ -2,8 +2,10 @@ package recover
 
 import (
 	"crypto/rand"
+	"fmt"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
+
 	//"math/rand"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
@@ -62,12 +64,13 @@ start:
 		indexs = append(indexs, i.Value.(int16))
 	}
 
-	//log.Println("[recover]need shard list", indexs, len(indexs))
+	log.Println("[recover]need shard list", indexs, len(indexs))
 
 	k := 0
 	for _, idx := range indexs {
 		k++
 		peer := td.Locations[idx]
+		//log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
 		if !activeNodeList.HasNodeid(peer.NodeId){
             lrch.si.ShardExist[idx] = 0
 			continue
@@ -79,33 +82,16 @@ start:
 		}
 
         shard := re.tstdata[idx][:]
-		//shard, err := lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
-		//
-		//// if there is some error, we should to try again
-		//if err != nil {
-		//	fmt.Println("[recover]first getshard error:",err)
-		//	shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
-		//	if err != nil || len(shard) == 0 {
-		//		fmt.Println("[recover]second getshard error:",err,"len shard=",len(shard))
-		//		if k >= len(indexs) && n < 3{
-		//			goto start
-		//		}
-		//		continue
-		//	}
-		//}
-		//
-		//if len(shard) == 0 {
-		//	log.Println("[recover][ytlrc] shard is empty!!")
-		//	if k >= len(indexs) && n < 3 {
-		//		goto  start
-		//	}
-		//	continue
-		//}
+
+        log.Println("[recover] len(shard)=",len(shard),"shard=",idx,"shardidx=",shard[0])
+		//log.Println("[recover] shard=",shard)
 
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+		log.Println("[recover] status=",status)
 		if status > 0{
 			_, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
+				fmt.Println("[recover] mostprobable recover shard!")
 				can = true
 			}
 		}else if status < 0 {     //rebuild failed
@@ -118,13 +104,19 @@ start:
 			}
 		}
 	}
+
+	if !can {
+		fmt.Println("[recover] [RecoverTst] not enough shard for rebuild！")
+	}else{
+		fmt.Println("[recover][RecoverTst] rebuild mostly success can= ",can)
+	}
 	return can,nil
 }
 
 func (re *RecoverEngine)PreTstRecover(lrcshd lrcpkg.Shardsinfo, msg message.TaskDescription) (bool, error){
 	hd, err := re.le.GetLRCHandler(&lrcshd)
 	if err != nil {
-		log.Printf("[recover]LRC 获取Handler失败%s", err)
+		//log.Printf("[recover]LRC 获取Handler失败%s", err)
 		return false, err
 	}
 	can, err := re.RecoverTst(msg, hd)

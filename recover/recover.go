@@ -59,6 +59,10 @@ type RecoverEngine struct {
 	failSendShard   uint64
 	failToken       uint64
 	failConn        uint64
+	failLessShard   uint64
+	passJudge       uint64
+	sucessConn      uint64
+	successToken    uint64
 	Upt             *TaskPool.TaskPool
 }
 
@@ -90,6 +94,10 @@ type RecoverStat struct {
 	FailSendShard  uint64 `json:"FailSendShard"`                        //分片存在，但是传输过程中分片丢失
 	FailToken uint64 `json:"FailToken"`                                 //拉取分片时，获取不到token的总次数
 	FailConn  uint64 `json:"failConn"`                                  //拉取分片时，无法连接的总数
+	FailLessShard   uint64 `json:"failLessShard"`                       //在线矿机数不够，无法获取足够分片
+	PassJudge       uint64 `json:"passJudge"`                           //预判重建成功
+	SuccessConn      uint64 `json:"sucessConn"`                          //连接成功数
+	SuccessToken    uint64 `json:"successToken"`                        //获取token成功
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -112,6 +120,10 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.failSendShard,
 		re.failToken,
 		re.failConn,
+		re.failLessShard,
+		re.passJudge,
+		re.sucessConn,
+		re.successToken,
 	}
 }
 
@@ -166,7 +178,7 @@ func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string
 	return nil,nil    //refer to getShard
 }
 
-func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
+func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
 	re.IncGetShardWK()
 	btid, err := base58.Decode(taskID)
 	if err != nil {
@@ -206,6 +218,12 @@ CONNRTY:
 		}
 		goto CONNRTY
 	}
+
+	if 0 == sw.swconn {
+		re.IncSuccConn()
+		sw.swconn++
+	}
+
 
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
@@ -289,6 +307,10 @@ RETRY:
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
 
+	if 0 == sw.swtoken {
+		re.IncSuccToken()
+		sw.swtoken++
+	}
 
 	re.IncConShard()
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
@@ -321,8 +343,12 @@ RETRY:
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
-	//re.Upt.Delete(localTokenW)
-    re.IncSuccShard()
+
+	if 0 == sw.swshard {
+		re.IncSuccShard()
+		sw.swshard++
+	}
+
 	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 
 	*n = *n + 1
@@ -534,8 +560,13 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	lrcshd := lrc
 	can, err:=re.PreTstRecover(lrcshd,msg)
 	if err != nil || !can {
+		re.IncFailLessShard()
 		return &res
 	}
+
+	re.IncPassJudge()
+	//log.Println("[recover] pass recover test!")
+
 	lrc.ShardExist = lrcshd.ShardExist
 
 	h, err := re.le.GetLRCHandler(&lrc)

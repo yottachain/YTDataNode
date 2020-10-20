@@ -12,7 +12,7 @@ import (
 
 type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
 
-type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
+type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error)
 
 type LRCEngine struct {
 	lrc      lrcpkg.Shardsinfo
@@ -30,14 +30,22 @@ func NewLRCEngine(gsfunc GetShardFuncLrc) *LRCEngine {
 	return &le
 }
 
+type Switchcnt struct {
+	swconn   int8
+	swtoken  int8
+	swshard  int8
+}
+
 type LRCHandler struct {
 	le     *LRCEngine
 	si     *lrcpkg.Shardsinfo
 	shards [][]byte
 }
 
+
+
 func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, error) {
-	lrch := LRCHandler{le, shardsinfo, nil}
+	lrch := LRCHandler{le:le, si:shardsinfo, shards:nil}
 	if h := le.lrc.GetRCHandle(shardsinfo); h == nil {
 		return nil, fmt.Errorf("LRC get handler failed")
 	}
@@ -74,14 +82,17 @@ start:
 		k++
 		peer := td.Locations[idx]
         if lrch.si.ShardExist[idx] == 0{
+        	fmt.Println("[recover] dn is not online, cannot get the shard")
         	continue
 		}
 
 		//getshdstart := time.Now()
 		retrytimes := 20
 
+		sw := Switchcnt{0,0,0}
+
 		for{
-			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number)
+			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
 			if err == nil && len(shard) > 0 {
 				break
 			}

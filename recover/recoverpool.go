@@ -15,8 +15,8 @@ var realConTask uint16 = 10
 
 func (re *RecoverEngine) doRequest(task *Task){
     re.IncConTask()
-    defer re.DecConTask()
     re.processTask(task)
+	re.DecConTask()
     poolG <- 0
 }
 
