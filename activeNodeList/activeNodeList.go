@@ -3,6 +3,7 @@ package activeNodeList
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/yottachain/YTDataNode/config"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -14,10 +15,14 @@ var locker = sync.RWMutex{}
 func getUrl() string {
 	var url string
 	i := rand.Intn(21)
+	timeRange := config.Gconfig.OutlineTimeRange
+	if timeRange == 0 {
+		timeRange = 600
+	}
 	if i < 10 {
-		url = fmt.Sprintf("http://sn0%d.yottachain.net:8082/readable_nodes", i)
+		url = fmt.Sprintf("http://sn0%d.yottachain.net:8082/readable_nodes?timerange=%d", i, timeRange)
 	} else {
-		url = fmt.Sprintf("http://sn%d.yottachain.net:8082/readable_nodes", i)
+		url = fmt.Sprintf("http://sn%d.yottachain.net:8082/readable_nodes?timerange=%d", i, timeRange)
 	}
 	return url
 }
