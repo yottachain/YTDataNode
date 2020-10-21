@@ -74,14 +74,14 @@ start:
 	}
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
-
+	log.Println("[recover] ShardExist=",lrch.si.ShardExist)
 	k := 0
 	for _, idx := range indexs {
 		k++
 		peer := td.Locations[idx]
         if lrch.si.ShardExist[idx] == 0{
         	log.Println("[recover] dn is not online, cannot get the shard,idx=",idx)
-        	log.Println("[recover] ShardExist=",lrch.si.ShardExist)
+
         	continue
 		}
 
