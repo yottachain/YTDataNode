@@ -96,8 +96,6 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 		statistics.DefaultStat.Unlock()
 	}
-	_, err = wh.YTFS().BatchPut(rqmap)
-	log.Printf("[ytfs]flush success:%d\n", number)
 
 	for _, rq := range rqs {
 		select {
