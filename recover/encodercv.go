@@ -83,11 +83,11 @@ start:
 
         shard := re.tstdata[idx][:]
 
-        log.Println("[recover] len(shard)=",len(shard),"shard=",idx,"shardidx=",shard[0])
+        //log.Println("[recover] len(shard)=",len(shard),"shard=",idx,"shardidx=",shard[0])
 		//log.Println("[recover] shard=",shard)
 
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
-		log.Println("[recover] status=",status)
+		//log.Println("[recover] status=",status)
 		if status > 0{
 			_, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success

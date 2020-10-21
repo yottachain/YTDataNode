@@ -42,8 +42,6 @@ type LRCHandler struct {
 	shards [][]byte
 }
 
-
-
 func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, error) {
 	lrch := LRCHandler{le:le, si:shardsinfo, shards:nil}
 	if h := le.lrc.GetRCHandle(shardsinfo); h == nil {
@@ -76,13 +74,14 @@ start:
 	}
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
-
+	log.Println("[recover] ShardExist=",lrch.si.ShardExist)
 	k := 0
 	for _, idx := range indexs {
 		k++
 		peer := td.Locations[idx]
         if lrch.si.ShardExist[idx] == 0{
-        	fmt.Println("[recover] dn is not online, cannot get the shard")
+        	log.Println("[recover] dn is not online, cannot get the shard,idx=",idx)
+
         	continue
 		}
 

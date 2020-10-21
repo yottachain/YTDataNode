@@ -40,12 +40,7 @@ type Task struct {
 	ExpriedTime int64
 }
 
-type RecoverEngine struct {
-	sn           node.StorageNode
-	queue        chan *Task
-	replyQueue   chan *TaskMsgResult
-	le           *LRCEngine
-	tstdata      [164]lrcpkg.Shard
+type RebuildCount struct {
 	rebuildTask     uint64
 	concurrentTask  uint64
 	concurrenGetShard  uint64
@@ -63,6 +58,15 @@ type RecoverEngine struct {
 	passJudge       uint64
 	sucessConn      uint64
 	successToken    uint64
+}
+
+type RecoverEngine struct {
+	sn           node.StorageNode
+	queue        chan *Task
+	replyQueue   chan *TaskMsgResult
+	le           *LRCEngine
+	tstdata      [164]lrcpkg.Shard
+	rcvstat          RebuildCount
 	Upt             *TaskPool.TaskPool
 }
 
@@ -107,23 +111,23 @@ type RecoverStat struct {
 
 func (re *RecoverEngine) GetStat() *RecoverStat {
 	return &RecoverStat{
-		re.rebuildTask,
-		re.concurrentTask,
-		re.concurrenGetShard,
-		re.successRebuild,
-		re.failRebuild,
-		re.getShardWkCnt,
-		re.reportTask,
-		re.failDecodeTaskID,
-		re.successShard,
-		re.failShard,
-		re.failSendShard,
-		re.failToken,
-		re.failConn,
-		re.failLessShard,
-		re.passJudge,
-		re.sucessConn,
-		re.successToken,
+		re.rcvstat.rebuildTask,
+		re.rcvstat.concurrentTask,
+		re.rcvstat.concurrenGetShard,
+		re.rcvstat.successRebuild,
+		re.rcvstat.failRebuild,
+		re.rcvstat.getShardWkCnt,
+		re.rcvstat.reportTask,
+		re.rcvstat.failDecodeTaskID,
+		re.rcvstat.successShard,
+		re.rcvstat.failShard,
+		re.rcvstat.failSendShard,
+		re.rcvstat.failToken,
+		re.rcvstat.failConn,
+		re.rcvstat.failLessShard,
+		re.rcvstat.passJudge,
+		re.rcvstat.sucessConn,
+		re.rcvstat.successToken,
 	}
 }
 
