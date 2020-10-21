@@ -49,6 +49,7 @@ type wRequest struct {
 
 func (wh *WriteHandler) Put(ctx context.Context, key common.IndexTableKey, data []byte) error {
 	req := make(map[common.IndexTableKey][]byte, 1)
+	req[key] = data
 	_, err := wh.YTFS().BatchPut(req)
 	return err
 }
