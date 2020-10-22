@@ -50,6 +50,17 @@ func (re *RecoverEngine)RecoverTst(td message.TaskDescription, lrch *LRCHandler)
 	var can  bool = false
 	//log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
 	//defer log.Printf("[recover]recover idx end %d\n", lrch.si.Lostindex)
+	for index := 0; index < 164; index++ {
+		peer := td.Locations[index]
+		//log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
+		if !activeNodeList.HasNodeid(peer.NodeId){
+			fmt.Println("[recover] [prejudge] dn_not_exist  peer.NodeId=",peer.NodeId)
+			lrch.si.ShardExist[index] = 0
+			continue
+		}
+		lrch.si.ShardExist[index] = 1
+	}
+
 	var n uint16
 start:
 	lrch.shards = make([][]byte, 0)
@@ -69,15 +80,21 @@ start:
 	k := 0
 	for _, idx := range indexs {
 		k++
-		peer := td.Locations[idx]
-		//log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
-		if !activeNodeList.HasNodeid(peer.NodeId){
-            lrch.si.ShardExist[idx] = 0
-			continue
-		}
-		lrch.si.ShardExist[idx] = 1
+		//peer := td.Locations[idx]
+		////log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
+		//if !activeNodeList.HasNodeid(peer.NodeId){
+		//	fmt.Println("[recover] [prejudge] dn_not_exist  peer.NodeId=",peer.NodeId)
+        //    lrch.si.ShardExist[idx] = 0
+		//	continue
+		//}
+		//lrch.si.ShardExist[idx] = 1
+		//
+		//if can {
+		//	continue
+		//}
 
-		if can {
+		if lrch.si.ShardExist[idx] == 0{
+			fmt.Println("[recover] [prejudge] dn_not_exist  idx=",idx)
 			continue
 		}
 
@@ -93,6 +110,7 @@ start:
 			if status2 > 0 {        //rebuild success
 				fmt.Println("[recover] mostprobable recover shard!")
 				can = true
+				break
 			}
 		}else if status < 0 {     //rebuild failed
 			if n < 3 {
@@ -110,11 +128,12 @@ start:
 	}else{
 		fmt.Println("[recover][RecoverTst] rebuild mostly success can= ",can)
 	}
+	//log.Println("[recover] 111111ShardExist=",lrch.si.ShardExist)
 	return can,nil
 }
 
-func (re *RecoverEngine)PreTstRecover(lrcshd lrcpkg.Shardsinfo, msg message.TaskDescription) (bool, error){
-	hd, err := re.le.GetLRCHandler(&lrcshd)
+func (re *RecoverEngine)PreTstRecover(lrcshd *lrcpkg.Shardsinfo, msg message.TaskDescription) (bool, error){
+	hd, err := re.le.GetLRCHandler(lrcshd)
 	if err != nil {
 		//log.Printf("[recover]LRC 获取Handler失败%s", err)
 		return false, err
