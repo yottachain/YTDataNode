@@ -187,9 +187,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
 	putStartTime := time.Now()
-	t1 := time.Now()
 	err = wh.Put(ctx, common.IndexTableKey(indexKey), msg.DAT)
-	log.Printf("[ytfs]put 耗时 %ds\n", time.Now().Sub(t1).Milliseconds())
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
