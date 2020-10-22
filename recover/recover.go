@@ -217,7 +217,7 @@ CONNRTY:
 	if err != nil {
 		if time.Now().Sub(connStart).Seconds() >3{
 			re.IncFailConn()
-			log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+			log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 			return nil, err
 		}
 		goto CONNRTY
@@ -264,7 +264,7 @@ RETRY:
 		if time.Now().Sub(tokenstart).Seconds() > 10 {
 			re.IncFailToken()
 			err = fmt.Errorf("faild to get token")
-			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
 			re.ReturnConTaskPass()
 			return nil,err
@@ -276,7 +276,7 @@ RETRY:
 	if err != nil {
 		if time.Now().Sub(tokenstart).Seconds() > 5 {
 			re.IncFailToken()
-			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
 			re.ReturnConTaskPass()
 			return nil,err
@@ -288,7 +288,7 @@ RETRY:
 		if time.Now().Sub(tokenstart).Seconds() > 5 {
 			re.IncFailToken()
 			err = fmt.Errorf("resGetToken.Writable is false")
-			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.failToken, resGetToken.AllocId)
+			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
 			re.ReturnConTaskPass()
 			return nil,err
@@ -304,7 +304,7 @@ RETRY:
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		re.IncFailToken()
-		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		//re.Upt.Delete(localTokenW)
 		re.ReturnConTaskPass()
 		return nil, err
@@ -324,10 +324,10 @@ RETRY:
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
-			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}else{
 			re.IncFailSendShard()
-			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}
 		//re.Upt.Delete(localTokenW)
 		return nil, err
@@ -335,7 +335,7 @@ RETRY:
 
 	if len(shardBuf)<3{
 		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
@@ -343,7 +343,7 @@ RETRY:
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
 		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
@@ -353,7 +353,7 @@ RETRY:
 		sw.swshard++
 	}
 
-	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.successShard, base64.StdEncoding.EncodeToString(hash), *n)
+	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.rcvstat.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 
 	*n = *n + 1
 	return res.Data, nil
