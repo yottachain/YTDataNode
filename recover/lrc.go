@@ -80,13 +80,13 @@ start:
 		k++
 		peer := td.Locations[idx]
         if lrch.si.ShardExist[idx] == 0{
-        	log.Println("[recover] dn is not online, cannot get the shard,idx=",idx)
-
+        	log.Println("[recover] shard_not_online, cannot get the shard,idx=",idx)
         	continue
 		}
 
 		//getshdstart := time.Now()
 		retrytimes := 20
+		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
 		sw := Switchcnt{0,0,0}
 
