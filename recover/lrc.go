@@ -123,14 +123,17 @@ start:
 			}
 		}else if status < 0 {     //rebuild failed
 			if n < 3 {
+                log.Println("[recover] low_level_lrc status=",status)
 				goto start
 			}
+			log.Println("[recover] low_level_lrc status=",status)
 		}else {
 			if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
 				goto start
 			}
 		}
 	}
+
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
