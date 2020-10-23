@@ -574,6 +574,8 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	//log.Println("[recover] pass recover test!")
 
 	lrc.ShardExist = lrcshd.ShardExist
+    log.Println("[recover] prelrcshd=",lrcshd)
+	log.Println("[recover] lrc=",lrc)
 
 	h, err := re.le.GetLRCHandler(lrc)
 	if err != nil {

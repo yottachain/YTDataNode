@@ -50,7 +50,10 @@ func (re *RecoverEngine)RecoverTst(td message.TaskDescription, lrch *LRCHandler)
 	var can  bool = false
 	//log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
 	//defer log.Printf("[recover]recover idx end %d\n", lrch.si.Lostindex)
-	for index := 0; index < 164; index++ {
+
+	totalshard := len(td.Locations)
+
+	for index := 0; index < totalshard; index++ {
 		peer := td.Locations[index]
 		//log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
 		if !activeNodeList.HasNodeid(peer.NodeId){
