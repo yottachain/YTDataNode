@@ -92,8 +92,12 @@ start:
 
 		for{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+
 			if err == nil && len(shard) > 0 {
-				break
+				if message.VerifyVHF(shard, td.Hashs[idx]) {
+					break
+				}
+				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"hash=",base58.Encode(td.Hashs[idx]))
 			}
 
 			retrytimes--
@@ -102,9 +106,6 @@ start:
 				break
 			}
 			<-time.After(time.Millisecond * 500)
-			//if time.Now().Sub(getshdstart).Seconds() > 30{
-			//	break
-			//}
 		}
 
 		if len(shard) == 0 || err != nil {
