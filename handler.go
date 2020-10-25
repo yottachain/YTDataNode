@@ -250,9 +250,11 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 
 	//res := message.DownloadShardResponse{}
 	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
-	if msg.VerifyVHF(resData) {
-		log.Println("data verify success")
+	if !msg.VerifyVHF(resData) {
+		log.Println("data verify failed: VHF=",base58.Encode(msg.VHF),"resData_Hash=",base58.Encode(message.CaculateHash(resData)))
+		return nil,fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
+	log.Println("data verify success")
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
