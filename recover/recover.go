@@ -335,7 +335,7 @@ RETRY:
 
 	if len(shardBuf)<3{
 		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		log.Printf("[recover:%d] shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}

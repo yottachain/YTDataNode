@@ -260,7 +260,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		log.Println("data verify failed: VHF=",base58.Encode(msg.VHF),"resData_Hash=",base58.Encode(message.CaculateHash(resData)))
 		return nil,fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
-	
+
 	log.Println("data verify success: VHF=",base58.Encode(msg.VHF),"resData_Hash=",base58.Encode(message.CaculateHash(resData)))
 
 	res.Data = resData
