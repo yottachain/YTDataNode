@@ -97,7 +97,7 @@ start:
 				if message.VerifyVHF(shard, td.Hashs[idx]) {
 					break
 				}
-				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"hash=",base58.Encode(td.Hashs[idx]))
+				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
 			}
 
 			retrytimes--
