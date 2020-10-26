@@ -92,8 +92,12 @@ start:
 
 		for{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+
 			if err == nil && len(shard) > 0 {
-				break
+				if message.VerifyVHF(shard, td.Hashs[idx]) {
+					break
+				}
+				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
 			}
 
 			retrytimes--
@@ -102,9 +106,6 @@ start:
 				break
 			}
 			<-time.After(time.Millisecond * 500)
-			//if time.Now().Sub(getshdstart).Seconds() > 30{
-			//	break
-			//}
 		}
 
 		if len(shard) == 0 || err != nil {
@@ -123,14 +124,17 @@ start:
 			}
 		}else if status < 0 {     //rebuild failed
 			if n < 3 {
+                log.Println("[recover] low_level_lrc status=",status)
 				goto start
 			}
+			log.Println("[recover] low_level_lrc status=",status)
 		}else {
 			if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
 				goto start
 			}
 		}
 	}
+
 	return nil, fmt.Errorf("rebuild data failed")
 }
 

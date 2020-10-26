@@ -234,7 +234,7 @@ CONNRTY:
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
 	getTokenData, _ := proto.Marshal(&getToken)
 
-	re.GetConTaskPass()
+	re.GetConShardPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancels()
 
@@ -266,7 +266,7 @@ RETRY:
 			err = fmt.Errorf("faild to get token")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
-			re.ReturnConTaskPass()
+			re.ReturnConShardPass()
 			return nil,err
 		}
 		goto RETRY
@@ -278,7 +278,7 @@ RETRY:
 			re.IncFailToken()
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
-			re.ReturnConTaskPass()
+			re.ReturnConShardPass()
 			return nil,err
 		}
 		goto RETRY
@@ -290,7 +290,7 @@ RETRY:
 			err = fmt.Errorf("resGetToken.Writable is false")
 			log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 			//re.Upt.Delete(localTokenW)
-			re.ReturnConTaskPass()
+			re.ReturnConShardPass()
 			return nil,err
 		}
 		goto RETRY
@@ -306,7 +306,7 @@ RETRY:
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		//re.Upt.Delete(localTokenW)
-		re.ReturnConTaskPass()
+		re.ReturnConShardPass()
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
@@ -319,7 +319,7 @@ RETRY:
 	re.IncConShard()
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()
-	re.ReturnConTaskPass()
+	re.ReturnConShardPass()
 
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
@@ -335,9 +335,9 @@ RETRY:
 
 	if len(shardBuf)<3{
 		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		//re.Upt.Delete(localTokenW)
-		return nil, err
+		return nil, fmt.Errorf("error: shard less then 16384, len=",len(shardBuf))
 	}
 
 	err = proto.Unmarshal(shardBuf[2:], &res)
@@ -555,13 +555,15 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	log.Printf("[recover]LRC 分片恢复开始%d", BytesToInt64(msg.Id[0:8]))
 	defer log.Printf("[recover]LRC 分片恢复结束%d", BytesToInt64(msg.Id[0:8]))
 
-	lrc := lrcpkg.Shardsinfo{}
+	lrc := &lrcpkg.Shardsinfo{}
+	lrcshd := &lrcpkg.Shardsinfo{}
+
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
 	log.Printf("[recover]LRC original count is %d", lrc.OriginalCount)
 	lrc.RecoverNum = 13
 	lrc.Lostindex = uint16(msg.RecoverId)
 
-	lrcshd := lrc
+	lrcshd = lrc
 	can, err:=re.PreTstRecover(lrcshd,msg)
 	if err != nil || !can {
 		re.IncFailLessShard()
@@ -572,8 +574,10 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	//log.Println("[recover] pass recover test!")
 
 	lrc.ShardExist = lrcshd.ShardExist
+    log.Println("[recover] prelrcshd=",lrcshd)
+	log.Println("[recover] lrc=",lrc)
 
-	h, err := re.le.GetLRCHandler(&lrc)
+	h, err := re.le.GetLRCHandler(lrc)
 	if err != nil {
 		log.Printf("[recover]LRC 获取Handler失败%s", err)
 		return &res

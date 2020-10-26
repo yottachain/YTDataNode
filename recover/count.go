@@ -50,22 +50,22 @@ func (re *RecoverEngine) IncFailLessShard(){
 	re.rcvstat.failLessShard++
 }
 
-func (re *RecoverEngine) GetConTaskPass(){
+func (re *RecoverEngine) GetConShardPass(){
 	  for{
 	  	    <-time.After(time.Millisecond)
 			ConGetShardPoolLK.Lock()
 			if len(getShardPool) > 0{
 				<-getShardPool
-				ConCurrentTaskLK.Unlock()
+				ConGetShardPoolLK.Unlock()
 				break
 			}
-		    ConCurrentTaskLK.Unlock()
+		  ConGetShardPoolLK.Unlock()
 	  }
 }
 
-func (re *RecoverEngine) ReturnConTaskPass(){
+func (re *RecoverEngine) ReturnConShardPass(){
 	ConGetShardPoolLK.Lock()
-	defer ConCurrentTaskLK.Unlock()
+	defer ConGetShardPoolLK.Unlock()
 	getShardPool <- 0
 }
 
