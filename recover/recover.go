@@ -335,9 +335,9 @@ RETRY:
 
 	if len(shardBuf)<3{
 		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		//re.Upt.Delete(localTokenW)
-		return nil, err
+		return nil, fmt.Errorf("error: shard less then 16384, len=",len(shardBuf))
 	}
 
 	err = proto.Unmarshal(shardBuf[2:], &res)
