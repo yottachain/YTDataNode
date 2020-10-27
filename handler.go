@@ -47,16 +47,79 @@ type wRequest struct {
 	Error chan error
 }
 
-func (wh *WriteHandler) Put(ctx context.Context, key common.IndexTableKey, data []byte) error {
-	req := make(map[common.IndexTableKey][]byte, 1)
-	req[key] = data
-	_, err := wh.YTFS().BatchPut(req)
-	return err
+func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
+	rq := &wRequest{
+		key,
+		data,
+		make(chan error),
+	}
+	select {
+	case wh.RequestQueue <- rq:
+		log.Println("[task]push task success")
+	default:
+		//return fmt.Errorf("task busy", len(wh.RequestQueue))
+	}
+	select {
+	case err := <-rq.Error:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("get error time out")
+	}
+}
+
+func (wh *WriteHandler) batchWrite(number int) {
+	rqmap := make(map[common.IndexTableKey][]byte, number)
+	rqs := make([]*wRequest, number)
+	hashkey := make([][]byte, number)
+
+	for i := 0; i < number; i++ {
+		select {
+		case rq := <-wh.RequestQueue:
+			rqmap[rq.Key] = rq.Data
+			rqs[i] = rq
+			hashkey[i] = rq.Key[:]
+		default:
+			continue
+		}
+	}
+
+	log.Printf("[ytfs]flush start:%d\n", number)
+	_, err := wh.YTFS().BatchPut(rqmap)
+	if err == nil {
+		log.Printf("[ytfs]flush sucess:%d\n", number)
+	} else {
+		log.Printf("[ytfs]flush failure:%s\n", err.Error())
+		statistics.DefaultStat.Lock()
+		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
+		if statistics.DefaultStat.YTFSErrorCount > 100 {
+			disableWrite = true
+		}
+		statistics.DefaultStat.Unlock()
+	}
+
+	for _, rq := range rqs {
+		select {
+		case rq.Error <- err:
+		default:
+			continue
+		}
+	}
 }
 
 func (wh *WriteHandler) Run() {
 	go TaskPool.Utp().FillToken()
 	go TaskPool.Dtp().FillToken()
+	go func() {
+		var flushInterval time.Duration = time.Millisecond * 10
+		for {
+			select {
+			case <-time.After(flushInterval):
+				if n := len(wh.RequestQueue); n > 0 {
+					wh.batchWrite(n)
+				}
+			}
+		}
+	}()
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
@@ -187,7 +250,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
 	putStartTime := time.Now()
-	err = wh.Put(ctx, common.IndexTableKey(indexKey), msg.DAT)
+	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
