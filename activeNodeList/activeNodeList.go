@@ -51,7 +51,7 @@ type Data struct {
 }
 
 func Update() {
-	url := getUrl1()
+	url := getUrl()
 	//if 1 == testconfig{
 	//	url = getUrl1()
 	//}
