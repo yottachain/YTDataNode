@@ -24,7 +24,14 @@ var (
       PassJudgeLK      sync.Mutex
       SuccConnLk       sync.Mutex
       SuccTokenLk      sync.Mutex
+      ShardForRBDLk    sync.Mutex
 )
+
+func (re *RecoverEngine) IncShardForRbd(){
+	ShardForRBDLk.Lock()
+	defer ShardForRBDLk.Unlock()
+	re.rcvstat.shardforRebuild++
+}
 
 func (re *RecoverEngine) IncSuccToken(){
 	SuccTokenLk.Lock()

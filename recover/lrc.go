@@ -31,6 +31,7 @@ func NewLRCEngine(gsfunc GetShardFuncLrc) *LRCEngine {
 }
 
 type Switchcnt struct {
+	swget    int8
 	swconn   int8
 	swtoken  int8
 	swshard  int8
@@ -88,7 +89,7 @@ start:
 		retrytimes := 20
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		sw := Switchcnt{0,0,0}
+		sw := Switchcnt{0,0,0,0}
 
 		for{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
