@@ -103,7 +103,7 @@ type RecoverStat struct {
 	PassJudge       uint64   `json:"passJudge"`                           //预判重建成功
 	SuccessConn      uint64  `json:"sucessConn"`                          //连接成功数
 	SuccessToken    uint64   `json:"successToken"`                        //获取token成功
-	shardforRebuild  uint64  `json:"shardforRebuild"`
+	ShardforRebuild  uint64  `json:"shardforRebuild"`                     //下载总分片数
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -367,7 +367,7 @@ RETRY:
     if err != nil{
     	log.Println("[recover] return token error,err=",err.Error())
 	}
-	
+
 	if 0 == sw.swshard {
 		re.IncSuccShard()
 		sw.swshard++
