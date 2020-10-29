@@ -34,6 +34,7 @@ const (
 	MsgIDSleepReturn           msgType = 0xe75c
 	MsgIDSelfVerifyReq         msgType = 0xd97a
 	MsgIDSelfVerifyResp        msgType = 0x58b7
+	MsgIDDownloadTKCheck       msgType = 0x1b34
 )
 
 type msgType int32
