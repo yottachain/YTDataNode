@@ -291,12 +291,6 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	if msg.AllocId != "" {
-		if tk, err := TaskPool.NewTokenFromString(msg.AllocId); err == nil {
-			defer TaskPool.Dtp().Delete(tk)
-		}
-	}
-
 	log.Println("get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
 		log.Println("error: msg.VHF is empty!")

@@ -97,6 +97,17 @@ func (sn *storageNode) Service() {
 		log.Printf("[download] get shard request from %s\n request buf %s\n", head.RemotePeerID.Pretty(), hex.EncodeToString(data))
 		return dh.Handle(data, head.RemotePeerID)
 	})
+	// 下载回执
+	_ = sn.Host().RegisterHandler(message.MsgIDDownloadTKCheck.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.DownloadTKCheck
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			return nil, err
+		}
+		var tk TaskPool.Token
+		tk.FillFromString(msg.Tk)
+		TaskPool.Dtp().Delete(&tk)
+		return nil, nil
+	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
 	})
