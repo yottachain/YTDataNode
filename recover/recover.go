@@ -356,6 +356,18 @@ RETRY:
 		return nil, err
 	}
 
+	bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancels2()
+
+    var msgbck message.DownloadTKCheck
+    msgbck.Tk = string(tok)
+    buf,err = proto.Marshal(&msgbck)
+
+    _,err = clt.SendMsgClose(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
+    if err != nil{
+    	log.Println("[recover] return token error,err=",err.Error())
+	}
+	
 	if 0 == sw.swshard {
 		re.IncSuccShard()
 		sw.swshard++

@@ -210,6 +210,11 @@ message Debug{
     bytes sig=2;
 }
 
+//MessageID:0x1b34
+message DownloadTKCheck{
+    string tk=1;
+}
+
 //MessageID:0xe75c
 message UploadShardRequestTest  {
     int32 SHARDID=1;
