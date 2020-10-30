@@ -7,6 +7,7 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
+	"strings"
 	"time"
 )
 
@@ -93,6 +94,10 @@ start:
 
 		for{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+
+			if (strings.Contains(err.Error(),"Get data Slice fail")){
+				break
+			}
 
 			if err == nil && len(shard) > 0 {
 				if message.VerifyVHF(shard, td.Hashs[idx]) {
