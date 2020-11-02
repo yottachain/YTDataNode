@@ -306,7 +306,9 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	}
 
 	//res := message.DownloadShardResponse{}
+	time1 := time.Now()
 	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
+	TaskPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
