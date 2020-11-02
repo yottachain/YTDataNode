@@ -52,7 +52,7 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 	return &lrch, nil
 }
 
-func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
+func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) ([]byte, error) {
 	defer lrch.si.FreeHandle()
 
 	log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
@@ -90,6 +90,11 @@ start:
 		retrytimes := 20
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
+		if time.Now().Sub(pkgstart).Seconds() > 1800-60{
+			log.Println("[recover] rebuild time expired!")
+			return nil, fmt.Errorf("rebuild data failed, time expired")
+		}
+
 		sw := Switchcnt{0,0,0,0}
 
 		for{
@@ -124,7 +129,13 @@ start:
 			continue
 		}
 
+		if time.Now().Sub(pkgstart).Seconds() > 1800{
+			log.Println("[recover] rebuild time expired!")
+			return nil, fmt.Errorf("rebuild data failed, time expired")
+		}
+
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
@@ -142,7 +153,6 @@ start:
 			}
 		}
 	}
-
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
