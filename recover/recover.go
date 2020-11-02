@@ -514,6 +514,7 @@ func (re *RecoverEngine) Run() {
 				log.Printf("[recover]LRC start\n")
 				res := re.execLRCTask(msg[2:], ts.ExpriedTime)
 				res.BPID = ts.SnID
+				log.Println("[recover][report] res=",res.BPID,"reportTask=",re.rcvstat.reportTask,"rebuildTask=",re.rcvstat.rebuildTask)
 				re.PutReplyQueue(res)
 			} else {
 				res := re.execCPTask(msg[2:], ts.ExpriedTime)
@@ -591,6 +592,7 @@ func (re *RecoverEngine) MultiReply() error {
 		} else {
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
 			log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
+		    log.Println("[recover][report] rebuildTask=",re.rcvstat.rebuildTask,"reportTask=",re.rcvstat.reportTask)
 		}
 	}
 
