@@ -498,6 +498,7 @@ func (re *RecoverEngine) Run() {
 
 			if time.Now().Sub(startTsk).Seconds() > (1800-60){
 				if len(re.queue) <= 0{
+					log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
 					re.startTskTmCtl = 0
 				}
 				continue
@@ -521,6 +522,7 @@ func (re *RecoverEngine) Run() {
 			}
 			if len(re.queue) <= 0{
 				re.startTskTmCtl = 0
+				log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
 				continue
 			}
 		}
@@ -557,6 +559,7 @@ func (re *RecoverEngine) MultiReply() error {
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
+
 			select {
 			case res := <-re.replyQueue:
 				log.Println("[recover][report] get_res_replyQueue len(resmsg)=",len(re.replyQueue))
