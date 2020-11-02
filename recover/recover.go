@@ -456,7 +456,7 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	return nil
 }
 
-func (re *RecoverEngine)processTask(ts *Task){
+func (re *RecoverEngine)processTask(ts *Task, pkgstart time.Time){
 //	ts := req.Tsk
 	msg := ts.Data
 	if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
@@ -465,7 +465,7 @@ func (re *RecoverEngine)processTask(ts *Task){
 		re.PutReplyQueue(res)
 	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 		log.Printf("[recover]LRC start\n")
-		res := re.execLRCTask(msg[2:], ts.ExpriedTime)
+		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart)
 		res.BPID = ts.SnID
 		re.PutReplyQueue(res)
 	} else {
@@ -512,7 +512,7 @@ func (re *RecoverEngine) Run() {
 				re.PutReplyQueue(res)
 			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 				log.Printf("[recover]LRC start\n")
-				res := re.execLRCTask(msg[2:], ts.ExpriedTime)
+				res := re.execLRCTask(msg[2:], ts.ExpriedTime, startTsk)
 				res.BPID = ts.SnID
 				log.Println("[recover][report] res=",res.BPID,"reportTask=",re.rcvstat.reportTask,"rebuildTask=",re.rcvstat.rebuildTask)
 				re.PutReplyQueue(res)
@@ -560,7 +560,6 @@ func (re *RecoverEngine) MultiReply() error {
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
-
 			select {
 			case res := <-re.replyQueue:
 				log.Println("[recover][report] get_res_replyQueue len(resmsg)=",len(re.replyQueue))
@@ -616,7 +615,7 @@ func (re *RecoverEngine) execRCTask(msgData []byte, expried int64) *TaskMsgResul
 	return &res
 }
 
-func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResult {
+func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time ) *TaskMsgResult {
 
 	var res TaskMsgResult
 	res.ExpriedTime = expried
@@ -647,6 +646,11 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 		return &res
 	}
 
+	if time.Now().Sub(pkgstart).Seconds() > 1800 -60 {
+		log.Println("[recover] rebuild time expired!")
+		return &res
+	}
+
 	re.IncPassJudge()
 	//log.Println("[recover] pass recover test!")
 
@@ -661,12 +665,13 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	}
 
 	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
-	recoverData, err := h.Recover(msg)
+	recoverData, err := h.Recover(msg, pkgstart)
 	if err != nil {
 		log.Printf("[recover]LRC 恢复失败%s", err)
 		re.IncFailRbd()
 		return &res
 	}
+
 	log.Printf("[recover]LRC 恢复的分片数据: %s", hex.EncodeToString(recoverData[0:128]))
 	m5 := md5.New()
 	m5.Write(recoverData)
@@ -694,6 +699,11 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		re.IncFailRbd()
 		log.Printf("[recover]LRC 保存已恢复分片失败%s\n", err)
+		return &res
+	}
+
+	if time.Now().Sub(pkgstart).Seconds() > 1800{
+		log.Println("[recover] rebuild time expired!")
 		return &res
 	}
 

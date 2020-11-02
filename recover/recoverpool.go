@@ -13,24 +13,46 @@ var totalCap int = 2000
 var realConCurrent uint16 = 1     //can be changed by write-weight and config
 var realConTask uint16 = 10
 
-func (re *RecoverEngine) doRequest(task *Task){
+func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
     re.IncConTask()
-    re.processTask(task)
+    re.processTask(task, pkgstart)
 	re.DecConTask()
     poolG <- 0
 }
 
 func (re *RecoverEngine)processRequests(){
+	startTsk := time.Now()
 	for {
+		requestT :=<- re.queue
+
+		if 0 == re.startTskTmCtl {
+			startTsk = time.Now()
+			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
+			re.startTskTmCtl++
+		}
+
+		if time.Now().Sub(startTsk).Seconds() > (1800-60){
+			if len(re.queue) <= 0{
+				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
+				re.startTskTmCtl = 0
+			}
+			continue
+		}
+
 		if len(poolG) > 0 {
 			<- poolG
-			requestT :=<- re.queue
             re.IncRbdTask()
             log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
-			go re.doRequest(requestT)
+			go re.doRequest(requestT,startTsk)
 		} else {
 			log.Println("[recover] create_gorutine pool is full, len_poolG=",len(poolG))
 			<- time.After(time.Second * 3)
+		}
+
+		if len(re.queue) <= 0{
+			re.startTskTmCtl = 0
+			log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
+			continue
 		}
 	}
 }
