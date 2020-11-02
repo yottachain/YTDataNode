@@ -32,6 +32,8 @@ type Stat struct {
 	DownloadSuccessCount   int64
 	SentDownloadTokenNum   int64
 	AverageDownloadToken   int64
+	DownloadNetLatency     int64
+	DownloadDiskLatency    int64
 	sync.RWMutex
 }
 
