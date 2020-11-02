@@ -492,6 +492,7 @@ func (re *RecoverEngine) Run() {
 			ts := <-re.queue
 			if 0 == re.startTskTmCtl {
 				startTsk = time.Now()
+				log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
 				re.startTskTmCtl++
 			}
 
@@ -558,6 +559,7 @@ func (re *RecoverEngine) MultiReply() error {
 		for i := 0; i < max_reply_num; i++ {
 			select {
 			case res := <-re.replyQueue:
+				log.Println("[recover][report] get_res_replyQueue len(resmsg)=",len(re.replyQueue))
 				if resmsg[res.BPID] == nil {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
@@ -567,6 +569,7 @@ func (re *RecoverEngine) MultiReply() error {
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
 				resmsg[res.BPID] = _r
+				log.Println("[recover][report] put_res_to_resmsg len(resmsg)=",len(resmsg))
 				re.IncReportRbdTask()
 
 			case <-time.After(max_reply_wait_time):
@@ -575,16 +578,16 @@ func (re *RecoverEngine) MultiReply() error {
 		}
 	}()
 	if l := len(resmsg); l > 0 {
-		fmt.Println("待上报重建消息：", len(resmsg))
+		fmt.Println("[recover][report]  len(resmsg)=", len(resmsg))
 	}
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		if data, err := proto.Marshal(v); err != nil {
-			log.Printf("[recover]marsnal failed %s\n", err.Error())
+			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
 		} else {
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-			log.Printf("[recover] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
+			log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
 		}
 	}
 
@@ -643,8 +646,8 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64) *TaskMsgResu
 	//log.Println("[recover] pass recover test!")
 
 	lrc.ShardExist = lrcshd.ShardExist
-    log.Println("[recover] prelrcshd=",lrcshd)
-	log.Println("[recover] lrc=",lrc)
+    //log.Println("[recover] prelrcshd=",lrcshd)
+	//log.Println("[recover] lrc=",lrc)
 
 	h, err := re.le.GetLRCHandler(lrc)
 	if err != nil {

@@ -95,8 +95,10 @@ start:
 		for{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
 
-			if (strings.Contains(err.Error(),"Get data Slice fail")){
-				break
+			if err != nil{
+				if (strings.Contains(err.Error(),"Get data Slice fail")){
+					break
+				}
 			}
 
 			if err == nil && len(shard) > 0 {
@@ -115,7 +117,7 @@ start:
 		}
 
 		if len(shard) == 0 || err != nil {
-			log.Println("[recover][ytlrc] shard is empty!!")
+			log.Println("[recover][ytlrc] shard is empty or get error!!")
 			if k >= len(indexs) && n < 3 {
 				goto  start
 			}
