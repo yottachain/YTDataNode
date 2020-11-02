@@ -105,6 +105,7 @@ func (sn *storageNode) Service() {
 		}
 		var tk TaskPool.Token
 		tk.FillFromString(msg.Tk)
+		TaskPool.Dtp().NetLatency.Add(time.Now().Sub(tk.Tm))
 		TaskPool.Dtp().Delete(&tk)
 		return nil, nil
 	})
@@ -276,6 +277,8 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
 	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
+	statistics.DefaultStat.DownloadNetLatency = TaskPool.Dtp().NetLatency.Avg()
+	statistics.DefaultStat.DownloadDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
