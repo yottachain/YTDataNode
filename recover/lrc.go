@@ -60,6 +60,8 @@ func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) 
 	var n uint16
 	var shard []byte
 	var err error
+	var effortsw int8 = 0
+	var efforttms  int8 = 20
 
 start:
 	lrch.shards = make([][]byte, 0)
@@ -71,8 +73,20 @@ start:
 
 	var number int
 	var indexs []int16
+	var indexs2 []int16
+
 	for i := sl.Front(); i != nil; i = i.Next() {
 		indexs = append(indexs, i.Value.(int16))
+	}
+
+effortwk:
+	if len(indexs2) > 0 && effortsw > 0{
+		indexs = indexs[0:0]
+		log.Println("[recover][optimize][1] indexs=",indexs," indexs2=",indexs2)
+		indexs = indexs2[:]
+		log.Println("[recover][optimize][2] indexs=",indexs," indexs2=",indexs2)
+		indexs2 = indexs2[0:0]
+		log.Println("[recover][optimize][3] indexs=",indexs," indexs2=",indexs2)
 	}
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
@@ -87,49 +101,74 @@ start:
 		}
 
 		//getshdstart := time.Now()
-		retrytimes := 20
+		//retrytimes := 20
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-60{
+		if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
 			log.Println("[recover] rebuild time expired!")
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}
 
 		sw := Switchcnt{0,0,0,0}
 
-		for{
-			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+		//for{
+		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
 
-			if err != nil{
-				if (strings.Contains(err.Error(),"Get data Slice fail")){
-					break
-				}
-			}
-
-			if err == nil && len(shard) > 0 {
-				if message.VerifyVHF(shard, td.Hashs[idx]) {
-					break
-				}
-				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
-			}
-
-			retrytimes--
-
-			if 0 >= retrytimes{
-				break
-			}
-			<-time.After(time.Millisecond * 500)
-		}
-
-		if len(shard) == 0 || err != nil {
-			log.Println("[recover][ytlrc] shard is empty or get error!!")
+		if err != nil{
+			log.Println("[recover][optimize] Get data Slice fail,idx=",idx,err.Error())
 			if k >= len(indexs) && n < 3 {
 				goto  start
+			}
+
+			if (strings.Contains(err.Error(),"Get data Slice fail")){
+				//log.Println("[recover][optimize] Get data Slice fail, shard not exist")
+				continue
+					//break
+			}
+
+			if n >= 3{
+				indexs2 = append(indexs2, idx)
 			}
 			continue
 		}
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800{
+		if len(shard) == 0 {
+			log.Println("[recover][ytlrc] shard is empty or get error!! idx=",idx)
+			if k >= len(indexs) && n < 3 {
+				goto  start
+			}
+
+			if n >= 3{
+				indexs2 = append(indexs2, idx)
+			}
+			continue
+		}
+
+		if ! message.VerifyVHF(shard, td.Hashs[idx]) {
+			log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
+			if k >= len(indexs) && n < 3 {
+				goto  start
+			}
+
+			continue
+			//break
+		}
+
+		//if len(shard) > 0 {
+		//
+		//}
+
+			//retrytimes--
+			//
+			//if 0 >= retrytimes{
+			//	//break
+			//}
+			//<-time.After(time.Millisecond * 500)
+		//}
+
+
+
+		if time.Now().Sub(pkgstart).Seconds() > 1800-60{
 			log.Println("[recover] rebuild time expired!")
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}
@@ -153,6 +192,23 @@ start:
 			}
 		}
 	}
+
+	if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+		log.Println("[recover] rebuild time expired!")
+		return nil, fmt.Errorf("rebuild data failed, time expired")
+	}
+
+	efforttms--
+
+	if efforttms <= 0 {
+		return nil, fmt.Errorf("rebuild data failed")
+	}
+
+	if len(indexs2) > 0{
+		effortsw = 1
+		goto effortwk
+	}
+
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
