@@ -60,8 +60,8 @@ func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) 
 	var n uint16
 	var shard []byte
 	var err error
-	var effortsw int8 = 0
-	var efforttms  int8 = 30
+	//var effortsw int8 = 0
+	//var efforttms  int8 = 30
 
 start:
 	lrch.shards = make([][]byte, 0)
@@ -74,6 +74,8 @@ start:
 	var number int
 	var indexs []int16
 	var indexs2 []int16
+	var effortsw int8 = 0
+	var efforttms  int8 = 30
 
 	for i := sl.Front(); i != nil; i = i.Next() {
 		indexs = append(indexs, i.Value.(int16))
@@ -90,7 +92,7 @@ effortwk:
 	}
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
-	log.Println("[recover] ShardExist=",lrch.si.ShardExist)
+	//log.Println("[recover] ShardExist=",lrch.si.ShardExist)
 	k := 0
 	for _, idx := range indexs {
 		k++
@@ -117,9 +119,9 @@ effortwk:
 
 		if err != nil{
 			log.Println("[recover][optimize] Get data Slice fail,idx=",idx,err.Error())
-			if k >= len(indexs) && n < 3 {
-				goto  start
-			}
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
 
 			if (strings.Contains(err.Error(),"Get data Slice fail")){
 				//log.Println("[recover][optimize] Get data Slice fail, shard not exist")
@@ -127,29 +129,30 @@ effortwk:
 					//break
 			}
 
-			if n >= 3{
-				indexs2 = append(indexs2, idx)
-			}
+			indexs2 = append(indexs2, idx)
+			//if n >= 3{
+			//	indexs2 = append(indexs2, idx)
+			//}
 			continue
 		}
 
 		if len(shard) == 0 {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=",idx)
-			if k >= len(indexs) && n < 3 {
-				goto  start
-			}
-
-			if n >= 3{
-				indexs2 = append(indexs2, idx)
-			}
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
+			indexs2 = append(indexs2, idx)
+			//if n >= 3{
+			//	indexs2 = append(indexs2, idx)
+			//}
 			continue
 		}
 
 		if ! message.VerifyVHF(shard, td.Hashs[idx]) {
 			log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
-			if k >= len(indexs) && n < 3 {
-				goto  start
-			}
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
 
 			continue
 			//break
@@ -183,15 +186,16 @@ effortwk:
 				return data, nil
 			}
 		}else if status < 0 {     //rebuild failed
-			if n < 3 {
-                log.Println("[recover] low_level_lrc status=",status)
-				goto start
-			}
+			//if n < 3 {
+            //    log.Println("[recover] low_level_lrc status=",status)
+			//	goto start
+			//}
 			log.Println("[recover] low_level_lrc status=",status)
 		}else {
-			if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
-				goto start
-			}
+			//log.Println("[recover] ")
+			//if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
+			//	goto start
+			//}
 		}
 	}
 
@@ -200,9 +204,14 @@ effortwk:
 	//	return nil, fmt.Errorf("rebuild data failed, time expired")
 	//}
 
+	log.Println("[recover] retry_times=",31-efforttms,"stage=",n)
+
 	efforttms--
 
-	if efforttms <= 0 {
+	if efforttms <= 0 && n < 3{
+		indexs2 = indexs2[0:0]
+		effortsw = 0
+		goto start
 		return nil, fmt.Errorf("rebuild data failed, efforttms goto zero")
 	}
 
