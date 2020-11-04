@@ -467,6 +467,7 @@ func (re *RecoverEngine)processTask(ts *Task, pkgstart time.Time){
 		log.Printf("[recover]LRC start\n")
 		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart)
 		res.BPID = ts.SnID
+		log.Println("[recover] putres_to_queue, check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 		re.PutReplyQueue(res)
 	} else {
 		res := re.execCPTask(msg[2:], ts.ExpriedTime)
@@ -622,14 +623,14 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	var msg message.TaskDescription
 
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
-		log.Printf("[recover]proto解析错误%s", err)
+		log.Printf("[recover]proto check error:%s", err)
 		res.RES = 1
 	}
 
 	res.ID = msg.Id
 	res.RES = 1
-	log.Printf("[recover]LRC 分片恢复开始%d", BytesToInt64(msg.Id[0:8]))
-	defer log.Printf("[recover]LRC 分片恢复结束%d", BytesToInt64(msg.Id[0:8]))
+	log.Printf("[recover]LRC recover shard start%d", BytesToInt64(msg.Id[0:8]))
+	defer log.Printf("[recover]LRC recover shard end %d", BytesToInt64(msg.Id[0:8]))
 
 	lrc := &lrcpkg.Shardsinfo{}
 	lrcshd := &lrcpkg.Shardsinfo{}
@@ -646,10 +647,10 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 		return &res
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800 -60 {
-		log.Println("[recover] rebuild time expired!")
-		return &res
-	}
+	//if time.Now().Sub(pkgstart).Seconds() > 1800 -60 {
+	//	log.Println("[recover] rebuild time expired!")
+	//	return &res
+	//}
 
 	re.IncPassJudge()
 	//log.Println("[recover] pass recover test!")
@@ -660,25 +661,26 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 
 	h, err := re.le.GetLRCHandler(lrc)
 	if err != nil {
-		log.Printf("[recover]LRC 获取Handler失败%s", err)
+		log.Printf("[recover]LRC get Handler failed %s", err)
 		return &res
 	}
 
 	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
 	recoverData, err := h.Recover(msg, pkgstart)
 	if err != nil {
-		log.Printf("[recover]LRC 恢复失败%s", err)
+		log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+		log.Printf("[recover]LRC recover shard failed %s", err)
 		re.IncFailRbd()
 		return &res
 	}
 
-	log.Printf("[recover]LRC 恢复的分片数据: %s", hex.EncodeToString(recoverData[0:128]))
+	log.Printf("[recover]LRC recover data: %s", hex.EncodeToString(recoverData[0:128]))
 	m5 := md5.New()
 	m5.Write(recoverData)
 	hash := m5.Sum(nil)
 	// 校验hash失败
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
-		log.Printf("[recover]LRC 校验HASH失败%s %s\n", base58.Encode(hash), base58.Encode(msg.Hashs[msg.RecoverId]))
+		log.Printf("[recover]LRC verify HASH failed %s %s\n", base58.Encode(hash), base58.Encode(msg.Hashs[msg.RecoverId]))
 		exec.Command("rm -rf recover*").Output()
 		for k, v := range h.GetShards() {
 			fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("recover-shard-%d", k)), os.O_CREATE|os.O_CREATE|os.O_WRONLY, 0644)
@@ -689,7 +691,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 			fl.Close()
 		}
 		re.IncFailRbd()
-		log.Printf("[recover]错误分片数据已保存 %s recoverID %x hash %s\n", BytesToInt64(msg.Id[0:8]), msg.RecoverId, base58.Encode(msg.Hashs[msg.RecoverId]))
+		log.Printf("[recover]fail shard saved %s recoverID %x hash %s\n", BytesToInt64(msg.Id[0:8]), msg.RecoverId, base58.Encode(msg.Hashs[msg.RecoverId]))
 		return &res
 	}
 
@@ -698,17 +700,18 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	//if err := re.sn.YTFS().Put(common.IndexTableKey(key), recoverData); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		re.IncFailRbd()
-		log.Printf("[recover]LRC 保存已恢复分片失败%s\n", err)
+		log.Printf("[recover]LRC recover shard saved failed%s\n", err)
 		return &res
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800{
-		log.Println("[recover] rebuild time expired!")
-		return &res
-	}
+	//if time.Now().Sub(pkgstart).Seconds() > 1800{
+	//	log.Println("[recover] rebuild time expired!")
+	//	return &res
+	//}
 
 	re.IncSuccRbd()
-	log.Printf("[recover]LRC 分片恢复成功\n")
+	log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+	log.Printf("[recover]LRC shard recover success\n")
 	res.RES = 0
 	return &res
 }
