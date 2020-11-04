@@ -8,6 +8,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/peer"
+
 	//"github.com/docker/docker/pkg/locker"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
@@ -217,25 +219,32 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
+	//defer cancel()
 	//connStart := time.Now()
 
 //CONNRTY:
-	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
-	if err != nil {
+//	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
+	pid, _ := peer.Decode(id)
+	clt := re.sn.Host().ClientStore().GetUsePid(pid)
+	if clt == nil {
 		re.IncFailConn()
-		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		return nil, err
-
-		//if time.Now().Sub(connStart).Seconds() >3{
-		//	re.IncFailConn()
-		//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		//	return nil, err
-		//}
-		//<-time.After(time.Millisecond*100)
-		//goto CONNRTY
+		go re.sn.Host().ClientStore().BackConnect(pid, addrs)
+		return nil, fmt.Errorf("connect failed, go retry")
 	}
+	//if err != nil {
+	//	re.IncFailConn()
+	//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+	//	return nil, err
+	//
+	//	//if time.Now().Sub(connStart).Seconds() >3{
+	//	//	re.IncFailConn()
+	//	//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+	//	//	return nil, err
+	//	//}
+	//	//<-time.After(time.Millisecond*100)
+	//	//goto CONNRTY
+	//}
 
 	if 0 == sw.swconn {
 		re.IncSuccConn()
@@ -248,7 +257,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	getTokenData, _ := proto.Marshal(&getToken)
 
 	re.GetConShardPass()
-	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*15)
+	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*0)
 	defer cancels()
 
 	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
@@ -352,6 +361,9 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 //	shardbegin := time.Now()
 //SHARDRTY:
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
+	defer cancel()
+
 	re.IncConShard()
 	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()

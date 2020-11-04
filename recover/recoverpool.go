@@ -11,7 +11,7 @@ var getShardPool chan int
 var poolG chan int
 var totalCap int = 2000
 var realConCurrent uint16 = 1     //can be changed by write-weight and config
-var realConTask uint16 = 10
+var realConTask uint16 = 1
 
 func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
     re.IncConTask()
@@ -25,19 +25,19 @@ func (re *RecoverEngine)processRequests(){
 	for {
 		requestT :=<- re.queue
 
-		if 0 == re.startTskTmCtl {
-			startTsk = time.Now()
-			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
-			re.startTskTmCtl++
-		}
+		//if 0 == re.startTskTmCtl {
+		//	startTsk = time.Now()
+		//	log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
+		//	re.startTskTmCtl++
+		//}
 
-		if time.Now().Sub(startTsk).Seconds() > (1800-60){
-			if len(re.queue) <= 0{
-				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
-				re.startTskTmCtl = 0
-			}
-			continue
-		}
+		//if time.Now().Sub(startTsk).Seconds() > (1800-60){
+		//	if len(re.queue) <= 0{
+		//		log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
+		//		re.startTskTmCtl = 0
+		//	}
+		//	continue
+		//}
 
 		if len(poolG) > 0 {
 			<- poolG
@@ -49,11 +49,11 @@ func (re *RecoverEngine)processRequests(){
 			<- time.After(time.Second * 3)
 		}
 
-		if len(re.queue) <= 0{
-			re.startTskTmCtl = 0
-			log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
-			continue
-		}
+		//if len(re.queue) <= 0{
+		//	re.startTskTmCtl = 0
+		//	log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
+		//	continue
+		//}
 	}
 }
 
@@ -123,7 +123,7 @@ func (re *RecoverEngine)RunPool(){
 
 	go re.processRequests()
 
-	go re.modifyPoolSize()
+	//go re.modifyPoolSize()
 
 	for i := uint16(0); i < realConCurrent; i++ {
 		getShardPool <- 0
