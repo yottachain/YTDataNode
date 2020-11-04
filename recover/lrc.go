@@ -61,13 +61,13 @@ func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) 
 	var shard []byte
 	var err error
 	var effortsw int8 = 0
-	var efforttms  int8 = 20
+	var efforttms  int8 = 30
 
 start:
 	lrch.shards = make([][]byte, 0)
 	//
 	n++
-	log.Println("尝试第", n, "次")
+	log.Println("[recover] retry", n, "times")
 
 	sl, _ := lrch.si.GetNeededShardList(lrch.si.Handle)
 
@@ -104,10 +104,11 @@ effortwk:
 		//retrytimes := 20
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
-			log.Println("[recover] rebuild time expired!")
-			return nil, fmt.Errorf("rebuild data failed, time expired")
-		}
+		//if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+		//	log.Println("[recover] rebuild time expired! spendtime=",)
+		//
+		//	//return nil, fmt.Errorf("rebuild data failed, time expired")
+		//}
 
 		sw := Switchcnt{0,0,0,0}
 
@@ -168,16 +169,17 @@ effortwk:
 
 
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-60{
-			log.Println("[recover] rebuild time expired!")
-			return nil, fmt.Errorf("rebuild data failed, time expired")
-		}
+		//if time.Now().Sub(pkgstart).Seconds() > 1800-60{
+		//	log.Println("[recover] rebuild time expired!")
+		//	return nil, fmt.Errorf("rebuild data failed, time expired")
+		//}
 
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
 
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
+				log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 				return data, nil
 			}
 		}else if status < 0 {     //rebuild failed
@@ -193,22 +195,22 @@ effortwk:
 		}
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
-		log.Println("[recover] rebuild time expired!")
-		return nil, fmt.Errorf("rebuild data failed, time expired")
-	}
+	//if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+	//	log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+	//	return nil, fmt.Errorf("rebuild data failed, time expired")
+	//}
 
 	efforttms--
 
 	if efforttms <= 0 {
-		return nil, fmt.Errorf("rebuild data failed")
+		return nil, fmt.Errorf("rebuild data failed, efforttms goto zero")
 	}
 
 	if len(indexs2) > 0{
 		effortsw = 1
 		goto effortwk
 	}
-
+	log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
