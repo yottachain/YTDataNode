@@ -257,7 +257,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	getTokenData, _ := proto.Marshal(&getToken)
 
 	re.GetConShardPass()
-	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*0)
+	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
 
 	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
@@ -361,7 +361,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 //	shardbegin := time.Now()
 //SHARDRTY:
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
