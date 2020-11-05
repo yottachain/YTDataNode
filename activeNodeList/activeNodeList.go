@@ -15,7 +15,7 @@ var locker = sync.RWMutex{}
 
 func getUrl() string {
 	var url string
-	i := rand.Intn(21)
+	i := rand.Intn(len(config.DefaultConfig.BPList))
 	timeRange := config.Gconfig.OutlineTimeRange
 	if timeRange == 0 {
 		timeRange = 600
