@@ -7,6 +7,7 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
+	"strings"
 	"time"
 )
 
@@ -31,6 +32,7 @@ func NewLRCEngine(gsfunc GetShardFuncLrc) *LRCEngine {
 }
 
 type Switchcnt struct {
+	swget    int8
 	swconn   int8
 	swtoken  int8
 	swshard  int8
@@ -50,7 +52,7 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 	return &lrch, nil
 }
 
-func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
+func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) ([]byte, error) {
 	defer lrch.si.FreeHandle()
 
 	log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
@@ -58,23 +60,39 @@ func (lrch *LRCHandler) Recover(td message.TaskDescription) ([]byte, error) {
 	var n uint16
 	var shard []byte
 	var err error
+	//var effortsw int8 = 0
+	//var efforttms  int8 = 30
 
 start:
 	lrch.shards = make([][]byte, 0)
 	//
 	n++
-	log.Println("尝试第", n, "次")
+	log.Println("[recover] retry", n, "times")
 
 	sl, _ := lrch.si.GetNeededShardList(lrch.si.Handle)
 
 	var number int
 	var indexs []int16
+	var indexs2 []int16
+	var effortsw int8 = 0
+	var efforttms  int8 = 30
+
 	for i := sl.Front(); i != nil; i = i.Next() {
 		indexs = append(indexs, i.Value.(int16))
 	}
 
+effortwk:
+	if len(indexs2) > 0 && effortsw > 0{
+		indexs = indexs[0:0]
+		log.Println("[recover][optimize][1] indexs=",indexs," indexs2=",indexs2)
+		indexs = indexs2[:]
+		log.Println("[recover][optimize][2] indexs=",indexs," indexs2=",indexs2)
+		indexs2 = indexs2[0:0]
+		log.Println("[recover][optimize][3] indexs=",indexs," indexs2=",indexs2)
+	}
+
 	log.Println("[recover]need shard list", indexs, len(indexs))
-	log.Println("[recover] ShardExist=",lrch.si.ShardExist)
+	//log.Println("[recover] ShardExist=",lrch.si.ShardExist)
 	k := 0
 	for _, idx := range indexs {
 		k++
@@ -85,56 +103,123 @@ start:
 		}
 
 		//getshdstart := time.Now()
-		retrytimes := 20
+		//retrytimes := 20
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		sw := Switchcnt{0,0,0}
+		//if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+		//	log.Println("[recover] rebuild time expired! spendtime=",)
+		//
+		//	//return nil, fmt.Errorf("rebuild data failed, time expired")
+		//}
 
-		for{
-			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+		sw := Switchcnt{0,0,0,0}
 
-			if err == nil && len(shard) > 0 {
-				if message.VerifyVHF(shard, td.Hashs[idx]) {
-					break
-				}
-				log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
+		//for{
+		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+
+		if err != nil{
+			log.Println("[recover][optimize] Get data Slice fail,idx=",idx,err.Error())
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
+
+			if (strings.Contains(err.Error(),"Get data Slice fail")){
+				//log.Println("[recover][optimize] Get data Slice fail, shard not exist")
+				continue
+					//break
 			}
 
-			retrytimes--
-
-			if 0 >= retrytimes{
-				break
-			}
-			<-time.After(time.Millisecond * 500)
-		}
-
-		if len(shard) == 0 || err != nil {
-			log.Println("[recover][ytlrc] shard is empty!!")
-			if k >= len(indexs) && n < 3 {
-				goto  start
-			}
+			indexs2 = append(indexs2, idx)
+			//if n >= 3{
+			//	indexs2 = append(indexs2, idx)
+			//}
 			continue
 		}
 
+		if len(shard) == 0 {
+			log.Println("[recover][ytlrc] shard is empty or get error!! idx=",idx)
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
+			indexs2 = append(indexs2, idx)
+			//if n >= 3{
+			//	indexs2 = append(indexs2, idx)
+			//}
+			continue
+		}
+
+		if ! message.VerifyVHF(shard, td.Hashs[idx]) {
+			log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
+			//if k >= len(indexs) && n < 3 {
+			//	goto  start
+			//}
+
+			continue
+			//break
+		}
+
+		//if len(shard) > 0 {
+		//
+		//}
+
+			//retrytimes--
+			//
+			//if 0 >= retrytimes{
+			//	//break
+			//}
+			//<-time.After(time.Millisecond * 500)
+		//}
+
+
+
+		//if time.Now().Sub(pkgstart).Seconds() > 1800-60{
+		//	log.Println("[recover] rebuild time expired!")
+		//	return nil, fmt.Errorf("rebuild data failed, time expired")
+		//}
+
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
+				log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 				return data, nil
 			}
 		}else if status < 0 {     //rebuild failed
-			if n < 3 {
-                log.Println("[recover] low_level_lrc status=",status)
-				goto start
-			}
+			//if n < 3 {
+            //    log.Println("[recover] low_level_lrc status=",status)
+			//	goto start
+			//}
 			log.Println("[recover] low_level_lrc status=",status)
 		}else {
-			if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
-				goto start
-			}
+			//log.Println("[recover] ")
+			//if k >= len(indexs) && n < 3 {  //rebuild mode(hor, ver) over
+			//	goto start
+			//}
 		}
 	}
 
+	//if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+	//	log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+	//	return nil, fmt.Errorf("rebuild data failed, time expired")
+	//}
+
+	log.Println("[recover] retry_times=",31-efforttms,"stage=",n)
+
+	efforttms--
+
+	if efforttms <= 0 && n < 3{
+		indexs2 = indexs2[0:0]
+		effortsw = 0
+		goto start
+		return nil, fmt.Errorf("rebuild data failed, efforttms goto zero")
+	}
+
+	if len(indexs2) > 0{
+		effortsw = 1
+		goto effortwk
+	}
+	log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
