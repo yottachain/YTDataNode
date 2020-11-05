@@ -259,6 +259,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swconn++
 	}
 
+
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
@@ -267,6 +268,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	re.GetConShardPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
+
+
 
 	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
 	//defer localcancel2()
@@ -288,6 +291,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 //
 //RETRY:
 	//tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
+
+
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
@@ -376,13 +381,17 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swtoken++
 	}
 
+
+
 //	shardbegin := time.Now()
 //SHARDRTY:
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
-	shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
+	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
+	//shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
+
 	re.DecConShard()
 	re.ReturnConShardPass()
 
@@ -424,7 +433,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
     msgbck.Tk = string(tok)
     buf,err = proto.Marshal(&msgbck)
 
-    _,err = clt.SendMsgClose(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
+    _,err = clt.SendMsg(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
     if err != nil{
     	log.Println("[recover] return token error,err=",err.Error())
 	}

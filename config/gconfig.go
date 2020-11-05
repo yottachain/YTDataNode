@@ -32,7 +32,7 @@ type Gcfg struct {
 	DecreaseThreshold  int64  `json:"DecreaseThreshold"`
 	TokenWait          int64  `json:"TokenWait"`
 	TokenReturnWait    int64  `json:"TokenReturnWait"`
-	Clean              bool   `json:"Clean"`
+	Clean              int    `json:"Clean"`
 	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
 	OutlineTimeRange   int    `json:"OutlineTimeRange"`
 }
