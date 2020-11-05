@@ -8,8 +8,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	//"github.com/docker/docker/pkg/locker"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
@@ -25,9 +23,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 )
 
 const (
@@ -228,32 +226,33 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
-	//defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 	//connStart := time.Now()
 
 //CONNRTY:
-//	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
-	pid, _ := peer.Decode(id)
-	clt := re.sn.Host().ClientStore().GetUsePid(pid)
-	if clt == nil {
+	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
+	if err != nil {
 		re.IncFailConn()
-		go re.sn.Host().ClientStore().BackConnect(pid, addrs)
-		return nil, fmt.Errorf("connect failed, go retry")
+		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+		return nil, err
+
+		//if time.Now().Sub(connStart).Seconds() >3{
+		//	re.IncFailConn()
+		//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+		//	return nil, err
+		//}
+		//<-time.After(time.Millisecond*100)
+		//goto CONNRTY
 	}
-	//if err != nil {
+	//pid, _ := peer.Decode(id)
+	//clt := re.sn.Host().ClientStore().GetUsePid(pid)
+	//if clt == nil {
 	//	re.IncFailConn()
-	//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-	//	return nil, err
-	//
-	//	//if time.Now().Sub(connStart).Seconds() >3{
-	//	//	re.IncFailConn()
-	//	//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-	//	//	return nil, err
-	//	//}
-	//	//<-time.After(time.Millisecond*100)
-	//	//goto CONNRTY
+	//	go re.sn.Host().ClientStore().BackConnect(pid, addrs)
+	//	return nil, fmt.Errorf("connect failed, go retry")
 	//}
+
 
 	if 0 == sw.swconn {
 		re.IncSuccConn()
@@ -291,10 +290,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	//tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
-	if err != nil || len(tok) < 3 {
+	if err != nil {
 		re.IncFailToken()
-		err = fmt.Errorf("faild to get token")
-		log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
+		//log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
+		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+
 		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
@@ -311,10 +311,18 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		//goto RETRY
 	}
 
+    if len(tok) < 3{
+		err = fmt.Errorf("the length of token less 3 byte")
+		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n,  addrs, id)
+		re.IncFailToken()
+		re.ReturnConShardPass()
+		return nil,err
+	}
+
 	err = proto.Unmarshal(tok[2:], &resGetToken)
 	if err != nil {
 		re.IncFailToken()
-		log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
+		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
@@ -332,7 +340,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if !resGetToken.Writable {
 		re.IncFailToken()
 		err = fmt.Errorf("resGetToken.Writable is false")
-		log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
+		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
@@ -370,11 +378,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 //	shardbegin := time.Now()
 //SHARDRTY:
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
-	shardBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()
 	re.ReturnConShardPass()
 
