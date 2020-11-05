@@ -430,7 +430,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	defer cancels2()
 
     var msgbck message.DownloadTKCheck
-    msgbck.Tk = string(tok)
+    msgbck.Tk = resGetToken.AllocId
     buf,err = proto.Marshal(&msgbck)
 
     _,err = clt.SendMsg(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
