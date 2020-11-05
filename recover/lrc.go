@@ -15,16 +15,22 @@ type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []st
 
 type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error)
 
+type IncRbdSuccCnt func(n uint16)
+
+
 type LRCEngine struct {
-	lrc      lrcpkg.Shardsinfo
-	GetShard GetShardFuncLrc
+	lrc       lrcpkg.Shardsinfo
+	GetShard  GetShardFuncLrc
+	IncRbdSucc  IncRbdSuccCnt
 }
 
-func NewLRCEngine(gsfunc GetShardFuncLrc) *LRCEngine {
+func NewLRCEngine(gsfunc GetShardFuncLrc, incrbdsucc IncRbdSuccCnt) *LRCEngine {
 	var le LRCEngine
 	le.lrc = lrcpkg.Shardsinfo{}
 
 	le.GetShard = gsfunc
+
+	le.IncRbdSucc = incrbdsucc
 
 	le.lrc.LRCinit(13)
 
@@ -84,11 +90,11 @@ start:
 effortwk:
 	if len(indexs2) > 0 && effortsw > 0{
 		indexs = indexs[0:0]
-		log.Println("[recover][optimize][1] indexs=",indexs," indexs2=",indexs2)
+		//log.Println("[recover][optimize][1] indexs=",indexs," indexs2=",indexs2)
 		indexs = indexs2[:]
 		log.Println("[recover][optimize][2] indexs=",indexs," indexs2=",indexs2)
 		indexs2 = indexs2[0:0]
-		log.Println("[recover][optimize][3] indexs=",indexs," indexs2=",indexs2)
+		//log.Println("[recover][optimize][3] indexs=",indexs," indexs2=",indexs2)
 	}
 
 	log.Println("[recover]need shard list", indexs, len(indexs))
@@ -182,6 +188,7 @@ effortwk:
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {        //rebuild success
+                lrch.le.IncRbdSucc(n)
 				log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 				return data, nil
 			}

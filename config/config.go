@@ -414,3 +414,5 @@ func (cfg Config) GetAPIAddr() string {
 	//}
 	return fmt.Sprintf("http://%s:%s", addrs[2], "8082")
 }
+
+var DefaultConfig, _ = ReadConfig()
