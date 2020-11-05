@@ -76,6 +76,7 @@ func (s *Stat) Mean() {
 	s.AverageDownloadToken = s.SentDownloadTokenNum / td
 
 	s.SentTokenNum = 0
+	s.SentDownloadTokenNum = 0
 	s.ReportTime = time.Now()
 }
 
