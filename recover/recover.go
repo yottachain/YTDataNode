@@ -185,7 +185,6 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	log.Printf("[recover:%s]datas recover success\n", base58.Encode(description.Id))
 	var vhf [16]byte
 	copy(vhf[:], description.Hashs[description.RecoverId])
-	//err = re.sn.YTFS().Put(common.IndexTableKey(vhf), shards[int(description.RecoverId)])
 	_, err = re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shards[int(description.RecoverId)]})
 	if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 		log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(description.Id), err.Error())
@@ -233,29 +232,12 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	defer cancel()
 	//connStart := time.Now()
 
-//CONNRTY:
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
 		re.IncFailConn()
 		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
-
-		//if time.Now().Sub(connStart).Seconds() >3{
-		//	re.IncFailConn()
-		//	log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		//	return nil, err
-		//}
-		//<-time.After(time.Millisecond*100)
-		//goto CONNRTY
 	}
-	//pid, _ := peer.Decode(id)
-	//clt := re.sn.Host().ClientStore().GetUsePid(pid)
-	//if clt == nil {
-	//	re.IncFailConn()
-	//	go re.sn.Host().ClientStore().BackConnect(pid, addrs)
-	//	return nil, fmt.Errorf("connect failed, go retry")
-	//}
-
 
 	if 0 == sw.swconn {
 		re.IncSuccConn()
@@ -274,49 +256,15 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 **********************************************/
 
 
-	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
-	//defer localcancel2()
-	//var localTokenW *TaskPool.Token
-	// wtokenstart := time.Now()
-	//for {
-	//	localTokenW, err = re.Upt.Get(localctx2, peer.ID("11111111111"), 3)
-	//	if err == nil {
-	//		break
-	//	}
-	//	if time.Now().Sub(wtokenstart).Seconds() > 3 {
-	//		err = fmt.Errorf("faild to get localTokenW")
-	//		log.Printf("[recover] get localTokenW outtime!")
-	//		return nil,err
-	//	}
-	//}
-
-//	tokenstart := time.Now()
-//
-//RETRY:
-	//tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
-
 /*************************************************
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
 		re.IncFailToken()
-		//log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 
-		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
-
-		//if time.Now().Sub(tokenstart).Seconds() > 10 {
-		//	re.IncFailToken()
-		//	err = fmt.Errorf("faild to get token")
-		//	log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
-		//	//re.Upt.Delete(localTokenW)
-		//	re.ReturnConShardPass()
-		//	return nil,err
-		//}
-		//<-time.After(time.Millisecond * 100)
-		//goto RETRY
 	}
 
     if len(tok) < 3{
@@ -331,37 +279,16 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if err != nil {
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
-
-		//if time.Now().Sub(tokenstart).Seconds() > 5 {
-		//	re.IncFailToken()
-		//	log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
-		//	//re.Upt.Delete(localTokenW)
-		//	re.ReturnConShardPass()
-		//	return nil,err
-		//}
-		//goto RETRY
 	}
 
 	if !resGetToken.Writable {
 		re.IncFailToken()
 		err = fmt.Errorf("resGetToken.Writable is false")
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil,err
-
-		//if time.Now().Sub(tokenstart).Seconds() > 5 {
-		//	re.IncFailToken()
-		//	err = fmt.Errorf("resGetToken.Writable is false")
-		//	log.Printf("[recover] failToken [%v] get token err! resGetToken.AllocId=%v", re.rcvstat.failToken, resGetToken.AllocId)
-		//	//re.Upt.Delete(localTokenW)
-		//	re.ReturnConShardPass()
-		//	return nil,err
-		//}
-		//goto RETRY
 	}
 
 	var msg message.DownloadShardRequest
@@ -373,7 +300,6 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if err != nil {
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		//re.Upt.Delete(localTokenW)
 		re.ReturnConShardPass()
 		return nil, err
 	}
@@ -385,9 +311,6 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 
-
-//	shardbegin := time.Now()
-//SHARDRTY:
 	var res message.DownloadShardResponse
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -396,7 +319,6 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
 	//shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	//shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
-
 	re.DecConShard()
 	re.ReturnConShardPass()
 
@@ -407,19 +329,13 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		}else{
 			re.IncFailSendShard()
 			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
-		    //if time.Now().Sub(shardbegin).Seconds() < 5{
-			//	<-time.After(time.Millisecond * 100)
-			//	goto SHARDRTY
-			//}
 		}
-		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
 
 	if len(shardBuf)<3{
 		re.IncFailSendShard()
 		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
-		//re.Upt.Delete(localTokenW)
 		return nil, fmt.Errorf("error: shard less then 16384, len=",len(shardBuf))
 	}
 
@@ -427,7 +343,6 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if err != nil {
 		re.IncFailSendShard()
 		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		//re.Upt.Delete(localTokenW)
 		return nil, err
 	}
 
