@@ -62,6 +62,7 @@ type RebuildCount struct {
 	rowRebuildSucc   uint64
 	columnRebuildSucc  uint64
 	globalRebuildSucc  uint64
+	successPutToken    uint16
 }
 
 type RecoverEngine struct {
@@ -111,6 +112,7 @@ type RecoverStat struct {
 	RowRebuildSucc   uint64  `json:"RowRebuildSucc"`                      //行方式重建成功
 	ColumnRebuildSucc  uint64  `json:"ColumnRebuildSucc"`                 //列方式重建成功
 	GlobalRebuildSucc  uint64   `json:"GlobalRebuildSucc"`                //全局方式重建成功
+	SuccessPutToken    uint16   `json:"SuccessPutToken"`                  //成功释放token总数
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -141,6 +143,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.rowRebuildSucc,
 		re.rcvstat.columnRebuildSucc,
 		re.rcvstat.globalRebuildSucc,
+		re.rcvstat.successPutToken,
 	}
 }
 
@@ -436,8 +439,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
     _,err = clt.SendMsg(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
     if err != nil{
     	log.Println("[recover] return token error,err=",err.Error())
+	}else{
+		re.IncSuccPutTok()
+		log.Println("[recover] return token Success,successPutTok=",re.rcvstat.successPutToken)
 	}
-
+	
 	if 0 == sw.swshard {
 		re.IncSuccShard()
 		sw.swshard++
