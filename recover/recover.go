@@ -262,7 +262,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swconn++
 	}
 
-
+/*********************************************
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
@@ -271,7 +271,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	re.GetConShardPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
-
+**********************************************/
 
 
 	//localctx2, localcancel2 := context.WithTimeout(context.Background(), time.Second*14)
@@ -295,7 +295,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 //RETRY:
 	//tok, err := clt.SendMsg(ctxto, message.MsgIDMultiTaskDescription.Value(), getTokenData)
 
-
+/*************************************************
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
@@ -378,7 +378,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
-
+**************************************/
 	if 0 == sw.swtoken {
 		re.IncSuccToken()
 		sw.swtoken++
@@ -388,11 +388,13 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 //	shardbegin := time.Now()
 //SHARDRTY:
+	var res message.DownloadShardResponse
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
-	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
+	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
+	//shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	//shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
 
 	re.DecConShard()
@@ -429,6 +431,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
+/***************************************
 	bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancels2()
 
@@ -443,7 +446,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		re.IncSuccPutTok()
 		log.Println("[recover] return token Success,successPutTok=",re.rcvstat.successPutToken)
 	}
-	
+ *************************************************/
 	if 0 == sw.swshard {
 		re.IncSuccShard()
 		sw.swshard++
