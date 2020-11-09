@@ -128,7 +128,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	var isUpload = true
 	err := proto.Unmarshal(data, &GTMsg)
-	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
+	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		isUpload = false
