@@ -130,8 +130,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
-		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		isUpload = false
+	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
+		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
+		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	if config.Gconfig.TokenWait == 0 {
