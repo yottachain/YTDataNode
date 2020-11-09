@@ -89,6 +89,9 @@ func (sn *storageNode) Service() {
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		res := wh.GetToken(data, head.RemotePeerID)
+		if res == nil {
+			return nil, fmt.Errorf("no token")
+		}
 		return res, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
