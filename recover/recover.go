@@ -310,6 +310,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swtoken++
 	}
 
+	var msg message.DownloadShardRequest
+	//var res message.DownloadShardResponse
+	msg.VHF = hash
+	//msg.AllocId = resGetToken.AllocId
 
 	var res message.DownloadShardResponse
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
