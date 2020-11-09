@@ -130,6 +130,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	err := proto.Unmarshal(data, &GTMsg)
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		xtp = TaskPool.Dtp()
+		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		isUpload = false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
