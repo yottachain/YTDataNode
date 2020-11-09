@@ -312,15 +312,22 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	var msg message.DownloadShardRequest
 	//var res message.DownloadShardResponse
+
 	msg.VHF = hash
-	//msg.AllocId = resGetToken.AllocId
+	buf, err := proto.Marshal(&msg)
+	if err != nil {
+		//re.IncFailToken()
+		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+		re.ReturnConShardPass()
+		return nil, err
+	}
 
 	var res message.DownloadShardResponse
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
-	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
+	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	//shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	//shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
 	re.DecConShard()
