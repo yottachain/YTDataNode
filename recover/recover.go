@@ -8,6 +8,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/yottachain/YTElkProducer"
+	"github.com/yottachain/YTElkProducer/conf"
+
 	//"github.com/docker/docker/pkg/locker"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
@@ -26,6 +30,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	//"io"
 )
 
 const (
@@ -74,6 +79,14 @@ type RecoverEngine struct {
 	rcvstat          RebuildCount
 	Upt             *TaskPool.TaskPool
 	startTskTmCtl    uint8
+}
+
+type RcvDbgLog struct {
+	Nodeid   string
+	Shardid  string
+	Time     string
+	Errtype  string
+	Errstr   string
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
@@ -192,12 +205,11 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	}
 	return nil
 }
-
 func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
 	return nil,nil    //refer to getShard
 }
 
-func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
+func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte,error){
 	if 0 == sw.swget{
 		re.IncShardForRbd()
 		sw.swget++
@@ -207,24 +219,76 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	btid, err := base58.Decode(taskID)
 	if err != nil {
 		re.IncFailDcdTask()
-		return nil, err
+		return btid,err
 	}
 
 	if 0 == len(id) {
 		err = fmt.Errorf("zero length id")
 		re.IncFailDcdTask()
-		return nil, err
+		return  btid,err
 	}
 
 	if 0 == len(addrs) {
 		err = fmt.Errorf("zero length addrs")
 		re.IncFailDcdTask()
-		return nil, err
+		return  btid,err
 	}
 
 	if 0 == len(hash) {
 		err = fmt.Errorf("zero length hash")
 		re.IncFailDcdTask()
+		return  btid,err
+	}
+	return btid, nil
+}
+
+//func (re *RecoverEngine) reportLog( body interface{}){
+//	bodyBytes, err:=json.Marshal(body)
+//	resp, err := http.Post(url, contentType, bytes.NewReader(bodyBytes))
+//	if err != nil {
+//		panic(err)
+//	}
+//	//关闭连接
+//	defer resp.Body.Close()
+//}
+
+func (re *RecoverEngine) reportLog(body *RcvDbgLog){
+	elkConf := elasticsearch.Config{
+		Addresses: []string{"https://c1-bj-elk.yottachain.net/"},
+		Username:  "dnreporter",
+		Password:  "dnreporter@yottachain",
+	}
+
+	ytESConfig := conf.YTESConfig{
+		ESConf:      elkConf,
+		DebugMode:   true,
+		IndexPrefix: "main-net-dn",
+		IndexType:   "log",
+	}
+
+	client := YTElkProducer.NewClient(ytESConfig)
+
+	client.AddLogAsync(body)
+	time.Sleep(time.Second*10)
+}
+
+func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
+	ShardId := base64.StdEncoding.EncodeToString(hash)
+	NowTm := time.Now().Format("2006/01/02 15:04:05")
+	return &RcvDbgLog{
+		nodeid,
+		ShardId,
+		NowTm,
+		errtype,
+		err.Error(),
+	}
+}
+
+func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
+
+	btid,err:=re.parmCheck(id, taskID, addrs, hash, n, sw)
+
+	if err !=nil {
 		return nil, err
 	}
 
@@ -235,6 +299,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
 		re.IncFailConn()
+		logelk:=re.MakeReportLog(id,hash,"failConn",err)
+		go re.reportLog(logelk)
 		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
@@ -336,9 +402,13 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
+			logelk:=re.MakeReportLog(id,hash,"failShard",err)
+			go re.reportLog(logelk)
 			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}else{
 			re.IncFailSendShard()
+			logelk:=re.MakeReportLog(id,hash,"failSendShard",err)
+			go re.reportLog(logelk)
 			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}
 		return nil, err
