@@ -334,14 +334,17 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	if err != nil {
 		re.IncFailToken()
+		logelk:=re.MakeReportLog(id,hash,"failToken",err)
+		go re.reportLog(logelk)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-
 		re.ReturnConShardPass()
 		return nil,err
 	}
 
     if len(tok) < 3{
 		err = fmt.Errorf("the length of token less 3 byte")
+		logelk:=re.MakeReportLog(id,hash,"failToken",err)
+		go re.reportLog(logelk)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n,  addrs, id)
 		re.IncFailToken()
 		re.ReturnConShardPass()
@@ -351,6 +354,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	err = proto.Unmarshal(tok[2:], &resGetToken)
 	if err != nil {
 		re.IncFailToken()
+		logelk:=re.MakeReportLog(id,hash,"failToken",err)
+		go re.reportLog(logelk)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
 		return nil,err
@@ -358,6 +363,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	if !resGetToken.Writable {
 		re.IncFailToken()
+		logelk:=re.MakeReportLog(id,hash,"failToken",err)
+		go re.reportLog(logelk)
 		err = fmt.Errorf("resGetToken.Writable is false")
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
@@ -377,6 +384,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		re.IncFailToken()
+		logelk:=re.MakeReportLog(id,hash,"failToken",err)
+		go re.reportLog(logelk)
 		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		re.ReturnConShardPass()
 		return nil, err
