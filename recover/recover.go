@@ -209,6 +209,51 @@ func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string
 	return nil,nil    //refer to getShard
 }
 
+//func (re *RecoverEngine) reportLog( body interface{}){
+//	bodyBytes, err:=json.Marshal(body)
+//	resp, err := http.Post(url, contentType, bytes.NewReader(bodyBytes))
+//	if err != nil {
+//		panic(err)
+//	}
+//	//关闭连接
+//	defer resp.Body.Close()
+//}
+
+func (re *RecoverEngine) reportLog(body *RcvDbgLog){
+	elkConf := elasticsearch.Config{
+		Addresses: []string{"https://c1-bj-elk.yottachain.net/"},
+		Username:  "dnreporter",
+		Password:  "dnreporter@yottachain",
+	}
+
+	logtb := re.sn.Config().BPMd5()
+	tbstr := "dnlog-"+string(logtb)
+
+	ytESConfig := conf.YTESConfig{
+		ESConf:      elkConf,
+		DebugMode:   true,
+		IndexPrefix: tbstr,
+		IndexType:   "log",
+	}
+
+	client := YTElkProducer.NewClient(ytESConfig)
+
+	client.AddLogAsync(body)
+	time.Sleep(time.Second*10)
+}
+
+func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
+	ShardId := base64.StdEncoding.EncodeToString(hash)
+	NowTm := time.Now().Format("2006/01/02 15:04:05")
+	return &RcvDbgLog{
+		nodeid,
+		ShardId,
+		NowTm,
+		errtype,
+		err.Error(),
+	}
+}
+
 func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte,error){
 	if 0 == sw.swget{
 		re.IncShardForRbd()
@@ -242,53 +287,15 @@ func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, has
 	return btid, nil
 }
 
-//func (re *RecoverEngine) reportLog( body interface{}){
-//	bodyBytes, err:=json.Marshal(body)
-//	resp, err := http.Post(url, contentType, bytes.NewReader(bodyBytes))
-//	if err != nil {
-//		panic(err)
-//	}
-//	//关闭连接
-//	defer resp.Body.Close()
-//}
 
-func (re *RecoverEngine) reportLog(body *RcvDbgLog){
-	elkConf := elasticsearch.Config{
-		Addresses: []string{"https://c1-bj-elk.yottachain.net/"},
-		Username:  "dnreporter",
-		Password:  "dnreporter@yottachain",
-	}
 
-	ytESConfig := conf.YTESConfig{
-		ESConf:      elkConf,
-		DebugMode:   true,
-		IndexPrefix: "main-net-dn",
-		IndexType:   "log",
-	}
-
-	client := YTElkProducer.NewClient(ytESConfig)
-
-	client.AddLogAsync(body)
-	time.Sleep(time.Second*10)
-}
-
-func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
-	ShardId := base64.StdEncoding.EncodeToString(hash)
-	NowTm := time.Now().Format("2006/01/02 15:04:05")
-	return &RcvDbgLog{
-		nodeid,
-		ShardId,
-		NowTm,
-		errtype,
-		err.Error(),
-	}
-}
 
 func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
 
 	btid,err:=re.parmCheck(id, taskID, addrs, hash, n, sw)
 
 	if err !=nil {
+		log.Println("[recover] parmcheck error :",err)
 		return nil, err
 	}
 
@@ -310,7 +317,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swconn++
 	}
 
-/*********************************************
+///*********************************************
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
@@ -319,10 +326,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	re.GetConShardPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
-**********************************************/
+//**********************************************/
 
 
-/*************************************************
+///*************************************************
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
@@ -357,6 +364,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil,err
 	}
 
+	if 0 == sw.swtoken {
+		re.IncSuccToken()
+		sw.swtoken++
+	}
+
 	var msg message.DownloadShardRequest
 	var res message.DownloadShardResponse
 	msg.VHF = hash
@@ -370,32 +382,28 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
-**************************************/
-	if 0 == sw.swtoken {
-		re.IncSuccToken()
-		sw.swtoken++
-	}
+//**************************************/
 
-	var msg message.DownloadShardRequest
+
+	//var msg message.DownloadShardRequest
 	//var res message.DownloadShardResponse
 
-	msg.VHF = hash
-	buf, err := proto.Marshal(&msg)
-	if err != nil {
-		//re.IncFailToken()
-		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		re.ReturnConShardPass()
-		return nil, err
-	}
+	//msg.VHF = hash
+	//buf, err := proto.Marshal(&msg)
+	//if err != nil {
+	//	//re.IncFailToken()
+	//	log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
+	//	re.ReturnConShardPass()
+	//	return nil, err
+	//}
 
-	var res message.DownloadShardResponse
+	//var res message.DownloadShardResponse
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
 	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
-	//shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
-	//shardBuf, err := clt.SendMsgClose(ctx2, message.MsgIDDownloadShardRequest.Value(), nil)
+
 	re.DecConShard()
 	re.ReturnConShardPass()
 
@@ -427,7 +435,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
-/***************************************
+///***************************************
 	bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancels2()
 
@@ -442,7 +450,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		re.IncSuccPutTok()
 		log.Println("[recover] return token Success,successPutTok=",re.rcvstat.successPutToken)
 	}
- *************************************************/
+ //*************************************************/
 	if 0 == sw.swshard {
 		re.IncSuccShard()
 		sw.swshard++
