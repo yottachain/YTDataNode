@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
@@ -61,6 +62,7 @@ type Config struct {
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
 	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
+	bpListMd5 []byte
 }
 
 // DefaultYTFSOptions default config
@@ -412,7 +414,19 @@ func (cfg Config) GetAPIAddr() string {
 	//if err != nil {
 	//	return ""
 	//}
+
 	return fmt.Sprintf("http://%s:%s", addrs[2], "8082")
+}
+
+func (cfg *Config)BPMd5()[]byte{
+	if cfg.bpListMd5 == nil {
+		m5:=md5.New()
+		for _,v:= range cfg.BPList{
+			m5.Write([]byte(v.ID))
+		}
+		cfg.bpListMd5 = m5.Sum(nil)
+	}
+	return cfg.bpListMd5
 }
 
 var DefaultConfig, _ = ReadConfig()
