@@ -67,7 +67,8 @@ type RebuildCount struct {
 	rowRebuildSucc   uint64
 	columnRebuildSucc  uint64
 	globalRebuildSucc  uint64
-	successPutToken    uint16
+	successPutToken    uint64
+	sendTokenReq       uint64
 }
 
 type RecoverEngine struct {
@@ -125,7 +126,8 @@ type RecoverStat struct {
 	RowRebuildSucc   uint64  `json:"RowRebuildSucc"`                      //行方式重建成功
 	ColumnRebuildSucc  uint64  `json:"ColumnRebuildSucc"`                 //列方式重建成功
 	GlobalRebuildSucc  uint64   `json:"GlobalRebuildSucc"`                //全局方式重建成功
-	SuccessPutToken    uint16   `json:"SuccessPutToken"`                  //成功释放token总数
+	SuccessPutToken    uint64   `json:"SuccessPutToken"`                  //成功释放token总数
+    SendTokenReq       uint64   `json:"SendToken"`                        //发送token请求计数
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -157,6 +159,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.columnRebuildSucc,
 		re.rcvstat.globalRebuildSucc,
 		re.rcvstat.successPutToken,
+		re.rcvstat.sendTokenReq,
 	}
 }
 
@@ -227,7 +230,7 @@ func (re *RecoverEngine) reportLog(body *RcvDbgLog){
 	}
 
 	logtb := re.sn.Config().BPMd5()
-	tbstr := "dnlog-"+strings.ToLower(base58.Encode(logtb))
+	tbstr := "dnlog-"+ strings.ToLower(base58.Encode(logtb))
 
 	ytESConfig := conf.YTESConfig{
 		ESConf:      elkConf,
@@ -301,7 +304,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	//connStart := time.Now()
 
@@ -329,6 +332,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
 
+	re.IncSendTokReq()
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
