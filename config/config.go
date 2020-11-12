@@ -391,7 +391,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 136
+	return 137
 }
 
 func Version() uint32 {
@@ -418,10 +418,10 @@ func (cfg Config) GetAPIAddr() string {
 	return fmt.Sprintf("http://%s:%s", addrs[2], "8082")
 }
 
-func (cfg *Config)BPMd5()[]byte{
+func (cfg *Config) BPMd5() []byte {
 	if cfg.bpListMd5 == nil {
-		m5:=md5.New()
-		for _,v:= range cfg.BPList{
+		m5 := md5.New()
+		for _, v := range cfg.BPList {
 			m5.Write([]byte(v.ID))
 		}
 		cfg.bpListMd5 = m5.Sum(nil)
