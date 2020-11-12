@@ -123,18 +123,23 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
-	atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	var isUpload = true
 	err := proto.Unmarshal(data, &GTMsg)
+
+	// 判断是上传还是下载
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
+		atomic.AddInt64(&statistics.DefaultStat.RequestDownloadToken, 1)
 		isUpload = false
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		return nil
+	} else {
+		atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
 	if config.Gconfig.TokenWait == 0 {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
@@ -218,6 +223,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 105
 	}
 	tk, err := TaskPool.NewTokenFromString(msg.AllocId)
+	defer TaskPool.Utp().Delete(tk)
 	if err != nil {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
@@ -271,7 +277,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
 	}
 
-	defer TaskPool.Utp().Delete(tk)
 	return 0
 }
 

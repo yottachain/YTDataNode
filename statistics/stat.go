@@ -23,6 +23,7 @@ type Stat struct {
 	SentTokenNum           int64
 	ReportTime             time.Time
 	RequestToken           int64
+	RequestDownloadToken   int64
 	NetLatency             int64
 	DiskLatency            int64
 	GconfigMd5             string
