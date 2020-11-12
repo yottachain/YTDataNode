@@ -29,7 +29,14 @@ var (
       ColRbdSuccLk     sync.Mutex
       GlobalRbdSuccLk   sync.Mutex
       SuccPutTokenLK      sync.Mutex
+      SendTokenReqLk      sync.Mutex
 )
+
+func (re *RecoverEngine) IncSendTokReq(){
+	SendTokenReqLk.Lock()
+	defer SendTokenReqLk.Unlock()
+	re.rcvstat.sendTokenReq++
+}
 
 func (re *RecoverEngine) IncSuccPutTok(){
 	SuccPutTokenLK.Lock()
