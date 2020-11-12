@@ -223,7 +223,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 105
 	}
 	tk, err := TaskPool.NewTokenFromString(msg.AllocId)
-	defer TaskPool.Utp().Delete(tk)
 	if err != nil {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
@@ -237,6 +236,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	if !TaskPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
+		defer TaskPool.Utp().Delete(tk)
 		return 105
 	}
 	TaskPool.Utp().NetLatency.Add(time.Now().Sub(tk.Tm))
@@ -277,6 +277,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Printf("[disklatency] %f s\n", diskltc.Seconds())
 	}
 
+	TaskPool.Utp().Delete(tk)
 	return 0
 }
 
