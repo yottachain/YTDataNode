@@ -227,7 +227,7 @@ func (re *RecoverEngine) reportLog(body *RcvDbgLog){
 	}
 
 	logtb := re.sn.Config().BPMd5()
-	tbstr := "dnlog-"+string(logtb)
+	tbstr := "dnlog-"+strings.ToLower(base58.Encode(logtb))
 
 	ytESConfig := conf.YTESConfig{
 		ESConf:      elkConf,
@@ -235,6 +235,8 @@ func (re *RecoverEngine) reportLog(body *RcvDbgLog){
 		IndexPrefix: tbstr,
 		IndexType:   "log",
 	}
+
+	log.Println("[recover][elk] ytesconfig=",tbstr)
 
 	client := YTElkProducer.NewClient(ytESConfig)
 
@@ -320,16 +322,13 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 ///*********************************************
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
-	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()
+	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
 	getTokenData, _ := proto.Marshal(&getToken)
 
 	re.GetConShardPass()
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
-//**********************************************/
 
-
-///*************************************************
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
