@@ -66,10 +66,14 @@ func (sn *storageNode) Service() {
 		os.Exit(0)
 	}
 	var utp *TaskPool.TaskPool = TaskPool.Utp()
+	var dtp *TaskPool.TaskPool = TaskPool.Dtp()
 	// 统计归零
 	utp.OnChange(func(pt *TaskPool.TaskPool) {
 		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
 		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+	})
+	dtp.OnChange(func(pt *TaskPool.TaskPool) {
+		atomic.StoreInt64(&statistics.DefaultStat.RequestDownloadToken, 0)
 	})
 
 	statistics.DefaultStat.TokenQueueLen = 200
