@@ -130,7 +130,7 @@ type RecoverStat struct {
 	GlobalRebuildSucc  uint64   `json:"GlobalRebuildSucc"`                //全局方式重建成功
 	SuccessPutToken    uint64   `json:"SuccessPutToken"`                  //成功释放token总数
     SendTokenReq       uint64   `json:"SendToken"`                        //发送token请求计数
-	lowerVersionTok    uint64   `json:"lowerVersionTok"`                  //版本低，终止获取token
+	LowerVersionTok    uint64   `json:"lowerVersionTok"`                  //版本低，终止获取token
 }
 
 //RebuildTask = ReportTask    （近似相等）
