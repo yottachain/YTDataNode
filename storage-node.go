@@ -55,7 +55,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
-		if ip,ok:=os.LookupEnv("local_host_ip");ok {
+		if ip, ok := os.LookupEnv("local_host_ip"); ok {
 			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
 			laddr = strings.Replace(laddr, "\n", "", -1)
 			lma, err := multiaddr.NewMultiaddr(laddr)
@@ -177,7 +177,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
-	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.OpenDebug())
+	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.OpenDebug(), option.Version(cfg.Version()))
 	if err != nil {
 		panic(err)
 	}
