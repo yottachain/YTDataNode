@@ -35,6 +35,7 @@ type Gcfg struct {
 	Clean              int    `json:"Clean"`
 	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
 	OutlineTimeRange   int    `json:"OutlineTimeRange"`
+	MinVersion         int    `json:"MinVersion"`
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
