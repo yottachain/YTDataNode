@@ -70,7 +70,7 @@ type RebuildCount struct {
 	globalRebuildSucc  uint64
 	successPutToken    uint64
 	sendTokenReq       uint64
-	lowerVersionTok    uint64
+	successVersion     uint64
 }
 
 type RecoverEngine struct {
@@ -130,7 +130,7 @@ type RecoverStat struct {
 	GlobalRebuildSucc  uint64   `json:"GlobalRebuildSucc"`                //全局方式重建成功
 	SuccessPutToken    uint64   `json:"SuccessPutToken"`                  //成功释放token总数
     SendTokenReq       uint64   `json:"SendToken"`                        //发送token请求计数
-	LowerVersionTok    uint64   `json:"lowerVersionTok"`                  //版本低，终止获取token
+	SuccessVersion    uint64   `json:"successVersion"`                    //版本验证通过
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -163,7 +163,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.globalRebuildSucc,
 		re.rcvstat.successPutToken,
 		re.rcvstat.sendTokenReq,
-		re.rcvstat.lowerVersionTok,
+		re.rcvstat.successVersion,
 	}
 }
 
@@ -328,12 +328,13 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	peerVersion := clt.RemotePeerVersion()
 	if peerVersion < config.Gconfig.MinVersion {
-		re.IncLowVersionTok()
 		err = fmt.Errorf("remote dn version is too low!")
-		logelk:=re.MakeReportLog(id,hash,"lowVersionTok",err)
+		logelk:=re.MakeReportLog(id,hash,"failVersion",err)
 		go re.reportLog(logelk)
 		return nil, err
 	}
+
+	re.IncSuccVersion()
 
 ///*********************************************
 	var getToken message.NodeCapacityRequest
