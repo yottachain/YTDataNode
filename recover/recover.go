@@ -330,9 +330,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 	peerVersion := clt.RemotePeerVersion()
+	log.Println("[recover][checkVersion] peerVersion=",peerVersion,"MinVersion=",config.Gconfig.MinVersion)
 	if peerVersion < config.Gconfig.MinVersion {
 		err = fmt.Errorf("remote dn version is too low!")
-		log.Println("[recover][checkVersion] peerVersion=",peerVersion,"MinVersion=",config.Gconfig.MinVersion)
+		log.Println("[recover][checkVersion][error] remote dn version is too low!")
 		logelk:=re.MakeReportLog(id,hash,"failVersion",err)
 		go re.reportLog(logelk)
 		return nil, err
