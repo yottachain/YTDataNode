@@ -30,7 +30,14 @@ var (
       GlobalRbdSuccLk   sync.Mutex
       SuccPutTokenLK      sync.Mutex
       SendTokenReqLk      sync.Mutex
+      LowVersionTokLk     sync.Mutex
 )
+
+func (re *RecoverEngine) IncLowVersionTok(){
+	LowVersionTokLk.Lock()
+	defer LowVersionTokLk.Unlock()
+	re.rcvstat.lowerVersionTok++
+}
 
 func (re *RecoverEngine) IncSendTokReq(){
 	SendTokenReqLk.Lock()
