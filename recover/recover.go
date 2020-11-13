@@ -296,9 +296,6 @@ func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, has
 	return btid, nil
 }
 
-
-
-
 func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
 
 	btid,err:=re.parmCheck(id, taskID, addrs, hash, n, sw)
