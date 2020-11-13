@@ -322,6 +322,12 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swconn++
 	}
 
+	peerVersion := clt.RemotePeerVersion()
+	if peerVersion < 135 {
+		err = fmt.Errorf("remote dn version is too low!")
+		return nil, err
+	}
+
 ///*********************************************
 	var getToken message.NodeCapacityRequest
 	var resGetToken message.NodeCapacityResponse
