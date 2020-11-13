@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 
@@ -323,7 +324,8 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 	peerVersion := clt.RemotePeerVersion()
-	if peerVersion < 135 {
+
+	if peerVersion < config.Gconfig.MinVersion {
 		err = fmt.Errorf("remote dn version is too low!")
 		return nil, err
 	}
