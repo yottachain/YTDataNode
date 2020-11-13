@@ -87,6 +87,8 @@ type RecoverEngine struct {
 type RcvDbgLog struct {
 	Nodeid   string
 	Shardid  string
+	Locnodeid  string
+	Locversion uint32
 	Time     string
 	Errtype  string
 	Errstr   string
@@ -254,9 +256,13 @@ func (re *RecoverEngine) reportLog(body *RcvDbgLog){
 func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
 	ShardId := base64.StdEncoding.EncodeToString(hash)
 	NowTm := time.Now().Format("2006/01/02 15:04:05")
+	localNodeId :=re.sn.Config().ID
+	localNdVersion :=re.sn.Config().Version()
 	return &RcvDbgLog{
 		nodeid,
 		ShardId,
+		localNodeId,
+		localNdVersion,
 		NowTm,
 		errtype,
 		err.Error(),
@@ -296,9 +302,6 @@ func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, has
 	return btid, nil
 }
 
-
-
-
 func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
 
 	btid,err:=re.parmCheck(id, taskID, addrs, hash, n, sw)
@@ -327,8 +330,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 	peerVersion := clt.RemotePeerVersion()
+	log.Println("[recover][checkVersion] peerVersion=",peerVersion,"MinVersion=",config.Gconfig.MinVersion)
 	if peerVersion < config.Gconfig.MinVersion {
 		err = fmt.Errorf("remote dn version is too low!")
+		log.Println("[recover][checkVersion][error] remote dn version is too low!")
 		logelk:=re.MakeReportLog(id,hash,"failVersion",err)
 		go re.reportLog(logelk)
 		return nil, err
