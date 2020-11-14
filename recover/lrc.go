@@ -124,6 +124,10 @@ effortwk:
 				continue
 			}
 
+			if(strings.Contains(err.Error(),"version is too low")){
+				continue
+			}
+
 			indexs2 = append(indexs2, idx)
 			continue
 		}
