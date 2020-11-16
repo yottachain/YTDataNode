@@ -26,7 +26,7 @@ require (
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.5
 	github.com/yottachain/YTFS v0.0.0-20200818071920-d97d5a1e23d3
-	github.com/yottachain/YTHost v1.0.2-0.20201113031519-af43c1ecfbfd
+	github.com/yottachain/YTHost v1.0.2-0.20201113085139-df598f679820
 	github.com/yottachain/YTLRC v0.0.0-20201015031040-8d147ff0316c
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 )
