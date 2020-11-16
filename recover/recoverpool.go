@@ -25,19 +25,19 @@ func (re *RecoverEngine)processRequests(){
 	for {
 		requestT :=<- re.queue
 
-		//if 0 == re.startTskTmCtl {
-		//	startTsk = time.Now()
-		//	log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
-		//	re.startTskTmCtl++
-		//}
+		if 0 == re.startTskTmCtl {
+			startTsk = time.Now()
+			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
+			re.startTskTmCtl++
+		}
 
-		//if time.Now().Sub(startTsk).Seconds() > (1800-60){
-		//	if len(re.queue) <= 0{
-		//		log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
-		//		re.startTskTmCtl = 0
-		//	}
-		//	continue
-		//}
+		if time.Now().Sub(startTsk).Seconds() > (1800-60){
+			if len(re.queue) <= 0{
+				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
+				re.startTskTmCtl = 0
+			}
+			continue
+		}
 
 		if len(poolG) > 0 {
 			<- poolG
@@ -49,11 +49,11 @@ func (re *RecoverEngine)processRequests(){
 			<- time.After(time.Second * 3)
 		}
 
-		//if len(re.queue) <= 0{
-		//	re.startTskTmCtl = 0
-		//	log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
-		//	continue
-		//}
+		if len(re.queue) <= 0{
+			re.startTskTmCtl = 0
+			log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
+			continue
+		}
 	}
 }
 
