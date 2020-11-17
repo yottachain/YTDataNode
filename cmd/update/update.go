@@ -5,7 +5,6 @@ import (
 	"github.com/inconshreveable/go-update"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	_ "github.com/spf13/viper/remote"
 	"github.com/yottachain/YTDataNode/config"
 	"path"
 	//"github.com/yottachain/YTDataNode/util"
