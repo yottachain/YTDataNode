@@ -3,8 +3,6 @@ module github.com/yottachain/YTDataNode
 go 1.13
 
 require (
-	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
-	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20201104130540-2e1f801663c6
 	github.com/eoscanada/eos-go v0.9.0
 	github.com/gogo/protobuf v1.3.1
@@ -23,7 +21,6 @@ require (
 	github.com/spf13/viper v1.2.1
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
-	github.com/xordataexchange/crypt v0.0.2 // indirect
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.5
 	github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7
