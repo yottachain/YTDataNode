@@ -90,18 +90,19 @@ func main(){
 				}
 
 				if item.DnNum % uint32(times) == i {
-					err = SendCompareVarifyOrder(hst,item,timeout)
-					if err != nil{
-						log.Println("error", err)
-						continue
-					}
+					go SendCompareVarifyOrder(hst,item,timeout)
+					//err = SendCompareVarifyOrder(hst,item,timeout)
+					//if err != nil{
+					//	log.Println("error", err)
+					//	continue
+					//}
 					loger.Println("item:",item)
 				}
 			}
 			i++
 			if i == uint32(times) {
 				i = 0
-				break
+				continue
 			}
 		}
 	}

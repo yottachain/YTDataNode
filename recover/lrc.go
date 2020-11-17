@@ -108,8 +108,9 @@ effortwk:
 
 		if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
 			log.Println("[recover] rebuild time expired! spendtime=",)
-
-			//return nil, fmt.Errorf("rebuild data failed, time expired")
+			//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
+			//go re.reportLog(logelk)
+			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}
 
 		sw := Switchcnt{0,0,0,0}
