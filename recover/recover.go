@@ -82,6 +82,7 @@ type RecoverEngine struct {
 	rcvstat          RebuildCount
 	Upt             *TaskPool.TaskPool
 	startTskTmCtl    uint8
+	ElkClient        *YTElkProducer.Client
 }
 
 type RcvDbgLog struct {
@@ -101,6 +102,9 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 	re.sn = sn
 	re.le = NewLRCEngine(re.getShard ,re.IncRbdSucc)
     re.Upt = TaskPool.Utp()
+	logtb := sn.Config().BPMd5()
+	tbstr := "dnlog-"+ strings.ToLower(base58.Encode(logtb))
+    re.ElkClient = NewElkClient(tbstr)
 	return re, nil
 }
 
@@ -228,15 +232,12 @@ func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string
 //	defer resp.Body.Close()
 //}
 
-func (re *RecoverEngine) reportLog(body *RcvDbgLog){
+func NewElkClient(tbstr string) *YTElkProducer.Client{
 	elkConf := elasticsearch.Config{
 		Addresses: []string{"https://c1-bj-elk.yottachain.net/"},
 		Username:  "dnreporter",
 		Password:  "dnreporter@yottachain",
 	}
-
-	logtb := re.sn.Config().BPMd5()
-	tbstr := "dnlog-"+ strings.ToLower(base58.Encode(logtb))
 
 	ytESConfig := conf.YTESConfig{
 		ESConf:      elkConf,
@@ -246,10 +247,12 @@ func (re *RecoverEngine) reportLog(body *RcvDbgLog){
 	}
 
 	log.Println("[recover][elk] ytesconfig=",tbstr)
-
 	client := YTElkProducer.NewClient(ytESConfig)
+	return &client
+}
 
-	client.AddLogAsync(body)
+func (re *RecoverEngine) reportLog(body interface{}){
+	(*re.ElkClient).AddLogAsync(body)
 	time.Sleep(time.Second*10)
 }
 
@@ -677,7 +680,6 @@ func (re *RecoverEngine) MultiReply() error {
 		    log.Println("[recover][report] rebuildTask=",re.rcvstat.rebuildTask,"reportTask=",re.rcvstat.reportTask)
 		}
 	}
-
 	return nil
 }
 
@@ -696,6 +698,14 @@ func (re *RecoverEngine) execRCTask(msgData []byte, expried int64) *TaskMsgResul
 		res.RES = 0
 	}
 	return &res
+}
+
+type PreJudgeReport struct {
+	localNdID  string
+}
+
+func (re *RecoverEngine) MakeJudgeElkReport(){
+
 }
 
 func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time ) *TaskMsgResult {
@@ -726,6 +736,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	can, err:=re.PreTstRecover(lrcshd,msg)
 	if err != nil || !can {
 		re.IncFailLessShard()
+
 		return &res
 	}
 
@@ -786,10 +797,10 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 		return &res
 	}
 
-	//if time.Now().Sub(pkgstart).Seconds() > 1800{
-	//	log.Println("[recover] rebuild time expired!")
-	//	return &res
-	//}
+	if time.Now().Sub(pkgstart).Seconds() > 1800{
+		log.Println("[recover] rebuild time expired!")
+		return &res
+	}
 
 	re.IncSuccRbd()
 	log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
