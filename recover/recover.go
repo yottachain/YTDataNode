@@ -705,7 +705,7 @@ type PreJudgeReport struct {
 	LostHash     string
 	LostIndex    uint16
 	FailType     string
-	ShardExist   []uint8
+	ShardExist   []uint16
 }
 
 func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
