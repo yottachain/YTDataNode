@@ -701,15 +701,29 @@ func (re *RecoverEngine) execRCTask(msgData []byte, expried int64) *TaskMsgResul
 }
 
 type PreJudgeReport struct {
-	localNdID  string
+	LocalNdID    string
+	LostHash     string
+	LostIndex    uint16
+	FailType     string
+	ShardExist   []uint8
 }
 
-func (re *RecoverEngine) MakeJudgeElkReport(){
-
+func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
+    localid := re.sn.Config().ID
+    lostidx := lrcShd.Lostindex
+    losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
+    failtype := "failJudge"
+    shardExist := lrcShd.ShardExist[:164]
+    return &PreJudgeReport{
+    	LocalNdID:localid,
+    	LostHash:losthash,
+    	LostIndex:lostidx,
+    	FailType:failtype,
+    	ShardExist:shardExist,
+	}
 }
 
 func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time ) *TaskMsgResult {
-
 	var res TaskMsgResult
 	res.ExpriedTime = expried
 	var msg message.TaskDescription
@@ -736,7 +750,8 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	can, err:=re.PreTstRecover(lrcshd,msg)
 	if err != nil || !can {
 		re.IncFailLessShard()
-
+        body := re.MakeJudgeElkReport(lrcshd,msg)
+        go re.reportLog(body)
 		return &res
 	}
 
