@@ -31,7 +31,7 @@ func (re *RecoverEngine)processRequests(){
 			re.startTskTmCtl++
 		}
 
-		if time.Now().Sub(startTsk).Seconds() > (1800-60){
+		if time.Now().Sub(startTsk).Seconds() > (1800-120){
 			if len(re.queue) <= 0{
 				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
 				re.startTskTmCtl = 0

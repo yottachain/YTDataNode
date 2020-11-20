@@ -83,19 +83,6 @@ start:
 	k := 0
 	for _, idx := range indexs {
 		k++
-		//peer := td.Locations[idx]
-		////log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
-		//if !activeNodeList.HasNodeid(peer.NodeId){
-		//	fmt.Println("[recover] [prejudge] dn_not_exist  peer.NodeId=",peer.NodeId)
-        //    lrch.si.ShardExist[idx] = 0
-		//	continue
-		//}
-		//lrch.si.ShardExist[idx] = 1
-		//
-		//if can {
-		//	continue
-		//}
-
 		if lrch.si.ShardExist[idx] == 0{
 			fmt.Println("[recover] [prejudge] dn_not_exist  idx=",idx)
 			continue
@@ -103,10 +90,7 @@ start:
 
         shard := re.tstdata[idx][:]
 
-        //log.Println("[recover] len(shard)=",len(shard),"shard=",idx,"shardidx=",shard[0])
-		//log.Println("[recover] shard=",shard)
-
-		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+  		status := lrch.si.AddShardData(lrch.si.Handle, shard)
 		//log.Println("[recover] status=",status)
 		if status > 0{
 			_, status2 := lrch.si.GetRebuildData(lrch.si)
@@ -131,7 +115,6 @@ start:
 	}else{
 		fmt.Println("[recover][RecoverTst] rebuild mostly success can= ",can)
 	}
-	//log.Println("[recover] 111111ShardExist=",lrch.si.ShardExist)
 	return can,nil
 }
 

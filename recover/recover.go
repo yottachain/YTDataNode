@@ -334,7 +334,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	peerVersion := clt.RemotePeerVersion()
 	log.Println("[recover][checkVersion] peerVersion=",peerVersion,"MinVersion=",config.Gconfig.MinVersion)
-	if peerVersion < int32(config.Gconfig.MinVersion) {
+	if peerVersion < config.Gconfig.MinVersion {
 		err = fmt.Errorf("remote dn version is too low!")
 		log.Println("[recover][checkVersion][error] remote dn version is too low!")
 		logelk:=re.MakeReportLog(id,hash,"failVersion",err)
@@ -705,7 +705,7 @@ type PreJudgeReport struct {
 	LostHash     string
 	LostIndex    uint16
 	FailType     string
-	ShardExist   []uint16
+	ShardExist   string
 }
 
 func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
@@ -714,12 +714,17 @@ func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg messag
     losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
     failtype := "failJudge"
     shardExist := lrcShd.ShardExist[:164]
+    shdExistStr := make([]string,len(shardExist))
+    for k,v:= range shardExist{
+    	shdExistStr[k]=fmt.Sprintf("%d",v)
+	}
+    strExist := strings.Join(shdExistStr,"")
     return &PreJudgeReport{
     	LocalNdID:localid,
     	LostHash:losthash,
     	LostIndex:lostidx,
     	FailType:failtype,
-    	ShardExist:shardExist,
+    	ShardExist:strExist,
 	}
 }
 
@@ -812,7 +817,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 		return &res
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800{
+	if time.Now().Sub(pkgstart).Seconds() > 1800-60{
 		log.Println("[recover] rebuild time expired!")
 		return &res
 	}

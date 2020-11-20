@@ -106,7 +106,7 @@ effortwk:
 
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+		if time.Now().Sub(pkgstart).Seconds() > 1800-65 {
 			log.Println("[recover] rebuild time expired! spendtime=",)
 			//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
 			//go re.reportLog(logelk)
@@ -144,7 +144,7 @@ effortwk:
 			continue
 		}
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-60{
+		if time.Now().Sub(pkgstart).Seconds() > 1800-63{
 			log.Println("[recover] rebuild time expired!")
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}
@@ -165,7 +165,7 @@ effortwk:
 		}
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+	if time.Now().Sub(pkgstart).Seconds() > 1800-62 {
 		log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 		return nil, fmt.Errorf("rebuild data failed, time expired")
 	}
