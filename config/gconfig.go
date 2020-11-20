@@ -36,6 +36,7 @@ type Gcfg struct {
 	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
 	OutlineTimeRange   int    `json:"OutlineTimeRange"`
 	MinVersion         int    `json:"MinVersion"`
+	BanTime            int
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -159,6 +160,7 @@ func NewGConfig() *GConfig {
 			TokenWait:         800,
 			TokenReturnWait:   800,
 			OutlineTimeRange:  600,
+			BanTime:           1800,
 		},
 		OnUpdate: nil,
 	}

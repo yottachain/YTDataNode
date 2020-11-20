@@ -9,12 +9,12 @@ import (
 )
 
 type Stat struct {
-	SaveRequestCount       int64         `json:"SaveRequestCount"`
-	SaveSuccessCount       int64         `json:"SaveSuccessCount"`
+	SaveRequestCount       int64         `json:"SaveRequestCount"` // 上传请求数量
+	SaveSuccessCount       int64         `json:"SaveSuccessCount"` // 保存成功数量
 	YTFSErrorCount         uint64        `json:"ytfs_error_count"`
 	TokenQueueLen          int           `json:"TokenQueueLen"`
 	AvailableTokenNumber   int           `json:"AvailableTokenNumber""`
-	SentToken              int64         `json:"SentToken"`
+	SentToken              int64         `json:"SentToken"` // 发送token数量
 	UseKvDb                bool          `json:"UseKvDb"`
 	TokenFillSpeed         time.Duration `json:"TokenFillSpeed"`
 	UpTime                 int64         `json:"UpTime"`
@@ -24,17 +24,18 @@ type Stat struct {
 	ReportTime             time.Time
 	RequestToken           int64
 	RequestDownloadToken   int64
-	NetLatency             int64
-	DiskLatency            int64
+	NetLatency             int64 // 上传网路延迟
+	DiskLatency            int64 // 上传硬盘延迟
 	GconfigMd5             string
 	RebuildShardStat       *recover2.RecoverStat
 	DownloadTokenFillSpeed time.Duration
-	SentDownloadToken      int64
-	DownloadSuccessCount   int64
+	SentDownloadToken      int64 // 下载发送token数量
+	DownloadSuccessCount   int64 // 下载成功数量
 	SentDownloadTokenNum   int64
 	AverageDownloadToken   int64
-	DownloadNetLatency     int64
+	DownloadNetLatency     int64 // 下载网络延迟
 	DownloadDiskLatency    int64
+	Ban                    bool
 	sync.RWMutex
 }
 
