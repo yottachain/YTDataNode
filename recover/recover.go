@@ -681,7 +681,7 @@ func (re *RecoverEngine) MultiReply() error {
 			continue
 		} else {
 			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-			log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
+			log.Printf("[recover][report] multi reply success nodeID %d, expried %d srcNodeID %d\n", v.NodeID, v.ExpiredTime, v.SrcNodeID)
 			log.Println("[recover][report] rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask)
 		}
 	}

@@ -35,6 +35,7 @@ type Stat struct {
 	AverageDownloadToken   int64
 	DownloadNetLatency     int64 // 下载网络延迟
 	DownloadDiskLatency    int64
+	Ban                    bool
 	sync.RWMutex
 }
 

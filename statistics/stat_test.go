@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -16,4 +17,7 @@ func TestStat_AddSaveRequestCount(t *testing.T) {
 			<-time.After(time.Millisecond * 100)
 		}
 	}
+}
+func TestLastUpTime_Read(t *testing.T) {
+	fmt.Println((&LastUpTime{}).Read())
 }
