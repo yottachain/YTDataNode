@@ -241,22 +241,30 @@ func NewElkClient(tbstr string) *YTElkProducer.Client{
 
 	ytESConfig := conf.YTESConfig{
 		ESConf:      elkConf,
-		DebugMode:   true,
+		DebugMode:   false,
 		IndexPrefix: tbstr,
 		IndexType:   "log",
 	}
 
 	log.Println("[recover][elk] ytesconfig=",tbstr)
-	client := YTElkProducer.NewClient(ytESConfig)
+	client,_ := YTElkProducer.NewClient(ytESConfig)
 	return &client
 }
 
 func (re *RecoverEngine) reportLog(body interface{}){
+	if re.ElkClient == nil{
+		log.Println("[recover][elk][error] no elkclient")
+		return
+	}
 	(*re.ElkClient).AddLogAsync(body)
 	time.Sleep(time.Second*10)
 }
 
 func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
+	if re.ElkClient == nil{
+		log.Println("[recover][elk][error] no elkclient")
+		return nil
+	}
 	ShardId := base64.StdEncoding.EncodeToString(hash)
 	NowTm := time.Now().Format("2006/01/02 15:04:05")
 	localNodeId :=re.sn.Config().ID
@@ -709,7 +717,11 @@ type PreJudgeReport struct {
 }
 
 func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
-    localid := re.sn.Config().ID
+    if re.ElkClient == nil{
+    	log.Println("[recover][elk] error,no client")
+    	return nil
+	}
+	localid := re.sn.Config().ID
     lostidx := lrcShd.Lostindex
     losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
     failtype := "failJudge"

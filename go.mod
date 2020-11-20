@@ -22,7 +22,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
-	github.com/yottachain/YTElkProducer v0.0.5
+	github.com/yottachain/YTElkProducer v0.0.7
 	github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7
 	github.com/yottachain/YTHost v1.0.2-0.20201113085139-df598f679820
 	github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700
