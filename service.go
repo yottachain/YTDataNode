@@ -34,6 +34,7 @@ import (
 type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
+var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
 
@@ -252,6 +253,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
+	statistics.DefaultStat.Ban = false
+	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
+		statistics.DefaultStat.Ban = true
+		statistics.DefaultStat.TokenFillSpeed = time.Second
+	}
 
 	TaskPool.Utp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
