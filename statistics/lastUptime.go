@@ -16,6 +16,7 @@ func (lt *LastUpTime) Read() time.Time {
 		if err == nil {
 			defer fl.Close()
 			ec := json.NewEncoder(fl)
+			lt.LT = time.Now()
 			ec.Encode(lt)
 		}
 	}()
@@ -24,6 +25,6 @@ func (lt *LastUpTime) Read() time.Time {
 		return time.Time{}
 	}
 	dc := json.NewDecoder(fl)
-	dc.Decode(lt)
+	err = dc.Decode(lt)
 	return lt.LT
 }
