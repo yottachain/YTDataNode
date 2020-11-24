@@ -253,6 +253,10 @@ func NewElkClient(tbstr string) *YTElkProducer.Client {
 }
 
 func (re *RecoverEngine) reportLog(body interface{}){
+	if ! config.Gconfig.ElkReport{
+		return
+	}
+
 	if re.ElkClient == nil{
 		log.Println("[recover][elk][error] no elkclient")
 		return
@@ -262,6 +266,10 @@ func (re *RecoverEngine) reportLog(body interface{}){
 }
 
 func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
+	if ! config.Gconfig.ElkReport{
+		return nil
+	}
+
 	if re.ElkClient == nil{
 		log.Println("[recover][elk][error] no elkclient")
 		return nil
@@ -728,7 +736,11 @@ type PreJudgeReport struct {
 
 
 func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
-    if re.ElkClient == nil{
+    if ! config.Gconfig.ElkReport{
+    	return nil
+	}
+
+	if re.ElkClient == nil{
     	log.Println("[recover][elk] error,no client")
     	return nil
 	}
