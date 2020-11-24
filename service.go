@@ -243,6 +243,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
 	if int(statistics.DefaultStat.TokenFillSpeed) > config.Gconfig.MaxToken {
 		statistics.DefaultStat.TokenFillSpeed = 100
+
 	}
 	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
@@ -259,7 +260,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.TokenFillSpeed = time.Second
+		statistics.DefaultStat.TokenFillSpeed = 1
 	}
 
 	TaskPool.Utp().Save()
