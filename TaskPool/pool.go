@@ -238,6 +238,9 @@ func (pt *TaskPool) Load() {
 		log.Printf("[utp]读取历史记录失败 %v \n", err)
 		return
 	}
+	if pt.FillTokenInterval < time.Millisecond {
+		pt.FillTokenInterval = 10 * time.Millisecond
+	}
 	log.Printf("[utp]读取历史记录成功 %v \n", pt)
 }
 
