@@ -37,6 +37,7 @@ type Gcfg struct {
 	OutlineTimeRange   int    `json:"OutlineTimeRange"`
 	MinVersion         int    `json:"MinVersion"`
 	BanTime            int
+	ElkReport          bool
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -161,6 +162,7 @@ func NewGConfig() *GConfig {
 			TokenReturnWait:   800,
 			OutlineTimeRange:  600,
 			BanTime:           1800,
+			ElkReport:         false,
 		},
 		OnUpdate: nil,
 	}
