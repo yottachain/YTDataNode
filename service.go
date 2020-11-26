@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
@@ -194,6 +195,15 @@ func (sn *storageNode) Service() {
 
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
+
+	// 测试矿机性能
+	_ = sn.Host().RegisterHandler(message.MsgIDTestMinerPerfTask.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+		return Perf.TestMinerPerfHandler(requestData)
+	})
+	_ = sn.Host().RegisterHandler(message.MsgIDTestGetBlock.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+		return Perf.GetBlock(requestData)
+	})
+
 	go sn.Host().Accept()
 	//Register(sn)
 	go func() {
@@ -243,7 +253,6 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
 	if int(statistics.DefaultStat.TokenFillSpeed) > config.Gconfig.MaxToken {
 		statistics.DefaultStat.TokenFillSpeed = 100
-
 	}
 	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
