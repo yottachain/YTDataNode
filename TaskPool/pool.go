@@ -39,10 +39,10 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 
 	pt.FillTokenInterval = fillInterval
 	pt.TTL = ttl
-	pt.NetLatency = NewStat()
-	pt.DiskLatency = NewStat()
 
 	pt.Load()
+	pt.NetLatency = NewStat()
+	pt.DiskLatency = NewStat()
 
 	if pt.FillTokenInterval == 0 {
 		pt.FillTokenInterval = 10
