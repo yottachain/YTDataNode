@@ -3,6 +3,7 @@ package Perf
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
@@ -33,13 +34,23 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		return
 	}
 
+	var pi = &peer.AddrInfo{}
 	// 解系地址
-	ma, err := multiaddr.NewMultiaddr(task.TargetMa)
-	if err != nil {
-		return
+	for _, addr := range task.TargetMa {
+		ma, err2 := multiaddr.NewMultiaddr(addr)
+		if err2 != nil {
+			continue
+		}
+		i, err2 := peer.AddrInfoFromP2pAddr(ma)
+		if err2 != nil {
+			continue
+		}
+		pi.ID = i.ID
+		pi.Addrs = append(pi.Addrs, i.Addrs...)
 	}
-	pi, err := peer.AddrInfoFromP2pAddr(ma)
-	if err != nil {
+
+	if len(pi.Addrs) <= 0 {
+		err = fmt.Errorf("no addr")
 		return
 	}
 
