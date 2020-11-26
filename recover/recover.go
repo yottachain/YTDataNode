@@ -701,7 +701,7 @@ func (re *RecoverEngine) MultiReply() error {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
 		} else {
-			reportTms := 10
+			reportTms := 5
 			for{
 				reportTms--
 				_,err=re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
