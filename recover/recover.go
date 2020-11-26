@@ -701,9 +701,20 @@ func (re *RecoverEngine) MultiReply() error {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
 		} else {
-			re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-			log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
-			log.Println("[recover][report] rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask)
+			reportTms := 10
+			for{
+				reportTms--
+				_,err=re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
+				if err == nil{
+					log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
+					log.Println("[recover][report] rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask)
+					break
+				}
+				if 0 == reportTms{
+					log.Println("[recover][report]Send msg error: ",err)
+					break
+				}
+			}
 		}
 	}
 	return nil
