@@ -28,7 +28,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		requestMsg.Msg = make([]byte, 16)
 		rand.Read(requestMsg.Msg)
 	}
-	requestMsg.Timestamp = time.Now().Unix()
+	requestMsg.Timestamp = time.Now().UnixNano()
 	requestbuf, err := proto.Marshal(&requestMsg)
 	if err != nil {
 		return
