@@ -38,6 +38,7 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
+	Perf.Sn = sn
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 

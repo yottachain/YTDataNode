@@ -7,13 +7,13 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/instance"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"time"
 )
 
-var sn = instance.GetStorageNode()
+var Sn storageNodeInterface.StorageNode
 
 func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	var task message.TestMinerPerfTask
@@ -57,7 +57,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	// 建立连接
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	clt, err := sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 
 	// 发送消息
 	resbuf, err := clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), requestbuf)
