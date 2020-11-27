@@ -156,7 +156,7 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 			sentTokenN := atomic.LoadInt64(&pt.sentToken)
 			requestCountN := atomic.LoadInt64(&pt.requestCount)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if (sentTokenN - requestCountN) < sentTokenN*config.Gconfig.IncreaseThreshold/100 {
+			if (sentTokenN - requestCountN) < sentTokenN*(100-config.Gconfig.IncreaseThreshold)/100 {
 				log.Printf("[token] 触发token增加 [%d,%d] \n", sentTokenN, requestCountN)
 				pt.ChangeTKFillInterval(pt.FillTokenInterval - (pt.FillTokenInterval / 5))
 			} else {
