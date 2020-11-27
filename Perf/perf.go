@@ -76,11 +76,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	var minerPerfResMsg message.TestMinerPerfTaskRes
 	minerPerfResMsg.TargetMa = task.TargetMa
 	minerPerfResMsg.TestType = task.TestType
-	if task.TestType == 0 {
-		minerPerfResMsg.Latency = resMsg.Timestamp
-	} else {
-		minerPerfResMsg.Latency = time.Now().UnixNano() - resMsg.Timestamp
-	}
+	minerPerfResMsg.Latency = time.Now().UnixNano() - resMsg.Timestamp
 	res, err = proto.Marshal(&minerPerfResMsg)
 	log.Println("[test] test task return", minerPerfResMsg)
 	return
@@ -94,13 +90,11 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if len(msg.Msg) > 0 {
-		resMsg.Timestamp = time.Now().UnixNano() - msg.Timestamp
-	} else {
+	if len(msg.Msg) < 0 {
 		resMsg.Msg = make([]byte, 16)
 		rand.Read(resMsg.Msg)
-		resMsg.Timestamp = time.Now().UnixNano()
 	}
+	resMsg.Timestamp = msg.Timestamp
 
 	res, err = proto.Marshal(&resMsg)
 	return
