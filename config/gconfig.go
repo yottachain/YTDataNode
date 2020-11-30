@@ -161,7 +161,7 @@ func NewGConfig() *GConfig {
 			TokenWait:         800,
 			TokenReturnWait:   800,
 			OutlineTimeRange:  600,
-			BanTime:           1800,
+			BanTime:           180,
 			ElkReport:         false,
 		},
 		OnUpdate: nil,

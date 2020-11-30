@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
@@ -37,6 +38,7 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
+	Perf.Sn = sn
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 
@@ -194,6 +196,15 @@ func (sn *storageNode) Service() {
 
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
+
+	// 测试矿机性能
+	_ = sn.Host().RegisterHandler(message.MsgIDTestMinerPerfTask.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+		return Perf.TestMinerPerfHandler(requestData)
+	})
+	_ = sn.Host().RegisterHandler(message.MsgIDTestGetBlock.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+		return Perf.GetBlock(requestData)
+	})
+
 	go sn.Host().Accept()
 	//Register(sn)
 	go func() {
@@ -241,6 +252,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
+	if int(statistics.DefaultStat.TokenFillSpeed) > config.Gconfig.MaxToken {
+		statistics.DefaultStat.TokenFillSpeed = 100
+	}
 	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
 	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
 	statistics.DefaultStat.SentDownloadToken, statistics.DefaultStat.DownloadSuccessCount = TaskPool.Dtp().GetParams()
@@ -256,7 +270,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.TokenFillSpeed = time.Second
+		statistics.DefaultStat.TokenFillSpeed = 1
 	}
 
 	TaskPool.Utp().Save()

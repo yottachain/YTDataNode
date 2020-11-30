@@ -35,6 +35,9 @@ const (
 	MsgIDSelfVerifyReq         msgType = 0xd97a
 	MsgIDSelfVerifyResp        msgType = 0x58b7
 	MsgIDDownloadTKCheck       msgType = 0x1b34
+	MsgIDTestMinerPerfTask     msgType = 0xe76a
+	MsgIDTestGetBlock          msgType = 0xe76b
+	MsgIDTestGetBlockRes       msgType = 0xe76c
 )
 
 type msgType int32
