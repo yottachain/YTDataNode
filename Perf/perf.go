@@ -7,15 +7,21 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
+	"github.com/yottachain/YTHost/client"
+	"sync/atomic"
 	"time"
 )
 
 var Sn storageNodeInterface.StorageNode
 
 func TestMinerPerfHandler(data []byte) (res []byte, err error) {
+	var successCount int64
+	var errorCount int64
+
 	var task message.TestMinerPerfTask
 	err = proto.UnmarshalMerge(data, &task)
 	if err != nil {
@@ -28,7 +34,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		requestMsg.Msg = make([]byte, 16)
 		rand.Read(requestMsg.Msg)
 	}
-	requestMsg.Timestamp = time.Now().UnixNano()
+
 	requestbuf, err := proto.Marshal(&requestMsg)
 	if err != nil {
 		return
@@ -55,10 +61,41 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	}
 
 	// 建立连接
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
 	defer cancel()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+	if err != nil {
+		return
+	}
 
+	outtime := time.Now().Add(time.Duration(task.TestTime) * time.Second)
+	for {
+		if outtime.Unix() < time.Now().Unix() {
+			break
+		}
+
+		testerr := testOne(clt, requestbuf)
+		if testerr == nil {
+			atomic.AddInt64(&successCount, 1)
+		} else {
+			atomic.AddInt64(&errorCount, 1)
+		}
+	}
+
+	// 构造返回消息
+	var minerPerfResMsg message.TestMinerPerfTaskRes
+	minerPerfResMsg.TargetMa = task.TargetMa
+	minerPerfResMsg.TestType = task.TestType
+	minerPerfResMsg.SuccessCount = successCount
+	minerPerfResMsg.ErrorCount = errorCount
+	res, err = proto.Marshal(&minerPerfResMsg)
+	log.Println("[test] test task return", minerPerfResMsg)
+	return
+}
+
+func testOne(clt *client.YTHostClient, requestbuf []byte) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+	defer cancel()
 	// 发送消息
 	resbuf, err := clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), requestbuf)
 	if err != nil {
@@ -71,15 +108,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	if err != nil {
 		return
 	}
-
-	// 构造返回消息
-	var minerPerfResMsg message.TestMinerPerfTaskRes
-	minerPerfResMsg.TargetMa = task.TargetMa
-	minerPerfResMsg.TestType = task.TestType
-	minerPerfResMsg.Latency = time.Now().UnixNano() - resMsg.Timestamp
-	res, err = proto.Marshal(&minerPerfResMsg)
-	log.Println("[test] test task return", minerPerfResMsg)
-	return
+	return nil
 }
 
 func GetBlock(data []byte) (res []byte, err error) {
@@ -94,7 +123,6 @@ func GetBlock(data []byte) (res []byte, err error) {
 		resMsg.Msg = make([]byte, 16)
 		rand.Read(resMsg.Msg)
 	}
-	resMsg.Timestamp = msg.Timestamp
 
 	res, err = proto.Marshal(&resMsg)
 	return
