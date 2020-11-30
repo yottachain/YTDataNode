@@ -19,8 +19,8 @@ var Sn storageNodeInterface.StorageNode
 func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	var successCount int64
 	var errorCount int64
-	var successLatency time.Duration
-	var errorLatency time.Duration
+	var successLatency int64
+	var errorLatency int64
 
 	var task message.TestMinerPerfTask
 	err = proto.UnmarshalMerge(data, &task)
@@ -79,10 +79,10 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		timeEnd := time.Now()
 
 		if testerr == nil {
-			successLatency += timeEnd.Sub(timeStart)
+			successLatency += timeEnd.Sub(timeStart).Milliseconds()
 			successCount += 1
 		} else {
-			errorLatency += timeEnd.Sub(timeStart)
+			errorLatency += timeEnd.Sub(timeStart).Milliseconds()
 			errorCount += 1
 		}
 	}
@@ -93,8 +93,8 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	minerPerfResMsg.TestType = task.TestType
 	minerPerfResMsg.SuccessCount = successCount
 	minerPerfResMsg.ErrorCount = errorCount
-	minerPerfResMsg.SuccessLatency = successLatency.Milliseconds()
-	minerPerfResMsg.ErrorLatency = errorLatency.Milliseconds()
+	minerPerfResMsg.SuccessLatency = successLatency
+	minerPerfResMsg.ErrorLatency = errorLatency
 
 	res, err = proto.Marshal(&minerPerfResMsg)
 	log.Println("[test] test task return", minerPerfResMsg)
