@@ -127,7 +127,7 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if len(msg.Msg) < 0 {
+	if len(msg.Msg) < 16*1024 {
 		resMsg.Msg = make([]byte, 16*1024)
 		rand.Read(resMsg.Msg)
 	}
