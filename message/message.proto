@@ -236,6 +236,7 @@ message TestMinerPerfTask {
     repeated string targetMa=1; // 目标地址: /ip4/xx.xx.xx.xx/tcp/xx/p2p/peerID
     int32 testType=2;  // 测试类型：0 上传
     int64 testTime=3;
+    int64 timeOut=4;
 }
 //MessageID:0xe76b
 message TestGetBlock {
@@ -251,5 +252,7 @@ message TestMinerPerfTaskRes {
     int32 testType=2;
     int64 successCount=3;
     int64 errorCount=4;
+    int64 successLatency=5;
+    int64 errorLatency=6;
 }
 

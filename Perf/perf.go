@@ -7,12 +7,10 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost/client"
-	"sync/atomic"
 	"time"
 )
 
@@ -21,6 +19,8 @@ var Sn storageNodeInterface.StorageNode
 func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	var successCount int64
 	var errorCount int64
+	var successLatency time.Duration
+	var errorLatency time.Duration
 
 	var task message.TestMinerPerfTask
 	err = proto.UnmarshalMerge(data, &task)
@@ -61,7 +61,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	}
 
 	// 建立连接
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(task.TimeOut))
 	defer cancel()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
@@ -74,11 +74,16 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 			break
 		}
 
-		testerr := testOne(clt, requestbuf)
+		timeStart := time.Now()
+		testerr := testOne(clt, requestbuf, task.TimeOut)
+		timeEnd := time.Now()
+
 		if testerr == nil {
-			atomic.AddInt64(&successCount, 1)
+			successLatency += timeEnd.Sub(timeStart)
+			successCount += 1
 		} else {
-			atomic.AddInt64(&errorCount, 1)
+			errorLatency += timeEnd.Sub(timeStart)
+			errorCount += 1
 		}
 	}
 
@@ -88,13 +93,16 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	minerPerfResMsg.TestType = task.TestType
 	minerPerfResMsg.SuccessCount = successCount
 	minerPerfResMsg.ErrorCount = errorCount
+	minerPerfResMsg.SuccessLatency = successLatency.Milliseconds()
+	minerPerfResMsg.ErrorLatency = errorLatency.Milliseconds()
+
 	res, err = proto.Marshal(&minerPerfResMsg)
 	log.Println("[test] test task return", minerPerfResMsg)
 	return
 }
 
-func testOne(clt *client.YTHostClient, requestbuf []byte) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+func testOne(clt *client.YTHostClient, requestbuf []byte, timeOut int64) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(timeOut))
 	defer cancel()
 	// 发送消息
 	resbuf, err := clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), requestbuf)
