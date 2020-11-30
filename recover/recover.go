@@ -254,9 +254,9 @@ func NewElkClient(tbstr string) *YTElkProducer.Client {
 }
 
 func (re *RecoverEngine) reportLog(body interface{}){
-	if ! config.Gconfig.ElkReport{
-		return
-	}
+	//if ! config.Gconfig.ElkReport{
+	//	return
+	//}
 
 	if re.ElkClient == nil{
 		log.Println("[recover][elk][error] no elkclient")
@@ -267,9 +267,9 @@ func (re *RecoverEngine) reportLog(body interface{}){
 }
 
 func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
-	if ! config.Gconfig.ElkReport{
-		return nil
-	}
+	//if ! config.Gconfig.ElkReport{
+	//	return nil
+	//}
 
 	if re.ElkClient == nil{
 		log.Println("[recover][elk][error] no elkclient")
@@ -336,11 +336,19 @@ func (re *RecoverEngine) getRdToken(clt *client.YTHostClient ,sw *Switchcnt)( []
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
+		if config.Gconfig.ElkReport{
+			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
+			//go re.reportLog(logelk)
+		}
 		return nil,err
 	}
 
 	if len(tok) < 3{
 		err = fmt.Errorf("the length of token less 3 byte")
+		if config.Gconfig.ElkReport{
+			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
+			//go re.reportLog(logelk)
+		}
 		return nil,err
 	}
 
@@ -374,13 +382,17 @@ func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, h
 	if err != nil {
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
-			logelk:=re.MakeReportLog(id,hash,"failShard",err)
-			go re.reportLog(logelk)
+			if config.Gconfig.ElkReport{
+				logelk:=re.MakeReportLog(id,hash,"failShard",err)
+				go re.reportLog(logelk)
+			}
 			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}else{
 			re.IncFailSendShard()
-			logelk:=re.MakeReportLog(id,hash,"failSendShard",err)
-			go re.reportLog(logelk)
+			if config.Gconfig.ElkReport{
+				logelk:=re.MakeReportLog(id,hash,"failSendShard",err)
+				go re.reportLog(logelk)
+			}
 			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}
 		return nil, err
@@ -424,8 +436,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
 		re.IncFailConn()
-		logelk:=re.MakeReportLog(id,hash,"failConn",err)
-		go re.reportLog(logelk)
+		if config.Gconfig.ElkReport{
+			//logelk:=re.MakeReportLog(id,hash,"failConn",err)
+			//go re.reportLog(logelk)
+		}
 		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		return nil, err
 	}
@@ -440,8 +454,10 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	if int(peerVersion) < int(config.Gconfig.MinVersion) {
 		err = fmt.Errorf("remote dn version is too low!")
 		log.Println("[recover][checkVersion][error] remote dn version is too low!")
-		logelk := re.MakeReportLog(id, hash, "failVersion", err)
-		go re.reportLog(logelk)
+		if config.Gconfig.ElkReport{
+			//logelk := re.MakeReportLog(id, hash, "failVersion", err)
+			//go re.reportLog(logelk)
+		}
 		return nil, err
 	}
 
@@ -739,9 +755,9 @@ type PreJudgeReport struct {
 
 
 func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
-    if ! config.Gconfig.ElkReport{
-    	return nil
-	}
+    //if ! config.Gconfig.ElkReport{
+    //	return nil
+	//}
 
 	if re.ElkClient == nil{
     	log.Println("[recover][elk] error,no client")
@@ -793,15 +809,12 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	can, err := re.PreTstRecover(lrcshd, msg)
 	if err != nil || !can {
 		re.IncFailLessShard()
-		body := re.MakeJudgeElkReport(lrcshd, msg)
-		go re.reportLog(body)
+		if config.Gconfig.ElkReport {
+			//body := re.MakeJudgeElkReport(lrcshd, msg)
+			//go re.reportLog(body)
+		}
 		return &res
 	}
-
-	//if time.Now().Sub(pkgstart).Seconds() > 1800 -60 {
-	//	log.Println("[recover] rebuild time expired!")
-	//	return &res
-	//}
 
 	re.IncPassJudge()
 	//log.Println("[recover] pass recover test!")
