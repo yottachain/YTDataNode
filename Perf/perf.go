@@ -31,7 +31,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	// 构造请求
 	var requestMsg message.TestGetBlock
 	if task.TestType == 0 {
-		requestMsg.Msg = make([]byte, 16)
+		requestMsg.Msg = make([]byte, 16*1024)
 		rand.Read(requestMsg.Msg)
 	}
 
@@ -128,7 +128,7 @@ func GetBlock(data []byte) (res []byte, err error) {
 
 	var resMsg message.TestGetBlockRes
 	if len(msg.Msg) < 0 {
-		resMsg.Msg = make([]byte, 16)
+		resMsg.Msg = make([]byte, 16*1024)
 		rand.Read(resMsg.Msg)
 	}
 
