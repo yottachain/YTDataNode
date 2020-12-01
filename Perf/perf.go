@@ -30,18 +30,6 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		return
 	}
 
-	// 构造请求
-	var requestMsg message.TestGetBlock
-	if task.TestType == 0 {
-		requestMsg.Msg = make([]byte, testBlockSize)
-		rand.Read(requestMsg.Msg)
-	}
-
-	requestbuf, err := proto.Marshal(&requestMsg)
-	if err != nil {
-		return
-	}
-
 	var pi = &peer.AddrInfo{}
 	// 解系地址
 	for _, addr := range task.TargetMa {
@@ -77,7 +65,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		}
 
 		timeStart := time.Now()
-		testerr := testOne(clt, requestbuf, task.TimeOut)
+		testerr := testOne(clt, &task, task.TimeOut)
 		timeEnd := time.Now()
 
 		if testerr == nil {
@@ -103,7 +91,19 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	return
 }
 
-func testOne(clt *client.YTHostClient, requestbuf []byte, timeOut int64) (err error) {
+func testOne(clt *client.YTHostClient, task *message.TestMinerPerfTask, timeOut int64) (err error) {
+	// 构造请求
+	var requestMsg message.TestGetBlock
+	if task.TestType == 0 {
+		requestMsg.Msg = make([]byte, testBlockSize)
+		rand.Read(requestMsg.Msg)
+	}
+
+	requestbuf, err := proto.Marshal(&requestMsg)
+	if err != nil {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(timeOut))
 	defer cancel()
 	// 发送消息
