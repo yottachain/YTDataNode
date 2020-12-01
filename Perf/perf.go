@@ -74,10 +74,8 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 		} else {
 			errorLatency += timeEnd.Sub(timeStart).Milliseconds()
 			errorCount += 1
-			clt, err = Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
-			if err != nil {
-				return
-			}
+			clt, _ = Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+			continue
 		}
 	}
 
