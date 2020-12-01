@@ -133,12 +133,13 @@ effortwk:
 			continue
 		}
 
-		if len(shard) <= lrcpkg.BufferSize {
+		if len(shard) < 1 {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=",idx)
 			indexs2 = append(indexs2, idx)
 			continue
 		}
 
+		log.Println("[recover][ytlrc] shard_len=",len(shard))
 		if ! message.VerifyVHF(shard, td.Hashs[idx]) {
 			log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
 			continue
