@@ -133,7 +133,7 @@ effortwk:
 			continue
 		}
 
-		if len(shard) == 0 {
+		if len(shard) <= lrcpkg.BufferSize {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=",idx)
 			indexs2 = append(indexs2, idx)
 			continue
