@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const testBlockSize = 16 * 1024
+
 var Sn storageNodeInterface.StorageNode
 
 func TestMinerPerfHandler(data []byte) (res []byte, err error) {
@@ -31,7 +33,7 @@ func TestMinerPerfHandler(data []byte) (res []byte, err error) {
 	// 构造请求
 	var requestMsg message.TestGetBlock
 	if task.TestType == 0 {
-		requestMsg.Msg = make([]byte, 16*1024)
+		requestMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(requestMsg.Msg)
 	}
 
@@ -127,8 +129,8 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if len(msg.Msg) < 16*1024 {
-		resMsg.Msg = make([]byte, 16*1024)
+	if len(msg.Msg) < testBlockSize {
+		resMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(resMsg.Msg)
 	}
 
