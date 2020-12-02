@@ -236,7 +236,6 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	if !TaskPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
-		TaskPool.Utp().Delete(tk)
 		return 105
 	}
 	TaskPool.Utp().NetLatency.Add(time.Now().Sub(tk.Tm))
