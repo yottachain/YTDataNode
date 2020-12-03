@@ -178,7 +178,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		log.Printf("[task pool]get token return [%s]\n", tk.String())
+		log.Printf("[task pool]get token return %s pid %s\n", tk.String(), id.Pretty())
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
