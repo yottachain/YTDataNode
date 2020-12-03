@@ -193,7 +193,7 @@ func (sn *storageNode) Service() {
 		tk := TaskPool.NewToken()
 		tk.FillFromString(msg.AllocId)
 		TaskPool.Utp().Delete(tk)
-
+		log.Println("test upload return", head.RemotePeerID)
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
 
