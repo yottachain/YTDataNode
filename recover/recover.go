@@ -22,13 +22,10 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTFS/common"
 	lrcpkg "github.com/yottachain/YTLRC"
 	_ "net/http/pprof"
-	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"sync"
 	"time"
@@ -846,14 +843,14 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
 		log.Printf("[recover]LRC verify HASH failed %s %s\n", base58.Encode(hash), base58.Encode(msg.Hashs[msg.RecoverId]))
 		exec.Command("rm -rf recover*").Output()
-		for k, v := range h.GetShards() {
-			fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("recover-shard-%d", k)), os.O_CREATE|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				continue
-			}
-			fl.Write(v)
-			fl.Close()
-		}
+		//for k, v := range h.GetShards() {
+		//	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("recover-shard-%d", k)), os.O_CREATE|os.O_CREATE|os.O_WRONLY, 0644)
+		//	if err != nil {
+		//		continue
+		//	}
+		//	fl.Write(v)
+		//	fl.Close()
+		//}
 		re.IncFailRbd()
 		log.Printf("[recover]fail shard saved %s recoverID %x hash %s\n", BytesToInt64(msg.Id[0:8]), msg.RecoverId, base58.Encode(msg.Hashs[msg.RecoverId]))
 		return &res
