@@ -270,8 +270,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		//statistics.DefaultStat.TokenFillSpeed = 1
+		statistics.DefaultStat.TokenFillSpeed = 1
 	}
+	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TaskPool.Utp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())

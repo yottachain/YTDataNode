@@ -29,8 +29,9 @@ var nodeList []Data
 var updateTime = time.Time{}
 
 type Data struct {
-	NodeID string `json:"nodeid"`
-	ID     string `json:"id"`
+	NodeID string   `json:"nodeid"`
+	ID     string   `json:"id"`
+	IP     []string `json:"ip"`
 }
 
 func Update() {
@@ -48,6 +49,17 @@ func Update() {
 		return
 	}
 	updateTime = time.Now()
+}
+
+func GetNodeList() []Data {
+	locker.Lock()
+	defer locker.Unlock()
+
+	if time.Now().Sub(updateTime) > time.Minute*30 {
+		Update()
+	}
+
+	return nodeList
 }
 
 func HasNodeid(id string) bool {
