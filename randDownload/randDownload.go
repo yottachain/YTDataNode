@@ -7,6 +7,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/activeNodeList"
+	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"math/rand"
@@ -41,6 +43,7 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return nil
 	}
+	log.Println("[randDownload] download from", pi.ID)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
@@ -60,10 +63,48 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
+
 	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
 	if err != nil {
-		return nil
+		return err
+	}
+	var tokenMsg message.NodeCapacityResponse
+	err = proto.Unmarshal(getTKResBuf, &tokenMsg)
+	if err != nil {
+		return err
 	}
 
+	var downloadMsg message.TestGetBlock
+	downloadBuf, err := proto.Marshal(&downloadMsg)
+	if err != nil {
+		return err
+	}
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
+	if err != nil {
+		return err
+	}
+	var checkTKMsg message.DownloadTKCheck
+	checkTKBuf, err := proto.Marshal(&checkTKMsg)
+	if err != nil {
+		return err
+	}
+	checkTKMsg.Tk = tokenMsg.AllocId
+	_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	if err != nil {
+		return err
+	}
+	log.Println("[randDownload] download success", pi.ID)
 	return nil
+}
+
+func Run(d time.Duration) {
+	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
+	for {
+		<-time.After(d)
+		queue <- struct{}{}
+		go func(queue chan struct{}) {
+			DownloadFromRandNode()
+			<-queue
+		}(queue)
+	}
 }
