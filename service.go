@@ -95,7 +95,7 @@ func (sn *storageNode) Service() {
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		res := wh.GetToken(data, head.RemotePeerID)
+		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
 		if res == nil || len(res) < 3 {
 			return nil, fmt.Errorf("no token")
 		}
@@ -270,7 +270,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.TokenFillSpeed = 1
+		//statistics.DefaultStat.TokenFillSpeed = 1
 	}
 
 	TaskPool.Utp().Save()
