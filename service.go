@@ -270,7 +270,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		//statistics.DefaultStat.TokenFillSpeed = 1
+		statistics.DefaultStat.TokenFillSpeed = 1
 	}
 
 	TaskPool.Utp().Save()
