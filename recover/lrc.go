@@ -107,7 +107,7 @@ effortwk:
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
 		if time.Now().Sub(pkgstart).Seconds() > 1800-65 {
-			log.Println("[recover] rebuild time expired! spendtime=",)
+			log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 			//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
 			//go re.reportLog(logelk)
 			return nil, fmt.Errorf("rebuild data failed, time expired")
@@ -145,17 +145,16 @@ effortwk:
 		}
 
 		if time.Now().Sub(pkgstart).Seconds() > 1800-63{
-			log.Println("[recover] rebuild time expired!")
+			log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 			return nil, fmt.Errorf("rebuild data failed, time expired")
-		}
+		}//rebuild success
 
 		status := lrch.si.AddShardData(lrch.si.Handle, shard)
-
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
-			if status2 > 0 {        //rebuild success
+			if status2 > 0 {
                 lrch.le.IncRbdSucc(n)
-				log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+				//log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 				return data, nil
 			}
 		}else if status < 0 {     //rebuild failed
@@ -166,7 +165,7 @@ effortwk:
 	}
 
 	if time.Now().Sub(pkgstart).Seconds() > 1800-62 {
-		log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
+		log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 		return nil, fmt.Errorf("rebuild data failed, time expired")
 	}
 
