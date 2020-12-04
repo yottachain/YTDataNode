@@ -95,7 +95,7 @@ func (sn *storageNode) Service() {
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		res := wh.GetToken(data, head.RemotePeerID)
+		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
 		if res == nil || len(res) < 3 {
 			return nil, fmt.Errorf("no token")
 		}
@@ -193,7 +193,7 @@ func (sn *storageNode) Service() {
 		tk := TaskPool.NewToken()
 		tk.FillFromString(msg.AllocId)
 		TaskPool.Utp().Delete(tk)
-
+		log.Println("test upload return", head.RemotePeerID)
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
 

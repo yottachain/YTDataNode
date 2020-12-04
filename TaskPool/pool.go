@@ -39,10 +39,10 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 
 	pt.FillTokenInterval = fillInterval
 	pt.TTL = ttl
-	pt.NetLatency = NewStat()
-	pt.DiskLatency = NewStat()
 
 	pt.Load()
+	pt.NetLatency = NewStat()
+	pt.DiskLatency = NewStat()
 
 	if pt.FillTokenInterval == 0 {
 		pt.FillTokenInterval = 10
@@ -97,6 +97,7 @@ func (pt *TaskPool) Delete(tk *Token) bool {
 	if atomic.LoadInt64(&pt.sentToken) < 1 {
 		return false
 	}
+	log.Println("[token] delete token", tk.String(), tk.PID.Pretty())
 	atomic.AddInt64(&pt.requestCount, 1)
 	return false
 }

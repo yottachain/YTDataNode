@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -122,7 +123,7 @@ func (wh *WriteHandler) Run() {
 	}()
 }
 
-func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
+func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	var isUpload = true
@@ -178,7 +179,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID) []byte {
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		log.Printf("[task pool]get token return [%s]\n", tk.String())
+		log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
