@@ -231,3 +231,28 @@ message UploadShardRequestTest  {
     uint32 Sleep=9;
 }
 
+//MessageID:0xe76a  测试任务消息
+message TestMinerPerfTask {
+    repeated string targetMa=1; // 目标地址: /ip4/xx.xx.xx.xx/tcp/xx/p2p/peerID
+    int32 testType=2;  // 测试类型：0 上传
+    int64 testTime=3;
+    int64 timeOut=4;
+}
+//MessageID:0xe76b
+message TestGetBlock {
+    bytes msg=1;
+}
+//MessageID:0xe76c
+message TestGetBlockRes {
+    bytes msg=1;
+}
+//MessageID:0xe76d 测试任务返回
+message TestMinerPerfTaskRes {
+    repeated string targetMa=1;
+    int32 testType=2;
+    int64 successCount=3;
+    int64 errorCount=4;
+    int64 successLatency=5;
+    int64 errorLatency=6;
+}
+

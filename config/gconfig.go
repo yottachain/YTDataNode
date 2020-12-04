@@ -38,6 +38,7 @@ type Gcfg struct {
 	MinVersion         int    `json:"MinVersion"`
 	BanTime            int
 	ElkReport          bool
+	RandDownloadNum    int
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -161,8 +162,9 @@ func NewGConfig() *GConfig {
 			TokenWait:         800,
 			TokenReturnWait:   800,
 			OutlineTimeRange:  600,
-			BanTime:           1800,
+			BanTime:           180,
 			ElkReport:         false,
+			RandDownloadNum:   2,
 		},
 		OnUpdate: nil,
 	}
