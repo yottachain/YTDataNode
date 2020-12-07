@@ -69,7 +69,7 @@ func DownloadFromRandNode() error {
 		return err
 	}
 	var tokenMsg message.NodeCapacityResponse
-	err = proto.Unmarshal(getTKResBuf, &tokenMsg)
+	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
 	if err != nil {
 		return err
 	}
