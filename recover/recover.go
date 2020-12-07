@@ -461,13 +461,34 @@ func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash
 	if err != nil {
 		if strings.Contains(err.Error(), "Get data Slice fail") {
 			re.IncFailShard()
-			logelk := re.MakeReportLog(id, hash, "failShard", err)
-			go re.reportLog(logelk)
+			if config.Gconfig.ElkReport{
+				logelk := re.MakeReportLog(id, hash, "failShard", err)
+				go re.reportLog(logelk)
+			}
 			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+
+			/**************************/
+			bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
+			defer cancels2()
+
+			var msgbck message.DownloadTKCheck
+			msgbck.Tk = resGetToken.AllocId
+			buf, err = proto.Marshal(&msgbck)
+
+			_, err = clt.SendMsg(bkctxto, message.MsgIDDownloadTKCheck.Value(), buf)
+			if err != nil {
+				log.Println("[recover] return token error,err=", err.Error())
+			} else {
+				re.IncSuccPutTok()
+				log.Println("[recover] return token Success,successPutTok=", re.rcvstat.successPutToken)
+			}
+			 /*****************************/
 		} else {
 			re.IncFailSendShard()
-			logelk := re.MakeReportLog(id, hash, "failSendShard", err)
-			go re.reportLog(logelk)
+			if config.Gconfig.ElkReport {
+				logelk := re.MakeReportLog(id, hash, "failSendShard", err)
+				go re.reportLog(logelk)
+			}
 			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
 		}
 		return nil, err
