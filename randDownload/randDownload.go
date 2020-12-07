@@ -39,10 +39,9 @@ func GetRandNode() (*peer.AddrInfo, error) {
 }
 
 func DownloadFromRandNode() error {
-	log.Println("[randDownload] start download")
 	pi, err := GetRandNode()
 	if err != nil {
-		return nil
+		return err
 	}
 	log.Println("[randDownload] download from", pi.ID)
 
