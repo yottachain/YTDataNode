@@ -12,6 +12,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"math/rand"
+	"sync/atomic"
 	"time"
 )
 
@@ -43,7 +44,6 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
-	log.Println("[randDownload] download from", pi.ID)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
@@ -93,18 +93,27 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
-	log.Println("[randDownload] download success", pi.ID)
 	return nil
 }
 
 func Run() {
 	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
+	var successCount uint64
+	var errorCount uint64
+	go func() {
+		for {
+			<-time.After(time.Minute)
+			log.Println("[randDownload] success", successCount, "error", errorCount)
+		}
+	}()
 	for {
 		queue <- struct{}{}
 		go func(queue chan struct{}) {
 			err := DownloadFromRandNode()
 			if err != nil {
-				fmt.Println("[randDownload]", err)
+				atomic.AddUint64(&errorCount, 1)
+			} else {
+				atomic.AddUint64(&successCount, 1)
 			}
 			<-queue
 		}(queue)
