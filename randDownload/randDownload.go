@@ -97,10 +97,9 @@ func DownloadFromRandNode() error {
 	return nil
 }
 
-func Run(d time.Duration) {
+func Run() {
 	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
 	for {
-		<-time.After(d)
 		queue <- struct{}{}
 		go func(queue chan struct{}) {
 			DownloadFromRandNode()
