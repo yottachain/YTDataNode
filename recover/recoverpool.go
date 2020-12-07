@@ -25,8 +25,11 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
 	//PrintCnt := 0
+	receiveTask := 0
 	for {
 		requestT :=<- re.queue
+		receiveTask++
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask)
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
 			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
@@ -55,10 +58,10 @@ func (re *RecoverEngine)processRequests(){
 			}
 			continue
 		}
-		
+
 		<- poolG
 		re.IncRbdTask()
-		log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
+		log.Println("[recover] create_gorutine, realRecoverTask=",re.rcvstat.rebuildTask)
 		go re.doRequest(requestT,startTsk)
 	}
 }
