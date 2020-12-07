@@ -102,7 +102,10 @@ func Run() {
 	for {
 		queue <- struct{}{}
 		go func(queue chan struct{}) {
-			DownloadFromRandNode()
+			err := DownloadFromRandNode()
+			if err != nil {
+				fmt.Println("[randDownload]", err)
+			}
 			<-queue
 		}(queue)
 	}
