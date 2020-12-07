@@ -23,7 +23,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	randNode := nodeList[randIndex]
 
 	pi := &peer.AddrInfo{}
-	id, err := peer.IDFromString(randNode.NodeID)
+	id, err := peer.IDB58Decode(randNode.NodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +100,13 @@ func DownloadFromRandNode() error {
 func Run() {
 	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
 	for {
-		//queue <- struct{}{}
-		func(queue chan struct{}) {
+		queue <- struct{}{}
+		go func(queue chan struct{}) {
 			err := DownloadFromRandNode()
 			if err != nil {
 				fmt.Println("[randDownload]", err)
 			}
-			//<-queue
+			<-queue
 		}(queue)
 	}
 }
