@@ -24,9 +24,12 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
+	receiveTask := 0
 	//PrintCnt := 0
 	for {
 		requestT :=<- re.queue
+		receiveTask++
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask)
 
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
