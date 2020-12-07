@@ -4,6 +4,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"time"
+	"github.com/yottachain/YTDataNode/message"
+	"github.com/gogo/protobuf/proto"
 	//"sync"
 )
 
@@ -22,6 +24,7 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
+	//PrintCnt := 0
 	for {
 		requestT :=<- re.queue
 		if 0 == re.startTskTmCtl {
@@ -30,29 +33,33 @@ func (re *RecoverEngine)processRequests(){
 			re.startTskTmCtl++
 		}
 
+		if len(re.queue) <= 0 {
+			re.startTskTmCtl = 0
+			//log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
+			//continue
+		}
+
 		if time.Now().Sub(startTsk).Seconds() > (1800-120){
-			if len(re.queue) <= 0{
-				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
-				re.startTskTmCtl = 0
+			msg := requestT.Data
+			if len(msg) > 2{
+				msgData := msg[2:]
+				var tsk message.TaskDescription
+				proto.Unmarshal(msgData, &tsk)
+				if len(tsk.Id) > 8{
+					log.Printf("[recover]time_expired, taskid=%d",BytesToInt64(tsk.Id[0:8]))
+				}else{
+					log.Println("[recover]time_expired")
+				}
+			}else{
+				log.Println("[recover]time_expired")
 			}
 			continue
 		}
-
-		if len(poolG) > 0 {
-			<- poolG
-			re.IncRbdTask()
-            log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
-			go re.doRequest(requestT,startTsk)
-		} else {
-			log.Println("[recover] create_gorutine pool is empty, len_poolG=",len(poolG))
-			<- time.After(time.Second * 3)
-		}
-
-		if len(re.queue) <= 0 {
-			re.startTskTmCtl = 0
-			log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
-			continue
-		}
+		
+		<- poolG
+		re.IncRbdTask()
+		log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
+		go re.doRequest(requestT,startTsk)
 	}
 }
 
