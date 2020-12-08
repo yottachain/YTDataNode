@@ -24,8 +24,8 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
-	//PrintCnt := 0
 	receiveTask := 0
+
 	for {
 		requestT :=<- re.queue
 		receiveTask++

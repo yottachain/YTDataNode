@@ -42,6 +42,7 @@ type Task struct {
 	SnID        int32
 	Data        []byte
 	ExpriedTime int64
+	TaskLife    int32
 	SrcNodeID   int32
 }
 
@@ -430,7 +431,7 @@ func (re *RecoverEngine)putToken(token string,clt *client.YTHostClient){
 	log.Println("[recover][debug] putToken end")
 }
 
-func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error) {
+func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt, tasklife int32) ([]byte, error) {
 	log.Println("[recover][debug] getShard start")
 	btid, err :=re.parmCheck(id, taskID, addrs, hash, n, sw)
 	if err !=nil {
@@ -483,6 +484,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
 		return nil,err
+
 	}
 
 	var resGetToken message.NodeCapacityResponse
@@ -497,6 +499,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	if !resGetToken.Writable {
 		re.IncFailToken()
+
 		err = fmt.Errorf("resGetToken.Writable is false")
 		log.Println("[recover][debug] getShard G err=",err)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
@@ -546,12 +549,13 @@ type TaskMsgResult struct {
 	SrcNodeID   int32
 }
 
-func (re *RecoverEngine) PutTask(task []byte, snid int32, expried int64, srcNodeId int32) error {
+func (re *RecoverEngine) PutTask(task []byte, snid int32, expried int64, srcNodeId int32, tasklife int32) error {
 	select {
 	case re.queue <- &Task{
 		SnID:        snid,
 		Data:        task,
 		ExpriedTime: expried,
+		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
 	}:
 	default:
@@ -578,7 +582,7 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		if time.Now().Unix() > mtdMsg.ExpiredTime {
 			continue
 		}
-		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID); err != nil {
+		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -595,7 +599,7 @@ func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
 		re.PutReplyQueue(res)
 	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 		log.Printf("[recover]LRC start\n")
-		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart)
+		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
 		res.BPID = ts.SnID
 		log.Println("[recover] putres_to_queue, check_rebuild_time_expired! spendtime=", time.Now().Sub(pkgstart).Seconds())
 		res.SrcNodeID = ts.SrcNodeID
@@ -646,7 +650,7 @@ func (re *RecoverEngine) Run() {
 				re.PutReplyQueue(res)
 			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
 				log.Printf("[recover]LRC start\n")
-				res := re.execLRCTask(msg[2:], ts.ExpriedTime, startTsk)
+				res := re.execLRCTask(msg[2:], ts.ExpriedTime, startTsk, ts.TaskLife)
 				res.BPID = ts.SnID
 				res.SrcNodeID = ts.SrcNodeID
 				log.Println("[recover][report] res=", res.BPID, "reportTask=", re.rcvstat.reportTask, "rebuildTask=", re.rcvstat.rebuildTask)
@@ -775,7 +779,6 @@ func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg messag
     //if ! config.Gconfig.ElkReport{
     //	return nil
 	//}
-
 	if re.ElkClient == nil{
     	log.Println("[recover][elk] error,no client")
     	return nil
@@ -799,7 +802,7 @@ func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg messag
 	}
 }
 
-func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time) *TaskMsgResult {
+func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time, tasklife int32) *TaskMsgResult {
 	var res TaskMsgResult
 	res.ExpriedTime = expried
 	var msg message.TaskDescription
@@ -847,7 +850,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	}
 
 	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
-	recoverData, err := h.Recover(msg, pkgstart)
+	recoverData, err := h.Recover(msg, pkgstart, tasklife)
 	if err != nil {
 		log.Println("[recover] check_rebuild_time_expired! spendtime=", time.Now().Sub(pkgstart).Seconds())
 		log.Printf("[recover]LRC recover shard failed %s", err)
@@ -885,7 +888,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 		return &res
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800-60 {
+	if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-60 {
 		log.Println("[recover] rebuild time expired!")
 		return &res
 	}

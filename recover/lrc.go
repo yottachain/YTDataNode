@@ -13,7 +13,7 @@ import (
 
 type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
 
-type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt) ([]byte, error)
+type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte, n *int,sw *Switchcnt, tasklife int32) ([]byte, error)
 
 type IncRbdSuccCnt func(n uint16)
 
@@ -58,7 +58,7 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 	return &lrch, nil
 }
 
-func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time) ([]byte, error) {
+func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time, tasklife int32) ([]byte, error) {
 	defer lrch.si.FreeHandle()
 
 	log.Printf("[recover]lost idx %d\n", lrch.si.Lostindex)
@@ -106,7 +106,7 @@ effortwk:
 
 		log.Println("[recover] shard_online, get the shard,idx=",idx)
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-65 {
+		if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-65 {
 			log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 			//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
 			//go re.reportLog(logelk)
@@ -116,7 +116,7 @@ effortwk:
 		sw := Switchcnt{0,0,0,0}
 
 		//for{
-		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number,&sw)
+		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
 
 		if err != nil{
 			log.Println("[recover][optimize] Get data Slice fail,idx=",idx,err.Error())
@@ -145,7 +145,7 @@ effortwk:
 			continue
 		}
 
-		if time.Now().Sub(pkgstart).Seconds() > 1800-63{
+		if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-63{
 			log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}//rebuild success
@@ -165,7 +165,7 @@ effortwk:
 		}
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > 1800-62 {
+	if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-62 {
 		log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 		return nil, fmt.Errorf("rebuild data failed, time expired")
 	}
