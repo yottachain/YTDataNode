@@ -29,7 +29,7 @@ func (re *RecoverEngine)processRequests(){
 	for {
 		requestT :=<- re.queue
 		receiveTask++
-		log.Println("[recover] create_gorutine, recieveTask=",receiveTask)
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"tasklife=",requestT.TaskLife)
 
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()

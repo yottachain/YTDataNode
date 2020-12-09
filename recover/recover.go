@@ -576,6 +576,9 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		if time.Now().Unix() > mtdMsg.ExpiredTime {
 			continue
 		}
+
+		log.Println("[recover] [ExpiredTimeGap] tasklife=",mtdMsg.ExpiredTimeGap)
+
 		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
@@ -592,7 +595,7 @@ func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
 		res.SrcNodeID = ts.SrcNodeID
 		re.PutReplyQueue(res)
 	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
-		log.Printf("[recover]LRC start\n")
+		log.Printf("[recover]LRC start, tasklife=(%d)\n",ts.TaskLife)
 		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
 		res.BPID = ts.SnID
 		log.Println("[recover] putres_to_queue, check_rebuild_time_expired! spendtime=", time.Now().Sub(pkgstart).Seconds())
