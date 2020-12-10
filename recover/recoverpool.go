@@ -13,7 +13,7 @@ var getShardPool chan int
 var poolG chan int
 var totalCap int = 2000
 var realConCurrent uint16 = 1     //can be changed by write-weight and config
-var realConTask uint16 = 1
+var realConTask uint16 = 20
 
 func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
     re.IncConTask()
@@ -25,11 +25,12 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
 	receiveTask := 0
+	notexecTask := 0
 
 	for {
 		requestT :=<- re.queue
 		receiveTask++
-		log.Println("[recover] create_gorutine, recieveTask=",receiveTask)
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
 			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
@@ -56,6 +57,7 @@ func (re *RecoverEngine)processRequests(){
 			}else{
 				log.Println("[recover]time_expired")
 			}
+			notexecTask++
 			continue
 		}
 
@@ -75,20 +77,20 @@ func (re *RecoverEngine)modifyPoolSize(){
 		configweight := config.Gconfig.ShardRbdConcurrent
 		tokenweight := (time.Second/utp.FillTokenInterval)/2
         realConCurrent_N := configweight
-        realConTask_N := realConCurrent_N * 10
+        realConTask_N := realConCurrent_N * 20
         if uint16(tokenweight) < realConCurrent_N {
            realConCurrent_N = uint16(tokenweight)
-           realConTask_N = realConCurrent_N * 10
+           realConTask_N = realConCurrent_N * 20
 		}
 
         if realConCurrent_N > 2000 {
         	realConCurrent_N = 2000
-        	realConTask_N = realConCurrent_N * 10
+        	realConTask_N = realConCurrent_N * 20
 		}
 
 		if realConCurrent_N == 0 {
 			realConCurrent_N = 1
-			realConTask_N = 10
+			realConTask_N = 20
 		}
 
         if realConCurrent < realConCurrent_N {
@@ -130,7 +132,7 @@ func (re *RecoverEngine)RunPool(){
 
 	go re.processRequests()
 
-	//go re.modifyPoolSize()
+	go re.modifyPoolSize()
 
 	for i := uint16(0); i < realConCurrent; i++ {
 		getShardPool <- 0
