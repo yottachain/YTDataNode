@@ -2,7 +2,6 @@ package node
 
 import (
 	"bufio"
-	"context"
 	"encoding/hex"
 	"fmt"
 	"github.com/yottachain/YTDataNode/Perf"
@@ -40,7 +39,7 @@ var lt = (&statistics.LastUpTime{}).Read()
 func (sn *storageNode) Service() {
 	Perf.Sn = sn
 
-	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	//go config.Gconfig.UpdateService(context.Background(), time.Minute)
 
 	// 初始化统计
 	statistics.InitDefaultStat()
