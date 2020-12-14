@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
@@ -40,6 +41,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 }
 
 func DownloadFromRandNode() error {
+
 	pi, err := GetRandNode()
 	if err != nil {
 		return err
@@ -51,6 +53,10 @@ func DownloadFromRandNode() error {
 
 	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancle()
+	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+	if err != nil {
+		return err
+	}
 
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
@@ -93,6 +99,8 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
+
+	TaskPool.Utp().Delete(utk)
 	return nil
 }
 
