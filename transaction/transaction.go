@@ -144,6 +144,14 @@ func GetSignedTransAction(action *eos.Action, opt *eos.TxOptions) (*eos.PackedTr
 			fmt.Println("输入错误:", err.Error())
 			goto inputKey
 		}
+		if keyValue[:2] == "TD" {
+			key, err := Decode(keyValue)
+			if err != nil {
+				return nil, err
+			}
+			keyValue = key
+		}
+
 		kb.ImportPrivateKey(keyValue)
 	}
 
