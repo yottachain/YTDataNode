@@ -27,6 +27,7 @@ const (
 	MsgIDMultiTaskDescription  msgType = 0x2cb0
 	MsgIDLRCTaskDescription    msgType = 0x68b3
 	MsgIDMultiTaskOPResult     msgType = 0x1b31
+	MsgIDMultiTaskOPResultRes  msgType = 0x93e4
 	MsgIDListDNIReq            msgType = 0x4bc6
 	MsgIDListDNIResp           msgType = 0xd6cb
 	MsgIDDownloadYTFSFile      msgType = 0x1b32

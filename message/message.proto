@@ -177,6 +177,13 @@ message MultiTaskOpResult{
     int64 expiredTime = 4;
     int32 srcNodeID = 5;
 }
+
+//MessageID:93e4
+message MultiTaskOpResultRes{
+    int32 errCode=1;
+    int32 SuccNum=2;
+}
+
 //msgid=0x4bc6
 message ListDNIReq{
     string nextid= 1;
