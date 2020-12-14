@@ -4,6 +4,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"time"
+	"github.com/yottachain/YTDataNode/message"
+	"github.com/gogo/protobuf/proto"
 	//"sync"
 )
 
@@ -11,7 +13,7 @@ var getShardPool chan int
 var poolG chan int
 var totalCap int = 2000
 var realConCurrent uint16 = 1     //can be changed by write-weight and config
-var realConTask uint16 = 10
+var realConTask uint16 = 20
 
 func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
     re.IncConTask()
@@ -22,8 +24,12 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
+	receiveTask := 0
+	//PrintCnt := 0
 	for {
 		requestT :=<- re.queue
+		receiveTask++
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"tasklife=",requestT.TaskLife)
 
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
@@ -31,29 +37,33 @@ func (re *RecoverEngine)processRequests(){
 			re.startTskTmCtl++
 		}
 
+		if len(re.queue) <= 0 {
+			re.startTskTmCtl = 0
+			//log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
+			//continue
+		}
+
 		if time.Now().Sub(startTsk).Seconds() > (1800-120){
-			if len(re.queue) <= 0{
-				log.Println("[recover] task_package now_time_expired=",time.Now().Unix(),"len=",len(re.queue)+1)
-				re.startTskTmCtl = 0
+			msg := requestT.Data
+			if len(msg) > 2{
+				msgData := msg[2:]
+				var tsk message.TaskDescription
+				proto.Unmarshal(msgData, &tsk)
+				if len(tsk.Id) > 8{
+					log.Printf("[recover]time_expired, taskid=%d",BytesToInt64(tsk.Id[0:8]))
+				}else{
+					log.Println("[recover]time_expired")
+				}
+			}else{
+				log.Println("[recover]time_expired")
 			}
 			continue
 		}
 
-		if len(poolG) > 0 {
-			<- poolG
-            re.IncRbdTask()
-            log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
-			go re.doRequest(requestT,startTsk)
-		} else {
-			log.Println("[recover] create_gorutine pool is full, len_poolG=",len(poolG))
-			<- time.After(time.Second * 3)
-		}
-
-		if len(re.queue) <= 0{
-			re.startTskTmCtl = 0
-			log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
-			continue
-		}
+		<- poolG
+		re.IncRbdTask()
+		log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
+		go re.doRequest(requestT,startTsk)
 	}
 }
 
@@ -66,20 +76,20 @@ func (re *RecoverEngine)modifyPoolSize(){
 		configweight := config.Gconfig.ShardRbdConcurrent
 		tokenweight := (time.Second/utp.FillTokenInterval)/2
         realConCurrent_N := configweight
-        realConTask_N := realConCurrent_N * 10
+        realConTask_N := realConCurrent_N * 20
         if uint16(tokenweight) < realConCurrent_N {
            realConCurrent_N = uint16(tokenweight)
-           realConTask_N = realConCurrent_N * 10
+           realConTask_N = realConCurrent_N * 20
 		}
 
         if realConCurrent_N > 2000 {
         	realConCurrent_N = 2000
-        	realConTask_N = realConCurrent_N * 10
+        	realConTask_N = realConCurrent_N * 20
 		}
 
 		if realConCurrent_N == 0 {
 			realConCurrent_N = 1
-			realConTask_N = 10
+			realConTask_N = 20
 		}
 
         if realConCurrent < realConCurrent_N {

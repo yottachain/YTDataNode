@@ -2,7 +2,6 @@ package node
 
 import (
 	"bufio"
-	"context"
 	"encoding/hex"
 	"fmt"
 	"github.com/yottachain/YTDataNode/Perf"
@@ -42,7 +41,7 @@ func (sn *storageNode) Service() {
 	Perf.Sn = sn
 	randDownload.Sn = sn
 
-	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	//go config.Gconfig.UpdateService(context.Background(), time.Minute)
 	go randDownload.Run()
 
 	// 初始化统计
