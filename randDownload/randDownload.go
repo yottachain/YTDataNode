@@ -6,12 +6,14 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"math/rand"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,7 +25,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	randNode := nodeList[randIndex]
 
 	pi := &peer.AddrInfo{}
-	id, err := peer.IDFromString(randNode.NodeID)
+	id, err := peer.IDB58Decode(randNode.NodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +41,11 @@ func GetRandNode() (*peer.AddrInfo, error) {
 }
 
 func DownloadFromRandNode() error {
+
 	pi, err := GetRandNode()
 	if err != nil {
-		return nil
+		return err
 	}
-	log.Println("[randDownload] download from", pi.ID)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
@@ -51,6 +53,10 @@ func DownloadFromRandNode() error {
 
 	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancle()
+	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+	if err != nil {
+		return err
+	}
 
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
@@ -69,7 +75,7 @@ func DownloadFromRandNode() error {
 		return err
 	}
 	var tokenMsg message.NodeCapacityResponse
-	err = proto.Unmarshal(getTKResBuf, &tokenMsg)
+	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
 	if err != nil {
 		return err
 	}
@@ -89,21 +95,34 @@ func DownloadFromRandNode() error {
 		return err
 	}
 	checkTKMsg.Tk = tokenMsg.AllocId
-	_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	_, err = clt.SendMsgClose(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
 	if err != nil {
 		return err
 	}
-	log.Println("[randDownload] download success", pi.ID)
+
+	TaskPool.Utp().Delete(utk)
 	return nil
 }
 
-func Run(d time.Duration) {
+func Run() {
 	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
+	var successCount uint64
+	var errorCount uint64
+	go func() {
+		for {
+			<-time.After(time.Minute)
+			log.Println("[randDownload] success", successCount, "error", errorCount)
+		}
+	}()
 	for {
-		<-time.After(d)
 		queue <- struct{}{}
 		go func(queue chan struct{}) {
-			DownloadFromRandNode()
+			err := DownloadFromRandNode()
+			if err != nil {
+				atomic.AddUint64(&errorCount, 1)
+			} else {
+				atomic.AddUint64(&successCount, 1)
+			}
 			<-queue
 		}(queue)
 	}

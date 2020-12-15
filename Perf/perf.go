@@ -133,7 +133,6 @@ func GetBlock(data []byte) (res []byte, err error) {
 		resMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(resMsg.Msg)
 	}
-	log.Println("[p2p-test] get block")
 	res, err = proto.Marshal(&resMsg)
 	return
 }

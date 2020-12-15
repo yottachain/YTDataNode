@@ -7,6 +7,7 @@ import (
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
@@ -38,8 +39,10 @@ var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
 	Perf.Sn = sn
+	randDownload.Sn = sn
 
 	//go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	go randDownload.Run()
 
 	// 初始化统计
 	statistics.InitDefaultStat()

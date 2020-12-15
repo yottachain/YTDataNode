@@ -97,7 +97,7 @@ func (pt *TaskPool) Delete(tk *Token) bool {
 	if atomic.LoadInt64(&pt.sentToken) < 1 {
 		return false
 	}
-	log.Println("[token] delete token", tk.String(), tk.PID.Pretty())
+	log.Println("[task pool] delete token", tk.String(), tk.PID.Pretty())
 	atomic.AddInt64(&pt.requestCount, 1)
 	return false
 }
