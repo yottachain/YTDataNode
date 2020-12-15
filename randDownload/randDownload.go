@@ -95,7 +95,7 @@ func DownloadFromRandNode() error {
 		return err
 	}
 	checkTKMsg.Tk = tokenMsg.AllocId
-	_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	_, err = clt.SendMsgClose(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
 	if err != nil {
 		return err
 	}
