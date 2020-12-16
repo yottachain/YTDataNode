@@ -53,12 +53,12 @@ func DownloadFromRandNode() error {
 
 	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancle()
-	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
 		return err
 	}
 
-	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
 	if err != nil {
 		return err
 	}
@@ -119,6 +119,7 @@ func Run() {
 		go func(queue chan struct{}) {
 			err := DownloadFromRandNode()
 			if err != nil {
+				log.Println("[randDownload] error", err.Error())
 				atomic.AddUint64(&errorCount, 1)
 			} else {
 				atomic.AddUint64(&successCount, 1)
