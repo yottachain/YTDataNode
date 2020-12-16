@@ -67,6 +67,7 @@ func DownloadFromRandNode() error {
 	getTokenMsg.RequestMsgID = message.MsgIDDownloadShardRequest.Value() + 1
 	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
+		TaskPool.Utp().Delete(utk)
 		return err
 	}
 
