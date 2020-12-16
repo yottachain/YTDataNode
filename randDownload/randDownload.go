@@ -91,11 +91,12 @@ func DownloadFromRandNode() error {
 		return err
 	}
 	var checkTKMsg message.DownloadTKCheck
+	checkTKMsg.Tk = tokenMsg.AllocId
 	checkTKBuf, err := proto.Marshal(&checkTKMsg)
 	if err != nil {
 		return err
 	}
-	checkTKMsg.Tk = tokenMsg.AllocId
+
 	_, err = clt.SendMsgClose(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
 	if err != nil {
 		return err
