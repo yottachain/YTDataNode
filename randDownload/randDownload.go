@@ -53,12 +53,12 @@ func DownloadFromRandNode() error {
 
 	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancle()
-	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
 		return err
 	}
 
-	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
 	if err != nil {
 		return err
 	}
