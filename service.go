@@ -276,6 +276,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
+	statistics.DefaultStat.IndexDBOpt = sn.config.Options
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
