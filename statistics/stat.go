@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p-core/peer"
 	recover2 "github.com/yottachain/YTDataNode/recover"
+	ytfsOpts "github.com/yottachain/YTFS/opt"
 	"sync"
 	"time"
 )
@@ -37,6 +38,7 @@ type Stat struct {
 	DownloadDiskLatency    int64
 	Ban                    bool
 	DownloadData404        int64
+	IndexDBOpt             *ytfsOpts.Options
 	sync.RWMutex
 }
 
