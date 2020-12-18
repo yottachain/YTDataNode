@@ -9,6 +9,7 @@ import (
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/randDownload"
+	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
@@ -20,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -40,7 +40,7 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
-	SetRlimit()
+	setRLimit.SetRLimit()
 	Perf.Sn = sn
 	randDownload.Sn = sn
 
@@ -366,29 +366,4 @@ func GetXX(rt string) uint64 {
 	default:
 		return 0
 	}
-}
-
-func SetRlimit() {
-	var rLimit syscall.Rlimit
-
-	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-
-	if err != nil {
-		fmt.Println("Error Getting Rlimit ", err)
-	}
-	fmt.Println(rLimit)
-
-	rLimit.Max = 60000
-	rLimit.Cur = 60000
-
-	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	if err != nil {
-		fmt.Println("Error Setting Rlimit ", err)
-	}
-	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-
-	if err != nil {
-		fmt.Println("Error Getting Rlimit ", err)
-	}
-	fmt.Println("Rlimit Final", rLimit)
 }
