@@ -21,10 +21,18 @@ var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
 	nodeList := activeNodeList.GetNodeList()
-	randIndex := rand.Intn(len(nodeList))
-	randNode := nodeList[randIndex]
-
 	pi := &peer.AddrInfo{}
+	nl := len(nodeList)
+
+	var randNode activeNodeList.Data
+
+	if nl != 1 {
+		randIndex := rand.Intn(nl)
+		randNode = nodeList[randIndex]
+	} else {
+		randNode = nodeList[0]
+	}
+
 	id, err := peer.IDB58Decode(randNode.NodeID)
 	if err != nil {
 		return nil, err
