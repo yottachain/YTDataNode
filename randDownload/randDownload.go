@@ -26,12 +26,11 @@ func GetRandNode() (*peer.AddrInfo, error) {
 
 	var randNode activeNodeList.Data
 
-	if nl != 1 {
-		randIndex := rand.Intn(nl)
-		randNode = nodeList[randIndex]
-	} else {
-		randNode = nodeList[0]
+	if nl <= 0 {
+		return nil, fmt.Errorf("no node")
 	}
+	randIndex := rand.Intn(nl)
+	randNode = nodeList[randIndex]
 
 	id, err := peer.IDB58Decode(randNode.NodeID)
 	if err != nil {
