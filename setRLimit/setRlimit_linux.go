@@ -1,5 +1,10 @@
 package setRLimit
 
+import (
+	"fmt"
+	"syscall"
+)
+
 func SetRLimit() {
 	var rLimit syscall.Rlimit
 
