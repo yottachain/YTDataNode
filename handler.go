@@ -270,6 +270,9 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if strings.Contains(err.Error(), "no space") || strings.Contains(err.Error(), "input/output error") {
 			atomic.AddInt64(&statistics.DefaultStat.MediaError, 1)
 		}
+		if strings.Contains(err.Error(), "Range is full") {
+			atomic.AddInt64(&statistics.DefaultStat.RangeFullError, 1)
+		}
 		return 101
 	}
 	log.Println("return msg", 0)

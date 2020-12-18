@@ -39,6 +39,7 @@ type Stat struct {
 	Ban                    bool
 	DownloadData404        int64
 	MediaError             int64
+	RangeFullError         int64
 	IndexDBOpt             *ytfsOpts.Options
 	sync.RWMutex
 }
