@@ -17,7 +17,7 @@ func getUrl() string {
 	var url string
 	var i int
 	if len(config.DefaultConfig.BPList) == 1 {
-		i = 1
+		i = 0
 	} else {
 		i = rand.Intn(len(config.DefaultConfig.BPList))
 	}
