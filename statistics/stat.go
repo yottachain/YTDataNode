@@ -38,6 +38,7 @@ type Stat struct {
 	DownloadDiskLatency    int64
 	Ban                    bool
 	DownloadData404        int64
+	MediaError             int64
 	IndexDBOpt             *ytfsOpts.Options
 	sync.RWMutex
 }
