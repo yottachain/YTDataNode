@@ -267,8 +267,11 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 			return 102
 		}
 		log.Println("数据写入错误error:", err.Error())
-		if strings.Contains(err.Error(), "no space") || strings.Contains(err.Error(), "input/output error") {
-			atomic.AddInt64(&statistics.DefaultStat.MediaError, 1)
+		if strings.Contains(err.Error(), "no space") {
+			atomic.AddInt64(&statistics.DefaultStat.NoSpaceError, 1)
+		}
+		if strings.Contains(err.Error(), "input/output error") {
+			atomic.AddInt64(&statistics.DefaultStat.MediumError, 1)
 		}
 		if strings.Contains(err.Error(), "Range is full") {
 			atomic.AddInt64(&statistics.DefaultStat.RangeFullError, 1)
