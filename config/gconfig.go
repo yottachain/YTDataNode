@@ -38,6 +38,7 @@ type Gcfg struct {
 	MinVersion         int    `json:"MinVersion"`
 	BanTime            int
 	ElkReport          bool
+	DiskTimeout        int
 	RandDownloadNum    int
 }
 
@@ -165,6 +166,7 @@ func NewGConfig() *GConfig {
 			BanTime:           180,
 			ElkReport:         false,
 			RandDownloadNum:   2,
+			DiskTimeout:       5000,
 		},
 		OnUpdate: nil,
 	}
