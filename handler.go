@@ -322,8 +322,11 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	}
 
 	//res := message.DownloadShardResponse{}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	time1 := time.Now()
-	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
+	resData, err = dh.GetShard(ctx, common.IndexTableKey(indexKey))
 	TaskPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
@@ -350,6 +353,28 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	}
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
+}
+func (dh *DownloadHandler) GetShard(ctx context.Context, key common.IndexTableKey) ([]byte, error) {
+	shard := make(chan []byte)
+	errC := make(chan error)
+
+	go func() {
+		buf, err := dh.YTFS().Get(key)
+		if err != nil {
+			errC <- err
+			return
+		}
+		shard <- buf
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("read ytfs time out")
+	case data := <-shard:
+		return data, nil
+	case err := <-errC:
+		return nil, err
+	}
 }
 
 // SpotCheckHandler 下载处理器
