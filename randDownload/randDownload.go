@@ -11,6 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"math/rand"
 	"sync/atomic"
@@ -48,6 +49,8 @@ func GetRandNode() (*peer.AddrInfo, error) {
 }
 
 func DownloadFromRandNode() error {
+	var err error
+	atomic.AddInt64(&statistics.DefaultStat.RandDownloadCount, 1)
 
 	pi, err := GetRandNode()
 	if err != nil {
@@ -108,8 +111,9 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
-
 	TaskPool.Utp().Delete(utk)
+
+	atomic.AddInt64(&statistics.DefaultStat.RandDownloadSuccess, 1)
 	return nil
 }
 
