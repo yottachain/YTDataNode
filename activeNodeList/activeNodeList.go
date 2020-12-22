@@ -1,6 +1,8 @@
 package activeNodeList
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
@@ -50,7 +52,10 @@ func Update() {
 		log.Println("[activeNodeList]", err.Error())
 		return
 	}
-	log.Println("[activeNodeList] update success")
+
+	buf, _ := json.Marshal(nodeList)
+	md5Buf := md5.Sum(buf)
+	log.Println("[activeNodeList] update success", hex.EncodeToString(md5Buf[:]))
 	updateTime = time.Now()
 }
 
