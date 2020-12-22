@@ -11,6 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -266,6 +267,15 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 			return 102
 		}
 		log.Println("数据写入错误error:", err.Error())
+		if strings.Contains(err.Error(), "no space") {
+			atomic.AddInt64(&statistics.DefaultStat.NoSpaceError, 1)
+		}
+		if strings.Contains(err.Error(), "input/output error") {
+			atomic.AddInt64(&statistics.DefaultStat.MediumError, 1)
+		}
+		if strings.Contains(err.Error(), "Range is full") {
+			atomic.AddInt64(&statistics.DefaultStat.RangeFullError, 1)
+		}
 		return 101
 	}
 	log.Println("return msg", 0)
@@ -315,17 +325,23 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	}
 
 	//res := message.DownloadShardResponse{}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
+	defer cancel()
+
 	time1 := time.Now()
-	resData, err = dh.YTFS().Get(common.IndexTableKey(indexKey))
+	resData, err = dh.GetShard(ctx, common.IndexTableKey(indexKey))
 	TaskPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
+
+		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 
 	if !msg.VerifyVHF(resData) {
 		log.Println("data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
+		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		return nil, fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
 
@@ -335,10 +351,33 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
+		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
+}
+func (dh *DownloadHandler) GetShard(ctx context.Context, key common.IndexTableKey) ([]byte, error) {
+	shard := make(chan []byte)
+	errC := make(chan error)
+
+	go func() {
+		buf, err := dh.YTFS().Get(key)
+		if err != nil {
+			errC <- err
+			return
+		}
+		shard <- buf
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("read ytfs time out")
+	case data := <-shard:
+		return data, nil
+	case err := <-errC:
+		return nil, err
+	}
 }
 
 // SpotCheckHandler 下载处理器
