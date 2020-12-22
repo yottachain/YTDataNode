@@ -168,8 +168,8 @@ getMC:
 		log.Println(err)
 		goto getMC
 	}
-	if mc < 8 || mc > 20 {
-		fmt.Println("请输入范围8～20的数", mc)
+	if mc < 14 || mc > 20 {
+		fmt.Println("请输入范围14～20的数", mc)
 		goto getMC
 	}
 	commander.InitBySignleStorage(size*GB, 1<<mc)

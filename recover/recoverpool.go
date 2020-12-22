@@ -31,6 +31,7 @@ func (re *RecoverEngine)processRequests(){
 		requestT :=<- re.queue
 		receiveTask++
 		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
+
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
 			log.Println("[recover] task_package start_time=",time.Now().Unix(),"len=",len(re.queue)+1)
@@ -43,7 +44,7 @@ func (re *RecoverEngine)processRequests(){
 			//continue
 		}
 
-		if time.Now().Sub(startTsk).Seconds() > (1800-120){
+		if time.Now().Sub(startTsk).Seconds() > (float64(requestT.TaskLife-120)){
 			msg := requestT.Data
 			if len(msg) > 2{
 				msgData := msg[2:]

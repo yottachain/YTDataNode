@@ -71,6 +71,7 @@ type RebuildCount struct {
 	successPutToken   uint64
 	sendTokenReq      uint64
 	successVersion    uint64
+	ackSuccRebuild    uint64
 }
 
 type RecoverEngine struct {
@@ -137,6 +138,7 @@ type RecoverStat struct {
 	SuccessPutToken   uint64 `json:"SuccessPutToken"`   //成功释放token总数
 	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
 	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
+	AckSuccRebuild    uint64 `json:"AckSuccRebuild"`    //sn确认的成功重建分片数
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -170,6 +172,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.successPutToken,
 		re.rcvstat.sendTokenReq,
 		re.rcvstat.successVersion,
+		re.rcvstat.ackSuccRebuild,
 	}
 }
 
@@ -582,6 +585,9 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		if time.Now().Unix() > mtdMsg.ExpiredTime {
 			continue
 		}
+
+		log.Println("[recover] [ExpiredTimeGap] tasklife=",mtdMsg.ExpiredTimeGap)
+
 		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
@@ -598,7 +604,7 @@ func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
 		res.SrcNodeID = ts.SrcNodeID
 		re.PutReplyQueue(res)
 	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
-		log.Printf("[recover]LRC start\n")
+		log.Printf("[recover]LRC start, tasklife=(%d)\n",ts.TaskLife)
 		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
 		res.BPID = ts.SnID
 		log.Println("[recover] putres_to_queue, check_rebuild_time_expired! spendtime=", time.Now().Sub(pkgstart).Seconds())
@@ -730,17 +736,31 @@ func (re *RecoverEngine) MultiReply() error {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
 		} else {
-			reportTms := 5
+			reportTms := 6
 			for{
 				reportTms--
-				_,err=re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-				if err == nil{
-					log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
-					log.Println("[recover][report] rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask)
+				if 0 >= reportTms{
+					log.Println("[recover][report]Send msg error: ",err)
 					break
 				}
-				if 0 == reportTms{
-					log.Println("[recover][report]Send msg error: ",err)
+
+				resp,err:=re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
+				if err == nil{
+					if len(resp) < 3{
+						continue
+					}
+
+					var res message.MultiTaskOpResultRes
+					err = proto.Unmarshal(resp[2:], &res)
+					if err != nil {
+						continue
+					}else{
+						if 0 == res.ErrCode {
+							re.rcvstat.ackSuccRebuild += uint64(res.SuccNum)
+						}
+					}
+					log.Printf("[recover][report] multi reply success nodeID %d, expried %d\n", v.NodeID, v.ExpiredTime)
+					log.Println("[recover][report] rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask,"ackSuccRebuild",re.rcvstat.ackSuccRebuild)
 					break
 				}
 			}
@@ -837,7 +857,6 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	}
 
 	re.IncPassJudge()
-	//log.Println("[recover] pass recover test!")
 
 	lrc.ShardExist = lrcshd.ShardExist
 	//log.Println("[recover] prelrcshd=",lrcshd)

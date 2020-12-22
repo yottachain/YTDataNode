@@ -8,6 +8,8 @@ import (
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/randDownload"
+	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
@@ -38,9 +40,12 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 
 func (sn *storageNode) Service() {
+	setRLimit.SetRLimit()
 	Perf.Sn = sn
+	randDownload.Sn = sn
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	//go randDownload.Run()
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -119,7 +124,13 @@ func (sn *storageNode) Service() {
 		}
 		var tk TaskPool.Token
 		tk.FillFromString(msg.Tk)
-		TaskPool.Dtp().NetLatency.Add(time.Now().Sub(tk.Tm))
+		lat := time.Now().Sub(tk.Tm)
+		if lat > time.Second*10 {
+			tmstr := tk.Tm.Format("20060102030405")
+			fmt.Println("[check token]token time out", lat.Milliseconds(), tmstr)
+			return nil, fmt.Errorf("token time out , token time %s", tmstr)
+		}
+		TaskPool.Dtp().NetLatency.Add(lat)
 		TaskPool.Dtp().Delete(&tk)
 		return nil, nil
 	})
@@ -267,6 +278,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
 	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
+	statistics.DefaultStat.IndexDBOpt = sn.config.Options
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
