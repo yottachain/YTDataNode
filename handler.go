@@ -180,7 +180,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
+		//log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
