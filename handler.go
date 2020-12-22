@@ -360,13 +360,17 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
 
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 
 	if !msg.VerifyVHF(resData) {
 		log.Println("data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
 
@@ -376,7 +380,9 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
 	//	log.Println("return msg", 0)
