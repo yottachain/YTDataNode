@@ -39,13 +39,14 @@ func Update() {
 
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Println("[recover][nodnlist]can't get active datanode list!")
+		fmt.Println("[activeNodeList]", err.Error())
 		return
 	}
 
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
+		fmt.Println("[activeNodeList]", err.Error())
 		return
 	}
 	updateTime = time.Now()
