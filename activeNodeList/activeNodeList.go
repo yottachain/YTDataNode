@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -39,16 +40,17 @@ func Update() {
 
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList]", err.Error())
 		return
 	}
 
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
-		fmt.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList]", err.Error())
 		return
 	}
+	log.Println("[activeNodeList] update success")
 	updateTime = time.Now()
 }
 
