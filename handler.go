@@ -86,7 +86,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 
 	log.Printf("[ytfs]flush start:%d\n", number)
-	_, err := wh.YTFS().BatchPut(rqmap)
+	_, err := wh.putShard(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else {
@@ -214,6 +214,31 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
 	return res2client
+}
+
+func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[common.IndexTableKey]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
+	defer cancel()
+
+	var errorC = make(chan error)
+	var success = make(chan map[common.IndexTableKey]byte)
+
+	go func() {
+		res, err := wh.YTFS().BatchPut(batch)
+		if err != nil {
+			errorC <- err
+		}
+		success <- res
+	}()
+
+	select {
+	case err := <-errorC:
+		return nil, err
+	case res := <-success:
+		return res, nil
+	case <-ctx.Done():
+		return nil, fmt.Errorf("ytfs put time out")
+	}
 }
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
