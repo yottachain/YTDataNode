@@ -45,7 +45,7 @@ func (sn *storageNode) Service() {
 	randDownload.Sn = sn
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
-	go randDownload.Run()
+	//go randDownload.Run()
 
 	// 初始化统计
 	statistics.InitDefaultStat()
