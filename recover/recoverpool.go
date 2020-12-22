@@ -25,11 +25,12 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
 func (re *RecoverEngine)processRequests(){
 	startTsk := time.Now()
 	receiveTask := 0
-	//PrintCnt := 0
+	notexecTask := 0
+
 	for {
 		requestT :=<- re.queue
 		receiveTask++
-		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"tasklife=",requestT.TaskLife)
+		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
 
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
@@ -43,7 +44,7 @@ func (re *RecoverEngine)processRequests(){
 			//continue
 		}
 
-		if time.Now().Sub(startTsk).Seconds() > (1800-120){
+		if time.Now().Sub(startTsk).Seconds() > (float64(requestT.TaskLife-120)){
 			msg := requestT.Data
 			if len(msg) > 2{
 				msgData := msg[2:]
@@ -57,12 +58,13 @@ func (re *RecoverEngine)processRequests(){
 			}else{
 				log.Println("[recover]time_expired")
 			}
+			notexecTask++
 			continue
 		}
 
 		<- poolG
 		re.IncRbdTask()
-		log.Println("[recover] create_gorutine, len_poolG=",len(poolG))
+		log.Println("[recover] create_gorutine, realRecoverTask=",re.rcvstat.rebuildTask)
 		go re.doRequest(requestT,startTsk)
 	}
 }
