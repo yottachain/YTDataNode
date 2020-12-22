@@ -225,15 +225,6 @@ func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string
 	return nil, nil //refer to getShard
 }
 
-//func (re *RecoverEngine) reportLog( body interface{}){
-//	bodyBytes, err:=json.Marshal(body)
-//	resp, err := http.Post(url, contentType, bytes.NewReader(bodyBytes))
-//	if err != nil {
-//		panic(err)
-//	}
-//	//关闭连接
-//	defer resp.Body.Close()
-//}
 
 func NewElkClient(tbstr string) *YTElkProducer.Client {
 	elkConf := elasticsearch.Config{
@@ -249,7 +240,6 @@ func NewElkClient(tbstr string) *YTElkProducer.Client {
 		IndexType:   "log",
 	}
 
-	log.Println("[recover][elk] ytesconfig=",tbstr)
 	client,_ := YTElkProducer.NewClient(ytESConfig)
 	return &client
 }
@@ -333,12 +323,12 @@ func (re *RecoverEngine) getRdToken(clt *client.YTHostClient ,sw *Switchcnt)( []
 
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancels()
-	log.Println("[recover][debug] getRdToken sendMsg A")
+	//log.Println("[recover][debug] getRdToken sendMsg A")
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
-	log.Println("[recover][debug] getRdToken sendMsg B")
+	//log.Println("[recover][debug] getRdToken sendMsg B")
 
 	if err != nil {
-		log.Println("[recover][debug] getRdToken sendMsg C err=", err)
+		//log.Println("[recover][debug] getRdToken sendMsg C err=", err)
 		if config.Gconfig.ElkReport{
 			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
 			//go re.reportLog(logelk)
@@ -353,7 +343,7 @@ func (re *RecoverEngine) getRdToken(clt *client.YTHostClient ,sw *Switchcnt)( []
 			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
 			//go re.reportLog(logelk)
 		}
-		log.Println("[recover][debug] getRdToken sendMsg D err=", err)
+		//log.Println("[recover][debug] getRdToken sendMsg D err=", err)
 		return nil,err
 	}
 
@@ -376,16 +366,16 @@ func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, h
 		return nil, err
 	}
 	log.Printf("[recover]get shard msg buf len(%d)\n", len(buf))
-	log.Println("[recover][debug] getShardData  A")
+	//log.Println("[recover][debug] getShardData  A")
 	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	re.IncConShard()
 	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()
-	log.Println("[recover][debug] getShardData B")
+	//log.Println("[recover][debug] getShardData B")
 	if err != nil {
-		log.Println("[recover][debug] getShardData C, err=",err.Error())
+		//log.Println("[recover][debug] getShardData C, err=",err.Error())
 		if (strings.Contains(err.Error(),"Get data Slice fail")){
 			re.IncFailShard()
 			if config.Gconfig.ElkReport{
@@ -405,7 +395,7 @@ func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, h
 	}
 
 	if len(shardBuf)<3{
-		log.Println("[recover][debug] getShardData D, err=",err.Error())
+		//log.Println("[recover][debug] getShardData D, err=",err.Error())
 		re.IncFailSendShard()
 		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		return nil, fmt.Errorf("error: shard less then 16384, len=",len(shardBuf))
@@ -422,9 +412,9 @@ func (re *RecoverEngine)putToken(token string,clt *client.YTHostClient){
 	var msgbck message.DownloadTKCheck
 	msgbck.Tk = token
 	buf,err := proto.Marshal(&msgbck)
-	log.Println("[recover][debug] putToken A")
+	//log.Println("[recover][debug] putToken A")
 	_,err = clt.SendMsg(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
-	log.Println("[recover][debug] putToken B")
+	//log.Println("[recover][debug] putToken B")
 	if err != nil{
 		log.Println("[recover] return token error,err=",err.Error())
 	}else{
@@ -445,11 +435,11 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	log.Println("[recover][debug] getShard A")
+	//log.Println("[recover][debug] getShard A")
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
-	log.Println("[recover][debug] getShard B")
+	//log.Println("[recover][debug] getShard B")
 	if err != nil {
-		log.Println("[recover][debug] getShard C err=",err)
+		//log.Println("[recover][debug] getShard C err=",err)
 		re.IncFailConn()
 		if config.Gconfig.ElkReport{
 			//logelk:=re.MakeReportLog(id,hash,"failConn",err)
@@ -465,7 +455,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 	peerVersion := clt.RemotePeerVersion()
-	log.Println("[recover][checkVersion] peerVersion=", peerVersion, "MinVersion=", config.Gconfig.MinVersion)
+	//log.Println("[recover][checkVersion] peerVersion=", peerVersion, "MinVersion=", config.Gconfig.MinVersion)
 	if int(peerVersion) < int(config.Gconfig.MinVersion) {
 		err = fmt.Errorf("remote dn version is too low!")
 		log.Println("[recover][checkVersion][error] remote dn version is too low!")
@@ -478,12 +468,12 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	re.IncSuccVersion()
 
-	log.Println("[recover][debug] getShard D")
+	//log.Println("[recover][debug] getShard D")
 	re.GetConShardPass()
 	tok,err := re.getRdToken(clt, sw)
 	if err != nil {
 		re.IncFailToken()
-		log.Println("[recover][debug] getShard E err=",err)
+		//log.Println("[recover][debug] getShard E err=",err)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
 		return nil,err
@@ -494,7 +484,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	err = proto.Unmarshal(tok[2:], &resGetToken)
 	if err != nil {
 		re.IncFailToken()
-		log.Println("[recover][debug] getShard F err=",err)
+		//log.Println("[recover][debug] getShard F err=",err)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
 		return nil,err
@@ -504,7 +494,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		re.IncFailToken()
 
 		err = fmt.Errorf("resGetToken.Writable is false")
-		log.Println("[recover][debug] getShard G err=",err)
+		//log.Println("[recover][debug] getShard G err=",err)
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
 		return nil,err
@@ -524,7 +514,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	err = proto.Unmarshal(shardBuf[2:], &res)
 	if err != nil {
-		log.Println("[recover][debug] getShard H err=",err)
+		//log.Println("[recover][debug] getShard H err=",err)
 		re.IncFailSendShard()
 		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
 		return nil, err
