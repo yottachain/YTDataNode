@@ -43,7 +43,7 @@ func (re *RecoverEngine)processRequests(){
 			//continue
 		}
 
-		if time.Now().Sub(startTsk).Seconds() > (1800-120){
+		if time.Now().Sub(startTsk).Seconds() > (float64(requestT.TaskLife-120)){
 			msg := requestT.Data
 			if len(msg) > 2{
 				msgData := msg[2:]

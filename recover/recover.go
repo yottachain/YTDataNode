@@ -849,13 +849,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 		return &res
 	}
 
-	//if time.Now().Sub(pkgstart).Seconds() > 1800 -60 {
-	//	log.Println("[recover] rebuild time expired!")
-	//	return &res
-	//}
-
 	re.IncPassJudge()
-	//log.Println("[recover] pass recover test!")
 
 	lrc.ShardExist = lrcshd.ShardExist
 	//log.Println("[recover] prelrcshd=",lrcshd)
