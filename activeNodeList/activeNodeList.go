@@ -63,7 +63,7 @@ func GetNodeList() []Data {
 	locker.Lock()
 	defer locker.Unlock()
 
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Minute*1 {
 		Update()
 	}
 
