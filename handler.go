@@ -89,7 +89,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	_, err := wh.putShard(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
-	} else {
+	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		log.Printf("[ytfs]flush failure:%s\n", err.Error())
 		statistics.DefaultStat.Lock()
 		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1

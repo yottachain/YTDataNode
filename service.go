@@ -284,6 +284,10 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.Ban = true
 		statistics.DefaultStat.TokenFillSpeed = 1
 	}
+	if sn.config.IndexID == 1053 {
+		statistics.DefaultStat.TokenFillSpeed = 500
+		statistics.DefaultStat.DownloadTokenFillSpeed = 500
+	}
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TaskPool.Utp().Save()
