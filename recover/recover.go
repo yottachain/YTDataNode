@@ -509,6 +509,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	var res message.DownloadShardResponse
 	shardBuf,err := re.getShardData(resGetToken.AllocId,id,taskID,addrs,hash,n,sw,clt)
 	if err != nil {
+		re.ReturnConShardPass()
 		return nil, err
 	}
 	re.ReturnConShardPass()
