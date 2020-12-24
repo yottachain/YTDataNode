@@ -21,7 +21,8 @@ import (
 var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
-	nodeList := activeNodeList.GetNodeList()
+	nodeList := activeNodeList.GetNodeListByTime(time.Minute * time.Duration(config.Gconfig.NodeListUpdateTime))
+
 	pi := &peer.AddrInfo{}
 	nl := len(nodeList)
 
