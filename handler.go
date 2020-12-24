@@ -139,9 +139,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		return nil
 	} else {
-		if disableWrite {
-			return nil
-		}
+		//if disableWrite {
+		//	return nil
+		//}
 		atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	}
 
