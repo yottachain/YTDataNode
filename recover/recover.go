@@ -435,9 +435,9 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	log.Println("[recover][debug] getShardcnn A")
+	//log.Println("[recover][debug] getShardcnn A")
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
-	log.Println("[recover][debug] getShardcnn B")
+	//log.Println("[recover][debug] getShardcnn B")
 	if err != nil {
 		log.Println("[recover][debug] getShardcnn C err=",err)
 		re.IncFailConn()
@@ -468,9 +468,9 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	re.IncSuccVersion()
 
-	log.Println("[recover][debug] getShardcnn D")
+	//log.Println("[recover][debug] getShardcnn D")
 	re.GetConShardPass()
-	log.Println("[recover][debug] getShardcnn E")
+	//log.Println("[recover][debug] getShardcnn E")
 	tok,err := re.getRdToken(clt, sw)
 	if err != nil {
 		re.IncFailToken()
