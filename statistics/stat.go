@@ -23,6 +23,7 @@ type Stat struct {
 	AverageToken           int64         `json:"AverageToken"`
 	SentTokenNum           int64
 	ReportTime             time.Time
+	ReportTimeUnix         int64
 	RequestToken           int64
 	RequestDownloadToken   int64
 	NetLatency             int64 // 上传网路延迟
@@ -88,6 +89,7 @@ func (s *Stat) Mean() {
 	s.SentTokenNum = 0
 	s.SentDownloadTokenNum = 0
 	s.ReportTime = time.Now()
+	s.ReportTimeUnix = time.Now().Unix()
 }
 
 var DefaultStat Stat
