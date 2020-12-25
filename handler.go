@@ -86,10 +86,10 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 
 	log.Printf("[ytfs]flush start:%d\n", number)
-	_, err := wh.YTFS().BatchPut(rqmap)
+	_, err := wh.putShard(rqmap)
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
-	} else {
+	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		log.Printf("[ytfs]flush failure:%s\n", err.Error())
 		statistics.DefaultStat.Lock()
 		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
@@ -139,6 +139,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		return nil
 	} else {
+		//if disableWrite {
+		//	return nil
+		//}
 		atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
 	}
 
@@ -180,7 +183,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
+		//log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
@@ -214,6 +217,31 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
 	return res2client
+}
+
+func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[common.IndexTableKey]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
+	defer cancel()
+
+	var errorC = make(chan error)
+	var success = make(chan map[common.IndexTableKey]byte)
+
+	go func() {
+		res, err := wh.YTFS().BatchPut(batch)
+		if err != nil {
+			errorC <- err
+		}
+		success <- res
+	}()
+
+	select {
+	case err := <-errorC:
+		return nil, err
+	case res := <-success:
+		return res, nil
+	case <-ctx.Done():
+		return nil, fmt.Errorf("ytfs put time out")
+	}
 }
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
@@ -335,13 +363,17 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
 
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
 
 	if !msg.VerifyVHF(resData) {
 		log.Println("data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
 
@@ -351,7 +383,9 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	resp, err := proto.Marshal(&res)
 	if err != nil {
 		log.Println("Marshar response data fail:", err)
-		atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		if msg.AllocId != "" {
+			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
+		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
 	//	log.Println("return msg", 0)

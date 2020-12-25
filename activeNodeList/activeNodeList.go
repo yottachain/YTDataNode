@@ -1,9 +1,12 @@
 package activeNodeList
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -39,16 +42,20 @@ func Update() {
 
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList]", err.Error())
 		return
 	}
 
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
-		fmt.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList]", err.Error())
 		return
 	}
+
+	buf, _ := json.Marshal(nodeList)
+	md5Buf := md5.Sum(buf)
+	log.Println("[activeNodeList] update success", hex.EncodeToString(md5Buf[:]))
 	updateTime = time.Now()
 }
 
