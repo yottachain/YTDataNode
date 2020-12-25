@@ -30,7 +30,7 @@ func (re *RecoverEngine)processRequests(){
 	for {
 		requestT :=<- re.queue
 		receiveTask++
-		log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
+		//log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
 
 		if 0 == re.startTskTmCtl {
 			startTsk = time.Now()
@@ -40,8 +40,6 @@ func (re *RecoverEngine)processRequests(){
 
 		if len(re.queue) <= 0 {
 			re.startTskTmCtl = 0
-			//log.Println("[recover] task_package now_time_que_empty=",time.Now().Unix(),"len=",len(re.queue)+1)
-			//continue
 		}
 
 		if time.Now().Sub(startTsk).Seconds() > (float64(requestT.TaskLife-120)){
@@ -71,7 +69,6 @@ func (re *RecoverEngine)processRequests(){
 
 func (re *RecoverEngine)modifyPoolSize(){
 	utp := re.Upt
-	//configweight := re.sn.Config().ShardRbdConcurrent
 
     for{
     	<-time.After(time.Second * 600)

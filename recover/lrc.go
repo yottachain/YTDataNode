@@ -89,12 +89,11 @@ effortwk:
 	if len(indexs2) > 0 && effortsw > 0{
 		indexs = indexs[0:0]
 		indexs = indexs2[:]
-		log.Println("[recover][optimize][2] indexs=",indexs)
 		indexs2 = indexs2[0:0]
 	}
 
-	log.Println("[recover]need shard list", indexs, len(indexs))
-	//log.Println("[recover] ShardExist=",lrch.si.ShardExist)
+	//log.Println("[recover]need shard list", indexs, len(indexs))
+
 	k := 0
 	for _, idx := range indexs {
 		k++
@@ -139,7 +138,6 @@ effortwk:
 			continue
 		}
 
-		log.Println("[recover][ytlrc] shard_len=",len(shard))
 		if ! message.VerifyVHF(shard, td.Hashs[idx]) {
 			log.Println("[recover] shard_verify_failed! idx=",idx,"shardindex=",shard[0],"reqVHF=",base58.Encode(td.Hashs[idx]), "shardVHF=",base58.Encode(message.CaculateHash(shard)))
 			continue
@@ -160,8 +158,6 @@ effortwk:
 			}
 		}else if status < 0 {     //rebuild failed
 			log.Println("[recover] low_level_lrc status=",status)
-		}else {
-
 		}
 	}
 
@@ -169,8 +165,6 @@ effortwk:
 		log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 		return nil, fmt.Errorf("rebuild data failed, time expired")
 	}
-
-	log.Println("[recover] retry_times=",31-efforttms,"stage=",n)
 
 	efforttms--
 
@@ -185,7 +179,6 @@ effortwk:
 		effortsw = 1
 		goto effortwk
 	}
-	log.Println("[recover] check_rebuild_time_expired! spendtime=",time.Now().Sub(pkgstart).Seconds())
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
