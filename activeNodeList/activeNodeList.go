@@ -129,7 +129,7 @@ func GetNodeListByTime(duration time.Duration) []Data {
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()
-	if time.Now().Sub(updateTime) > time.Minute {
+	if time.Now().Sub(updateTime) > time.Minute*30 {
 		Update()
 	}
 
