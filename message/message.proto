@@ -80,6 +80,7 @@ message StatusRepReq {
     uint64 tx=13;
     uint64 rx=14;
     string Other=15;
+    string hash=16;
 }
 
 message StatusRepResp {
