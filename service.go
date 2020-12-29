@@ -335,8 +335,12 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		var resMsg message.StatusRepResp
 		proto.Unmarshal(res[2:], &resMsg)
 		sn.owner.BuySpace = resMsg.ProductiveSpace
-		if resMsg.ProductiveSpace < 0 {
+		if resMsg.ProductiveSpace == -1 {
 			disableReport = true
+		}
+		if resMsg.ProductiveSpace == -2 {
+			log.Println("[report] error")
+			return
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
