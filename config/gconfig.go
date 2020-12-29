@@ -40,6 +40,7 @@ type Gcfg struct {
 	ElkReport          bool
 	DiskTimeout        int
 	RandDownloadNum    int
+	NodeListUpdateTime int
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -153,20 +154,21 @@ func NewGConfig() *GConfig {
 
 	var gc = GConfig{
 		Gcfg: Gcfg{
-			MaxToken:          500,
-			MinToken:          1,
-			TTL:               10,
-			Increase:          30,
-			IncreaseThreshold: 95,
-			Decrease:          5,
-			DecreaseThreshold: 80,
-			TokenWait:         800,
-			TokenReturnWait:   800,
-			OutlineTimeRange:  600,
-			BanTime:           180,
-			ElkReport:         false,
-			RandDownloadNum:   2,
-			DiskTimeout:       5000,
+			MaxToken:           500,
+			MinToken:           1,
+			TTL:                10,
+			Increase:           30,
+			IncreaseThreshold:  95,
+			Decrease:           5,
+			DecreaseThreshold:  80,
+			TokenWait:          800,
+			TokenReturnWait:    800,
+			OutlineTimeRange:   600,
+			BanTime:            180,
+			ElkReport:          false,
+			RandDownloadNum:    2,
+			DiskTimeout:        5000,
+			NodeListUpdateTime: 10,
 		},
 		OnUpdate: nil,
 	}
