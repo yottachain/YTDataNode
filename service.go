@@ -334,7 +334,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	} else {
 		var resMsg message.StatusRepResp
 		proto.Unmarshal(res[2:], &resMsg)
-		sn.owner.BuySpace = resMsg.ProductiveSpace
+		sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 		if resMsg.ProductiveSpace == -1 {
 			disableReport = true
 		}
