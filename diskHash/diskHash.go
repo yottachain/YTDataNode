@@ -16,7 +16,7 @@ const CheckBlockSize = 64 + 16*1024
 func randShard(n int) map[common.IndexTableKey][]byte {
 	var res = make(map[common.IndexTableKey][]byte, n)
 	for i := 0; i < 5; i++ {
-		buf := make([]byte, 16)
+		buf := make([]byte, 16*1024)
 		rand.Read(buf)
 		key := md5.Sum(buf)
 		res[key] = buf
