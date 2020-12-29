@@ -8,6 +8,7 @@ import (
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
@@ -38,6 +39,7 @@ type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
+var disableReport = false
 
 func (sn *storageNode) Service() {
 	setRLimit.SetRLimit()
@@ -101,7 +103,7 @@ func (sn *storageNode) Service() {
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
-		if res == nil || len(res) < 3 {
+		if res == nil || len(res) < 3 || disableReport {
 			return nil, fmt.Errorf("no token")
 		}
 		return res, nil
@@ -230,6 +232,11 @@ var first = true
 
 // Report 上报状态
 func Report(sn *storageNode, rce *rc.RecoverEngine) {
+	if disableReport {
+		log.Println("miner disable")
+		return
+	}
+
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -258,6 +265,13 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
 	msg.Tx = GetXX("T")
+
+	hash, err := diskHash.GetHash(sn.YTFS())
+	if err == nil {
+		msg.Hash = hash
+	} else {
+		log.Println("[diskHash]", err.Error())
+	}
 
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
@@ -321,6 +335,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		var resMsg message.StatusRepResp
 		proto.Unmarshal(res[2:], &resMsg)
 		sn.owner.BuySpace = resMsg.ProductiveSpace
+		if resMsg.ProductiveSpace < 0 {
+			disableReport = true
+		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
 			if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err == nil {
