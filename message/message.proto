@@ -84,7 +84,7 @@ message StatusRepReq {
 }
 
 message StatusRepResp {
-    uint64 productiveSpace=1; 
+    int64 productiveSpace=1;
     string relayUrl=2;                 
 }
 
