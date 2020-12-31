@@ -127,9 +127,14 @@ func GetNodeListByTime(duration time.Duration) []Data {
 }
 
 func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
+
 	var groupList = GetGroupList()
 	var lg = len(groupList)
 	var res = make([]Data, 0)
+
+	if lg == 0 || duration == 0 {
+		return nil
+	}
 
 	d := getYesterdayDuration()
 	index := (d / duration) % time.Duration(lg)
