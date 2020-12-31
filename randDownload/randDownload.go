@@ -138,16 +138,16 @@ func Run() {
 
 				err := DownloadFromRandNode()
 				if err != nil {
-					if config.IsDev {
-						log.Println("[randDownload]error", err.Error())
-					}
+					//if config.IsDev {
+					//	log.Println("[randDownload]error", err.Error())
+					//}
 					atomic.AddUint64(&errorCount, 1)
 				} else {
 					atomic.AddUint64(&successCount, 1)
 				}
 			}()
 		} else {
-			time.Sleep(time.Millisecond * 1000)
+			time.Sleep(time.Minute)
 		}
 	}
 }
