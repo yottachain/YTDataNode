@@ -126,6 +126,23 @@ func GetNodeListByTime(duration time.Duration) []Data {
 	return GetNodeListByGroup(groupList[index])
 }
 
+func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
+	var groupList = GetGroupList()
+	var lg = len(groupList)
+	var res = make([]Data, 0)
+
+	d := getYesterdayDuration()
+	index := (d / duration) % time.Duration(lg)
+	for i := 0; i < size; i++ {
+		if int(index) >= lg {
+			index = 0
+		}
+		res = append(res, GetNodeListByGroup(groupList[index])...)
+		index++
+	}
+	return res
+}
+
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()

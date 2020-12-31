@@ -23,24 +23,25 @@ var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 type UpdateHandler func(gc Gcfg)
 
 type Gcfg struct {
-	MaxToken           int    `json:"MaxToken"`
-	MinToken           int    `json:"MinToken"`
-	TTL                int64  `json:"TTL"`
-	Increase           int64  `json:"Increase"`
-	IncreaseThreshold  int64  `json:"IncreaseThreshold"`
-	Decrease           int64  `json:"Decrease"`
-	DecreaseThreshold  int64  `json:"DecreaseThreshold"`
-	TokenWait          int64  `json:"TokenWait"`
-	TokenReturnWait    int64  `json:"TokenReturnWait"`
-	Clean              int    `json:"Clean"`
-	ShardRbdConcurrent uint16 `json:"ShardRbdConcurrent"`
-	OutlineTimeRange   int    `json:"OutlineTimeRange"`
-	MinVersion         int    `json:"MinVersion"`
-	BanTime            int
-	ElkReport          bool
-	DiskTimeout        int
-	RandDownloadNum    int
-	NodeListUpdateTime int
+	MaxToken              int    `json:"MaxToken"`
+	MinToken              int    `json:"MinToken"`
+	TTL                   int64  `json:"TTL"`
+	Increase              int64  `json:"Increase"`
+	IncreaseThreshold     int64  `json:"IncreaseThreshold"`
+	Decrease              int64  `json:"Decrease"`
+	DecreaseThreshold     int64  `json:"DecreaseThreshold"`
+	TokenWait             int64  `json:"TokenWait"`
+	TokenReturnWait       int64  `json:"TokenReturnWait"`
+	Clean                 int    `json:"Clean"`
+	ShardRbdConcurrent    uint16 `json:"ShardRbdConcurrent"`
+	OutlineTimeRange      int    `json:"OutlineTimeRange"`
+	MinVersion            int    `json:"MinVersion"`
+	BanTime               int
+	ElkReport             bool
+	DiskTimeout           int
+	RandDownloadNum       int
+	RandDownloadGroupSize int
+	NodeListUpdateTime    int
 }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -154,21 +155,22 @@ func NewGConfig() *GConfig {
 
 	var gc = GConfig{
 		Gcfg: Gcfg{
-			MaxToken:           500,
-			MinToken:           1,
-			TTL:                10,
-			Increase:           30,
-			IncreaseThreshold:  95,
-			Decrease:           5,
-			DecreaseThreshold:  80,
-			TokenWait:          800,
-			TokenReturnWait:    800,
-			OutlineTimeRange:   600,
-			BanTime:            180,
-			ElkReport:          false,
-			RandDownloadNum:    2,
-			DiskTimeout:        5000,
-			NodeListUpdateTime: 10,
+			MaxToken:              500,
+			MinToken:              1,
+			TTL:                   10,
+			Increase:              30,
+			IncreaseThreshold:     95,
+			Decrease:              5,
+			DecreaseThreshold:     80,
+			TokenWait:             800,
+			TokenReturnWait:       800,
+			OutlineTimeRange:      600,
+			BanTime:               180,
+			ElkReport:             false,
+			RandDownloadNum:       2,
+			RandDownloadGroupSize: 1,
+			DiskTimeout:           5000,
+			NodeListUpdateTime:    10,
 		},
 		OnUpdate: nil,
 	}

@@ -21,7 +21,7 @@ import (
 var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
-	nodeList := activeNodeList.GetNodeListByTime(time.Minute * time.Duration(config.Gconfig.NodeListUpdateTime))
+	nodeList := activeNodeList.GetNodeListByTimeAndGroupSize(time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize)
 
 	pi := &peer.AddrInfo{}
 	nl := len(nodeList)
@@ -119,25 +119,32 @@ func DownloadFromRandNode() error {
 }
 
 func Run() {
-	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
 	var successCount uint64
 	var errorCount uint64
+	var execCount uint64
+
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount)
+			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", atomic.LoadUint64(&execCount))
 		}
 	}()
 	for {
-		queue <- struct{}{}
-		go func(queue chan struct{}) {
-			err := DownloadFromRandNode()
-			if err != nil {
-				atomic.AddUint64(&errorCount, 1)
-			} else {
-				atomic.AddUint64(&successCount, 1)
-			}
-			<-queue
-		}(queue)
+		ec := atomic.LoadUint64(&execCount)
+		if ec < uint64(TaskPool.Utp().GetTFillTKSpeed())/2 || ec < uint64(config.Gconfig.RandDownloadNum) {
+			go func() {
+				atomic.AddUint64(&execCount, 1)
+				defer atomic.AddUint64(&execCount, -1)
+
+				err := DownloadFromRandNode()
+				if err != nil {
+					atomic.AddUint64(&errorCount, 1)
+				} else {
+					atomic.AddUint64(&successCount, 1)
+				}
+			}()
+		} else {
+			time.Sleep(time.Second)
+		}
 	}
 }
