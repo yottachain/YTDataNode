@@ -138,6 +138,7 @@ func Run() {
 
 				err := DownloadFromRandNode()
 				if err != nil {
+					log.Println("[randDownload]error", err.Error())
 					atomic.AddUint64(&errorCount, 1)
 				} else {
 					atomic.AddUint64(&successCount, 1)
