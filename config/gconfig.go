@@ -186,5 +186,6 @@ func init() {
 	if isDev, ok := os.LookupEnv("ytfs_dev"); ok && isDev == "1" {
 		update_url = "http://dnapi.yottachain.net/config/dnconfig_dev.json"
 		IsDev = true
+		log.Println("dev mode")
 	}
 }
