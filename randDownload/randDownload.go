@@ -121,7 +121,7 @@ func DownloadFromRandNode() error {
 func Run() {
 	var successCount uint64
 	var errorCount uint64
-	var execCount uint64
+	var execCount int64
 
 	go func() {
 		for {
@@ -130,11 +130,11 @@ func Run() {
 		}
 	}()
 	for {
-		ec := atomic.LoadUint64(&execCount)
-		if ec < uint64(TaskPool.Utp().GetTFillTKSpeed())/2 || ec < uint64(config.Gconfig.RandDownloadNum) {
+		ec := atomic.LoadInt64(&execCount)
+		if ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 || ec < int64(config.Gconfig.RandDownloadNum) {
 			go func() {
-				atomic.AddUint64(&execCount, 1)
-				defer atomic.AddUint64(&execCount, -1)
+				atomic.AddInt64(&execCount, 1)
+				defer atomic.AddInt64(&execCount, -1)
 
 				err := DownloadFromRandNode()
 				if err != nil {
@@ -144,7 +144,7 @@ func Run() {
 				}
 			}()
 		} else {
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 100)
 		}
 	}
 }
