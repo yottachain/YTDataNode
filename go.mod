@@ -28,4 +28,5 @@ require (
 	github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopl.io v0.0.0-20200323155855-65c318dde95e // indirect
 )
