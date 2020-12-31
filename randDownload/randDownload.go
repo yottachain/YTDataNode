@@ -126,7 +126,7 @@ func Run() {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", atomic.LoadUint64(&execCount))
+			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", atomic.LoadInt64(&execCount))
 		}
 	}()
 	for {
