@@ -4,12 +4,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
-	"math/rand"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
@@ -17,14 +14,11 @@ import (
 var locker = sync.RWMutex{}
 
 func getUrl() string {
-	var url string
-	i := rand.Intn(len(config.DefaultConfig.BPList))
-	timeRange := config.Gconfig.OutlineTimeRange
-	if timeRange == 0 {
-		timeRange = 600
+	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+	if config.IsDev == false {
+		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
 	}
-	peerInfo := config.DefaultConfig.BPList[i]
-	url = fmt.Sprintf("http://%s:8082/readable_nodes", strings.Split(peerInfo.Addrs[0], "/")[2])
+
 	return url
 }
 
