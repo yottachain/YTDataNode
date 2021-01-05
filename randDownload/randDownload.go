@@ -18,6 +18,8 @@ import (
 	"time"
 )
 
+var errNoTK = fmt.Errorf("notk")
+
 var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
@@ -49,9 +51,8 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	return pi, nil
 }
 
-func DownloadFromRandNode() error {
+func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	var err error
-	atomic.AddInt64(&statistics.DefaultStat.RandDownloadCount, 1)
 
 	pi, err := GetRandNode()
 	if err != nil {
@@ -62,14 +63,7 @@ func DownloadFromRandNode() error {
 		return fmt.Errorf("no storage-node")
 	}
 
-	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancle()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
-	if err != nil {
-		return err
-	}
-
-	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
 	if err != nil {
 		return err
 	}
@@ -78,18 +72,17 @@ func DownloadFromRandNode() error {
 	getTokenMsg.RequestMsgID = message.MsgIDDownloadShardRequest.Value() + 1
 	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
-		TaskPool.Utp().Delete(utk)
-		return err
+		return errNoTK
 	}
 
 	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
 	if err != nil {
-		return err
+		return errNoTK
 	}
 	var tokenMsg message.NodeCapacityResponse
 	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
 	if err != nil {
-		return err
+		return errNoTK
 	}
 
 	var downloadMsg message.TestGetBlock
@@ -97,6 +90,7 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
+	atomic.AddInt64(&statistics.DefaultStat.RandDownloadCount, 1)
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
 	if err != nil {
 		return err
@@ -112,7 +106,6 @@ func DownloadFromRandNode() error {
 	if err != nil {
 		return err
 	}
-	TaskPool.Utp().Delete(utk)
 
 	atomic.AddInt64(&statistics.DefaultStat.RandDownloadSuccess, 1)
 	return nil
@@ -133,14 +126,19 @@ func Run() {
 		ec := atomic.LoadInt64(&execCount)
 		if ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum) {
 			go func() {
+				ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
+				defer cancle()
+				utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+				if err != nil {
+					return
+				}
+				defer TaskPool.Utp().Delete(utk)
+
 				atomic.AddInt64(&execCount, 1)
 				defer atomic.AddInt64(&execCount, -1)
 
-				err := DownloadFromRandNode()
-				if err != nil {
-					//if config.IsDev {
-					//	log.Println("[randDownload]error", err.Error())
-					//}
+				err = DownloadFromRandNode(utk, ctx)
+				if err != nil && err.Error() == errNoTK.Error() {
 					atomic.AddUint64(&errorCount, 1)
 				} else {
 					atomic.AddUint64(&successCount, 1)
