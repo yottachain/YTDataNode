@@ -67,6 +67,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer clt.Close()
 
 	var getTokenMsg message.NodeCapacityRequest
 	getTokenMsg.RequestMsgID = message.MsgIDDownloadShardRequest.Value() + 1
@@ -102,7 +103,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return err
 	}
 
-	_, err = clt.SendMsgClose(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
 	if err != nil {
 		return err
 	}
