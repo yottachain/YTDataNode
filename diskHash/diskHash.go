@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/util"
 	ytfs "github.com/yottachain/YTFS"
 	"github.com/yottachain/YTFS/common"
 	"os"
+	"path"
 )
 
 const CheckBlockSize = 64 + 16*1024
@@ -59,4 +61,28 @@ func GetHash(ytfs *ytfs.YTFS) (string, error) {
 
 	md5buf := md5.Sum(buf)
 	return hex.EncodeToString(md5buf[:]), nil
+}
+func GetHead() []byte {
+	cfg := config.DefaultConfig
+	s1 := cfg.Storages[0]
+	fl, err := os.OpenFile(s1.StorageName, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil
+	}
+	defer fl.Close()
+
+	buf := make([]byte, CheckBlockSize)
+	fl.Read(buf)
+	return buf
+}
+
+func CopyHead() {
+	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), "head.file"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	if err == nil {
+		defer fl.Close()
+
+		head := GetHead()
+		fl.Write(head)
+	}
+
 }

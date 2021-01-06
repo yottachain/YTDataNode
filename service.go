@@ -338,6 +338,8 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 		if resMsg.ProductiveSpace == -1 {
 			disableReport = true
+		} else {
+			diskHash.CopyHead()
 		}
 		if resMsg.ProductiveSpace == -2 {
 			log.Println("[report] error")
