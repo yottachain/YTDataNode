@@ -145,8 +145,8 @@ func Run() {
 					atomic.AddUint64(&successCount, 1)
 				}
 			}()
-		} else {
-			time.Sleep(time.Minute)
 		}
+
+		<-time.After(time.Millisecond * 100)
 	}
 }
