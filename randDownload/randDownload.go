@@ -91,7 +91,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	atomic.AddInt64(&statistics.DefaultStat.RandDownloadCount, 1)
+	statistics.DefaultStat.DownloadTest.AddCount()
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return err
 	}
 
-	atomic.AddInt64(&statistics.DefaultStat.RandDownloadSuccess, 1)
+	statistics.DefaultStat.DownloadTest.AddSuccess()
 	return nil
 }
 

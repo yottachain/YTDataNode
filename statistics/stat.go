@@ -37,14 +37,16 @@ type Stat struct {
 	AverageDownloadToken   int64
 	DownloadNetLatency     int64 // 下载网络延迟
 	DownloadDiskLatency    int64
-	RandDownloadCount      int64 // 仅矿机间下载计数
-	RandDownloadSuccess    int64 // 仅矿机间下载成功计数
-	Ban                    bool
-	DownloadData404        int64
-	MediumError            int64
-	NoSpaceError           int64
-	RangeFullError         int64
-	IndexDBOpt             *ytfsOpts.Options
+	UploadTest             *RateCounter
+	DownloadTest           *RateCounter
+	//RandDownloadCount      int64 // 仅矿机间下载计数
+	//RandDownloadSuccess    int64 // 仅矿机间下载成功计数
+	Ban             bool
+	DownloadData404 int64
+	MediumError     int64
+	NoSpaceError    int64
+	RangeFullError  int64
+	IndexDBOpt      *ytfsOpts.Options
 	sync.RWMutex
 }
 
@@ -85,9 +87,13 @@ func (s *Stat) Mean() {
 
 	s.AverageToken = s.SentTokenNum / td
 	s.AverageDownloadToken = s.SentDownloadTokenNum / td
+	s.reset()
+}
 
+func (s *Stat) reset() {
 	s.SentTokenNum = 0
 	s.SentDownloadTokenNum = 0
+
 	s.ReportTime = time.Now()
 	s.ReportTimeUnix = time.Now().Unix()
 }
@@ -129,6 +135,8 @@ func GetConnectionNumber() int {
 func InitDefaultStat() {
 	DefaultStat.UpTime = time.Now().Unix()
 	DefaultStat.ReportTime = time.Now()
+	DefaultStat.UploadTest = new(RateCounter)
+	DefaultStat.DownloadTest = new(RateCounter)
 
 	//go func() {
 	//	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
