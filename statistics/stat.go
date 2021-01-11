@@ -11,11 +11,11 @@ import (
 
 type Stat struct {
 	SaveRequestCount       int64         `json:"SaveRequestCount"` // 上传请求数量
-	SaveSuccessCount       int64         `json:"SaveSuccessCount"` // 保存成功数量
+	SaveSuccessCount       int64         `json:"SaveSuccessCount"` // 保存成功数量，改为上传仅rpc接口成功数量统计
 	YTFSErrorCount         uint64        `json:"ytfs_error_count"`
 	TokenQueueLen          int           `json:"TokenQueueLen"`
 	AvailableTokenNumber   int           `json:"AvailableTokenNumber""`
-	SentToken              int64         `json:"SentToken"` // 发送token数量
+	SentToken              int64         `json:"SentToken"` // 发送token数量，改为仅RPC调用成功发送token数量
 	UseKvDb                bool          `json:"UseKvDb"`
 	TokenFillSpeed         time.Duration `json:"TokenFillSpeed"`
 	UpTime                 int64         `json:"UpTime"`
@@ -31,14 +31,14 @@ type Stat struct {
 	GconfigMd5             string
 	RebuildShardStat       *recover2.RecoverStat
 	DownloadTokenFillSpeed time.Duration
-	SentDownloadToken      int64 // 下载发送token数量
-	DownloadSuccessCount   int64 // 下载成功数量
+	SentDownloadToken      int64 // 下载发送token数量，改为仅RPC接口
+	DownloadSuccessCount   int64 // 下载成功数量，改为仅RPC接口
 	SentDownloadTokenNum   int64
 	AverageDownloadToken   int64
 	DownloadNetLatency     int64 // 下载网络延迟
 	DownloadDiskLatency    int64
-	RandDownloadCount      int64
-	RandDownloadSuccess    int64
+	RandDownloadCount      int64 // 仅矿机间下载计数
+	RandDownloadSuccess    int64 // 仅矿机间下载成功计数
 	Ban                    bool
 	DownloadData404        int64
 	MediumError            int64
