@@ -10,35 +10,35 @@ import (
 )
 
 type Stat struct {
-	RXRequest              int64         `json:"RXRequest"` // 上传请求数量
-	RXSuccess              int64         `json:"RXSuccess"` // 保存成功数量，改为上传仅rpc接口成功数量统计
-	YTFSErrorCount         uint64        `json:"ytfs_error_count"`
-	TokenQueueLen          int           `json:"TokenQueueLen"`
-	AvailableTokenNumber   int           `json:"AvailableTokenNumber""`
-	RXToken                int64         `json:"RXToken"` // 发送token数量，改为仅RPC调用成功发送token数量
-	UseKvDb                bool          `json:"UseKvDb"`
-	TokenFillSpeed         time.Duration `json:"TokenFillSpeed"`
-	UpTime                 int64         `json:"UpTime"`
-	Connection             int           `json:"Connection"`
-	AverageToken           int64         `json:"AverageToken"`
-	SentTokenNum           int64
-	ReportTime             time.Time
-	ReportTimeUnix         int64
-	RequestToken           int64
-	RequestDownloadToken   int64
-	RXNetLatency           int64 // 上传网路延迟
-	RXDiskLatency          int64 // 上传硬盘延迟
-	GconfigMd5             string
-	RebuildShardStat       *recover2.RecoverStat
-	DownloadTokenFillSpeed time.Duration
-	TXToken                int64 // 下载发送token数量，改为仅RPC接口
-	TXSuccess              int64 // 下载成功数量，改为仅RPC接口
-	SentDownloadTokenNum   int64
-	AverageDownloadToken   int64
-	TXNetLatency           int64 // 下载网络延迟
-	TXDiskLatency          int64
-	RXTest                 *RateCounter
-	TXTest                 *RateCounter
+	RXRequest            int64         `json:"RXRequest"` // 上传请求数量
+	RXSuccess            int64         `json:"RXSuccess"` // 保存成功数量，改为上传仅rpc接口成功数量统计
+	YTFSErrorCount       uint64        `json:"ytfs_error_count"`
+	TokenQueueLen        int           `json:"TokenQueueLen"`
+	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
+	RXToken              int64         `json:"RXToken"` // 发送token数量，改为仅RPC调用成功发送token数量
+	UseKvDb              bool          `json:"UseKvDb"`
+	RXTokenFillSpeed     time.Duration `json:"RXTokenFillSpeed"`
+	UpTime               int64         `json:"UpTime"`
+	Connection           int           `json:"Connection"`
+	AverageToken         int64         `json:"AverageToken"`
+	SentTokenNum         int64
+	ReportTime           time.Time
+	ReportTimeUnix       int64
+	RXRequestToken       int64
+	TXRequestToken       int64
+	RXNetLatency         int64 // 上传网路延迟
+	RXDiskLatency        int64 // 上传硬盘延迟
+	GconfigMd5           string
+	RebuildShardStat     *recover2.RecoverStat
+	TXTokenFillSpeed     time.Duration
+	TXToken              int64 // 下载发送token数量，改为仅RPC接口
+	TXSuccess            int64 // 下载成功数量，改为仅RPC接口
+	SentDownloadTokenNum int64
+	AverageDownloadToken int64
+	TXNetLatency         int64 // 下载网络延迟
+	TXDiskLatency        int64
+	RXTest               *RateCounter
+	TXTest               *RateCounter
 	//RandDownloadCount      int64 // 仅矿机间下载计数
 	//RandDownloadSuccess    int64 // 仅矿机间下载成功计数
 	Ban             bool

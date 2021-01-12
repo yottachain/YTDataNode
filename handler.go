@@ -133,7 +133,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	// 判断是上传还是下载
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
-		atomic.AddInt64(&statistics.DefaultStat.RequestDownloadToken, 1)
+		atomic.AddInt64(&statistics.DefaultStat.TXRequestToken, 1)
 		isUpload = false
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
@@ -142,7 +142,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		//if disableWrite {
 		//	return nil
 		//}
-		atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
+		atomic.AddInt64(&statistics.DefaultStat.RXRequestToken, 1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)

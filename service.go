@@ -80,10 +80,10 @@ func (sn *storageNode) Service() {
 	// 统计归零
 	utp.OnChange(func(pt *TaskPool.TaskPool) {
 		atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
-		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
 	})
 	dtp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.RequestDownloadToken, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
 	})
 
 	statistics.DefaultStat.TokenQueueLen = 200
@@ -276,11 +276,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
-	if int(statistics.DefaultStat.TokenFillSpeed) > config.Gconfig.MaxToken {
-		statistics.DefaultStat.TokenFillSpeed = 100
+	statistics.DefaultStat.RXTokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
+	if int(statistics.DefaultStat.RXTokenFillSpeed) > config.Gconfig.MaxToken {
+		statistics.DefaultStat.RXTokenFillSpeed = 100
 	}
-	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
+	statistics.DefaultStat.TXTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
@@ -296,7 +296,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.TokenFillSpeed = 1
+		statistics.DefaultStat.RXTokenFillSpeed = 1
 	}
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
