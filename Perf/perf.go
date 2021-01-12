@@ -123,7 +123,7 @@ func testOne(clt *client.YTHostClient, task *message.TestMinerPerfTask, timeOut 
 }
 
 func GetBlock(data []byte) (res []byte, err error) {
-	statistics.DefaultStat.UploadTest.AddCount()
+	statistics.DefaultStat.RXTest.AddCount()
 	var msg message.TestGetBlock
 	err = proto.Unmarshal(data, &msg)
 	if err != nil {
@@ -136,6 +136,6 @@ func GetBlock(data []byte) (res []byte, err error) {
 		rand.Read(resMsg.Msg)
 	}
 	res, err = proto.Marshal(&resMsg)
-	statistics.DefaultStat.UploadTest.AddCount()
+	statistics.DefaultStat.RXTest.AddCount()
 	return
 }
