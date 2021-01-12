@@ -276,11 +276,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.RXTokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
-	if int(statistics.DefaultStat.RXTokenFillSpeed) > config.Gconfig.MaxToken {
-		statistics.DefaultStat.RXTokenFillSpeed = 100
+	statistics.DefaultStat.RXTokenFillRate = TaskPool.Utp().GetTFillTKSpeed()
+	if int(statistics.DefaultStat.RXTokenFillRate) > config.Gconfig.MaxToken {
+		statistics.DefaultStat.RXTokenFillRate = 100
 	}
-	statistics.DefaultStat.TXTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
+	statistics.DefaultStat.TXTokenFillRate = TaskPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
@@ -296,7 +296,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.RXTokenFillSpeed = 1
+		statistics.DefaultStat.RXTokenFillRate = 1
 	}
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 

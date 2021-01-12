@@ -17,10 +17,10 @@ type Stat struct {
 	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
 	RXToken              int64         `json:"RXToken"` // 发送token数量，改为仅RPC调用成功发送token数量
 	UseKvDb              bool          `json:"UseKvDb"`
-	RXTokenFillSpeed     time.Duration `json:"RXTokenFillSpeed"`
+	RXTokenFillRate      time.Duration `json:"RXTokenFillRate"`
 	UpTime               int64         `json:"UpTime"`
 	Connection           int           `json:"Connection"`
-	AverageToken         int64         `json:"AverageToken"`
+	RXAverageToken       int64         `json:"RXAverageToken"`
 	SentTokenNum         int64
 	ReportTime           time.Time
 	ReportTimeUnix       int64
@@ -30,11 +30,11 @@ type Stat struct {
 	RXDiskLatency        int64 // 上传硬盘延迟
 	GconfigMd5           string
 	RebuildShardStat     *recover2.RecoverStat
-	TXTokenFillSpeed     time.Duration
+	TXTokenFillRate      time.Duration
 	TXToken              int64 // 下载发送token数量，改为仅RPC接口
 	TXSuccess            int64 // 下载成功数量，改为仅RPC接口
 	SentDownloadTokenNum int64
-	AverageDownloadToken int64
+	TXAverageToken       int64
 	TXNetLatency         int64 // 下载网络延迟
 	TXDiskLatency        int64
 	RXTest               *RateCounter
@@ -85,8 +85,8 @@ func (s *Stat) Mean() {
 		return
 	}
 
-	s.AverageToken = s.SentTokenNum / td
-	s.AverageDownloadToken = s.SentDownloadTokenNum / td
+	s.RXAverageToken = s.SentTokenNum / td
+	s.TXAverageToken = s.SentDownloadTokenNum / td
 	s.reset()
 }
 
