@@ -27,16 +27,14 @@ func (rc *RateCounter) GetRate() int64 {
 	if rc == nil {
 		return 100
 	}
-	defer func() {
-		if time.Now().Sub(rc.ClearTime) > time.Minute*10 {
-			rc.Reset()
-		}
-	}()
 	count := atomic.LoadInt64(&rc.Count)
 	success := atomic.LoadInt64(&rc.Success) * 100
 	if count == 0 {
 		return 100
 	}
 	rate := success / count
+	if time.Now().Sub(rc.ClearTime) > time.Minute*10 {
+		rc.Reset()
+	}
 	return rate
 }
