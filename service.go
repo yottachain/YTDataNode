@@ -42,8 +42,6 @@ var lt = (&statistics.LastUpTime{}).Read()
 var disableReport = false
 
 func (sn *storageNode) Service() {
-	TaskPool.UploadTP.GetRate = statistics.DefaultStat.RXTest.GetRate
-	TaskPool.DownloadTP.GetRate = statistics.DefaultStat.TXTest.GetRate
 	setRLimit.SetRLimit()
 	Perf.Sn = sn
 	randDownload.Sn = sn
@@ -53,6 +51,8 @@ func (sn *storageNode) Service() {
 
 	// 初始化统计
 	statistics.InitDefaultStat()
+	TaskPool.UploadTP.GetRate = statistics.DefaultStat.RXTest.GetRate
+	TaskPool.DownloadTP.GetRate = statistics.DefaultStat.TXTest.GetRate
 
 	rms = service.NewRelayManage(sn.Host())
 

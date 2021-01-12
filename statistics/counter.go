@@ -24,6 +24,9 @@ func (rc *RateCounter) Reset() {
 }
 
 func (rc *RateCounter) GetRate() int64 {
+	if rc == nil {
+		return 100
+	}
 	defer func() {
 		if time.Now().Sub(rc.ClearTime) > time.Minute*10 {
 			rc.Reset()
