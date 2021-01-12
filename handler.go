@@ -127,17 +127,20 @@ func (wh *WriteHandler) Run() {
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
-	var isUpload = true
+	var tokenType = "upload"
 	err := proto.Unmarshal(data, &GTMsg)
 
 	// 判断是上传还是下载
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
 		atomic.AddInt64(&statistics.DefaultStat.TXRequestToken, 1)
-		isUpload = false
+		tokenType = "download"
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		return nil
+	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDTestGetBlock.Value() {
+		xtp = TaskPool.Dtp()
+		tokenType = "test"
 	} else {
 		//if disableWrite {
 		//	return nil
@@ -175,12 +178,15 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		res.Writable = false
 		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
-		if isUpload {
+		switch tokenType {
+		case "upload":
 			atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
 			atomic.AddInt64(&statistics.DefaultStat.RXToken, 1)
-		} else {
+		case "download":
 			atomic.AddInt64(&statistics.DefaultStat.SentDownloadTokenNum, 1)
 			atomic.AddInt64(&statistics.DefaultStat.TXToken, 1)
+		case "test":
+			statistics.DefaultStat.TXTest.AddCount()
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)

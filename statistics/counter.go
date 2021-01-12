@@ -35,7 +35,7 @@ func (rc *RateCounter) GetRate() int64 {
 	count := atomic.LoadInt64(&rc.Count)
 	success := atomic.LoadInt64(&rc.Success) * 100
 	if count == 0 {
-		return 0
+		return 100
 	}
 	rate := success / count
 	return rate

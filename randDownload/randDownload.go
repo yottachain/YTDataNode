@@ -76,7 +76,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return errNoTK
 	}
 
-	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
+	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), getTKMsgBuf)
 	if err != nil {
 		return errNoTK
 	}
@@ -87,17 +87,20 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	}
 
 	var downloadMsg message.TestGetBlock
+	downloadMsg.Msg = make([]byte, 16*1024)
+	rand.Read(downloadMsg.Msg)
 	downloadBuf, err := proto.Marshal(&downloadMsg)
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.TXTest.AddCount()
+	statistics.DefaultStat.RXTest.AddCount()
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
 	if err != nil {
 		return err
 	}
+
 	var checkTKMsg message.DownloadTKCheck
-	checkTKMsg.Tk = tokenMsg.AllocId
+	checkTKMsg.Tk = "getBlockTK"
 	checkTKBuf, err := proto.Marshal(&checkTKMsg)
 	if err != nil {
 		return err
@@ -107,8 +110,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	statistics.DefaultStat.TXTest.AddSuccess()
+	statistics.DefaultStat.RXTest.AddSuccess()
 	return nil
 }
 
