@@ -7,7 +7,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
@@ -29,7 +28,7 @@ type TaskPool struct {
 	changeHandler     func(pt *TaskPool)
 }
 
-func New(name string, size int, ttl time.Duration, fillInterval time.Duration, GetRate func() int64) *TaskPool {
+func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *TaskPool {
 	// 默认值
 	if size == 0 {
 		size = 500
@@ -37,7 +36,9 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration, G
 
 	tp := new(TaskPool)
 	tp.name = name
-	tp.GetRate = GetRate
+	tp.GetRate = func() int64 {
+		return 100
+	}
 
 	tp.FillTokenInterval = fillInterval
 	tp.TTL = ttl
@@ -238,15 +239,15 @@ func (pt *TaskPool) GetParams() (int64, int64) {
 	return atomic.LoadInt64(&pt.sentToken), atomic.LoadInt64(&pt.requestCount)
 }
 
-var uploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10, statistics.DefaultStat.RXTest.GetRate)
-var downloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10, statistics.DefaultStat.TXTest.GetRate)
+var UploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
+var DownloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
 
 // 上行token任务池
 func Utp() *TaskPool {
-	return uploadTP
+	return UploadTP
 }
 
 // 下行token任务池
 func Dtp() *TaskPool {
-	return downloadTP
+	return DownloadTP
 }
