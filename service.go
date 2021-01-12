@@ -79,7 +79,7 @@ func (sn *storageNode) Service() {
 	var dtp *TaskPool.TaskPool = TaskPool.Dtp()
 	// 统计归零
 	utp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
+		atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
 		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
 	})
 	dtp.OnChange(func(pt *TaskPool.TaskPool) {
@@ -281,13 +281,13 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.TokenFillSpeed = 100
 	}
 	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
-	//statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
-	//statistics.DefaultStat.SentDownloadToken, statistics.DefaultStat.DownloadSuccessCount = TaskPool.Dtp().GetParams()
+	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
+	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
-	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
-	statistics.DefaultStat.DownloadNetLatency = TaskPool.Dtp().NetLatency.Avg()
-	statistics.DefaultStat.DownloadDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
+	statistics.DefaultStat.RXNetLatency = TaskPool.Utp().NetLatency.Avg()
+	statistics.DefaultStat.RXDiskLatency = TaskPool.Utp().DiskLatency.Avg()
+	statistics.DefaultStat.TXNetLatency = TaskPool.Dtp().NetLatency.Avg()
+	statistics.DefaultStat.TXDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()

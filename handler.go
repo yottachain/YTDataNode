@@ -177,10 +177,10 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	} else {
 		if isUpload {
 			atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
-			atomic.AddInt64(&statistics.DefaultStat.SentToken, 1)
+			atomic.AddInt64(&statistics.DefaultStat.RXToken, 1)
 		} else {
 			atomic.AddInt64(&statistics.DefaultStat.SentDownloadTokenNum, 1)
-			atomic.AddInt64(&statistics.DefaultStat.SentDownloadToken, 1)
+			atomic.AddInt64(&statistics.DefaultStat.TXToken, 1)
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)
@@ -194,7 +194,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.SaveRequestCount++
+	statistics.DefaultStat.RXRequest++
 	statistics.DefaultStat.Unlock()
 
 	startTime := time.Now()
@@ -318,7 +318,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 
 	TaskPool.Utp().Delete(tk)
-	atomic.AddInt64(&statistics.DefaultStat.SaveSuccessCount, 1)
+	atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
 	return 0
 }
 
@@ -391,7 +391,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
-	defer atomic.AddInt64(&statistics.DefaultStat.DownloadSuccessCount, 1)
+	atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
 }
