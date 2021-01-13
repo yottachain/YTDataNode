@@ -24,7 +24,7 @@ type TaskPool struct {
 	NetLatency        *delayStat
 	DiskLatency       *delayStat
 	waitCount         int64
-	GetRate           func() int64
+	GetRate           func() int64 `json:"-"`
 	changeHandler     func(pt *TaskPool)
 }
 
