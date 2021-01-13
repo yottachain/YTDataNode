@@ -25,12 +25,12 @@ func (rc *RateCounter) Reset() {
 
 func (rc *RateCounter) GetRate() int64 {
 	if rc == nil {
-		return 100
+		return 80
 	}
 	count := atomic.LoadInt64(&rc.Count)
 	success := atomic.LoadInt64(&rc.Success) * 100
 	if count == 0 {
-		return 100
+		return 80
 	}
 	rate := success / count
 	//if time.Now().Sub(rc.clearTime) > time.Minute*10 {
