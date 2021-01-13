@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	"fmt"
 	"sync/atomic"
 	"time"
 )
@@ -37,4 +38,7 @@ func (rc *RateCounter) GetRate() int64 {
 	//	rc.Reset()
 	//}
 	return rate
+}
+func (rc *RateCounter) Marshal(v interface{}) ([]byte, error) {
+	return []byte(fmt.Sprintf("{\"Count\":%d,\"Success\":%d,\"Rate\":%d}", rc.Count, rc.Success, rc.GetRate())), nil
 }
