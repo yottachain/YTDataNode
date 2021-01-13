@@ -8,7 +8,7 @@ import (
 type RateCounter struct {
 	Count     int64
 	Success   int64
-	ClearTime time.Time
+	clearTime time.Time
 }
 
 func (rc *RateCounter) AddCount() {
@@ -20,7 +20,7 @@ func (rc *RateCounter) AddSuccess() {
 func (rc *RateCounter) Reset() {
 	atomic.StoreInt64(&rc.Count, 0)
 	atomic.StoreInt64(&rc.Success, 0)
-	rc.ClearTime = time.Now()
+	rc.clearTime = time.Now()
 }
 
 func (rc *RateCounter) GetRate() int64 {
@@ -33,8 +33,8 @@ func (rc *RateCounter) GetRate() int64 {
 		return 100
 	}
 	rate := success / count
-	if time.Now().Sub(rc.ClearTime) > time.Minute*10 {
-		rc.Reset()
-	}
+	//if time.Now().Sub(rc.clearTime) > time.Minute*10 {
+	//	rc.Reset()
+	//}
 	return rate
 }
