@@ -19,7 +19,7 @@ import (
 )
 
 var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
-var IsDev = false
+var IsDev = 0
 
 type UpdateHandler func(gc Gcfg)
 
@@ -183,9 +183,14 @@ func NewGConfig() *GConfig {
 var Gconfig = NewGConfig()
 
 func init() {
-	if isDev, ok := os.LookupEnv("ytfs_dev"); ok && isDev == "1" {
+	if isDev, ok := os.LookupEnv("ytfs_dev"); ok {
 		update_url = "http://dnapi.yottachain.net/config/dnconfig_dev.json"
-		IsDev = true
 		log.Println("dev mode")
+		if isDev == "1" {
+			IsDev = 1
+		}
+		if isDev == "2" {
+			IsDev = 2
+		}
 	}
 }
