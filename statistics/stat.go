@@ -21,8 +21,8 @@ type Stat struct {
 	UpTime               int64         `json:"UpTime"`
 	Connection           int           `json:"Connection"`
 	RXAverageToken       int64         `json:"RXAverageToken"`
-	SentTokenNum         int64
-	ReportTime           time.Time
+	SentTokenNum         int64         `json:"-"`
+	ReportTime           time.Time     `json:"-"`
 	ReportTimeUnix       int64
 	RXRequestToken       int64
 	TXRequestToken       int64
@@ -33,7 +33,7 @@ type Stat struct {
 	TXTokenFillRate      time.Duration
 	TXToken              int64 // 下载发送token数量，改为仅RPC接口
 	TXSuccess            int64 // 下载成功数量，改为仅RPC接口
-	SentDownloadTokenNum int64
+	SentDownloadTokenNum int64 `json:"-"`
 	TXAverageToken       int64
 	TXNetLatency         int64 // 下载网络延迟
 	TXDiskLatency        int64

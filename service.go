@@ -135,7 +135,6 @@ func (sn *storageNode) Service() {
 		lat := time.Now().Sub(tk.Tm)
 		if lat > time.Second*10 {
 			tmstr := tk.Tm.Format("20060102030405")
-			fmt.Println("[check token]token time out", lat.Milliseconds(), tmstr)
 			return nil, fmt.Errorf("token time out , token time %s", tmstr)
 		}
 		TaskPool.Dtp().NetLatency.Add(lat)

@@ -9,6 +9,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost/client"
 	"time"
@@ -132,5 +133,6 @@ func GetBlock(data []byte) (res []byte, err error) {
 	resMsg.Msg = make([]byte, testBlockSize)
 	rand.Read(resMsg.Msg)
 	res, err = proto.Marshal(&resMsg)
+	statistics.DefaultStat.TXTest.AddSuccess()
 	return
 }

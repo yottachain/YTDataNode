@@ -19,12 +19,10 @@ type TaskPool struct {
 	tkc               *TokenQueue
 	TTL               time.Duration `json:"ttl"`
 	FillTokenInterval time.Duration `json:"fillTokenInterval"`
-	sentToken         int64
-	requestCount      int64
 	NetLatency        *delayStat
 	DiskLatency       *delayStat
 	waitCount         int64
-	GetRate           func() int64
+	GetRate           func() int64 `json:"-"`
 	changeHandler     func(pt *TaskPool)
 }
 
@@ -83,7 +81,6 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 		}
 		tk.PID = pid
 		tk.Reset()
-		atomic.AddInt64(&pt.sentToken, 1)
 		return tk, nil
 	case <-ctx.Done():
 		return nil, fmt.Errorf("ctx time out")
@@ -97,10 +94,6 @@ func (pt *TaskPool) Check(tk *Token) bool {
 }
 
 func (pt *TaskPool) Delete(tk *Token) bool {
-	if atomic.LoadInt64(&pt.sentToken) < 1 {
-		return false
-	}
-	atomic.AddInt64(&pt.requestCount, 1)
 	return false
 }
 
@@ -173,8 +166,6 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 	}
 	pt.FillTokenInterval = duration
 	if makeZero {
-		atomic.StoreInt64(&pt.sentToken, 0)
-		atomic.StoreInt64(&pt.requestCount, 0)
 		if pt.changeHandler != nil {
 			pt.changeHandler(pt)
 		}
@@ -236,7 +227,7 @@ func (pt *TaskPool) Load() {
 }
 
 func (pt *TaskPool) GetParams() (int64, int64) {
-	return atomic.LoadInt64(&pt.sentToken), atomic.LoadInt64(&pt.requestCount)
+	return 0, 0
 }
 
 var UploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)

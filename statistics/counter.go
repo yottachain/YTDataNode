@@ -33,8 +33,8 @@ func (rc *RateCounter) GetRate() int64 {
 		return 80
 	}
 	rate := success / count
-	//if time.Now().Sub(rc.clearTime) > time.Minute*10 {
-	//	rc.Reset()
-	//}
+	if time.Now().Sub(rc.clearTime) > time.Minute*10 {
+		rc.Reset()
+	}
 	return rate
 }
