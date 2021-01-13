@@ -99,17 +99,17 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return err
 	}
 
-	var checkTKMsg message.DownloadTKCheck
-	checkTKMsg.Tk = "getBlockTK"
-	checkTKBuf, err := proto.Marshal(&checkTKMsg)
-	if err != nil {
-		return err
-	}
-
-	_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
-	if err != nil {
-		return err
-	}
+	//var checkTKMsg message.DownloadTKCheck
+	//checkTKMsg.Tk = "getBlockTK"
+	//checkTKBuf, err := proto.Marshal(&checkTKMsg)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	//if err != nil {
+	//	return err
+	//}
 	statistics.DefaultStat.RXTest.AddSuccess()
 	return nil
 }
