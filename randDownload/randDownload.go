@@ -52,6 +52,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 }
 
 func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
+	statistics.DefaultStat.RXTest.AddCount()
 	var err error
 
 	pi, err := GetRandNode()
@@ -93,7 +94,6 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTest.AddCount()
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func Run() {
 				defer atomic.AddInt64(&execCount, -1)
 
 				err = DownloadFromRandNode(utk, ctx)
-				if err != nil && err.Error() == errNoTK.Error() {
+				if err != nil && err.Error() != errNoTK.Error() {
 					atomic.AddUint64(&errorCount, 1)
 				} else {
 					atomic.AddUint64(&successCount, 1)
