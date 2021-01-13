@@ -143,8 +143,10 @@ func Run() {
 				err = DownloadFromRandNode(utk, ctx)
 				if err != nil && err.Error() != errNoTK.Error() {
 					atomic.AddUint64(&errorCount, 1)
-				} else {
+				} else if err == nil {
 					atomic.AddUint64(&successCount, 1)
+				} else {
+					log.Println(err.Error())
 				}
 			}()
 		}
