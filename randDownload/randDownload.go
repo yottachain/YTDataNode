@@ -70,13 +70,13 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	defer clt.Close()
 
 	var getTokenMsg message.NodeCapacityRequest
-	getTokenMsg.RequestMsgID = message.MsgIDDownloadShardRequest.Value() + 1
+	getTokenMsg.RequestMsgID = message.MsgIDTestGetBlock.Value()
 	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
 		return errNoTK
 	}
 
-	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), getTKMsgBuf)
+	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
 	if err != nil {
 		return errNoTK
 	}
