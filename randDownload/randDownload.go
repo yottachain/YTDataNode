@@ -127,7 +127,7 @@ func Run() {
 	}()
 	for {
 		ec := atomic.LoadInt64(&execCount)
-		if ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum) {
+		if (ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum)) || ec <= 2 {
 			go func() {
 				ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
 				defer cancle()
