@@ -141,7 +141,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDTestGetBlock.Value() {
 		xtp = TaskPool.Dtp()
 		tokenType = "test"
-	} else {
+	} else if err == nil {
 		//if disableWrite {
 		//	return nil
 		//}

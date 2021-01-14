@@ -125,10 +125,6 @@ func (sn *storageNode) Service() {
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			return nil, err
 		}
-		if msg.Tk == "getBlockTK" {
-			statistics.DefaultStat.TXTest.AddSuccess()
-			return nil, nil
-		}
 		var tk TaskPool.Token
 		tk.FillFromString(msg.Tk)
 		lat := time.Now().Sub(tk.Tm)

@@ -133,6 +133,8 @@ func GetBlock(data []byte) (res []byte, err error) {
 	resMsg.Msg = make([]byte, testBlockSize)
 	rand.Read(resMsg.Msg)
 	res, err = proto.Marshal(&resMsg)
-	statistics.DefaultStat.TXTest.AddSuccess()
+	if err == nil {
+		statistics.DefaultStat.TXTest.AddSuccess()
+	}
 	return
 }
