@@ -58,6 +58,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	log.Println("[randDownload] test node", pi.ID, pi.Addrs)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
