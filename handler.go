@@ -191,7 +191,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		//log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
+		log.Printf("[task pool]get token return %s pid %s ip %v type %s\n", tk.String(), id.Pretty(), ip, tokenType)
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
@@ -199,9 +199,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
-	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.RXRequest++
-	statistics.DefaultStat.Unlock()
+	atomic.AddInt64(&statistics.DefaultStat.RXRequest, 1)
 
 	startTime := time.Now()
 	var msg message.UploadShardRequest
@@ -216,6 +214,7 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
+		atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
 		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
 
@@ -324,7 +323,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 
 	TaskPool.Utp().Delete(tk)
-	atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
+
 	return 0
 }
 

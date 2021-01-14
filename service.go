@@ -21,7 +21,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -81,11 +80,11 @@ func (sn *storageNode) Service() {
 	var dtp *TaskPool.TaskPool = TaskPool.Dtp()
 	// 统计归零
 	utp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
-		atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
 	})
 	dtp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
 	})
 
 	statistics.DefaultStat.TokenQueueLen = 200
