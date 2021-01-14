@@ -14,9 +14,9 @@ import (
 var locker = sync.RWMutex{}
 
 func getUrl() string {
-	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
 	if config.IsDev == 2 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
 	} else if config.IsDev == 1 {
 		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 	}
