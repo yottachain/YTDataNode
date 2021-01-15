@@ -130,7 +130,7 @@ func Run() {
 		ec := atomic.LoadInt64(&execCount)
 		if (ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum)) || ec <= 2 {
 			go func() {
-				ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
+				ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
 				defer cancle()
 				utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
 				if err != nil {
