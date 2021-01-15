@@ -128,7 +128,7 @@ func (sn *storageNode) Service() {
 		var tk TaskPool.Token
 		tk.FillFromString(msg.Tk)
 		lat := time.Now().Sub(tk.Tm)
-		if lat > time.Second*10 {
+		if !TaskPool.Dtp().Check(&tk) {
 			tmstr := tk.Tm.Format("20060102030405")
 			return nil, fmt.Errorf("token time out , token time %s", tmstr)
 		}
