@@ -234,7 +234,6 @@ var first = true
 func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	if disableReport {
 		log.Println("miner disable")
-		return
 	}
 
 	var msg message.StatusRepReq

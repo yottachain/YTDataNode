@@ -128,6 +128,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
 	var tokenType = "upload"
+	var level int32 = 1
 	err := proto.Unmarshal(data, &GTMsg)
 
 	// 判断是上传还是下载
@@ -140,6 +141,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		return nil
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDTestGetBlock.Value() {
 		xtp = TaskPool.Dtp()
+		level = 0
 		tokenType = "test"
 	} else if err == nil {
 		//if disableWrite {
@@ -154,7 +156,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	}
 	defer cancel()
 
-	tk, err := xtp.Get(ctx, id, 0)
+	tk, err := xtp.Get(ctx, id, level)
 	//if err != nil {
 	//	fmt.Println("[get token] error:", err.Error())
 	//}

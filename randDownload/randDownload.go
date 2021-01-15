@@ -151,6 +151,6 @@ func Run() {
 			}()
 		}
 
-		<-time.After(time.Millisecond * 100)
+		<-time.After(time.Millisecond * 10)
 	}
 }
