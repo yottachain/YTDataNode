@@ -23,12 +23,14 @@ var errNoTK = fmt.Errorf("notk")
 var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
-	nodeList := activeNodeList.GetNodeListByTimeAndGroupSize(time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize)
+	nodeList := activeNodeList.GetWeightNodeList(
+		activeNodeList.GetNodeListByTimeAndGroupSize(
+			time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize))
 
 	pi := &peer.AddrInfo{}
 	nl := len(nodeList)
 
-	var randNode activeNodeList.Data
+	var randNode *activeNodeList.Data
 
 	if nl <= 0 {
 		return nil, fmt.Errorf("no node")
@@ -119,6 +121,7 @@ func Run() {
 	var successCount uint64
 	var errorCount uint64
 	var execCount int64
+	rand.Seed(time.Now().Unix())
 
 	go func() {
 		for {
