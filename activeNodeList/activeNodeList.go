@@ -31,6 +31,7 @@ type Data struct {
 	NodeID string   `json:"nodeid"`
 	ID     string   `json:"id"`
 	IP     []string `json:"ip"`
+	Weight int      `json:"weight"`
 	Group  byte
 }
 
@@ -142,6 +143,17 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
 		index++
 	}
 	return res
+}
+
+func GetWeightNodeList(nodeList []Data) []*Data {
+	var wn []*Data
+	for _, v := range nodeList {
+		v.Weight = v.Weight % 100
+		for i := 0; i <= v.Weight; i++ {
+			wn = append(wn, &v)
+		}
+	}
+	return wn
 }
 
 func HasNodeid(id string) bool {
