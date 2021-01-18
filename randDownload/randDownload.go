@@ -89,31 +89,31 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return errNoTK
 	}
 
-	var downloadMsg message.TestGetBlock
-	downloadMsg.Msg = make([]byte, 16*1024)
-	rand.Read(downloadMsg.Msg)
-	downloadBuf, err := proto.Marshal(&downloadMsg)
+	var testMsg message.TestGetBlock
+
+	// 第一次发送消息模拟下载
+	testMsg.Msg = "download"
+	testMsgBuf, err := proto.Marshal(&testMsg)
 	if err != nil {
 		return err
 	}
 	statistics.DefaultStat.RXTest.AddCount()
-	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
 	if err != nil {
 		return err
 	}
-
-	//var checkTKMsg message.DownloadTKCheck
-	//checkTKMsg.Tk = "getBlockTK"
-	//checkTKBuf, err := proto.Marshal(&checkTKMsg)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//_, err = clt.SendMsg(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
-	//if err != nil {
-	//	return err
-	//}
 	statistics.DefaultStat.RXTest.AddSuccess()
+
+	// 第二次发送消息消耗token
+	testMsg.Msg = "checkout"
+	testMsgBuf, err = proto.Marshal(&testMsg)
+	if err != nil {
+		return err
+	}
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
