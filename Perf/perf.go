@@ -130,11 +130,12 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	//resMsg.Msg = make([]byte, testBlockSize)
-	//rand.Read(resMsg.Msg)
-	res, err = proto.Marshal(&resMsg)
-	if err == nil {
+	if msg.Msg == "download" {
+		resMsg.Msg = make([]byte, testBlockSize)
+		rand.Read(resMsg.Msg)
+	} else if msg.Msg == "checkout" {
 		statistics.DefaultStat.TXTest.AddSuccess()
 	}
+	res, err = proto.Marshal(&resMsg)
 	return
 }
