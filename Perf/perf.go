@@ -98,8 +98,7 @@ func testOne(clt *client.YTHostClient, task *message.TestMinerPerfTask, timeOut 
 	// 构造请求
 	var requestMsg message.TestGetBlock
 	if task.TestType == 0 {
-		requestMsg.Msg = make([]byte, testBlockSize)
-		rand.Read(requestMsg.Msg)
+		requestMsg.Msg = MSG_DOWNLOAD
 	}
 
 	requestbuf, err := proto.Marshal(&requestMsg)
