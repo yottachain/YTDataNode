@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
@@ -92,7 +93,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	var testMsg message.TestGetBlock
 
 	// 第一次发送消息模拟下载
-	testMsg.Msg = "download"
+	testMsg.Msg = Perf.MSG_DOWNLOAD
 	testMsgBuf, err := proto.Marshal(&testMsg)
 	if err != nil {
 		return err
@@ -105,7 +106,7 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	statistics.DefaultStat.RXTest.AddSuccess()
 
 	// 第二次发送消息消耗token
-	testMsg.Msg = "checkout"
+	testMsg.Msg = Perf.MSG_CHECKOUT
 	testMsgBuf, err = proto.Marshal(&testMsg)
 	if err != nil {
 		return err
