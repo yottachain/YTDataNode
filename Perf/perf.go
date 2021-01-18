@@ -16,6 +16,8 @@ import (
 )
 
 const testBlockSize = 16 * 1024
+const MSG_DOWNLOAD = "download"
+const MSG_CHECKOUT = "checkout"
 
 var Sn storageNodeInterface.StorageNode
 
@@ -130,10 +132,10 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if msg.Msg == "download" {
+	if msg.Msg == MSG_DOWNLOAD {
 		resMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(resMsg.Msg)
-	} else if msg.Msg == "checkout" {
+	} else if msg.Msg == MSG_CHECKOUT {
 		statistics.DefaultStat.TXTest.AddSuccess()
 	}
 	res, err = proto.Marshal(&resMsg)
