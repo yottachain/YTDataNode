@@ -126,6 +126,9 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 			<-time.After(decreaseTd)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
 			rate := pt.GetRate()
+			if rate == -1 {
+				continue
+			}
 			if rate < config.Gconfig.DecreaseThreshold {
 				log.Printf("[token] 触发token减少 [%d] \n", pt.GetRate())
 				// 衰减量 是失败百分比
@@ -140,6 +143,9 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			rate := pt.GetRate()
+			if rate == -1 {
+				continue
+			}
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
 			if rate > config.Gconfig.IncreaseThreshold {
 				log.Printf("[token] 触发token增加 [%d] \n", rate)
