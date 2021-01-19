@@ -130,7 +130,7 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 				continue
 			}
 			if rate < config.Gconfig.DecreaseThreshold {
-				log.Printf("[token] 触发token减少 [%d] \n", pt.GetRate())
+				log.Printf("[token] 触发token减少 [%d] \n", rate)
 				// 衰减量 是失败百分比
 				decrement := pt.FillTokenInterval * (time.Duration(config.Gconfig.DecreaseThreshold) - time.Duration(rate)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval + decrement)

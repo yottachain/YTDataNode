@@ -8,7 +8,6 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"math"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -34,7 +33,7 @@ type Data struct {
 	ID     string   `json:"id"`
 	IP     []string `json:"ip"`
 	Weight string   `json:"weight"`
-	WInt   int
+	WInt   int      `json:"TXTokenFillRate"`
 	Group  byte
 }
 
@@ -151,12 +150,8 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
 func GetWeightNodeList(nodeList []Data) []*Data {
 	var wn []*Data
 	for k, v := range nodeList {
-		w, err := strconv.ParseInt(v.Weight, 10, 32)
-		if err != nil || w == 0 {
-			continue
-		}
 
-		nodeList[k].WInt = int(math.Log(float64(w)))
+		nodeList[k].WInt = int(math.Log(float64(v.WInt)))
 		for i := 0; i <= nodeList[k].WInt; i++ {
 			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
 			wn = append(wn, &nodeList[k])
