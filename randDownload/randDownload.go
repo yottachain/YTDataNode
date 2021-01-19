@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logBuffer"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -147,7 +148,8 @@ func Run() {
 
 				err = DownloadFromRandNode(utk, ctx)
 				if err != nil && err.Error() != errNoTK.Error() {
-					//log.Println(err.Error(), errNoTK.Error())
+					logBuffer.ErrorLogger.Println(err.Error())
+
 					atomic.AddUint64(&errorCount, 1)
 				} else if err == nil {
 					atomic.AddUint64(&successCount, 1)
