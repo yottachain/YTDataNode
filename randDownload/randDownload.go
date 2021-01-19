@@ -15,6 +15,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
+	"math"
 	"math/rand"
 	"sync/atomic"
 	"time"
@@ -131,21 +132,22 @@ func Run() {
 			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", len(*execChan))
 		}
 	}()
+
+	c := make(chan struct{}, int(math.Min(float64(TaskPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	execChan = &c
+
 	go func() {
 		for {
-			var min int64
-			if int64(TaskPool.Utp().GetTFillTKSpeed())/2 < int64(config.Gconfig.RandDownloadNum) {
-				min = int64(TaskPool.Utp().GetTFillTKSpeed()) / 2
-			} else {
-				min = int64(config.Gconfig.RandDownloadNum)
-			}
-			c := make(chan struct{}, min)
+			c := make(chan struct{}, int(math.Min(float64(TaskPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
 			execChan = &c
 			<-time.After(time.Duration(config.Gconfig.RandDownloadSleepTime) * time.Minute)
 		}
 	}()
 
 	for {
+		if execChan == nil {
+			continue
+		}
 		ec := *execChan
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
