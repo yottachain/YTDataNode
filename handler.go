@@ -127,22 +127,27 @@ func (wh *WriteHandler) Run() {
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TaskPool.TaskPool = TaskPool.Utp()
-	var isUpload = true
+	var tokenType = "upload"
+	var level int32 = 1
 	err := proto.Unmarshal(data, &GTMsg)
 
 	// 判断是上传还是下载
 	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
 		xtp = TaskPool.Dtp()
-		atomic.AddInt64(&statistics.DefaultStat.RequestDownloadToken, 1)
-		isUpload = false
+		atomic.AddInt64(&statistics.DefaultStat.TXRequestToken, 1)
+		tokenType = "download"
 	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
 		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
 		return nil
-	} else {
+	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDTestGetBlock.Value() {
+		xtp = TaskPool.Dtp()
+		level = 0
+		tokenType = "test"
+	} else if err == nil {
 		//if disableWrite {
 		//	return nil
 		//}
-		atomic.AddInt64(&statistics.DefaultStat.RequestToken, 1)
+		atomic.AddInt64(&statistics.DefaultStat.RXRequestToken, 1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
@@ -151,7 +156,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	}
 	defer cancel()
 
-	tk, err := xtp.Get(ctx, id, 0)
+	tk, err := xtp.Get(ctx, id, level)
 	//if err != nil {
 	//	fmt.Println("[get token] error:", err.Error())
 	//}
@@ -175,15 +180,20 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		res.Writable = false
 		time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
-		if isUpload {
+		switch tokenType {
+		case "upload":
 			atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
-		} else {
+			atomic.AddInt64(&statistics.DefaultStat.RXToken, 1)
+		case "download":
 			atomic.AddInt64(&statistics.DefaultStat.SentDownloadTokenNum, 1)
+			atomic.AddInt64(&statistics.DefaultStat.TXToken, 1)
+		case "test":
+			statistics.DefaultStat.TXTest.AddCount()
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)
 	if tk != nil {
-		//log.Printf("[task pool]get token return %s pid %s ip %v\n", tk.String(), id.Pretty(), ip)
+		//log.Printf("[task pool]get token return %s pid %s ip %v type %o\n", tk.String(), id.Pretty(), ip, GTMsg.RequestMsgID)
 	}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
@@ -191,9 +201,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
-	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.SaveRequestCount++
-	statistics.DefaultStat.Unlock()
+	atomic.AddInt64(&statistics.DefaultStat.RXRequest, 1)
 
 	startTime := time.Now()
 	var msg message.UploadShardRequest
@@ -208,6 +216,7 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
+		atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
 		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	}
 
@@ -316,6 +325,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 
 	TaskPool.Utp().Delete(tk)
+
 	return 0
 }
 
@@ -388,6 +398,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
+	atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
 }

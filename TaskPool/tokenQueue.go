@@ -2,7 +2,6 @@ package TaskPool
 
 import (
 	"container/list"
-	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
 	"time"
 )
@@ -65,7 +64,7 @@ func (tq *TokenQueue) Run() {
 }
 
 func (tq *TokenQueue) Reset() {
-	log.Println("[token queue]reset")
+	//log.Println("[token queue]reset")
 	tc := make(chan *Token, tq.Max)
 	tq.tc = &tc
 	tq.requestQueue = list.New()

@@ -8,6 +8,7 @@ import (
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
@@ -20,7 +21,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -38,6 +38,7 @@ type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
+var disableReport = false
 
 func (sn *storageNode) Service() {
 	setRLimit.SetRLimit()
@@ -49,6 +50,8 @@ func (sn *storageNode) Service() {
 
 	// 初始化统计
 	statistics.InitDefaultStat()
+	TaskPool.UploadTP.GetRate = statistics.DefaultStat.RXTest.GetRate
+	TaskPool.DownloadTP.GetRate = statistics.DefaultStat.TXTest.GetRate
 
 	rms = service.NewRelayManage(sn.Host())
 
@@ -77,11 +80,11 @@ func (sn *storageNode) Service() {
 	var dtp *TaskPool.TaskPool = TaskPool.Dtp()
 	// 统计归零
 	utp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.SaveRequestCount, 0)
-		atomic.StoreInt64(&statistics.DefaultStat.RequestToken, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
 	})
 	dtp.OnChange(func(pt *TaskPool.TaskPool) {
-		atomic.StoreInt64(&statistics.DefaultStat.RequestDownloadToken, 0)
+		//atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
 	})
 
 	statistics.DefaultStat.TokenQueueLen = 200
@@ -101,7 +104,7 @@ func (sn *storageNode) Service() {
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
-		if res == nil || len(res) < 3 {
+		if res == nil || len(res) < 3 || disableReport {
 			return nil, fmt.Errorf("no token")
 		}
 		return res, nil
@@ -125,9 +128,8 @@ func (sn *storageNode) Service() {
 		var tk TaskPool.Token
 		tk.FillFromString(msg.Tk)
 		lat := time.Now().Sub(tk.Tm)
-		if lat > time.Second*10 {
+		if !TaskPool.Dtp().Check(&tk) {
 			tmstr := tk.Tm.Format("20060102030405")
-			fmt.Println("[check token]token time out", lat.Milliseconds(), tmstr)
 			return nil, fmt.Errorf("token time out , token time %s", tmstr)
 		}
 		TaskPool.Dtp().NetLatency.Add(lat)
@@ -230,6 +232,11 @@ var first = true
 
 // Report 上报状态
 func Report(sn *storageNode, rce *rc.RecoverEngine) {
+	if disableReport {
+		log.Println("miner disable")
+		return
+	}
+
 	var msg message.StatusRepReq
 	if len(sn.Config().BPList) == 0 {
 		log.Println("no bp")
@@ -259,21 +266,28 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Rx = GetXX("R")
 	msg.Tx = GetXX("T")
 
+	hash, err := diskHash.GetHash(sn.YTFS())
+	if err == nil {
+		msg.Hash = hash
+	} else {
+		log.Println("[diskHash]", err.Error())
+	}
+
 	statistics.DefaultStat.Lock()
 	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.TokenFillSpeed = TaskPool.Utp().GetTFillTKSpeed()
-	if int(statistics.DefaultStat.TokenFillSpeed) > config.Gconfig.MaxToken {
-		statistics.DefaultStat.TokenFillSpeed = 100
+	statistics.DefaultStat.RXTokenFillRate = TaskPool.Utp().GetTFillTKSpeed()
+	if int(statistics.DefaultStat.RXTokenFillRate) > config.Gconfig.MaxToken {
+		statistics.DefaultStat.RXTokenFillRate = 100
 	}
-	statistics.DefaultStat.DownloadTokenFillSpeed = TaskPool.Dtp().GetTFillTKSpeed()
-	statistics.DefaultStat.SentToken, statistics.DefaultStat.SaveSuccessCount = TaskPool.Utp().GetParams()
-	statistics.DefaultStat.SentDownloadToken, statistics.DefaultStat.DownloadSuccessCount = TaskPool.Dtp().GetParams()
+	statistics.DefaultStat.TXTokenFillRate = TaskPool.Dtp().GetTFillTKSpeed()
+	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
+	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.NetLatency = TaskPool.Utp().NetLatency.Avg()
-	statistics.DefaultStat.DiskLatency = TaskPool.Utp().DiskLatency.Avg()
-	statistics.DefaultStat.DownloadNetLatency = TaskPool.Dtp().NetLatency.Avg()
-	statistics.DefaultStat.DownloadDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
+	statistics.DefaultStat.RXNetLatency = TaskPool.Utp().NetLatency.Avg()
+	statistics.DefaultStat.RXDiskLatency = TaskPool.Utp().DiskLatency.Avg()
+	statistics.DefaultStat.TXNetLatency = TaskPool.Dtp().NetLatency.Avg()
+	statistics.DefaultStat.TXDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
@@ -282,7 +296,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
 		statistics.DefaultStat.Ban = true
-		statistics.DefaultStat.TokenFillSpeed = 1
+		statistics.DefaultStat.RXTokenFillRate = 1
 	}
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
@@ -299,6 +313,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	resData, err := proto.Marshal(&msg)
 	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
+	log.Printf("data Hash %s\n", msg.Hash)
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
@@ -320,7 +335,16 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	} else {
 		var resMsg message.StatusRepResp
 		proto.Unmarshal(res[2:], &resMsg)
-		sn.owner.BuySpace = resMsg.ProductiveSpace
+		sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
+		if resMsg.ProductiveSpace == -1 {
+			disableReport = true
+		} else {
+			diskHash.CopyHead()
+		}
+		if resMsg.ProductiveSpace == -2 {
+			log.Println("[report] error")
+			return
+		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
 			if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err == nil {

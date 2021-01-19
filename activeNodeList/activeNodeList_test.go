@@ -3,9 +3,13 @@ package activeNodeList
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestUpdate(t *testing.T) {
-
-	fmt.Println(getUrl())
+	nodeList := GetWeightNodeList(GetNodeListByTimeAndGroupSize(time.Minute*10, 58))
+	for _, v := range nodeList {
+		fmt.Println(v.ID, v.IP, v.Weight, v.WInt)
+	}
+	fmt.Println(len(nodeList))
 }

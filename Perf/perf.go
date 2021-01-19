@@ -9,12 +9,15 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost/client"
 	"time"
 )
 
 const testBlockSize = 16 * 1024
+const MSG_DOWNLOAD = "download"
+const MSG_CHECKOUT = "checkout"
 
 var Sn storageNodeInterface.StorageNode
 
@@ -95,8 +98,7 @@ func testOne(clt *client.YTHostClient, task *message.TestMinerPerfTask, timeOut 
 	// 构造请求
 	var requestMsg message.TestGetBlock
 	if task.TestType == 0 {
-		requestMsg.Msg = make([]byte, testBlockSize)
-		rand.Read(requestMsg.Msg)
+		requestMsg.Msg = MSG_DOWNLOAD
 	}
 
 	requestbuf, err := proto.Marshal(&requestMsg)
@@ -129,9 +131,11 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if len(msg.Msg) < testBlockSize {
+	if msg.Msg == MSG_DOWNLOAD {
 		resMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(resMsg.Msg)
+	} else if msg.Msg == MSG_CHECKOUT {
+		statistics.DefaultStat.TXTest.AddSuccess()
 	}
 	res, err = proto.Marshal(&resMsg)
 	return

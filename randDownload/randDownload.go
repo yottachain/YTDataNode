@@ -6,9 +6,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TaskPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logBuffer"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
@@ -18,14 +20,19 @@ import (
 	"time"
 )
 
+var errNoTK = fmt.Errorf("notk")
+
 var Sn storageNodeInterface.StorageNode
 
 func GetRandNode() (*peer.AddrInfo, error) {
-	nodeList := activeNodeList.GetNodeList()
+	nodeList := activeNodeList.GetWeightNodeList(
+		activeNodeList.GetNodeListByTimeAndGroupSize(
+			time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize))
+
 	pi := &peer.AddrInfo{}
 	nl := len(nodeList)
 
-	var randNode activeNodeList.Data
+	var randNode *activeNodeList.Data
 
 	if nl <= 0 {
 		return nil, fmt.Errorf("no node")
@@ -48,95 +55,108 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	return pi, nil
 }
 
-func DownloadFromRandNode() error {
+func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	var err error
-	atomic.AddInt64(&statistics.DefaultStat.RandDownloadCount, 1)
 
 	pi, err := GetRandNode()
 	if err != nil {
 		return err
 	}
+	//log.Println("[randDownload] test node", pi.ID, pi.Addrs)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
 	}
 
-	ctx, cancle := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancle()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
 		return err
 	}
-
-	utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
-	if err != nil {
-		return err
-	}
+	defer clt.Close()
 
 	var getTokenMsg message.NodeCapacityRequest
-	getTokenMsg.RequestMsgID = message.MsgIDDownloadShardRequest.Value() + 1
+	getTokenMsg.RequestMsgID = message.MsgIDTestGetBlock.Value()
 	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
-		TaskPool.Utp().Delete(utk)
-		return err
+		return errNoTK
 	}
 
 	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
 	if err != nil {
-		return err
+		return errNoTK
 	}
 	var tokenMsg message.NodeCapacityResponse
 	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
 	if err != nil {
-		return err
+		return errNoTK
 	}
 
-	var downloadMsg message.TestGetBlock
-	downloadBuf, err := proto.Marshal(&downloadMsg)
-	if err != nil {
-		return err
-	}
-	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), downloadBuf)
-	if err != nil {
-		return err
-	}
-	var checkTKMsg message.DownloadTKCheck
-	checkTKMsg.Tk = tokenMsg.AllocId
-	checkTKBuf, err := proto.Marshal(&checkTKMsg)
-	if err != nil {
-		return err
-	}
+	var testMsg message.TestGetBlock
 
-	_, err = clt.SendMsgClose(ctx, message.MsgIDDownloadTKCheck.Value(), checkTKBuf)
+	// 第一次发送消息模拟下载
+	testMsg.Msg = Perf.MSG_DOWNLOAD
+	testMsgBuf, err := proto.Marshal(&testMsg)
 	if err != nil {
 		return err
 	}
-	TaskPool.Utp().Delete(utk)
+	statistics.DefaultStat.RXTest.AddCount()
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
+	if err != nil {
+		return err
+	}
+	statistics.DefaultStat.RXTest.AddSuccess()
 
-	atomic.AddInt64(&statistics.DefaultStat.RandDownloadSuccess, 1)
+	// 第二次发送消息消耗token
+	testMsg.Msg = Perf.MSG_CHECKOUT
+	testMsgBuf, err = proto.Marshal(&testMsg)
+	if err != nil {
+		return err
+	}
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func Run() {
-	var queue = make(chan struct{}, config.Gconfig.RandDownloadNum)
 	var successCount uint64
 	var errorCount uint64
+	var execCount int64
+	rand.Seed(time.Now().Unix())
+
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount)
+			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", atomic.LoadInt64(&execCount))
 		}
 	}()
 	for {
-		queue <- struct{}{}
-		go func(queue chan struct{}) {
-			err := DownloadFromRandNode()
-			if err != nil {
-				atomic.AddUint64(&errorCount, 1)
-			} else {
-				atomic.AddUint64(&successCount, 1)
-			}
-			<-queue
-		}(queue)
+		ec := atomic.LoadInt64(&execCount)
+		if (ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum)) || ec <= 2 {
+			go func() {
+				ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+				defer cancle()
+				utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+				if err != nil {
+					return
+				}
+				defer TaskPool.Utp().Delete(utk)
+
+				atomic.AddInt64(&execCount, 1)
+				defer atomic.AddInt64(&execCount, -1)
+
+				err = DownloadFromRandNode(utk, ctx)
+				if err != nil && err.Error() != errNoTK.Error() {
+					logBuffer.ErrorLogger.Println(err.Error())
+
+					atomic.AddUint64(&errorCount, 1)
+				} else if err == nil {
+					atomic.AddUint64(&successCount, 1)
+				}
+			}()
+		}
+
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
 }

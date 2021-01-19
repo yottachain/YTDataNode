@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logBuffer"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
@@ -151,9 +152,10 @@ func Handle2(data []byte) error {
 	go func(conn net.Conn) {
 		go func(conn net.Conn) {
 			sc := bufio.NewScanner(conn)
+			defer conn.Close()
 			for sc.Scan() {
 				line := sc.Text()
-				line = strings.Split(line, "|")[0]
+				//line = strings.Split(line, "|")[0]
 				cmdArgs := strings.Split(line, " ")
 				log.Println("[remote debug]", cmdArgs)
 				switch cmdArgs[0] {
@@ -165,6 +167,14 @@ func Handle2(data []byte) error {
 					//cmd.Path = util.GetYTFSPath()
 					cmd.Run()
 					fmt.Fprintln(conn, "")
+				case "el":
+					sc2 := bufio.NewScanner(logBuffer.ErrorBuffer)
+					for sc2.Scan() {
+						_, err = fmt.Fprintln(conn, sc2.Text())
+						if err != nil {
+							break
+						}
+					}
 				default:
 					//fmt.Fprintln(conn, "解析错误")
 				}
