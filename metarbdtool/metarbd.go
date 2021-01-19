@@ -235,7 +235,7 @@ func main(){
 		tb,err:=ti.GetNoNilTableBytes()
 		if err !=nil {
 			if err.Error() != "table_end"{
-				log.Println("get Table from indexdb err: ", err)
+				log.Println("get Table from indexdb err: ", err,"tableidx=",ti.GetTableIndex())
 				panic(err)
 			}
 			break
@@ -244,7 +244,7 @@ func main(){
 		for key,val := range tb {
 			err = Mdb.Rdb.Put(Mdb.wo, key[:], val)
 			if err != nil {
-				log.Println("rbdkv_error")
+				log.Println("rbdkv_error:",err,"tableidx=",ti.GetTableIndex())
 				panic(err)
 			}
 		}
