@@ -157,6 +157,6 @@ func Run() {
 			}()
 		}
 
-		<-time.After(time.Millisecond * 10)
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
 }
