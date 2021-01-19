@@ -140,7 +140,7 @@ func Run() {
 		for {
 			c := make(chan struct{}, int(math.Min(float64(TaskPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
 			execChan = &c
-			<-time.After(time.Duration(config.Gconfig.RandDownloadSleepTime) * time.Minute)
+			<-time.After(5 * time.Minute)
 		}
 	}()
 
@@ -167,13 +167,13 @@ func Run() {
 			err = DownloadFromRandNode(utk, ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
-
 				atomic.AddUint64(&errorCount, 1)
+			} else if err != nil && errNoTK.Error() == err.Error() {
+				<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
 			}
 		}(ec)
 
-		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
 }
