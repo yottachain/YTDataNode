@@ -42,6 +42,7 @@ type Gcfg struct {
 	DiskTimeout           int
 	RandDownloadNum       int
 	RandDownloadGroupSize int
+	RandDownloadSleepTime int
 	NodeListUpdateTime    int
 }
 
@@ -172,6 +173,7 @@ func NewGConfig() *GConfig {
 			RandDownloadGroupSize: 1,
 			DiskTimeout:           5000,
 			NodeListUpdateTime:    10,
+			RandDownloadSleepTime: 100,
 		},
 		OnUpdate: nil,
 	}
