@@ -157,7 +157,8 @@ func GetWeightNodeList(nodeList []Data) []*Data {
 		}
 
 		nodeList[k].WInt = int(math.Log(float64(w)))
-		for i := 0; i <= v.WInt; i++ {
+		for i := 0; i <= nodeList[k].WInt; i++ {
+			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
 			wn = append(wn, &nodeList[k])
 		}
 	}
