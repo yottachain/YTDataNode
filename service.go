@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -205,6 +206,7 @@ func (sn *storageNode) Service() {
 		buf, err := proto.Marshal(&res)
 		tk := TaskPool.NewToken()
 		tk.FillFromString(msg.AllocId)
+		atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 		TaskPool.Utp().Delete(tk)
 		log.Println("test upload return", head.RemotePeerID)
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err

@@ -398,7 +398,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
-	atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
+	//atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
 }
