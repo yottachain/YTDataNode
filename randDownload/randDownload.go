@@ -122,40 +122,55 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 func Run() {
 	var successCount uint64
 	var errorCount uint64
-	var execCount int64
+	var execChan *chan struct{}
 	rand.Seed(time.Now().Unix())
 
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", atomic.LoadInt64(&execCount))
+			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", len(*execChan))
 		}
 	}()
-	for {
-		ec := atomic.LoadInt64(&execCount)
-		if (ec < int64(TaskPool.Utp().GetTFillTKSpeed())/2 && ec < int64(config.Gconfig.RandDownloadNum)) || ec <= 2 {
-			go func() {
-				ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
-				defer cancle()
-				utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
-				if err != nil {
-					return
-				}
-				defer TaskPool.Utp().Delete(utk)
-
-				atomic.AddInt64(&execCount, 1)
-				defer atomic.AddInt64(&execCount, -1)
-
-				err = DownloadFromRandNode(utk, ctx)
-				if err != nil && err.Error() != errNoTK.Error() {
-					logBuffer.ErrorLogger.Println(err.Error())
-
-					atomic.AddUint64(&errorCount, 1)
-				} else if err == nil {
-					atomic.AddUint64(&successCount, 1)
-				}
-			}()
+	go func() {
+		for {
+			var min int64
+			if int64(TaskPool.Utp().GetTFillTKSpeed())/2 < int64(config.Gconfig.RandDownloadNum) {
+				min = int64(TaskPool.Utp().GetTFillTKSpeed()) / 2
+			} else {
+				min = int64(config.Gconfig.RandDownloadNum)
+			}
+			c := make(chan struct{}, min)
+			execChan = &c
+			<-time.After(time.Duration(config.Gconfig.RandDownloadSleepTime) * time.Minute)
 		}
+	}()
+
+	for {
+		ec := *execChan
+		ec <- struct{}{}
+		go func(ec chan struct{}) {
+			defer func() {
+				<-ec
+			}()
+
+			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			defer cancle()
+
+			utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+			if err != nil {
+				return
+			}
+			defer TaskPool.Utp().Delete(utk)
+
+			err = DownloadFromRandNode(utk, ctx)
+			if err != nil && err.Error() != errNoTK.Error() {
+				logBuffer.ErrorLogger.Println(err.Error())
+
+				atomic.AddUint64(&errorCount, 1)
+			} else if err == nil {
+				atomic.AddUint64(&successCount, 1)
+			}
+		}(ec)
 
 		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
