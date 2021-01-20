@@ -39,6 +39,7 @@ type Stat struct {
 	TXDiskLatency        int64
 	RXTest               RateCounter
 	TXTest               RateCounter
+	RXTestConnectRate    RateCounter
 	//RandDownloadCount      int64 // 仅矿机间下载计数
 	//RandDownloadSuccess    int64 // 仅矿机间下载成功计数
 	Ban             bool

@@ -70,10 +70,12 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 		return fmt.Errorf("no storage-node")
 	}
 
+	statistics.DefaultStat.RXTestConnectRate.AddCount()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
 		return err
 	}
+	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
 	defer clt.Close()
 
 	var getTokenMsg message.NodeCapacityRequest
