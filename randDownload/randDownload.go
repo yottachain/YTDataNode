@@ -17,6 +17,7 @@ import (
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"math"
 	"math/rand"
+	"os"
 	"sync/atomic"
 	"time"
 )
@@ -124,7 +125,7 @@ func Run() {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
-	rand.Seed(time.Now().Unix())
+	rand.Seed(int64(os.Getpid()))
 
 	go func() {
 		for {

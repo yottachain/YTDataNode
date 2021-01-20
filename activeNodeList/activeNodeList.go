@@ -150,8 +150,7 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
 func GetWeightNodeList(nodeList []Data) []*Data {
 	var wn []*Data
 	for k, v := range nodeList {
-
-		nodeList[k].WInt = int(math.Log(float64(v.WInt)))
+		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + v.WInt/100
 		for i := 0; i <= nodeList[k].WInt; i++ {
 			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
 			wn = append(wn, &nodeList[k])
