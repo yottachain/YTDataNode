@@ -75,10 +75,10 @@ func GetNodeList() []*Data {
 }
 func GetNodeListByGroup(group byte) []*Data {
 	nodeList := GetNodeList()
-	var res = make([]*Data, len(nodeList))
-	for k, v := range nodeList {
-		if v.Group == group {
-			res[k] = v
+	var res = make([]*Data, 0)
+	for k, _ := range nodeList {
+		if nodeList[k].Group == group {
+			res = append(res, nodeList[k])
 		}
 	}
 	return res
