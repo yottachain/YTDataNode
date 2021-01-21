@@ -170,6 +170,7 @@ func (wl *WeightNodeList) Update() {
 			wl.nodeList = append(wl.nodeList, nodeList[k])
 		}
 	}
+	wl.uptime = time.Now()
 }
 func (wl *WeightNodeList) Get() []*Data {
 	wl.Lock()
