@@ -164,7 +164,7 @@ func (wl *WeightNodeList) Update() {
 	nodeList := GetNodeList()
 	wl.nodeList = make([]*Data, 0)
 	for k, v := range nodeList {
-		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + v.WInt/100
+		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + int(math.Pow(float64(v.WInt/100), 2))
 		for i := 0; i <= nodeList[k].WInt; i++ {
 			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
 			wl.nodeList = append(wl.nodeList, nodeList[k])
