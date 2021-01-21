@@ -25,11 +25,13 @@ import (
 var errNoTK = fmt.Errorf("notk")
 
 var Sn storageNodeInterface.StorageNode
+var wl = activeNodeList.NewWeightNodeList(func() []*activeNodeList.Data {
+	return activeNodeList.GetNodeListByTimeAndGroupSize(
+		time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize)
+})
 
 func GetRandNode() (*peer.AddrInfo, error) {
-	nodeList := activeNodeList.GetWeightNodeList(
-		activeNodeList.GetNodeListByTimeAndGroupSize(
-			time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize))
+	nodeList := wl.Get()
 
 	pi := &peer.AddrInfo{}
 	nl := len(nodeList)

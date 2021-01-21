@@ -25,7 +25,7 @@ func getUrl() string {
 	return url
 }
 
-var nodeList []Data
+var nodeList []*Data
 var updateTime = time.Time{}
 
 type Data struct {
@@ -59,13 +59,12 @@ func Update() {
 	updateTime = time.Now()
 }
 
-func GetNodeList() []Data {
+func GetNodeList() []*Data {
 	locker.Lock()
-	defer locker.Unlock()
-
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Minute*10 {
 		Update()
 	}
+	locker.Unlock()
 
 	for k, v := range nodeList {
 		buf := []byte(v.NodeID)
@@ -74,11 +73,12 @@ func GetNodeList() []Data {
 
 	return nodeList
 }
-func GetNodeListByGroup(group byte) []Data {
-	var res = make([]Data, 0)
-	for _, v := range GetNodeList() {
-		if v.Group == group {
-			res = append(res, v)
+func GetNodeListByGroup(group byte) []*Data {
+	nodeList := GetNodeList()
+	var res = make([]*Data, 0)
+	for k, _ := range nodeList {
+		if nodeList[k].Group == group {
+			res = append(res, nodeList[k])
 		}
 	}
 	return res
@@ -117,7 +117,7 @@ func getYesterdayDuration() time.Duration {
 }
 
 // 根据时间间隔取node分组
-func GetNodeListByTime(duration time.Duration) []Data {
+func GetNodeListByTime(duration time.Duration) []*Data {
 	var groupList = GetGroupList()
 
 	d := getYesterdayDuration()
@@ -125,11 +125,11 @@ func GetNodeListByTime(duration time.Duration) []Data {
 	return GetNodeListByGroup(groupList[index])
 }
 
-func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
+func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []*Data {
 
 	var groupList = GetGroupList()
 	var lg = len(groupList)
-	var res = make([]Data, 0)
+	var res = make([]*Data, 0)
 
 	if lg == 0 || duration == 0 {
 		return nil
@@ -147,22 +147,44 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
 	return res
 }
 
-func GetWeightNodeList(nodeList []Data) []*Data {
-	var wn []*Data
+type WeightNodeList struct {
+	nodeList    []*Data
+	uptime      time.Time
+	GetNodeList func() []*Data
+	sync.RWMutex
+}
+
+func NewWeightNodeList(GetNodeListFunc func() []*Data) *WeightNodeList {
+	wl := new(WeightNodeList)
+	wl.GetNodeList = GetNodeListFunc
+	return wl
+}
+
+func (wl *WeightNodeList) Update() {
+	nodeList := GetNodeList()
+	wl.nodeList = make([]*Data, 0)
 	for k, v := range nodeList {
 		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + v.WInt/100
 		for i := 0; i <= nodeList[k].WInt; i++ {
 			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
-			wn = append(wn, &nodeList[k])
+			wl.nodeList = append(wl.nodeList, nodeList[k])
 		}
 	}
-	return wn
+	wl.uptime = time.Now()
+}
+func (wl *WeightNodeList) Get() []*Data {
+	wl.Lock()
+	if time.Now().Sub(wl.uptime) > time.Minute*5 {
+		wl.Update()
+	}
+	wl.Unlock()
+	return wl.nodeList
 }
 
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Minute*5 {
 		Update()
 	}
 
