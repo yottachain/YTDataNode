@@ -147,22 +147,43 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []*Data {
 	return res
 }
 
-func GetWeightNodeList(nodeList []*Data) []*Data {
-	var wn []*Data = make([]*Data, 0)
+type WeightNodeList struct {
+	nodeList    []*Data
+	uptime      time.Time
+	GetNodeList func() []*Data
+	sync.RWMutex
+}
+
+func NewWeightNodeList(GetNodeListFunc func() []*Data) *WeightNodeList {
+	wl := new(WeightNodeList)
+	wl.GetNodeList = GetNodeListFunc
+	return wl
+}
+
+func (wl *WeightNodeList) Update() {
+	nodeList := GetNodeList()
+	wl.nodeList = make([]*Data, 0)
 	for k, v := range nodeList {
 		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + v.WInt/100
 		for i := 0; i <= nodeList[k].WInt; i++ {
 			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
-			wn = append(wn, nodeList[k])
+			wl.nodeList = append(wl.nodeList, nodeList[k])
 		}
 	}
-	return wn
+}
+func (wl *WeightNodeList) Get() []*Data {
+	wl.Lock()
+	if time.Now().Sub(wl.uptime) > time.Minute*5 {
+		wl.Update()
+	}
+	wl.Unlock()
+	return wl.nodeList
 }
 
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Minute*5 {
 		Update()
 	}
 
