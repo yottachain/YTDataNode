@@ -340,7 +340,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		if resMsg.ProductiveSpace >= 0 {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 			// 如果可用空间小于10G停止抽查
-			if msg.MaxDataSpace-msg.UsedSpace <= 655360 || sn.owner.BuySpace-msg.UsedSpace <= 655360 {
+			if msg.MaxDataSpace-msg.UsedSpace <= 655360 {
 				randDownload.Stop()
 			}
 		}
