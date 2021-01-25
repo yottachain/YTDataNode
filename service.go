@@ -263,7 +263,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
-	mi := &util.MinerInfo{}
+	mi := &util.MinerInfo{ID: uint64(msg.Id)}
 	if mi.IsNoSpace(msg.UsedSpace) {
 		randDownload.Stop()
 	}
