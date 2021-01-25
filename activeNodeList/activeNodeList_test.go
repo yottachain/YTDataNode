@@ -7,7 +7,7 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
-	wl := NewWeightNodeList(time.Second*3, time.Minute*5, 58, nil)
+	wl := NewWeightNodeList(time.Second*3, time.Minute*5, 58, "")
 	nodeList := wl.Get()
 	//for _, v := range nodeList {
 	//	fmt.Println(v.ID, v.IP, v.Weight, v.WInt)

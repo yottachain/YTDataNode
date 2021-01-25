@@ -159,8 +159,8 @@ func GetWeightNodeList(nodeList []*Data) []*Data {
 	return res
 }
 
-func GetNoIPNodeList(data []*Data, ip []string) []*Data {
-	if ip == nil {
+func GetNoIPNodeList(data []*Data, ip string) []*Data {
+	if ip == "" {
 		return data
 	}
 	return Filter(data, NewNoAddrFilter(ip))

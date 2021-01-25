@@ -15,6 +15,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
+	"github.com/yottachain/YTDataNode/util"
 	"math"
 	"math/rand"
 	"os"
@@ -31,7 +32,7 @@ var wl = activeNodeList.NewWeightNodeList(
 	time.Minute*5,
 	time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime),
 	config.Gconfig.RandDownloadGroupSize,
-	Sn.Addrs())
+	util.GetSelfIP())
 
 func GetRandNode() (*peer.AddrInfo, error) {
 	nodeList := wl.Get()

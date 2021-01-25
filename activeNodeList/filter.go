@@ -15,13 +15,11 @@ func Filter(datas []*Data, filter FilterFunc) []*Data {
 	return res
 }
 
-func NewNoAddrFilter(addrs []string) FilterFunc {
+func NewNoAddrFilter(addrs string) FilterFunc {
 	return func(data *Data) bool {
 		for _, v := range data.IP {
-			for _, addr := range addrs {
-				if strings.Contains(v, addr) {
-					return false
-				}
+			if strings.Contains(v, addrs) {
+				return false
 			}
 		}
 		return true

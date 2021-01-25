@@ -9,7 +9,7 @@ type WeightNodeList struct {
 	*util.DataCache
 }
 
-func NewWeightNodeList(ttl time.Duration, updateTime time.Duration, groupSize int, noIP []string) *WeightNodeList {
+func NewWeightNodeList(ttl time.Duration, updateTime time.Duration, groupSize int, noIP string) *WeightNodeList {
 	wl := new(WeightNodeList)
 	wl.DataCache = util.NewDataCache(ttl, func() interface{} {
 		nodeList := GetNodeListByTimeAndGroupSize(updateTime, groupSize)
