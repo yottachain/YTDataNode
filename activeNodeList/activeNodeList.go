@@ -61,7 +61,7 @@ func Update() {
 
 func GetNodeList() []*Data {
 	locker.Lock()
-	if time.Now().Sub(updateTime) > time.Minute*10 {
+	if time.Now().Sub(updateTime) > time.Second {
 		Update()
 	}
 	locker.Unlock()
@@ -147,38 +147,23 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []*Data {
 	return res
 }
 
-type WeightNodeList struct {
-	nodeList    []*Data
-	uptime      time.Time
-	GetNodeList func() []*Data
-	sync.RWMutex
-}
-
-func NewWeightNodeList(GetNodeListFunc func() []*Data) *WeightNodeList {
-	wl := new(WeightNodeList)
-	wl.GetNodeList = GetNodeListFunc
-	return wl
-}
-
-func (wl *WeightNodeList) Update() {
-	nodeList := GetNodeList()
-	wl.nodeList = make([]*Data, 0)
+// 获取经过权重处理的NodeList
+func GetWeightNodeList(nodeList []*Data) []*Data {
+	var res []*Data = make([]*Data, 0)
 	for k, v := range nodeList {
 		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + int(math.Pow(float64(v.WInt/100), 2))
 		for i := 0; i <= nodeList[k].WInt; i++ {
-			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
-			wl.nodeList = append(wl.nodeList, nodeList[k])
+			res = append(res, nodeList[k])
 		}
 	}
-	wl.uptime = time.Now()
+	return res
 }
-func (wl *WeightNodeList) Get() []*Data {
-	wl.Lock()
-	if time.Now().Sub(wl.uptime) > time.Minute*5 {
-		wl.Update()
+
+func GetNoIPNodeList(data []*Data, ip string) []*Data {
+	if ip == "" {
+		return data
 	}
-	wl.Unlock()
-	return wl.nodeList
+	return Filter(data, NewNoAddrFilter(ip))
 }
 
 func HasNodeid(id string) bool {

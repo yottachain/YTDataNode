@@ -15,6 +15,7 @@ import (
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
+	"github.com/yottachain/YTDataNode/util"
 	"math"
 	"math/rand"
 	"os"
@@ -22,13 +23,16 @@ import (
 	"time"
 )
 
+var stop = false
+
 var errNoTK = fmt.Errorf("notk")
 
 var Sn storageNodeInterface.StorageNode
-var wl = activeNodeList.NewWeightNodeList(func() []*activeNodeList.Data {
-	return activeNodeList.GetNodeListByTimeAndGroupSize(
-		time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime), config.Gconfig.RandDownloadGroupSize)
-})
+var wl = activeNodeList.NewWeightNodeList(
+	time.Minute*5,
+	time.Minute*time.Duration(config.Gconfig.NodeListUpdateTime),
+	config.Gconfig.RandDownloadGroupSize,
+	util.GetSelfIP())
 
 func GetRandNode() (*peer.AddrInfo, error) {
 	nodeList := wl.Get()
@@ -124,7 +128,9 @@ func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
 	}
 	return nil
 }
-
+func Stop() {
+	stop = true
+}
 func Run() {
 	var successCount uint64
 	var errorCount uint64
@@ -150,6 +156,10 @@ func Run() {
 	}()
 
 	for {
+		if stop {
+			<-time.After(time.Minute)
+			continue
+		}
 		if execChan == nil {
 			continue
 		}
