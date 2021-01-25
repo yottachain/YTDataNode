@@ -263,6 +263,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
+	// 如果可用空间小于10分片停止抽查
+	if msg.MaxDataSpace-msg.UsedSpace <= 10 {
+		randDownload.Stop()
+	}
+
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
