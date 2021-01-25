@@ -9,14 +9,14 @@ import (
 )
 
 type MinerInfo struct {
-	ID            int    `json:"_id"`
+	ID            uint64 `json:"_id"`
 	Quota         uint64 `json:"quota"`
 	MaxDataSpace  uint64 `json:"maxDataSpace"`
 	AssignedSpace uint64 `json:"assignedSpace"`
 	updateTime    time.Time
 }
 
-func GetMinerInfo(id int) *MinerInfo {
+func GetMinerInfo(id uint64) *MinerInfo {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf(`{"_id":%d}`, id))
 	resp, err := http.Post("https://dnrpc.yottachain.net/query", "application/json", buf)
@@ -40,6 +40,9 @@ func GetMinerInfo(id int) *MinerInfo {
 func (mi *MinerInfo) IsNoSpace(used uint64) bool {
 	if time.Now().Sub(mi.updateTime) > time.Minute*5 {
 		_mi := GetMinerInfo(mi.ID)
+		if mi == nil || _mi == nil {
+			return false
+		}
 		mi.AssignedSpace = _mi.AssignedSpace
 		mi.Quota = _mi.Quota
 		mi.MaxDataSpace = _mi.MaxDataSpace
