@@ -218,9 +218,8 @@ func RunRX() {
 				atomic.AddUint64(&successCount, 1)
 			}
 
-			<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 		}(ec)
-
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
 }
 
@@ -270,9 +269,9 @@ func RunTX() {
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
 			}
-			<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
-		}(ec)
 
+		}(ec)
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
 	}
 }
 
