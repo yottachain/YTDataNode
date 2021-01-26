@@ -341,11 +341,12 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 			diskHash.CopyHead()
 		} else {
+			log.Printf("report error %d\n", resMsg.ProductiveSpace)
 			switch resMsg.ProductiveSpace {
 			case -1:
 				disableReport = true
 			case -2:
-				log.Println("[report] error")
+				//log.Println("[report] error")
 				return
 			case -8:
 				randDownload.Stop()

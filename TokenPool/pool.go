@@ -140,15 +140,16 @@ func (pt *TokenPool) AutoChangeTokenInterval(IncreaseThreshold, Increase, Decrea
 	go func() {
 		for {
 			increaseTd := time.Minute * time.Duration(Increase)
+
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			rate := pt.GetRate()
 			if rate == -1 {
 				continue
 			}
+			log.Printf("[token pool] rate [%d][%d,%d] \n", rate, DecreaseThreshold, IncreaseThreshold)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
 			if rate > IncreaseThreshold {
-				log.Printf("[token] 触发token增加 [%d][%d,%d] \n", rate, DecreaseThreshold, IncreaseThreshold)
 				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(IncreaseThreshold)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval - decrement)
 			}
