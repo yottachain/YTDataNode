@@ -77,14 +77,14 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(10)) * time.Second)
 		os.Exit(0)
 	}
-	var utp *TokenPool.TaskPool = TokenPool.Utp()
-	var dtp *TokenPool.TaskPool = TokenPool.Dtp()
+	var utp *TokenPool.TokenPool = TokenPool.Utp()
+	var dtp *TokenPool.TokenPool = TokenPool.Dtp()
 	// 统计归零
-	utp.OnChange(func(pt *TokenPool.TaskPool) {
+	utp.OnChange(func(pt *TokenPool.TokenPool) {
 		//atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
 		//atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
 	})
-	dtp.OnChange(func(pt *TokenPool.TaskPool) {
+	dtp.OnChange(func(pt *TokenPool.TokenPool) {
 		//atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
 	})
 
@@ -288,8 +288,8 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.RXTokenFillRate = 100
 	}
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
-	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
-	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
+	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
+	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
 	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
 	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.RXDiskLatency = TokenPool.Utp().DiskLatency.Avg()

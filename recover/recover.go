@@ -17,7 +17,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mr-tron/base58/base58"
-	"github.com/yottachain/YTDataNode/TaskPool"
+	"github.com/yottachain/YTDataNode/TokenPool"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
@@ -80,7 +80,7 @@ type RecoverEngine struct {
 	le            *LRCEngine
 	tstdata       [164]lrcpkg.Shard
 	rcvstat       RebuildCount
-	Upt           *TokenPool.TaskPool
+	Upt           *TokenPool.TokenPool
 	startTskTmCtl uint8
 	ElkClient     *YTElkProducer.Client
 }
