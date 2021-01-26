@@ -7,7 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/Perf"
-	"github.com/yottachain/YTDataNode/TaskPool"
+	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logBuffer"
