@@ -263,11 +263,6 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
-	mi := &util.MinerInfo{ID: uint64(msg.Id)}
-	if mi.IsNoSpace(msg.UsedSpace) {
-		randDownload.Stop()
-	}
-
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
@@ -344,16 +339,17 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		proto.Unmarshal(res[2:], &resMsg)
 		if resMsg.ProductiveSpace >= 0 {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
-			// 如果可用空间小于10G停止抽查
-		}
-		if resMsg.ProductiveSpace == -1 {
-			disableReport = true
-		} else {
 			diskHash.CopyHead()
-		}
-		if resMsg.ProductiveSpace == -2 {
-			log.Println("[report] error")
-			return
+		} else {
+			switch resMsg.ProductiveSpace {
+			case -1:
+				disableReport = true
+			case -2:
+				log.Println("[report] error")
+				return
+			case -8:
+				randDownload.Stop()
+			}
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
