@@ -17,6 +17,7 @@ type MinerInfo struct {
 }
 
 func GetMinerInfo(id uint64) *MinerInfo {
+
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf(`{"_id":%d}`, id))
 	resp, err := http.Post("https://dnrpc.yottachain.net/query", "application/json", buf)

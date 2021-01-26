@@ -63,7 +63,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	return pi, nil
 }
 
-func DownloadFromRandNode(utk *TaskPool.Token, ctx context.Context) error {
+func DownloadFromRandNode(utk *TokenPool.Token, ctx context.Context) error {
 	var err error
 
 	pi, err := GetRandNode()
@@ -144,12 +144,12 @@ func Run() {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TaskPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TaskPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -173,11 +173,11 @@ func Run() {
 			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
-			utk, err := TaskPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+			utk, err := TokenPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
 			if err != nil {
 				return
 			}
-			defer TaskPool.Utp().Delete(utk)
+			defer TokenPool.Utp().Delete(utk)
 
 			err = DownloadFromRandNode(utk, ctx)
 			if err != nil && err.Error() != errNoTK.Error() {

@@ -80,7 +80,7 @@ type RecoverEngine struct {
 	le            *LRCEngine
 	tstdata       [164]lrcpkg.Shard
 	rcvstat       RebuildCount
-	Upt           *TaskPool.TaskPool
+	Upt           *TokenPool.TaskPool
 	startTskTmCtl uint8
 	ElkClient     *YTElkProducer.Client
 }
@@ -101,7 +101,7 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.le = NewLRCEngine(re.getShard, re.IncRbdSucc)
-	re.Upt = TaskPool.Utp()
+	re.Upt = TokenPool.Utp()
 	logtb := sn.Config().BPMd5()
 	tbstr := "dnlog-" + strings.ToLower(base58.Encode(logtb))
 	re.ElkClient = NewElkClient(tbstr)
@@ -225,7 +225,6 @@ func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string
 	return nil, nil //refer to getShard
 }
 
-
 func NewElkClient(tbstr string) *YTElkProducer.Client {
 	elkConf := elasticsearch.Config{
 		Addresses: []string{"https://c1-bj-elk.yottachain.net/"},
@@ -240,16 +239,16 @@ func NewElkClient(tbstr string) *YTElkProducer.Client {
 		IndexType:   "log",
 	}
 
-	client,_ := YTElkProducer.NewClient(ytESConfig)
+	client, _ := YTElkProducer.NewClient(ytESConfig)
 	return &client
 }
 
-func (re *RecoverEngine) reportLog(body interface{}){
+func (re *RecoverEngine) reportLog(body interface{}) {
 	//if ! config.Gconfig.ElkReport{
 	//	return
 	//}
 
-	if re.ElkClient == nil{
+	if re.ElkClient == nil {
 		log.Println("[recover][elk][error] no elkclient")
 		return
 	}
@@ -257,12 +256,12 @@ func (re *RecoverEngine) reportLog(body interface{}){
 	time.Sleep(time.Second * 10)
 }
 
-func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string,  err error) *RcvDbgLog{
+func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string, err error) *RcvDbgLog {
 	//if ! config.Gconfig.ElkReport{
 	//	return nil
 	//}
 
-	if re.ElkClient == nil{
+	if re.ElkClient == nil {
 		log.Println("[recover][elk][error] no elkclient")
 		return nil
 	}
@@ -315,9 +314,9 @@ func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, has
 	return btid, nil
 }
 
-func (re *RecoverEngine) getRdToken(clt *client.YTHostClient ,sw *Switchcnt)( []byte, error){
+func (re *RecoverEngine) getRdToken(clt *client.YTHostClient, sw *Switchcnt) ([]byte, error) {
 	var getToken message.NodeCapacityRequest
-	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value()+1
+	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
 	getTokenData, _ := proto.Marshal(&getToken)
 
 	ctxto, cancels := context.WithTimeout(context.Background(), time.Second*10)
@@ -325,27 +324,27 @@ func (re *RecoverEngine) getRdToken(clt *client.YTHostClient ,sw *Switchcnt)( []
 	tok, err := clt.SendMsg(ctxto, message.MsgIDNodeCapacityRequest.Value(), getTokenData)
 
 	if err != nil {
-		if config.Gconfig.ElkReport{
+		if config.Gconfig.ElkReport {
 			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
 			//go re.reportLog(logelk)
 		}
 
-		return nil,err
+		return nil, err
 	}
 
-	if len(tok) < 3{
+	if len(tok) < 3 {
 		err = fmt.Errorf("the length of token less 3 byte")
-		if config.Gconfig.ElkReport{
+		if config.Gconfig.ElkReport {
 			//logelk:=re.MakeReportLog(id,hash,"failToken",err)
 			//go re.reportLog(logelk)
 		}
-		return nil,err
+		return nil, err
 	}
 	return tok, err
 }
 
-func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, hash []byte, n *int,sw *Switchcnt,clt *client.YTHostClient)([]byte, error){
-	btid,_ := base58.Decode(taskid)
+func (re *RecoverEngine) getShardData(token, id, taskid string, addrs []string, hash []byte, n *int, sw *Switchcnt, clt *client.YTHostClient) ([]byte, error) {
+	btid, _ := base58.Decode(taskid)
 	var msg message.DownloadShardRequest
 	msg.VHF = hash
 	msg.AllocId = token
@@ -364,17 +363,17 @@ func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, h
 	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
 	re.DecConShard()
 	if err != nil {
-		if (strings.Contains(err.Error(),"Get data Slice fail")){
+		if strings.Contains(err.Error(), "Get data Slice fail") {
 			re.IncFailShard()
-			if config.Gconfig.ElkReport{
-				logelk:=re.MakeReportLog(id,hash,"failShard",err)
+			if config.Gconfig.ElkReport {
+				logelk := re.MakeReportLog(id, hash, "failShard", err)
 				go re.reportLog(logelk)
 			}
 			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
-		}else{
+		} else {
 			re.IncFailSendShard()
-			if config.Gconfig.ElkReport{
-				logelk:=re.MakeReportLog(id,hash,"failSendShard",err)
+			if config.Gconfig.ElkReport {
+				logelk := re.MakeReportLog(id, hash, "failSendShard", err)
 				go re.reportLog(logelk)
 			}
 			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
@@ -382,33 +381,33 @@ func (re *RecoverEngine)getShardData(token, id, taskid string, addrs []string, h
 		return nil, err
 	}
 
-	if len(shardBuf)<3{
+	if len(shardBuf) < 3 {
 		re.IncFailSendShard()
 		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
-		return nil, fmt.Errorf("error: shard less then 16384, len=",len(shardBuf))
+		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
 	}
 	return shardBuf, err
 }
 
-func (re *RecoverEngine)putToken(token string,clt *client.YTHostClient){
+func (re *RecoverEngine) putToken(token string, clt *client.YTHostClient) {
 	bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancels2()
 
 	var msgbck message.DownloadTKCheck
 	msgbck.Tk = token
-	buf,err := proto.Marshal(&msgbck)
-	_,err = clt.SendMsg(bkctxto,message.MsgIDDownloadTKCheck.Value(),buf)
-	if err != nil{
-		log.Println("[recover] return token error,err=",err.Error())
-	}else{
+	buf, err := proto.Marshal(&msgbck)
+	_, err = clt.SendMsg(bkctxto, message.MsgIDDownloadTKCheck.Value(), buf)
+	if err != nil {
+		log.Println("[recover] return token error,err=", err.Error())
+	} else {
 		re.IncSuccPutTok()
 	}
 }
 
-func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt, tasklife int32) ([]byte, error) {
-	btid, err :=re.parmCheck(id, taskID, addrs, hash, n, sw)
-	if err !=nil {
-		log.Println("[recover] parmcheck error :",err)
+func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt, tasklife int32) ([]byte, error) {
+	btid, err := re.parmCheck(id, taskID, addrs, hash, n, sw)
+	if err != nil {
+		log.Println("[recover] parmcheck error :", err)
 		return nil, err
 	}
 
@@ -417,9 +416,9 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
-		log.Println("[recover][debug] getShardcnn C err=",err)
+		log.Println("[recover][debug] getShardcnn C err=", err)
 		re.IncFailConn()
-		if config.Gconfig.ElkReport{
+		if config.Gconfig.ElkReport {
 			//logelk:=re.MakeReportLog(id,hash,"failConn",err)
 			//go re.reportLog(logelk)
 		}
@@ -435,7 +434,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	peerVersion := clt.RemotePeerVersion()
 	if int(peerVersion) < int(config.Gconfig.MinVersion) {
 		err = fmt.Errorf("remote dn version is too low!")
-		if config.Gconfig.ElkReport{
+		if config.Gconfig.ElkReport {
 			//logelk := re.MakeReportLog(id, hash, "failVersion", err)
 			//go re.reportLog(logelk)
 		}
@@ -445,12 +444,12 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	re.IncSuccVersion()
 	re.GetConShardPass()
 
-	tok,err := re.getRdToken(clt, sw)
+	tok, err := re.getRdToken(clt, sw)
 	if err != nil {
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
-		return nil,err
+		return nil, err
 
 	}
 
@@ -460,7 +459,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		re.IncFailToken()
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
-		return nil,err
+		return nil, err
 	}
 
 	if !resGetToken.Writable {
@@ -468,7 +467,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		err = fmt.Errorf("resGetToken.Writable is false")
 		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
 		re.ReturnConShardPass()
-		return nil,err
+		return nil, err
 	}
 
 	if 0 == sw.swtoken {
@@ -477,7 +476,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 	}
 
 	var res message.DownloadShardResponse
-	shardBuf,err := re.getShardData(resGetToken.AllocId,id,taskID,addrs,hash,n,sw,clt)
+	shardBuf, err := re.getShardData(resGetToken.AllocId, id, taskID, addrs, hash, n, sw, clt)
 	if err != nil {
 		re.ReturnConShardPass()
 		return nil, err
@@ -496,7 +495,7 @@ func (re *RecoverEngine) getShard( id string, taskID string, addrs []string, has
 		sw.swshard++
 	}
 
-	re.putToken(resGetToken.AllocId,clt)
+	re.putToken(resGetToken.AllocId, clt)
 	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.rcvstat.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 
 	*n = *n + 1
@@ -676,16 +675,16 @@ func (re *RecoverEngine) MultiReply() error {
 			continue
 		} else {
 			reportTms := 6
-			for{
+			for {
 				reportTms--
-				if 0 >= reportTms{
-					log.Println("[recover][report]Send msg error: ",err)
+				if 0 >= reportTms {
+					log.Println("[recover][report]Send msg error: ", err)
 					break
 				}
 
-				resp,err:=re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-				if err == nil{
-					if len(resp) < 3{
+				resp, err := re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
+				if err == nil {
+					if len(resp) < 3 {
 						continue
 					}
 
@@ -693,12 +692,12 @@ func (re *RecoverEngine) MultiReply() error {
 					err = proto.Unmarshal(resp[2:], &res)
 					if err != nil {
 						continue
-					}else{
+					} else {
 						if 0 == res.ErrCode {
 							re.rcvstat.ackSuccRebuild += uint64(res.SuccNum)
 						}
 					}
-					log.Println("[recover][report] multi reply success, rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask,"ackSuccRebuild",re.rcvstat.ackSuccRebuild)
+					log.Println("[recover][report] multi reply success, rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask, "ackSuccRebuild", re.rcvstat.ackSuccRebuild)
 					break
 				}
 			}
@@ -732,31 +731,30 @@ type PreJudgeReport struct {
 	ShardExist string
 }
 
-
-func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo,msg message.TaskDescription) *PreJudgeReport{
-    //if ! config.Gconfig.ElkReport{
-    //	return nil
+func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg message.TaskDescription) *PreJudgeReport {
+	//if ! config.Gconfig.ElkReport{
+	//	return nil
 	//}
-	if re.ElkClient == nil{
-    	log.Println("[recover][elk] error,no client")
-    	return nil
+	if re.ElkClient == nil {
+		log.Println("[recover][elk] error,no client")
+		return nil
 	}
 	localid := re.sn.Config().ID
-    lostidx := lrcShd.Lostindex
-    losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
-    failtype := "failJudge"
-    shardExist := lrcShd.ShardExist[:164]
-    shdExistStr := make([]string,len(shardExist))
-    for k,v:= range shardExist{
-    	shdExistStr[k]=fmt.Sprintf("%d",v)
+	lostidx := lrcShd.Lostindex
+	losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
+	failtype := "failJudge"
+	shardExist := lrcShd.ShardExist[:164]
+	shdExistStr := make([]string, len(shardExist))
+	for k, v := range shardExist {
+		shdExistStr[k] = fmt.Sprintf("%d", v)
 	}
-    strExist := strings.Join(shdExistStr,"")
-    return &PreJudgeReport{
-    	LocalNdID:localid,
-    	LostHash:losthash,
-    	LostIndex:lostidx,
-    	FailType:failtype,
-    	ShardExist:strExist,
+	strExist := strings.Join(shdExistStr, "")
+	return &PreJudgeReport{
+		LocalNdID:  localid,
+		LostHash:   losthash,
+		LostIndex:  lostidx,
+		FailType:   failtype,
+		ShardExist: strExist,
 	}
 }
 

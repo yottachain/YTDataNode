@@ -1,4 +1,4 @@
-package TaskPool
+package TokenPool
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
@@ -99,7 +100,7 @@ func (pt *TaskPool) Delete(tk *Token) bool {
 
 func (pt *TaskPool) FillToken() {
 	//自动更改token速率
-	pt.AutoChangeTokenInterval()
+	//pt.AutoChangeTokenInterval()
 
 	for {
 		startTime := time.Now()
@@ -118,28 +119,28 @@ func (pt *TaskPool) FillToken() {
 	}
 }
 
-func (pt *TaskPool) AutoChangeTokenInterval() {
+func (pt *TaskPool) AutoChangeTokenInterval(IncreaseThreshold, Increase, DecreaseThreshold, Decrease int64) {
 	go func() {
 		for {
 			// 每10分钟衰减一次 token
-			decreaseTd := time.Minute * time.Duration(config.Gconfig.Decrease)
+			decreaseTd := time.Minute * time.Duration(Decrease)
 			<-time.After(decreaseTd)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
 			rate := pt.GetRate()
 			if rate == -1 {
 				continue
 			}
-			if rate < config.Gconfig.DecreaseThreshold {
+			if rate < DecreaseThreshold {
 				log.Printf("[token] 触发token减少 [%d] \n", rate)
 				// 衰减量 是失败百分比
-				decrement := pt.FillTokenInterval * (time.Duration(config.Gconfig.DecreaseThreshold) - time.Duration(rate)) / 100
+				decrement := pt.FillTokenInterval * (time.Duration(DecreaseThreshold) - time.Duration(rate)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval + decrement)
 			}
 		}
 	}()
 	go func() {
 		for {
-			increaseTd := time.Minute * time.Duration(config.Gconfig.Increase)
+			increaseTd := time.Minute * time.Duration(Increase)
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			rate := pt.GetRate()
@@ -147,9 +148,9 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 				continue
 			}
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if rate > config.Gconfig.IncreaseThreshold {
+			if rate > IncreaseThreshold {
 				log.Printf("[token] 触发token增加 [%d] \n", rate)
-				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(config.Gconfig.IncreaseThreshold)) / 100
+				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(IncreaseThreshold)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval - decrement)
 			}
 		}
@@ -247,4 +248,12 @@ func Utp() *TaskPool {
 // 下行token任务池
 func Dtp() *TaskPool {
 	return DownloadTP
+}
+
+func Init(s *statistics.Stat) {
+	cfg := config.Gconfig
+	UploadTP.GetRate = s.RXTest.GetRate
+	DownloadTP.GetRate = s.TXTest.GetRate
+	go UploadTP.AutoChangeTokenInterval(cfg.IncreaseThreshold, cfg.Increase, cfg.DecreaseThreshold, cfg.Decrease)
+	go DownloadTP.AutoChangeTokenInterval(cfg.TXIncreaseThreshold, cfg.Increase, cfg.TXDecreaseThreshold, cfg.Decrease)
 }
