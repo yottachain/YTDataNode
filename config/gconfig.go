@@ -29,8 +29,10 @@ type Gcfg struct {
 	TTL                   int64  `json:"TTL"`
 	Increase              int64  `json:"Increase"`
 	IncreaseThreshold     int64  `json:"IncreaseThreshold"`
+	TXIncreaseThreshold   int64  `json:"TXIncreaseThreshold"`
 	Decrease              int64  `json:"Decrease"`
 	DecreaseThreshold     int64  `json:"DecreaseThreshold"`
+	TXDecreaseThreshold   int64  `json:"TXDecreaseThreshold"`
 	TokenWait             int64  `json:"TokenWait"`
 	TokenReturnWait       int64  `json:"TokenReturnWait"`
 	Clean                 int    `json:"Clean"`
@@ -162,8 +164,10 @@ func NewGConfig() *GConfig {
 			TTL:                   10,
 			Increase:              30,
 			IncreaseThreshold:     95,
+			TXIncreaseThreshold:   95,
 			Decrease:              5,
 			DecreaseThreshold:     80,
+			TXDecreaseThreshold:   80,
 			TokenWait:             800,
 			TokenReturnWait:       800,
 			OutlineTimeRange:      600,

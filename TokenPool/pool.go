@@ -1,4 +1,4 @@
-package TaskPool
+package TokenPool
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type TaskPool struct {
+type TokenPool struct {
 	name              string
 	tkc               *TokenQueue
 	TTL               time.Duration `json:"ttl"`
@@ -23,16 +23,16 @@ type TaskPool struct {
 	DiskLatency       *delayStat
 	waitCount         int64
 	GetRate           func() int64 `json:"-"`
-	changeHandler     func(pt *TaskPool)
+	changeHandler     func(pt *TokenPool)
 }
 
-func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *TaskPool {
+func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *TokenPool {
 	// 默认值
 	if size == 0 {
 		size = 500
 	}
 
-	tp := new(TaskPool)
+	tp := new(TokenPool)
 	tp.name = name
 	tp.GetRate = func() int64 {
 		return 100
@@ -58,7 +58,7 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 	return tp
 }
 
-func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, error) {
+func (pt *TokenPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, error) {
 	atomic.AddInt64(&pt.waitCount, 1)
 	defer func() {
 		atomic.AddInt64(&pt.waitCount, -1)
@@ -89,17 +89,17 @@ func (pt *TaskPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, 
 	}
 }
 
-func (pt *TaskPool) Check(tk *Token) bool {
+func (pt *TokenPool) Check(tk *Token) bool {
 	return time.Now().Sub(tk.Tm) < pt.TTL
 }
 
-func (pt *TaskPool) Delete(tk *Token) bool {
+func (pt *TokenPool) Delete(tk *Token) bool {
 	return false
 }
 
-func (pt *TaskPool) FillToken() {
+func (pt *TokenPool) FillToken() {
 	//自动更改token速率
-	pt.AutoChangeTokenInterval()
+	//pt.AutoChangeTokenInterval()
 
 	for {
 		startTime := time.Now()
@@ -118,28 +118,28 @@ func (pt *TaskPool) FillToken() {
 	}
 }
 
-func (pt *TaskPool) AutoChangeTokenInterval() {
+func (pt *TokenPool) AutoChangeTokenInterval(IncreaseThreshold, Increase, DecreaseThreshold, Decrease int64) {
 	go func() {
 		for {
 			// 每10分钟衰减一次 token
-			decreaseTd := time.Minute * time.Duration(config.Gconfig.Decrease)
+			decreaseTd := time.Minute * time.Duration(Decrease)
 			<-time.After(decreaseTd)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
 			rate := pt.GetRate()
 			if rate == -1 {
 				continue
 			}
-			if rate < config.Gconfig.DecreaseThreshold {
+			if rate < DecreaseThreshold {
 				log.Printf("[token] 触发token减少 [%d] \n", rate)
 				// 衰减量 是失败百分比
-				decrement := pt.FillTokenInterval * (time.Duration(config.Gconfig.DecreaseThreshold) - time.Duration(rate)) / 100
+				decrement := pt.FillTokenInterval * (time.Duration(DecreaseThreshold) - time.Duration(rate)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval + decrement)
 			}
 		}
 	}()
 	go func() {
 		for {
-			increaseTd := time.Minute * time.Duration(config.Gconfig.Increase)
+			increaseTd := time.Minute * time.Duration(Increase)
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			rate := pt.GetRate()
@@ -147,20 +147,20 @@ func (pt *TaskPool) AutoChangeTokenInterval() {
 				continue
 			}
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
-			if rate > config.Gconfig.IncreaseThreshold {
+			if rate > IncreaseThreshold {
 				log.Printf("[token] 触发token增加 [%d] \n", rate)
-				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(config.Gconfig.IncreaseThreshold)) / 100
+				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(IncreaseThreshold)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval - decrement)
 			}
 		}
 	}()
 }
 
-func (pt *TaskPool) FreeTokenLen() int {
+func (pt *TokenPool) FreeTokenLen() int {
 	return pt.tkc.Len()
 }
 
-func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
+func (pt *TokenPool) ChangeTKFillInterval(duration time.Duration) {
 	makeZero := true
 	if duration > (time.Second / time.Duration(config.Gconfig.MinToken)) {
 		duration = time.Second / time.Duration(config.Gconfig.MinToken)
@@ -181,11 +181,11 @@ func (pt *TaskPool) ChangeTKFillInterval(duration time.Duration) {
 	//pt.MakeTokenQueue()
 }
 
-func (pt *TaskPool) OnChange(handler func(pt *TaskPool)) {
+func (pt *TokenPool) OnChange(handler func(pt *TokenPool)) {
 	pt.changeHandler = handler
 }
 
-func (pt *TaskPool) MakeTokenQueue() {
+func (pt *TokenPool) MakeTokenQueue() {
 	size := time.Second / pt.FillTokenInterval * 3
 	if size > 500 {
 		size = 500
@@ -193,11 +193,11 @@ func (pt *TaskPool) MakeTokenQueue() {
 	pt.tkc = NewTokenQueue(int32(config.Gconfig.MaxToken))
 }
 
-func (pt *TaskPool) GetTFillTKSpeed() time.Duration {
+func (pt *TokenPool) GetTFillTKSpeed() time.Duration {
 	return time.Second / pt.FillTokenInterval
 }
 
-func (pt *TaskPool) Save() {
+func (pt *TokenPool) Save() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Println("[task pool]", err)
@@ -213,7 +213,7 @@ func (pt *TaskPool) Save() {
 	}
 }
 
-func (pt *TaskPool) Load() {
+func (pt *TokenPool) Load() {
 	fl, err := os.OpenFile(path.Join(util.GetYTFSPath(), pt.name), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Println("[task pool]", err)
@@ -232,19 +232,19 @@ func (pt *TaskPool) Load() {
 	log.Printf("[utp]读取历史记录成功 %v \n", pt)
 }
 
-func (pt *TaskPool) GetParams() (int64, int64) {
+func (pt *TokenPool) GetParams() (int64, int64) {
 	return 0, 0
 }
 
-var UploadTP *TaskPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
-var DownloadTP *TaskPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
+var UploadTP *TokenPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
+var DownloadTP *TokenPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
 
 // 上行token任务池
-func Utp() *TaskPool {
+func Utp() *TokenPool {
 	return UploadTP
 }
 
 // 下行token任务池
-func Dtp() *TaskPool {
+func Dtp() *TokenPool {
 	return DownloadTP
 }

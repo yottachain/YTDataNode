@@ -1,4 +1,4 @@
-package TaskPool
+package TokenPool
 
 import (
 	"sync"
