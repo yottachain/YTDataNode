@@ -52,7 +52,7 @@ func (sn *storageNode) Service() {
 	// 初始化统计
 	statistics.InitDefaultStat()
 	// 初始化token池
-	TokenPool.Init(&statistics.DefaultStat)
+	InitTokenPool(&statistics.DefaultStat)
 
 	rms = service.NewRelayManage(sn.Host())
 
@@ -400,4 +400,12 @@ func GetXX(rt string) uint64 {
 	default:
 		return 0
 	}
+}
+
+func InitTokenPool(s *statistics.Stat) {
+	cfg := config.Gconfig
+	TokenPool.UploadTP.GetRate = s.RXTest.GetRate
+	TokenPool.DownloadTP.GetRate = s.TXTest.GetRate
+	go TokenPool.UploadTP.AutoChangeTokenInterval(cfg.IncreaseThreshold, cfg.Increase, cfg.DecreaseThreshold, cfg.Decrease)
+	go TokenPool.DownloadTP.AutoChangeTokenInterval(cfg.TXIncreaseThreshold, cfg.Increase, cfg.TXDecreaseThreshold, cfg.Decrease)
 }

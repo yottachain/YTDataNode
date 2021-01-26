@@ -7,7 +7,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"os"
 	"path"
@@ -248,12 +247,4 @@ func Utp() *TokenPool {
 // 下行token任务池
 func Dtp() *TokenPool {
 	return DownloadTP
-}
-
-func Init(s *statistics.Stat) {
-	cfg := config.Gconfig
-	UploadTP.GetRate = s.RXTest.GetRate
-	DownloadTP.GetRate = s.TXTest.GetRate
-	go UploadTP.AutoChangeTokenInterval(cfg.IncreaseThreshold, cfg.Increase, cfg.DecreaseThreshold, cfg.Decrease)
-	go DownloadTP.AutoChangeTokenInterval(cfg.TXIncreaseThreshold, cfg.Increase, cfg.TXDecreaseThreshold, cfg.Decrease)
 }
