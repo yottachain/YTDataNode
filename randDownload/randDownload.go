@@ -63,14 +63,53 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	return pi, nil
 }
 
-func DownloadFromRandNode(utk *TokenPool.Token, ctx context.Context) error {
+func UploadFromRandNode(ctx context.Context) error {
+	tk, err := TokenPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+	if err != nil {
+		return errNoTK
+	}
+	defer TokenPool.Utp().Delete(tk)
+
+	pi, err := GetRandNode()
+	if err != nil {
+		return err
+	}
+	if Sn == nil {
+		return fmt.Errorf("no storage-node")
+	}
+
+	statistics.DefaultStat.RXTestConnectRate.AddCount()
+	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
+	if err != nil {
+		return err
+	}
+	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
+	defer clt.Close()
+
+	var testMsg message.TestGetBlock
+
+	// 第一次发送消息模拟下载
+	testMsg.Msg = Perf.MSG_DOWNLOAD
+	testMsgBuf, err := proto.Marshal(&testMsg)
+	if err != nil {
+		return err
+	}
+	statistics.DefaultStat.RXTest.AddCount()
+	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
+	if err != nil {
+		return err
+	}
+	statistics.DefaultStat.RXTest.AddSuccess()
+	return nil
+}
+
+func DownloadFromRandNode(ctx context.Context) error {
 	var err error
 
 	pi, err := GetRandNode()
 	if err != nil {
 		return err
 	}
-	//log.Println("[randDownload] test node", pi.ID, pi.Addrs)
 
 	if Sn == nil {
 		return fmt.Errorf("no storage-node")
@@ -109,13 +148,10 @@ func DownloadFromRandNode(utk *TokenPool.Token, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTest.AddCount()
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTest.AddSuccess()
-
 	// 第二次发送消息消耗token
 	testMsg.Msg = Perf.MSG_CHECKOUT
 	testMsgBuf, err = proto.Marshal(&testMsg)
@@ -131,7 +167,64 @@ func DownloadFromRandNode(utk *TokenPool.Token, ctx context.Context) error {
 func Stop() {
 	stop = true
 }
-func Run() {
+func RunRX() {
+	var successCount uint64
+	var errorCount uint64
+	var execChan *chan struct{}
+	rand.Seed(int64(os.Getpid()))
+
+	go func() {
+		for {
+			<-time.After(time.Minute)
+			log.Println("[randUpload] success", successCount, "error", errorCount, "exec", len(*execChan))
+		}
+	}()
+
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	execChan = &c
+
+	go func() {
+		for {
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+			execChan = &c
+			<-time.After(5 * time.Minute)
+		}
+	}()
+
+	// rx
+	for {
+		if stop {
+			<-time.After(time.Minute)
+			continue
+		}
+		if execChan == nil {
+			continue
+		}
+		ec := *execChan
+		ec <- struct{}{}
+		go func(ec chan struct{}) {
+			defer func() {
+				<-ec
+			}()
+
+			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			defer cancle()
+
+			err := UploadFromRandNode(ctx)
+			if err != nil && err.Error() != errNoTK.Error() {
+				logBuffer.ErrorLogger.Println(err.Error())
+				atomic.AddUint64(&errorCount, 1)
+			} else if err == nil {
+				atomic.AddUint64(&successCount, 1)
+			}
+
+			<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
+		}(ec)
+
+	}
+}
+
+func RunTX() {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -155,11 +248,8 @@ func Run() {
 		}
 	}()
 
+	// tx
 	for {
-		if stop {
-			<-time.After(time.Minute)
-			continue
-		}
 		if execChan == nil {
 			continue
 		}
@@ -173,13 +263,7 @@ func Run() {
 			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
-			utk, err := TokenPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
-			if err != nil {
-				return
-			}
-			defer TokenPool.Utp().Delete(utk)
-
-			err = DownloadFromRandNode(utk, ctx)
+			err := DownloadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
 				atomic.AddUint64(&errorCount, 1)
@@ -191,4 +275,9 @@ func Run() {
 		}(ec)
 
 	}
+}
+
+func Run() {
+	go RunRX()
+	go RunTX()
 }
