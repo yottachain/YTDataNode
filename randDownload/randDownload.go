@@ -194,12 +194,12 @@ func RunRX() {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -233,7 +233,7 @@ func RunRX() {
 			}
 
 		}(ec)
-		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
 	}
 }
 
@@ -250,12 +250,12 @@ func RunTX() {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -285,7 +285,7 @@ func RunTX() {
 			}
 
 		}(ec)
-		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RandDownloadSleepTime))
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.TXTestSleep))
 	}
 }
 

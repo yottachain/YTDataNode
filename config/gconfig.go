@@ -28,10 +28,10 @@ type Gcfg struct {
 	MinToken              int    `json:"MinToken"`
 	TTL                   int64  `json:"TTL"`
 	Increase              int64  `json:"Increase"`
-	IncreaseThreshold     int64  `json:"IncreaseThreshold"`
+	RXIncreaseThreshold   int64  `json:"RXIncreaseThreshold"`
 	TXIncreaseThreshold   int64  `json:"TXIncreaseThreshold"`
 	Decrease              int64  `json:"Decrease"`
-	DecreaseThreshold     int64  `json:"DecreaseThreshold"`
+	RXDecreaseThreshold   int64  `json:"RXDecreaseThreshold"`
 	TXDecreaseThreshold   int64  `json:"TXDecreaseThreshold"`
 	TokenWait             int64  `json:"TokenWait"`
 	TokenReturnWait       int64  `json:"TokenReturnWait"`
@@ -42,9 +42,11 @@ type Gcfg struct {
 	BanTime               int
 	ElkReport             bool
 	DiskTimeout           int
-	RandDownloadNum       int
+	RXTestNum             int
+	TXTestNum             int
 	RandDownloadGroupSize int
-	RandDownloadSleepTime int
+	RXTestSleep           int
+	TXTestSleep           int
 	NodeListUpdateTime    int
 }
 
@@ -163,21 +165,23 @@ func NewGConfig() *GConfig {
 			MinToken:              1,
 			TTL:                   10,
 			Increase:              30,
-			IncreaseThreshold:     95,
+			RXIncreaseThreshold:   95,
 			TXIncreaseThreshold:   95,
 			Decrease:              5,
-			DecreaseThreshold:     80,
+			RXDecreaseThreshold:   80,
 			TXDecreaseThreshold:   80,
 			TokenWait:             800,
 			TokenReturnWait:       800,
 			OutlineTimeRange:      600,
 			BanTime:               180,
 			ElkReport:             false,
-			RandDownloadNum:       2,
+			RXTestNum:             2,
+			TXTestNum:             2,
 			RandDownloadGroupSize: 1,
 			DiskTimeout:           5000,
 			NodeListUpdateTime:    10,
-			RandDownloadSleepTime: 100,
+			RXTestSleep:           100,
+			TXTestSleep:           100,
 		},
 		OnUpdate: nil,
 	}
