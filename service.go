@@ -265,7 +265,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 
 	mi := util.MinerInfo{ID: uint64(msg.Id)}
 	if mi.IsNoSpace(msg.UsedSpace) {
-		randDownload.Stop()
+		TokenPool.Utp().Stop()
 	}
 
 	msg.Relay = sn.config.Relay
@@ -354,7 +354,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 				//log.Println("[report] error")
 				return
 			case -8:
-				randDownload.Stop()
+				TokenPool.Utp().Stop()
 			}
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
