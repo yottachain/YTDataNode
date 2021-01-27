@@ -354,7 +354,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 				//log.Println("[report] error")
 				return
 			case -8:
-				randDownload.Stop()
+				TokenPool.Utp().Stop()
 			}
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
