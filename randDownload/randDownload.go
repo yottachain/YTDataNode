@@ -24,8 +24,6 @@ import (
 	"time"
 )
 
-var stop = false
-
 var errNoTK = fmt.Errorf("notk")
 
 var Sn storageNodeInterface.StorageNode
@@ -178,9 +176,6 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	return nil
 }
-func Stop() {
-	stop = true
-}
 func RunRX() {
 	var successCount uint64
 	var errorCount uint64
@@ -207,10 +202,6 @@ func RunRX() {
 
 	// rx
 	for {
-		if stop {
-			<-time.After(time.Minute)
-			continue
-		}
 		if execChan == nil {
 			continue
 		}

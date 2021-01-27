@@ -265,7 +265,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 
 	mi := util.MinerInfo{ID: uint64(msg.Id)}
 	if mi.IsNoSpace(msg.UsedSpace) {
-		randDownload.Stop()
+		TokenPool.Utp().Stop()
 	}
 
 	msg.Relay = sn.config.Relay

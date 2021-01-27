@@ -15,6 +15,7 @@ import (
 )
 
 type TokenPool struct {
+	stop              bool
 	name              string
 	tkc               *TokenQueue
 	TTL               time.Duration `json:"ttl"`
@@ -37,6 +38,7 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 	tp.GetRate = func() int64 {
 		return 100
 	}
+	tp.stop = false
 
 	tp.FillTokenInterval = fillInterval
 	tp.TTL = ttl
@@ -59,6 +61,9 @@ func New(name string, size int, ttl time.Duration, fillInterval time.Duration) *
 }
 
 func (pt *TokenPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token, error) {
+	if pt.stop {
+		return nil, fmt.Errorf("no space")
+	}
 	atomic.AddInt64(&pt.waitCount, 1)
 	defer func() {
 		atomic.AddInt64(&pt.waitCount, -1)
@@ -91,6 +96,10 @@ func (pt *TokenPool) Get(ctx context.Context, pid peer.ID, level int32) (*Token,
 
 func (pt *TokenPool) Check(tk *Token) bool {
 	return time.Now().Sub(tk.Tm) < pt.TTL
+}
+
+func (pt *TokenPool) Stop() {
+	pt.stop = true
 }
 
 func (pt *TokenPool) Delete(tk *Token) bool {
