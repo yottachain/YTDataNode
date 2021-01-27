@@ -64,7 +64,7 @@ func GetRandNode() (*peer.AddrInfo, error) {
 
 func getTK(clt *client.YTHostClient, msgID int32, ctx context.Context) (string, error) {
 	var getTokenMsg message.NodeCapacityRequest
-	getTokenMsg.RequestMsgID = message.MsgIDTestGetBlock.Value() + 1
+	getTokenMsg.RequestMsgID = msgID
 	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
 		return "", errNoTK
@@ -220,7 +220,6 @@ func RunRX() {
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
-				log.Println("randUpload", err.Error())
 				atomic.AddUint64(&errorCount, 1)
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
