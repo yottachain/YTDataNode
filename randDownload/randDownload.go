@@ -180,12 +180,13 @@ func RunRX() {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
+	var count uint64
 	rand.Seed(int64(os.Getpid()))
 
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randUpload] success", successCount, "error", errorCount, "exec", len(*execChan))
+			log.Println("[randUpload] success", successCount, "error", errorCount, "exec", len(*execChan), "count", count)
 		}
 	}()
 
@@ -215,9 +216,11 @@ func RunRX() {
 			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
+			atomic.AddUint64(&count, 1)
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
+				log.Println("randUpload", err.Error())
 				atomic.AddUint64(&errorCount, 1)
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
