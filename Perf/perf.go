@@ -146,6 +146,8 @@ func GetBlock(data []byte) (res []byte, err error) {
 		err := tk.FillFromString(msg.AllocID)
 		if err == nil && TokenPool.Utp().Check(tk) {
 			statistics.DefaultStat.RXTest.AddSuccess()
+		} else {
+			log.Println("[perf]", err, TokenPool.Utp().Check(tk))
 		}
 
 	case MSG_DOWNLOAD_TK:
