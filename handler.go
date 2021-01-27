@@ -131,23 +131,26 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	var level int32 = 1
 	err := proto.Unmarshal(data, &GTMsg)
 
-	// 判断是上传还是下载
-	if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value()+1 || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value()+1 {
-		xtp = TokenPool.Dtp()
-		atomic.AddInt64(&statistics.DefaultStat.TXRequestToken, 1)
-		tokenType = "download"
-	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDDownloadShardRequest.Value() || GTMsg.RequestMsgID == message.MsgIDMultiTaskDescription.Value() {
-		log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
-		return nil
-	} else if err == nil && GTMsg.RequestMsgID == message.MsgIDTestGetBlock.Value() {
-		xtp = TokenPool.Dtp()
-		level = 0
-		tokenType = "test"
-	} else if err == nil {
-		//if disableWrite {
-		//	return nil
-		//}
-		atomic.AddInt64(&statistics.DefaultStat.RXRequestToken, 1)
+	if err == nil {
+		switch GTMsg.RequestMsgID {
+		case message.MsgIDDownloadShardRequest.Value() + 1, message.MsgIDMultiTaskDescription.Value() + 1:
+			xtp = TokenPool.Dtp()
+			atomic.AddInt64(&statistics.DefaultStat.TXRequestToken, 1)
+			tokenType = "download"
+		case message.MsgIDDownloadShardRequest.Value(), message.MsgIDMultiTaskDescription.Value():
+			log.Println("get download token ", id.String(), GTMsg.RequestMsgID)
+			return nil
+		case message.MsgIDTestGetBlock.Value():
+			xtp = TokenPool.Dtp()
+			level = 0
+			tokenType = "test"
+		case message.MsgIDTestGetBlock.Value() + 1:
+			xtp = TokenPool.Utp()
+			level = 0
+			tokenType = "testUpload"
+		default:
+			atomic.AddInt64(&statistics.DefaultStat.RXRequestToken, 1)
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
@@ -189,6 +192,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 			atomic.AddInt64(&statistics.DefaultStat.TXToken, 1)
 		case "test":
 			statistics.DefaultStat.TXTest.AddCount()
+		case "testUpload":
+			statistics.DefaultStat.RXTest.AddCount()
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)

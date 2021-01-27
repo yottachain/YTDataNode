@@ -16,6 +16,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
+	"github.com/yottachain/YTHost/client"
 	"math"
 	"math/rand"
 	"os"
@@ -63,13 +64,31 @@ func GetRandNode() (*peer.AddrInfo, error) {
 	return pi, nil
 }
 
-func UploadFromRandNode(ctx context.Context) error {
-	tk, err := TokenPool.Utp().Get(ctx, Sn.Host().Config().ID, 0)
+func getTK(clt *client.YTHostClient, msgID int32, ctx context.Context) (string, error) {
+	var getTokenMsg message.NodeCapacityRequest
+	getTokenMsg.RequestMsgID = message.MsgIDTestGetBlock.Value() + 1
+	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
 	if err != nil {
-		return errNoTK
+		return "", errNoTK
 	}
-	defer TokenPool.Utp().Delete(tk)
 
+	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
+	if err != nil {
+		return "", errNoTK
+	}
+	var tokenMsg message.NodeCapacityResponse
+	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
+	if err != nil {
+		return "", errNoTK
+	}
+	return tokenMsg.AllocId, err
+}
+
+func GetRandClt() (*client.YTHostClient, error) {
+	return nil, nil
+}
+
+func UploadFromRandNode(ctx context.Context) error {
 	pi, err := GetRandNode()
 	if err != nil {
 		return err
@@ -86,20 +105,27 @@ func UploadFromRandNode(ctx context.Context) error {
 	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
 	defer clt.Close()
 
+	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value()+1, ctx)
+	if err != nil {
+		return err
+	}
+
 	var testMsg message.TestGetBlock
 
-	// 第一次发送消息模拟下载
-	testMsg.Msg = Perf.MSG_DOWNLOAD
+	// 第一次发送消息模拟上传
+	testMsg.Msg = Perf.MSG_UPLOAD
+	testMsg.Pld = make([]byte, 1024*16)
+	rand.Read(testMsg.Pld)
+	testMsg.AllocID = tk
+
 	testMsgBuf, err := proto.Marshal(&testMsg)
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTest.AddCount()
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTest.AddSuccess()
 	return nil
 }
 
@@ -122,28 +148,16 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
 	defer clt.Close()
-
-	var getTokenMsg message.NodeCapacityRequest
-	getTokenMsg.RequestMsgID = message.MsgIDTestGetBlock.Value()
-	getTKMsgBuf, err := proto.Marshal(&getTokenMsg)
+	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value(), ctx)
 	if err != nil {
-		return errNoTK
-	}
-
-	getTKResBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), getTKMsgBuf)
-	if err != nil {
-		return errNoTK
-	}
-	var tokenMsg message.NodeCapacityResponse
-	err = proto.Unmarshal(getTKResBuf[2:], &tokenMsg)
-	if err != nil {
-		return errNoTK
+		return err
 	}
 
 	var testMsg message.TestGetBlock
 
 	// 第一次发送消息模拟下载
 	testMsg.Msg = Perf.MSG_DOWNLOAD
+	testMsg.AllocID = tk
 	testMsgBuf, err := proto.Marshal(&testMsg)
 	if err != nil {
 		return err
@@ -180,7 +194,7 @@ func RunRX() {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/2, float64(config.Gconfig.RandDownloadNum))))
 	execChan = &c
 
 	go func() {

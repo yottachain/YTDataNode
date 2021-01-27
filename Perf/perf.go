@@ -2,22 +2,26 @@ package Perf
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/yottachain/YTDataNode/TokenPool"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost/client"
+	"math/rand"
 	"time"
 )
 
 const testBlockSize = 16 * 1024
 const MSG_DOWNLOAD = "download"
 const MSG_CHECKOUT = "checkout"
+const MSG_UPLOAD = "upload"
+const MSG_DOWNLOAD_TK = "dtk"
+const MSG_UPLOAD_TK = "utk"
 
 var Sn storageNodeInterface.StorageNode
 
@@ -131,11 +135,21 @@ func GetBlock(data []byte) (res []byte, err error) {
 	}
 
 	var resMsg message.TestGetBlockRes
-	if msg.Msg == MSG_DOWNLOAD {
+	switch msg.Msg {
+	case MSG_DOWNLOAD:
 		resMsg.Msg = make([]byte, testBlockSize)
 		rand.Read(resMsg.Msg)
-	} else if msg.Msg == MSG_CHECKOUT {
+	case MSG_CHECKOUT:
 		statistics.DefaultStat.TXTest.AddSuccess()
+	case MSG_UPLOAD:
+		tk := &TokenPool.Token{}
+		err := tk.FillFromString(msg.AllocID)
+		if err == nil && TokenPool.Utp().Check(tk) {
+			statistics.DefaultStat.RXTest.AddSuccess()
+		}
+
+	case MSG_DOWNLOAD_TK:
+	case MSG_UPLOAD_TK:
 	}
 	res, err = proto.Marshal(&resMsg)
 	return
