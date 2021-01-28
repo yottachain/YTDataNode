@@ -19,7 +19,7 @@ type Stat struct {
 	UseKvDb              bool          `json:"UseKvDb"`
 	RXTokenFillRate      time.Duration `json:"RXTokenFillRate"`
 	UpTime               int64         `json:"UpTime"`
-	Connection           int           `json:"Connection"`
+	Connection           uint64        `json:"Connection"`
 	RXAverageToken       int64         `json:"RXAverageToken"`
 	SentTokenNum         int64         `json:"-"`
 	ReportTime           time.Time     `json:"-"`
