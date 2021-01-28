@@ -299,8 +299,8 @@ github.com/yottachain/YTElkProducer v0.0.7 h1:euNbs3ubaGBQ34j1evmC8s+pAqJVpw/o9n
 github.com/yottachain/YTElkProducer v0.0.7/go.mod h1:iVHdNfhwkGzmfPnImbJ9v+UDGCxEipDUKKWGoKkY4wY=
 github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7 h1:g2vOvk8/BYP8sqGOFj0okh97pudK8Gd35kJNK8CmFKU=
 github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
-github.com/yottachain/YTHost v1.0.2-0.20210107062206-9fbc6e41fa35 h1:hbGJo1MoodNwkxmFeu4xyYs/Q0ZNwk+v/aoI49ibCaY=
-github.com/yottachain/YTHost v1.0.2-0.20210107062206-9fbc6e41fa35/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
+github.com/yottachain/YTHost v1.0.2-0.20210126030320-adf54cb27710 h1:Y3HBfytPVY3TIR51q2j/7AP1ibS13TALtq1XsQ9W4sY=
+github.com/yottachain/YTHost v1.0.2-0.20210126030320-adf54cb27710/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700 h1:QHX+cJoThWNaBOnLxWwmOmObivN/egBOH/ddXxWvUYs=
 github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=
