@@ -263,10 +263,10 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
-	mi := util.MinerInfo{ID: uint64(msg.Id)}
-	if mi.IsNoSpace(msg.UsedSpace) {
-		TokenPool.Utp().Stop()
-	}
+	//mi := util.MinerInfo{ID: uint64(msg.Id)}
+	//if mi.IsNoSpace(msg.UsedSpace) {
+	//	TokenPool.Utp().Stop()
+	//}
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
@@ -290,7 +290,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
-	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
+	statistics.DefaultStat.Connection = int(sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount())
 	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.RXDiskLatency = TokenPool.Utp().DiskLatency.Avg()
 	statistics.DefaultStat.TXNetLatency = TokenPool.Dtp().NetLatency.Avg()
@@ -353,6 +353,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 			case -2:
 				//log.Println("[report] error")
 				return
+			case -7:
+				TokenPool.Utp().Stop()
+				randDownload.Stop()
 			case -8:
 				TokenPool.Utp().Stop()
 			}

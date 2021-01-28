@@ -24,6 +24,8 @@ import (
 	"time"
 )
 
+var stop = false
+
 var errNoTK = fmt.Errorf("notk")
 
 var Sn storageNodeInterface.StorageNode
@@ -203,6 +205,10 @@ func RunRX() {
 
 	// rx
 	for {
+		if stop {
+			<-time.After(time.Hour)
+			continue
+		}
 		if execChan == nil {
 			continue
 		}
@@ -256,6 +262,10 @@ func RunTX() {
 
 	// tx
 	for {
+		if stop {
+			<-time.After(time.Hour)
+			continue
+		}
 		if execChan == nil {
 			continue
 		}
@@ -285,4 +295,8 @@ func RunTX() {
 func Run() {
 	go RunRX()
 	go RunTX()
+}
+
+func Stop() {
+	stop = true
 }
