@@ -290,7 +290,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
-	statistics.DefaultStat.Connection = int(sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount())
+	statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount()
 	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.RXDiskLatency = TokenPool.Utp().DiskLatency.Avg()
 	statistics.DefaultStat.TXNetLatency = TokenPool.Dtp().NetLatency.Avg()
