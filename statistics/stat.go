@@ -40,6 +40,7 @@ type Stat struct {
 	RXTest               RateCounter
 	TXTest               RateCounter
 	RXTestConnectRate    RateCounter
+	TXTestConnectRate    RateCounter
 	//RandDownloadCount      int64 // 仅矿机间下载计数
 	//RandDownloadSuccess    int64 // 仅矿机间下载成功计数
 	Ban             bool
