@@ -141,12 +141,12 @@ func DownloadFromRandNode(ctx context.Context) error {
 		return fmt.Errorf("no storage-node")
 	}
 
-	statistics.DefaultStat.RXTestConnectRate.AddCount()
+	statistics.DefaultStat.TXTestConnectRate.AddCount()
 	clt, err := Sn.Host().ClientStore().Get(ctx, pi.ID, pi.Addrs)
 	if err != nil {
 		return err
 	}
-	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
+	statistics.DefaultStat.TXTestConnectRate.AddSuccess()
 	defer clt.Close()
 	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value(), ctx)
 	if err != nil {
