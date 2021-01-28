@@ -24,7 +24,7 @@ require (
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.7
 	github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7
-	github.com/yottachain/YTHost v1.0.2-0.20210128092156-ff8abe6ffe2f
+	github.com/yottachain/YTHost v1.0.2-0.20210128100450-03bfcbb409e9
 	github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
