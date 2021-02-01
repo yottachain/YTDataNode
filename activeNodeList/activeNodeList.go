@@ -25,7 +25,7 @@ func getUrl() string {
 	return url
 }
 
-var nodeList []Data
+var nodeList []*Data
 var updateTime = time.Time{}
 
 type Data struct {
@@ -59,13 +59,12 @@ func Update() {
 	updateTime = time.Now()
 }
 
-func GetNodeList() []Data {
+func GetNodeList() []*Data {
 	locker.Lock()
-	defer locker.Unlock()
-
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Second {
 		Update()
 	}
+	locker.Unlock()
 
 	for k, v := range nodeList {
 		buf := []byte(v.NodeID)
@@ -74,11 +73,12 @@ func GetNodeList() []Data {
 
 	return nodeList
 }
-func GetNodeListByGroup(group byte) []Data {
-	var res = make([]Data, 0)
-	for _, v := range GetNodeList() {
-		if v.Group == group {
-			res = append(res, v)
+func GetNodeListByGroup(group byte) []*Data {
+	nodeList := GetNodeList()
+	var res = make([]*Data, 0)
+	for k, _ := range nodeList {
+		if nodeList[k].Group == group {
+			res = append(res, nodeList[k])
 		}
 	}
 	return res
@@ -117,7 +117,7 @@ func getYesterdayDuration() time.Duration {
 }
 
 // 根据时间间隔取node分组
-func GetNodeListByTime(duration time.Duration) []Data {
+func GetNodeListByTime(duration time.Duration) []*Data {
 	var groupList = GetGroupList()
 
 	d := getYesterdayDuration()
@@ -125,11 +125,11 @@ func GetNodeListByTime(duration time.Duration) []Data {
 	return GetNodeListByGroup(groupList[index])
 }
 
-func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
+func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []*Data {
 
 	var groupList = GetGroupList()
 	var lg = len(groupList)
-	var res = make([]Data, 0)
+	var res = make([]*Data, 0)
 
 	if lg == 0 || duration == 0 {
 		return nil
@@ -147,23 +147,29 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []Data {
 	return res
 }
 
-func GetWeightNodeList(nodeList []Data) []*Data {
-	var wn []*Data
+// 获取经过权重处理的NodeList
+func GetWeightNodeList(nodeList []*Data) []*Data {
+	var res []*Data = make([]*Data, 0)
 	for k, v := range nodeList {
-
-		nodeList[k].WInt = int(math.Log(float64(v.WInt)))
+		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + int(math.Pow(float64(v.WInt/100), 2))
 		for i := 0; i <= nodeList[k].WInt; i++ {
-			//fmt.Println("add", v.ID, i, nodeList[k].WInt)
-			wn = append(wn, &nodeList[k])
+			res = append(res, nodeList[k])
 		}
 	}
-	return wn
+	return res
+}
+
+func GetNoIPNodeList(data []*Data, ip string) []*Data {
+	if ip == "" {
+		return data
+	}
+	return Filter(data, NewNoAddrFilter(ip))
 }
 
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()
-	if time.Now().Sub(updateTime) > time.Minute*30 {
+	if time.Now().Sub(updateTime) > time.Minute*5 {
 		Update()
 	}
 

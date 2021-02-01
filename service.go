@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/yottachain/YTDataNode/Perf"
-	"github.com/yottachain/YTDataNode/TaskPool"
+	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -50,8 +51,8 @@ func (sn *storageNode) Service() {
 
 	// 初始化统计
 	statistics.InitDefaultStat()
-	TaskPool.UploadTP.GetRate = statistics.DefaultStat.RXTest.GetRate
-	TaskPool.DownloadTP.GetRate = statistics.DefaultStat.TXTest.GetRate
+	// 初始化token池
+	InitTokenPool(&statistics.DefaultStat)
 
 	rms = service.NewRelayManage(sn.Host())
 
@@ -76,14 +77,14 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(10)) * time.Second)
 		os.Exit(0)
 	}
-	var utp *TaskPool.TaskPool = TaskPool.Utp()
-	var dtp *TaskPool.TaskPool = TaskPool.Dtp()
+	var utp *TokenPool.TokenPool = TokenPool.Utp()
+	var dtp *TokenPool.TokenPool = TokenPool.Dtp()
 	// 统计归零
-	utp.OnChange(func(pt *TaskPool.TaskPool) {
+	utp.OnChange(func(pt *TokenPool.TokenPool) {
 		//atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
 		//atomic.StoreInt64(&statistics.DefaultStat.RXRequestToken, 0)
 	})
-	dtp.OnChange(func(pt *TaskPool.TaskPool) {
+	dtp.OnChange(func(pt *TokenPool.TokenPool) {
 		//atomic.StoreInt64(&statistics.DefaultStat.TXRequestToken, 0)
 	})
 
@@ -125,15 +126,15 @@ func (sn *storageNode) Service() {
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			return nil, err
 		}
-		var tk TaskPool.Token
+		var tk TokenPool.Token
 		tk.FillFromString(msg.Tk)
 		lat := time.Now().Sub(tk.Tm)
-		if !TaskPool.Dtp().Check(&tk) {
+		if !TokenPool.Dtp().Check(&tk) {
 			tmstr := tk.Tm.Format("20060102030405")
 			return nil, fmt.Errorf("token time out , token time %s", tmstr)
 		}
-		TaskPool.Dtp().NetLatency.Add(lat)
-		TaskPool.Dtp().Delete(&tk)
+		TokenPool.Dtp().NetLatency.Add(lat)
+		TokenPool.Dtp().Delete(&tk)
 		return nil, nil
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -203,9 +204,10 @@ func (sn *storageNode) Service() {
 		res.RES = 0
 
 		buf, err := proto.Marshal(&res)
-		tk := TaskPool.NewToken()
+		tk := TokenPool.NewToken()
 		tk.FillFromString(msg.AllocId)
-		TaskPool.Utp().Delete(tk)
+		atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
+		TokenPool.Utp().Delete(tk)
 		log.Println("test upload return", head.RemotePeerID)
 		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
 	})
@@ -234,7 +236,7 @@ var first = true
 func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	if disableReport {
 		log.Println("miner disable")
-		return
+		//return
 	}
 
 	var msg message.StatusRepReq
@@ -261,6 +263,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
+	//mi := util.MinerInfo{ID: uint64(msg.Id)}
+	//if mi.IsNoSpace(msg.UsedSpace) {
+	//	TokenPool.Utp().Stop()
+	//}
+
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
@@ -274,20 +281,21 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 
 	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.AvailableTokenNumber = TaskPool.Utp().FreeTokenLen()
+	statistics.DefaultStat.AvailableTokenNumber = TokenPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
-	statistics.DefaultStat.RXTokenFillRate = TaskPool.Utp().GetTFillTKSpeed()
+	statistics.DefaultStat.RXTokenFillRate = TokenPool.Utp().GetTFillTKSpeed()
 	if int(statistics.DefaultStat.RXTokenFillRate) > config.Gconfig.MaxToken {
 		statistics.DefaultStat.RXTokenFillRate = 100
 	}
-	statistics.DefaultStat.TXTokenFillRate = TaskPool.Dtp().GetTFillTKSpeed()
-	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TaskPool.Utp().GetParams()
-	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TaskPool.Dtp().GetParams()
-	statistics.DefaultStat.Connection = statistics.GetConnectionNumber()
-	statistics.DefaultStat.RXNetLatency = TaskPool.Utp().NetLatency.Avg()
-	statistics.DefaultStat.RXDiskLatency = TaskPool.Utp().DiskLatency.Avg()
-	statistics.DefaultStat.TXNetLatency = TaskPool.Dtp().NetLatency.Avg()
-	statistics.DefaultStat.TXDiskLatency = TaskPool.Dtp().DiskLatency.Avg()
+	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
+	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
+	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
+	statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount()
+	//statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount()
+	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
+	statistics.DefaultStat.RXDiskLatency = TokenPool.Utp().DiskLatency.Avg()
+	statistics.DefaultStat.TXNetLatency = TokenPool.Dtp().NetLatency.Avg()
+	statistics.DefaultStat.TXDiskLatency = TokenPool.Dtp().DiskLatency.Avg()
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
@@ -300,7 +308,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
-	TaskPool.Utp().Save()
+	TokenPool.Utp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
@@ -335,15 +343,23 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	} else {
 		var resMsg message.StatusRepResp
 		proto.Unmarshal(res[2:], &resMsg)
-		sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
-		if resMsg.ProductiveSpace == -1 {
-			disableReport = true
-		} else {
+		if resMsg.ProductiveSpace >= 0 {
+			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 			diskHash.CopyHead()
-		}
-		if resMsg.ProductiveSpace == -2 {
-			log.Println("[report] error")
-			return
+		} else {
+			log.Printf("report error %d\n", resMsg.ProductiveSpace)
+			switch resMsg.ProductiveSpace {
+			case -1:
+				disableReport = true
+			case -2:
+				//log.Println("[report] error")
+				return
+			case -7:
+				TokenPool.Utp().Stop()
+				randDownload.Stop()
+			case -8:
+				TokenPool.Utp().Stop()
+			}
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
@@ -390,4 +406,12 @@ func GetXX(rt string) uint64 {
 	default:
 		return 0
 	}
+}
+
+func InitTokenPool(s *statistics.Stat) {
+	cfg := config.Gconfig
+	TokenPool.UploadTP.GetRate = s.RXTest.GetRate
+	TokenPool.DownloadTP.GetRate = s.TXTest.GetRate
+	go TokenPool.UploadTP.AutoChangeTokenInterval(cfg.RXIncreaseThreshold, cfg.Increase, cfg.RXDecreaseThreshold, cfg.Decrease)
+	go TokenPool.DownloadTP.AutoChangeTokenInterval(cfg.TXIncreaseThreshold, cfg.Increase, cfg.TXDecreaseThreshold, cfg.Decrease)
 }

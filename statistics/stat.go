@@ -19,7 +19,7 @@ type Stat struct {
 	UseKvDb              bool          `json:"UseKvDb"`
 	RXTokenFillRate      time.Duration `json:"RXTokenFillRate"`
 	UpTime               int64         `json:"UpTime"`
-	Connection           int           `json:"Connection"`
+	Connection           uint64        `json:"Connection"`
 	RXAverageToken       int64         `json:"RXAverageToken"`
 	SentTokenNum         int64         `json:"-"`
 	ReportTime           time.Time     `json:"-"`
@@ -39,6 +39,8 @@ type Stat struct {
 	TXDiskLatency        int64
 	RXTest               RateCounter
 	TXTest               RateCounter
+	RXTestConnectRate    RateCounter
+	TXTestConnectRate    RateCounter
 	//RandDownloadCount      int64 // 仅矿机间下载计数
 	//RandDownloadSuccess    int64 // 仅矿机间下载成功计数
 	Ban             bool

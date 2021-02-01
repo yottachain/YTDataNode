@@ -249,6 +249,8 @@ message TestMinerPerfTask {
 //MessageID:0xe76b
 message TestGetBlock {
     string msg=1;
+    bytes pld=2;
+    string allocID=3;
 }
 //MessageID:0xe76c
 message TestGetBlockRes {
