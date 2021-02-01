@@ -60,7 +60,7 @@ func (le *LRCEngine) GetLRCHandler(shardsinfo *lrcpkg.Shardsinfo) (*LRCHandler, 
 
 func (lrch *LRCHandler) RecoverOrigShard(shdinfo *lrcpkg.Shardsinfo, lostidx uint16, stage uint8, td message.TaskDescription, num *int, sw *Switchcnt, tasklife int32) ([]byte, []int16, error){
 	var err error
-
+	log.Println("[recover] recover orig miss shard missidx=",lostidx)
 	if stage < 0 || stage > 1{
 		err = fmt.Errorf("[recover][error] stage out of range, the value should 0 or 1 only")
 		return nil, nil, err
