@@ -301,8 +301,8 @@ github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7 h1:g2vOvk8/BYP8sqG
 github.com/yottachain/YTFS v0.0.0-20201117121403-2a47bbc4d6a7/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
 github.com/yottachain/YTHost v1.0.2-0.20210128103634-18686500000a h1:067GMcjcCZXunR2f5kl9kTWwuj/V9BYifGDFFKMfCL8=
 github.com/yottachain/YTHost v1.0.2-0.20210128103634-18686500000a/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
-github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700 h1:QHX+cJoThWNaBOnLxWwmOmObivN/egBOH/ddXxWvUYs=
-github.com/yottachain/YTLRC v0.0.0-20201120074247-ece64b0e7700/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
+github.com/yottachain/YTLRC v0.0.0-20210201023421-07f67614e912 h1:IztXAb8FqaLlOgE9NWiDBlYRctVl8v0MKwvaCI2jLGw=
+github.com/yottachain/YTLRC v0.0.0-20210201023421-07f67614e912/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.uber.org/atomic v1.4.0 h1:cxzIVoETapQEqDhQu3QfnvXAV4AlzcvUCxkVUFw3+EU=
