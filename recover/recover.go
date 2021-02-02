@@ -787,7 +787,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 			//body := re.MakeJudgeElkReport(lrcshd, msg)
 			//go re.reportLog(body)
 		}
-		return &res
+		//return &res
 	}
 
 	re.IncPassJudge()
