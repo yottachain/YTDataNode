@@ -62,38 +62,47 @@ func (lrch *LRCHandler) RecoverOrigShard(shdinfo *lrcpkg.Shardsinfo, lostidx uin
 	var err error
 	log.Println("[recover] recover orig miss shard missidx=",lostidx)
 	if stage < 0 || stage > 1{
+		log.Println("[recover]error: stage out of range, missidx=",lostidx)
 		err = fmt.Errorf("[recover][error] stage out of range, the value should 0 or 1 only")
 		return nil, nil, err
 	}
 
 	if nil == shdinfo || nil == shdinfo.Handle{
+		log.Println("[recover]error: shdinfo.handle is nil, missidx=",lostidx)
 		err = fmt.Errorf("shdinfo.handle is nil")
 		return nil, nil, err
 	}
 
 	rcvlostidx,firststage,err := shdinfo.GetHandleParam(shdinfo.Handle)
 	if nil != err {
-		log.Println("[recover] rebuild missshard error:", err)
+		log.Println("[recover] error: GetHandleParam failed,", err,"missidx=",lostidx)
 		return nil, nil, err
 	}
 
 	if lostidx < 128 {
 		err = shdinfo.SetHandleParam(shdinfo.Handle, uint8(lostidx), stage)
 		if err != nil {
-			fmt.Printf("[recover] modify handle param error:%s idx=%d, stage=%d\n", err.Error(), lostidx, 0)
+			fmt.Printf("[recover] error: modify handle param:%s missidx=%d, stage=%d\n", err.Error(), lostidx, 0)
 			return nil,nil,err
 		}
 	}else{
-		err = fmt.Errorf("[recover] lostidx out of range, lostidx=",lostidx)
+		fmt.Println("[recover] error: missidx out of range, missidx=",lostidx)
+		err = fmt.Errorf("[recover] missidx out of range, missidx=",lostidx)
 		return nil,nil,err
 	}
 
 	datashard, missarr,err := lrch.RecoverShardStage(shdinfo,td,num,sw,tasklife)
 	if err != nil{
+		log.Println("[recover] error:",err, "missidx= ",lostidx)
 		return nil,missarr,err
 	}
 
 	err = shdinfo.SetHandleParam(shdinfo.Handle,uint8(rcvlostidx),uint8(firststage))
+	if err != nil{
+		log.Println("[recover] error:",err, "missidx= ",lostidx )
+		return nil,nil,err
+	}
+	log.Println("[recover] rebuild success missidx= ",lostidx)
 	return datashard,missarr,err
 }
 
@@ -123,7 +132,7 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], num, sw, tasklife)
 
 		if err != nil {
-			fmt.Println("get shard from file error, idx=", idx)
+			fmt.Println("[recover] error: get shard from file error, idx=", idx)
 			missarr = append( missarr, idx )
 			continue
 		}
@@ -133,7 +142,8 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 		if status > 0{
 			rcvdata, status2 := shdinfo.GetRebuildData(shdinfo)
 			if status2 > 0 {        //rebuild success
-				fmt.Println("[recover] mostprobable recover shard!")
+				missidx,_,_:=shdinfo.GetHandleParam(shdinfo.Handle)
+				fmt.Println("[recover] recover success shard, missidx=",missidx)
 				return rcvdata, nil, nil
 			}
 		}else if status < 0 {     //rebuild failed
@@ -145,8 +155,6 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 	err = fmt.Errorf("recover data failed")
 	return nil, missarr, err
 }
-
-
 
 func (lrch *LRCHandler) Recover(td message.TaskDescription, pkgstart time.Time, tasklife int32) ([]byte, error) {
 	defer lrch.si.FreeHandle()
