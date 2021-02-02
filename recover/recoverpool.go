@@ -13,9 +13,10 @@ var getShardPool chan int
 var poolG chan int
 var totalCap int = 2000
 var realConCurrent uint16 = 1     //can be changed by write-weight and config
-var realConTask uint16 = 20
+//var realConTask uint16 = 20
+var realConTask uint16 = 1
 
-func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
+	func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time){
     re.IncConTask()
     re.processTask(task, pkgstart)
 	re.DecConTask()
@@ -130,7 +131,7 @@ func (re *RecoverEngine)RunPool(){
 
 	go re.processRequests()
 
-	go re.modifyPoolSize()
+	//go re.modifyPoolSize()
 
 	for i := uint16(0); i < realConCurrent; i++ {
 		getShardPool <- 0
