@@ -129,22 +129,27 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 
 	for _, idx := range indexs {
 		peer := td.Locations[idx]
-		for r := 0; r < 5; r++{
+		for r := 1; r < 6; r++{
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], num, sw, tasklife)
-			if err == nil {
-				if len(shard) == 16384{
-					break
-				}
+			if err == nil && len(shard) == 16384{
+				break
 			}
+
 			if 5 == r {
-				fmt.Println("[recover] error: get shard from file error, idx=", idx)
+				fmt.Println("[recover] error: get shard from file error, missidx=", idx)
 				missarr = append( missarr, idx )
 			}
 			<- time.After(time.Millisecond * 50)
 		}
+
+		if len(shard) != 16384 {
+			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
+			continue
+		}
+
 		status := shdinfo.AddShardData(shdinfo.Handle, shard)
 		//log.Println("[recover] status=",status)
-		if status > 0{
+		if status > 0 {
 			rcvdata, status2 := shdinfo.GetRebuildData(shdinfo)
 			if status2 > 0 {        //rebuild success
 				missidx,_,_:=shdinfo.GetHandleParam(shdinfo.Handle)
