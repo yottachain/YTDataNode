@@ -82,6 +82,7 @@ func (lrch *LRCHandler) RecoverOrigShard(shdinfo *lrcpkg.Shardsinfo, lostidx uin
 	if lostidx < 128 {
 		err = shdinfo.SetHandleParam(shdinfo.Handle, uint8(lostidx), stage)
 		if err != nil {
+			shdinfo.SetHandleParam(shdinfo.Handle,uint8(rcvlostidx),uint8(firststage))
 			fmt.Printf("[recover] error: modify handle param:%s missidx=%d, stage=%d\n", err.Error(), lostidx, 0)
 			return nil,nil,err
 		}
@@ -94,6 +95,7 @@ func (lrch *LRCHandler) RecoverOrigShard(shdinfo *lrcpkg.Shardsinfo, lostidx uin
 	datashard, missarr,err := lrch.RecoverShardStage(shdinfo,td,num,sw,tasklife)
 	if err != nil{
 		log.Println("[recover] error:",err, "missidx= ",lostidx)
+		shdinfo.SetHandleParam(shdinfo.Handle,uint8(rcvlostidx),uint8(firststage))
 		return nil,missarr,err
 	}
 
@@ -125,7 +127,7 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 		indexs = append(indexs, i.Value.(int16))
 	}
 
-	log.Println("[recover]need shard list", indexs, len(indexs))
+	log.Println("[recover] missrecover need shard list", indexs, len(indexs))
 
 	for _, idx := range indexs {
 		peer := td.Locations[idx]
@@ -136,7 +138,7 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 			}
 
 			if 5 == r {
-				fmt.Println("[recover] error: get shard from file error, missidx=", idx)
+				fmt.Println("[recover] error: get shard error, missidx=", idx)
 				missarr = append( missarr, idx )
 			}
 			<- time.After(time.Millisecond * 50)
@@ -147,7 +149,15 @@ func (lrch *LRCHandler)RecoverShardStage (shdinfo *lrcpkg.Shardsinfo, td message
 			continue
 		}
 
-		status := shdinfo.AddShardData(shdinfo.Handle, shard)
+		status, err := shdinfo.AddShardData(shdinfo.Handle, shard)
+
+		if err != nil {
+			fmt.Println(err)
+			if status == -100{
+				return nil, nil, err
+			}
+			continue
+		}
 		//log.Println("[recover] status=",status)
 		if status > 0 {
 			rcvdata, status2 := shdinfo.GetRebuildData(shdinfo)
@@ -261,7 +271,11 @@ effortwk:
 			log.Println("[recover] rebuild time expired! spendtime=",time.Now().Sub(pkgstart).Seconds(),"taskid=",BytesToInt64(td.Id[0:8]))
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}//rebuild success
-		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+		status, err := lrch.si.AddShardData(lrch.si.Handle, shard)
+		if err != nil {
+			log.Println("[recover] mainrecover: ",err)
+			continue
+		}
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {

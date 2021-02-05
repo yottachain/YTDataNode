@@ -416,7 +416,7 @@ func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash
 
 	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
 	if err != nil {
-		log.Println("[recover][debug] getShardcnn C err=", err)
+		log.Println("[recover][debug] getShardcnn  err=", err)
 		re.IncFailConn()
 		if config.Gconfig.ElkReport {
 			//logelk:=re.MakeReportLog(id,hash,"failConn",err)
