@@ -67,6 +67,7 @@ type RebuildCount struct {
 	rowRebuildSucc    uint64
 	columnRebuildSucc uint64
 	globalRebuildSucc uint64
+	preRebuildSucc    uint64
 	successPutToken   uint64
 	sendTokenReq      uint64
 	successVersion    uint64
@@ -134,6 +135,7 @@ type RecoverStat struct {
 	RowRebuildSucc    uint64 `json:"RowRebuildSucc"`    //行方式重建成功
 	ColumnRebuildSucc uint64 `json:"ColumnRebuildSucc"` //列方式重建成功
 	GlobalRebuildSucc uint64 `json:"GlobalRebuildSucc"` //全局方式重建成功
+	RreRebuildSucc    uint64 `json:"RreRebuildSucc"`
 	SuccessPutToken   uint64 `json:"SuccessPutToken"`   //成功释放token总数
 	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
 	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
@@ -168,6 +170,7 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.rowRebuildSucc,
 		re.rcvstat.columnRebuildSucc,
 		re.rcvstat.globalRebuildSucc,
+		re.rcvstat.preRebuildSucc,
 		re.rcvstat.successPutToken,
 		re.rcvstat.sendTokenReq,
 		re.rcvstat.successVersion,
@@ -787,7 +790,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 			//body := re.MakeJudgeElkReport(lrcshd, msg)
 			//go re.reportLog(body)
 		}
-		//return &res
+		return &res
 	}
 
 	re.IncPassJudge()
