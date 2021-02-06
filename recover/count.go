@@ -28,6 +28,7 @@ var (
       RowRbdSuccLK     sync.Mutex
       ColRbdSuccLk     sync.Mutex
       GlobalRbdSuccLk   sync.Mutex
+      PreRbdSuccLk      sync.Mutex
       SuccPutTokenLK      sync.Mutex
       SendTokenReqLk      sync.Mutex
       succVersionTokLk     sync.Mutex
@@ -68,6 +69,12 @@ func (re *RecoverEngine) IncRowRbdSucc(){
 	RowRbdSuccLK.Lock()
 	defer RowRbdSuccLK.Unlock()
 	re.rcvstat.rowRebuildSucc++
+}
+
+func (re *RecoverEngine) IncPreRbdSucc(){
+	PreRbdSuccLk.Lock()
+	defer PreRbdSuccLk.Unlock()
+	re.rcvstat.preRebuildSucc++
 }
 
 func (re *RecoverEngine) IncShardForRbd(){
@@ -210,12 +217,16 @@ func (re *RecoverEngine) IncFailRbd(){
 }
 
 func (re *RecoverEngine) IncRbdSucc(n uint16){
+	if 0 == n{
+		re.IncPreRbdSucc()
+	}
+
 	if 1 == n {
 		re.IncRowRbdSucc()
 	}
 
 	if 2 == n {
-		re.IncGlobalRbdSucc()
+		re.IncColRbdSucc()
 	}
 
 	if 3 <= n {

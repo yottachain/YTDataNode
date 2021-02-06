@@ -224,6 +224,7 @@ effortwk:
 				log.Println("[recover] rebuild miss shard error:",err," idx=",idx)
 				continue
 			}
+			lrch.le.IncRbdSucc(0)
 		}else{
 			log.Println("[recover] shard_online, get the shard,idx=",idx)
 
@@ -253,6 +254,7 @@ effortwk:
 					indexs2 = append(indexs2, idx)
 					continue
 				}
+				lrch.le.IncRbdSucc(0)
 			}
 		}
 
