@@ -135,7 +135,7 @@ type RecoverStat struct {
 	RowRebuildSucc    uint64 `json:"RowRebuildSucc"`    //行方式重建成功
 	ColumnRebuildSucc uint64 `json:"ColumnRebuildSucc"` //列方式重建成功
 	GlobalRebuildSucc uint64 `json:"GlobalRebuildSucc"` //全局方式重建成功
-	RreRebuildSucc    uint64 `json:"RreRebuildSucc"`
+	RreRebuildSucc    uint64 `json:"RreRebuildSucc"`    //预重建成功
 	SuccessPutToken   uint64 `json:"SuccessPutToken"`   //成功释放token总数
 	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
 	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
