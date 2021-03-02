@@ -11,7 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
+	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"log"
@@ -188,8 +188,12 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		vfs := verifySlice.VerifySler{sn}
-		resp := vfs.VerifySlice()
-		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
+		result := vfs.VerifySlice()
+		resp,err := proto.Marshal(&result)
+		if err != nil {
+			log.Println("[verify] Marshal resp error:",err)
+		}
+		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {

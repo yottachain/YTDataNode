@@ -206,6 +206,8 @@ message SelfVerifyResp{
     string  id =1;
     string  Numth =2;
     string  errNum =3;
+    string  errCode =4;
+    repeated bytes errShard =5;
 }
 
 //MessageID:0x1b32
