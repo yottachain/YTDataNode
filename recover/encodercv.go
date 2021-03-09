@@ -90,7 +90,7 @@ start:
 
         shard := re.tstdata[idx][:]
 
-  		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+  		status,_ := lrch.si.AddShardData(lrch.si.Handle, shard)
 		//log.Println("[recover] status=",status)
 		if status > 0{
 			_, status2 := lrch.si.GetRebuildData(lrch.si)

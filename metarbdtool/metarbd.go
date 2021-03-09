@@ -69,7 +69,7 @@ func initRBD(){
 	if err != nil{
 		panic(err)
 	}
-
+	ti.Reset()
 	oldmdbPath := path.Join(util.GetYTFSPath(),oldmdbFileName)
 	if PathExists(oldmdbPath){
 		err := os.RemoveAll(oldmdbPath)
@@ -163,7 +163,8 @@ func printSpeed () {
 			if addCount == 0 {
 				continue
 			}
-			log.Printf("copy %d 耗时 %f s进度 %d/%d 百分比 %.4f 预计完成剩余时间%s\n",
+			log.Printf("tableidx %d copy %d 耗时 %f s进度 %d/%d 百分比 %.4f 预计完成剩余时间%s\n",
+				ti.GetTableIndex(),
 				addCount,
 				time.Now().Sub(preTime).Seconds(),
 				num,ti.Len(),
@@ -235,7 +236,7 @@ func main(){
 		tb,err:=ti.GetNoNilTableBytes()
 		if err !=nil {
 			if err.Error() != "table_end"{
-				log.Println("get Table from indexdb err: ", err)
+				log.Println("get Table from indexdb err: ", err,"tableidx=",ti.GetTableIndex())
 				panic(err)
 			}
 			break
@@ -244,7 +245,7 @@ func main(){
 		for key,val := range tb {
 			err = Mdb.Rdb.Put(Mdb.wo, key[:], val)
 			if err != nil {
-				log.Println("rbdkv_error")
+				log.Println("rbdkv_error:",err,"tableidx=",ti.GetTableIndex())
 				panic(err)
 			}
 		}
