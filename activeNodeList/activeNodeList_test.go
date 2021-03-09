@@ -24,6 +24,7 @@ func TestUpdate(t *testing.T) {
 
 }
 func TestRand(t *testing.T) {
+	rand.Seed(time.Now().Unix())
 	var max = 131585
 	i := 0
 	for ; i < 131585; i++ {
