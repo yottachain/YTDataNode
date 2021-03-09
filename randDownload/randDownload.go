@@ -139,7 +139,9 @@ func UploadFromRandNode(ctx context.Context) error {
 	reportContent.FromID = Sn.Config().ID
 	reportContent.ToID = pi.ID.Pretty()
 
-	elkClient.AddLogAsync(reportContent)
+	if config.Gconfig.ElkReport2 {
+		elkClient.AddLogAsync(reportContent)
+	}
 	return nil
 }
 
