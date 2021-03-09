@@ -308,6 +308,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TokenPool.Utp().Save()
+	TokenPool.Dtp().Save()
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
@@ -357,6 +358,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 				TokenPool.Utp().Stop()
 				randDownload.Stop()
 			case -8:
+				// 可采购空间不足
 				TokenPool.Utp().Stop()
 			}
 		}

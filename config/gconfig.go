@@ -177,7 +177,7 @@ func NewGConfig() *GConfig {
 			ElkReport:             false,
 			RXTestNum:             2,
 			TXTestNum:             2,
-			RandDownloadGroupSize: 1,
+			RandDownloadGroupSize: 58,
 			DiskTimeout:           5000,
 			NodeListUpdateTime:    10,
 			RXTestSleep:           100,

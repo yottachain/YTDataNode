@@ -7,6 +7,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	log "github.com/yottachain/YTDataNode/logger"
 	"time"
 )
 
@@ -88,6 +89,7 @@ func Decode(data string) (string, error) {
 
 	res, err := AesDecrypt(buf, key)
 	if err != nil {
+		log.Println("[TDKey]error", err.Error())
 		return "", err
 	}
 	return string(res), nil

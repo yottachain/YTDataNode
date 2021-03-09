@@ -240,7 +240,7 @@ func RunTX() {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
-	rand.Seed(int64(os.Getpid()))
+	rand.Seed(int64(os.Getpid()) + time.Now().Unix())
 
 	go func() {
 		for {
