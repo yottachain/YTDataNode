@@ -27,7 +27,8 @@ import (
 var stop = false
 
 var errNoTK = fmt.Errorf("notk")
-var elkClient = util.NewElkClient("XxTest")
+
+//var elkClient = util.NewElkClient("XxTest")
 
 var Sn storageNodeInterface.StorageNode
 var wl = activeNodeList.NewWeightNodeList(
@@ -139,9 +140,9 @@ func UploadFromRandNode(ctx context.Context) error {
 	reportContent.FromID = Sn.Config().ID
 	reportContent.ToID = pi.ID.Pretty()
 
-	if config.Gconfig.ElkReport2 {
-		elkClient.AddLogAsync(reportContent)
-	}
+	//if config.Gconfig.ElkReport2 {
+	//	elkClient.AddLogAsync(reportContent)
+	//}
 	return nil
 }
 

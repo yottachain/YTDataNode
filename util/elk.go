@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 )
@@ -21,9 +22,12 @@ func NewElkClient(tbstr string) YTElkProducer.Client {
 		IndexType:   "log",
 	}
 
-	client, err := YTElkProducer.NewClient(ytESConfig)
-	if err != nil {
-		fmt.Println(err)
+	if config.Gconfig.ElkReport2 {
+		client, err := YTElkProducer.NewClient(ytESConfig)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return client
 	}
-	return client
+	return nil
 }
