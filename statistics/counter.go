@@ -17,9 +17,10 @@ func (rc *RateCounter) AddCount() {
 func (rc *RateCounter) AddSuccess() {
 	count := atomic.LoadInt64(&rc.Count)
 	success := atomic.LoadInt64(&rc.Success)
-	if success < count {
-		atomic.AddInt64(&rc.Success, 1)
+	if success > count {
+		atomic.AddInt64(&rc.Count, 1)
 	}
+	atomic.AddInt64(&rc.Success, 1)
 }
 func (rc *RateCounter) Reset() {
 	atomic.StoreInt64(&rc.Count, 0)
