@@ -1,30 +1,43 @@
 package statistics
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
 type RateCounter struct {
-	Count     int64
-	Success   int64
-	clearTime time.Time
+	Count      int64
+	Success    int64
+	clearTime  time.Time
+	UpdateTime time.Time
+	sync.Mutex
 }
 
 func (rc *RateCounter) AddCount() {
-	atomic.AddInt64(&rc.Count, 1)
+	rc.Lock()
+	defer rc.Unlock()
+
+	rc.Count++
 }
 func (rc *RateCounter) AddSuccess() {
-	count := atomic.LoadInt64(&rc.Count)
-	success := atomic.LoadInt64(&rc.Success)
-	if success > count {
-		atomic.AddInt64(&rc.Count, 1)
+	rc.Lock()
+	defer rc.Unlock()
+	rc.UpdateTime = time.Now()
+
+	count := rc.Count
+	success := rc.Success
+	if success >= count {
+		rc.Count++
 	}
-	atomic.AddInt64(&rc.Success, 1)
+	rc.Success++
 }
 func (rc *RateCounter) Reset() {
-	atomic.StoreInt64(&rc.Count, 0)
-	atomic.StoreInt64(&rc.Success, 0)
+	rc.Lock()
+	defer rc.Unlock()
+
+	rc.Count = 0
+	rc.Success = 0
 	rc.clearTime = time.Now()
 }
 
@@ -34,6 +47,7 @@ func (rc *RateCounter) GetRate() int64 {
 	}
 	count := atomic.LoadInt64(&rc.Count)
 	success := atomic.LoadInt64(&rc.Success) * 100
+
 	if count == 0 {
 		return -1
 	}
