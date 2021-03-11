@@ -94,7 +94,7 @@ OUT:
     return verifyedItem,errCount
 }
 
-func (vfs *VerifySler)VerifySliceIdxdb() (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySliceIdxdb(triveEntries uint64) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     cfg,err := config.ReadConfig()
     dir := util.GetYTFSPath()

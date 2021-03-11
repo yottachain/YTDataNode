@@ -196,15 +196,21 @@ message ListDNIResp{
     string nextid= 2;
 }
 
+//  本次需要校验的条数
 //msgid = 0xd97a
 message SelfVerifyReq{
-    string  id =1;
+    string  Num =1;
 }
 
+//id:矿机id，数字形式（比如：12398）
+//Num:本次校验的数目
+//errNum:校验出错的分片数
+//errCode:错误类型码
+//errShard:错误的分片列表
 //msgid = 0x58b7
 message SelfVerifyResp{
     string  id =1;
-    string  Numth =2;
+    string  Num =2;
     string  errNum =3;
     string  errCode =4;
     repeated bytes errShard =5;

@@ -187,8 +187,18 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.SelfVerifyReq
+		var msgresp message.SelfVerifyResp
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[verify] message.SelfVerifyReq error:",err)
+			msgresp.ErrCode = "100"
+			resp,err := proto.Marshal(&msgresp)
+			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
+		}
+		
+		verifynum := msg.Num
 		vfs := verifySlice.VerifySler{sn}
-		result := vfs.VerifySlice()
+		result := vfs.VerifySlice(verifynum)
 		resp,err := proto.Marshal(&result)
 		if err != nil {
 			log.Println("[verify] Marshal resp error:",err)
