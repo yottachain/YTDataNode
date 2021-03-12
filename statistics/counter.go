@@ -1,16 +1,31 @@
 package statistics
 
 import (
+	"bytes"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+type MyTime struct {
+	time.Time
+}
+
+func (mt *MyTime) MarshalJSON() ([]byte, error) {
+	buf := bytes.NewBuffer([]byte{})
+	if mt == nil {
+		buf.WriteString("")
+	} else {
+		mt.Format("2006-01-02 03:04:05")
+	}
+	return buf.Bytes(), nil
+}
+
 type RateCounter struct {
 	Count      int64
 	Success    int64
-	clearTime  time.Time
-	UpdateTime time.Time
+	clearTime  *MyTime
+	UpdateTime *MyTime
 	sync.Mutex
 }
 
@@ -23,7 +38,7 @@ func (rc *RateCounter) AddCount() {
 func (rc *RateCounter) AddSuccess() {
 	rc.Lock()
 	defer rc.Unlock()
-	rc.UpdateTime = time.Now()
+	rc.UpdateTime = &MyTime{time.Now()}
 
 	count := rc.Count
 	success := rc.Success
@@ -38,7 +53,7 @@ func (rc *RateCounter) Reset() {
 
 	rc.Count = 0
 	rc.Success = 0
-	rc.clearTime = time.Now()
+	rc.clearTime = &MyTime{time.Now()}
 }
 
 func (rc *RateCounter) GetRate() int64 {
@@ -52,7 +67,7 @@ func (rc *RateCounter) GetRate() int64 {
 		return -1
 	}
 	rate := success / count
-	if time.Now().Sub(rc.clearTime) > time.Minute*10 {
+	if time.Now().Sub(rc.clearTime.Time) > time.Minute*10 {
 		rc.Reset()
 	}
 	return rate
