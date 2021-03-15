@@ -3,6 +3,7 @@ package statistics
 import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p-core/peer"
+	log "github.com/yottachain/YTDataNode/logger"
 	recover2 "github.com/yottachain/YTDataNode/recover"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
 	"sync"
@@ -61,6 +62,7 @@ func (s *Stat) JsonEncode() []byte {
 
 	buf, err := json.Marshal(so)
 	if err == nil {
+		log.Println("json err:", err)
 		res = buf
 	}
 
