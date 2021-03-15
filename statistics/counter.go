@@ -10,7 +10,7 @@ type RateCounter struct {
 	Count      int64
 	Success    int64
 	clearTime  time.Time
-	UpdateTime string
+	UpdateTime int64
 	sync.Mutex
 }
 
@@ -23,7 +23,7 @@ func (rc *RateCounter) AddCount() {
 func (rc *RateCounter) AddSuccess() {
 	rc.Lock()
 	defer rc.Unlock()
-	rc.UpdateTime = time.Now().Format("2006-01-02 03:04:05")
+	rc.UpdateTime = time.Now().Unix()
 
 	count := rc.Count
 	success := rc.Success
