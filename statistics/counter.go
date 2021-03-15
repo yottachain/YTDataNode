@@ -16,7 +16,7 @@ func (mt *MyTime) MarshalJSON() ([]byte, error) {
 	if mt == nil {
 		buf.WriteString("")
 	} else {
-		mt.Format("2006-01-02 03:04:05")
+		buf.WriteString(mt.Format("2006-01-02 03:04:05"))
 	}
 	return buf.Bytes(), nil
 }
