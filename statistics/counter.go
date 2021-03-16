@@ -22,7 +22,6 @@ func (rc *RateCounter) AddCount() {
 	rc.Count++
 }
 func (rc *RateCounter) AddSuccess() {
-	log.Println("[perf] add success")
 	rc.Lock()
 	defer rc.Unlock()
 	rc.UpdateTime = time.Now().Unix()
