@@ -1,6 +1,7 @@
 package statistics
 
 import (
+	log "github.com/yottachain/YTDataNode/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,6 +22,7 @@ func (rc *RateCounter) AddCount() {
 	rc.Count++
 }
 func (rc *RateCounter) AddSuccess() {
+	log.Println("[perf] add success")
 	rc.Lock()
 	defer rc.Unlock()
 	rc.UpdateTime = time.Now().Unix()
@@ -53,6 +55,7 @@ func (rc *RateCounter) GetRate() int64 {
 	}
 	rate := success / count
 	if time.Now().Sub(rc.clearTime) > time.Minute*10 {
+		log.Println("[perf]", "reset")
 		rc.Reset()
 	}
 	return rate

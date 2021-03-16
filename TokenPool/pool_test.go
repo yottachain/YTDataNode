@@ -60,3 +60,10 @@ func TestUploadTaskPool_Check(t *testing.T) {
 	//	}
 	//}
 }
+
+func TestTokenPool_FillToken(t *testing.T) {
+	tk := NewToken()
+	tk.FillFromString("nATkeWCoV1BMjXuG2foQpouzoj1K2T1hDKnqW42DSCT2QvENTKXzKtnn4og85NKUQYBAvJimEEYpmF5aSWwLGYtbME2YMhj5xij1ogP2iJzmvvzVvfS21FsWXM4SdtgMx2dww9VnKxkoELKLiaXsFqFyVbAfKkcBPvckD4La6a3QzZdeG42kvguLr1rr9ZDfPUtUQNfkQX3mDwBAyNmY3uvyPnQjvL579UHWHmay8sy79zLF")
+
+	fmt.Println(tk.Tm.Format("2006-01-02 03:04:05"))
+}
