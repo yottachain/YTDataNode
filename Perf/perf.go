@@ -135,7 +135,7 @@ func GetBlock(data []byte) (res []byte, err error) {
 		log.Println("[perf]", err)
 		return
 	}
-
+	log.Println("[perf]", "msg type", msg.Msg)
 	var resMsg message.TestGetBlockRes
 	switch msg.Msg {
 	case MSG_DOWNLOAD:
