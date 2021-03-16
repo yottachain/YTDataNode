@@ -93,6 +93,7 @@ func GetRandClt() (*client.YTHostClient, error) {
 func UploadFromRandNode(ctx context.Context) error {
 	var reportContent = new(ReportContent)
 	reportContent.Success = true
+	reportContent.TestType = "upload"
 
 	pi, err := GetRandNode()
 	if err != nil {
