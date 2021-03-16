@@ -217,6 +217,7 @@ func (sn *storageNode) Service() {
 		return Perf.TestMinerPerfHandler(requestData)
 	})
 	_ = sn.Host().RegisterHandler(message.MsgIDTestGetBlock.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+		log.Println("[perf] get block", head.RemotePeerID)
 		return Perf.GetBlock(requestData)
 	})
 
