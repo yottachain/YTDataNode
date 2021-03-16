@@ -38,8 +38,8 @@ type Stat struct {
 	TXAverageToken       int64
 	TXNetLatency         int64 // 下载网络延迟
 	TXDiskLatency        int64
-	RXTest               RateCounter
-	TXTest               RateCounter
+	RXTest               *RateCounter
+	TXTest               *RateCounter
 	RXTestConnectRate    RateCounter
 	TXTestConnectRate    RateCounter
 	//RandDownloadCount      int64 // 仅矿机间下载计数
@@ -139,8 +139,8 @@ func GetConnectionNumber() int {
 func InitDefaultStat() {
 	DefaultStat.UpTime = time.Now().Unix()
 	DefaultStat.ReportTime = time.Now()
-	//DefaultStat.RXTest = RateCounter{}
-	//DefaultStat.TXTest = RateCounter{}
+	DefaultStat.RXTest = new(RateCounter)
+	DefaultStat.TXTest = new(RateCounter)
 
 	//go func() {
 	//	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
