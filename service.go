@@ -145,17 +145,17 @@ func (sn *storageNode) Service() {
 		return sch.Handle(data), nil
 	})
 
-	rce, err := rc.New(sn)
+	rcv, err := rc.New(sn)
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
-	rce.EncodeForRecover()
+	rcv.EncodeForRecover()
 	//go rce.Run()
-	go rce.RunPool()
+	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rce.HandleMuilteTaskMsg(data); err == nil {
+		if err := rcv.HandleMuilteTaskMsg(data); err == nil {
 			log.Println("[recover]success")
 		} else {
 			log.Println("[recover]error", err)
@@ -238,7 +238,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn, rce)
+			Report(sn, rcv)
 			time.Sleep(time.Second * 60)
 		}
 	}()

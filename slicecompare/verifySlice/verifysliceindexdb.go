@@ -2,6 +2,7 @@ package verifySlice
 
 import (
     "bytes"
+    "crypto"
     "encoding/binary"
     "fmt"
     "github.com/mr-tron/base58/base58"
@@ -18,7 +19,7 @@ import (
     "unsafe"
 )
 
-var VerifyedNumFile string = "/gc/n_file"
+var VerifyedNumFile string = "/gc/idx_file"
 var hash1Str = "1111111111111111"
 var hash0Str = "0000000000000000"
 
@@ -27,18 +28,21 @@ func init(){
     slicecompare.ForInit(VerifyedNumFile,"0")
 }
 
-func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.File) (uint64,uint64) {
+func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64, fl_IdxDB *os.File) (uint64,[]*message.HashToHash,error) {
     var i uint64
     var errCount uint64
     var indexKey [16]byte
     var verifyedItem = start_Item
+    //var retSlice [][]byte
+    var errHash message.HashToHash
+    var hashTab []*message.HashToHash
     n_Rangeth := start_Item/m                 //range zoom index
     m_Itermth := start_Item%m
     buf := make([]byte,20,20)
     begin := true
     for {
         log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
-        if n_Rangeth > (n + 1) {
+        if n_Rangeth >= (n + 1) {
             log.Println("[confirmslice] all hash in indexdb has verified, will to return!")
             slicecompare.SaveValueToFile(strconv.FormatUint(0, 10), VerifyedNumFile)
             goto OUT
@@ -51,12 +55,14 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
                 pos = pos + 20*i
                 begin = false
             }
-            verifyedItem++
-            if verifyedItem >= start_Item+2000 {
+
+            if verifyedItem >= start_Item + traverEntries {
                 log.Println("[confirmslice] Has verified 2000 item, will to return!")
                 slicecompare.SaveValueToFile(strconv.FormatUint(verifyedItem, 10), VerifyedNumFile)
                 goto OUT
             }
+
+            verifyedItem++
 
             fl_IdxDB.Seek(int64(pos), io.SeekStart)
             k, err := fl_IdxDB.Read(buf)
@@ -72,9 +78,14 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
                 continue
             }
 
-            resData, err := vfs.YTFS().Get(indexKey)
+            resData, err := vfs.Sn.YTFS().Get(indexKey)
             if err != nil {
                 errCount++
+                errHash.DBhash = indexKey[:]
+                errHash.Datahash = []byte(hash0Str)
+                hashTab = append(hashTab,&errHash)
+                //errHash.DBhash = append(errHash.DBhash,indexKey[:])
+                //errHash.Datahash = append(errHash.Datahash,[]byte(hash0Str))
                 log.Println("[confirmslice] get data error:", err, " VHF:", base58.Encode(indexKey[:]))
                 continue
             }
@@ -85,16 +96,23 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item uint64, fl_IdxDB *os.F
                 }
             }else{
                 errCount++
+                sha := crypto.MD5.New()
+                sha.Write(resData)
+                errHash.DBhash = indexKey[:]
+                errHash.Datahash = sha.Sum(nil)
+                hashTab = append(hashTab,&errHash)
+                //errHash.DBhash = append(errHash.DBhash,indexKey[:])
+                //errHash.Datahash = append(errHash.Datahash,sha.Sum(nil))
                 log.Println("[confirmslice][hashdataerr]verify failed,VHF:", base58.Encode(indexKey[:]))
             }
         }
         n_Rangeth++
     }
 OUT:
-    return verifyedItem,errCount
+    return verifyedItem, hashTab, nil
 }
 
-func (vfs *VerifySler)VerifySliceIdxdb(triveEntries uint64) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     cfg,err := config.ReadConfig()
     dir := util.GetYTFSPath()
@@ -131,9 +149,10 @@ func (vfs *VerifySler)VerifySliceIdxdb(triveEntries uint64) (message.SelfVerifyR
     m := uint64(header.RangeCoverage)
     str_pos,_ := slicecompare.GetValueFromFile(VerifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
-    varyfiedNum,errCount := vfs.SliceHashVarify(n, m, h, start_pos, fl_IdxDB)
-    resp.Numth = strconv.FormatUint(varyfiedNum,10)
-    resp.ErrNum = strconv.FormatUint(errCount,10)
+    varyfiedNum,hashTab,_ := vfs.SliceHashVarify(n, m, h, start_pos, travelEntries, fl_IdxDB)
+    resp.Entryth = strconv.FormatUint(varyfiedNum,10)
+    resp.ErrShard = hashTab
+    resp.ErrNum = strconv.FormatUint(uint64(len(hashTab)),10)
     resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
     resp.ErrCode = "000"
     //resData, err := proto.Marshal(&resp)
