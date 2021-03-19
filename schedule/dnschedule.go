@@ -85,12 +85,12 @@ func main(){
 		for {
 			<- time.After(time.Second * time.Duration(timeinterval))
 			for _,item := range dnList {
-				if item.DnNum == 21542{
-					loger.Println("item:",item)
-					go SendCompareVarifyOrder(hst,item,timeout)
-					break
-				}
-				continue
+				//if item.DnNum == 21542{
+				//	loger.Println("item:",item)
+				//	go SendCompareVarifyOrder(hst,item,timeout)
+				//	break
+				//}
+				//continue
 
 				if item.DnNum < uint32(startDN){
 					continue
