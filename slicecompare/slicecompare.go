@@ -151,7 +151,6 @@ func GetValueFromFile(fileName string) (string ,error){
 	return string(content),err
 }
 
-
 func (sc *SliceComparer)CompareEntryWithSnTables(snHashBatch [][]byte, tmp_db *leveldb.DB, snHashDB, NextIdxFileName, comparedFileName, nextID string, comparetimes * uint8) error {
 
 	snDBPath := util.GetYTFSPath() + snHashDB

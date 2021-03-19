@@ -11,7 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/confirmSlice"
+	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"log"
@@ -145,17 +145,17 @@ func (sn *storageNode) Service() {
 		return sch.Handle(data), nil
 	})
 
-	rce, err := rc.New(sn)
+	rcv, err := rc.New(sn)
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
-	rce.EncodeForRecover()
+	rcv.EncodeForRecover()
 	//go rce.Run()
-	go rce.RunPool()
+	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rce.HandleMuilteTaskMsg(data); err == nil {
+		if err := rcv.HandleMuilteTaskMsg(data); err == nil {
 			log.Println("[recover]success")
 		} else {
 			log.Println("[recover]error", err)
@@ -187,9 +187,23 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.SelfVerifyReq
+		var msgresp message.SelfVerifyResp
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[verify] message.SelfVerifyReq error:",err)
+			msgresp.ErrCode = "100"
+			resp,err := proto.Marshal(&msgresp)
+			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
+		}
+		
+		verifynum := msg.Num
 		vfs := verifySlice.VerifySler{sn}
-		resp := vfs.VerifySlice()
-		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), nil
+		result := vfs.VerifySlice(verifynum)
+		resp,err := proto.Marshal(&result)
+		if err != nil {
+			log.Println("[verify] Marshal resp error:",err)
+		}
+		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -224,7 +238,7 @@ func (sn *storageNode) Service() {
 	//Register(sn)
 	go func() {
 		for {
-			Report(sn, rce)
+			Report(sn, rcv)
 			time.Sleep(time.Second * 60)
 		}
 	}()
