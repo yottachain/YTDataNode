@@ -28,6 +28,8 @@ var stop = false
 
 var errNoTK = fmt.Errorf("notk")
 
+//var elkClient = util.NewElkClient("XxTest", &config.Gconfig.ElkReport2)
+
 var Sn storageNodeInterface.StorageNode
 var wl = activeNodeList.NewWeightNodeList(
 	time.Minute*5,
@@ -89,8 +91,14 @@ func GetRandClt() (*client.YTHostClient, error) {
 }
 
 func UploadFromRandNode(ctx context.Context) error {
+	var reportContent = new(ReportContent)
+	reportContent.Success = true
+	reportContent.TestType = "upload"
+
 	pi, err := GetRandNode()
 	if err != nil {
+		reportContent.Error = err.Error()
+		reportContent.Success = false
 		return err
 	}
 	if Sn == nil {
@@ -107,6 +115,8 @@ func UploadFromRandNode(ctx context.Context) error {
 
 	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value()+1, ctx)
 	if err != nil {
+		reportContent.Error = err.Error()
+		reportContent.Success = false
 		return err
 	}
 
@@ -124,9 +134,26 @@ func UploadFromRandNode(ctx context.Context) error {
 	}
 	_, err = clt.SendMsg(ctx, message.MsgIDTestGetBlock.Value(), testMsgBuf)
 	if err != nil {
+		reportContent.Error = err.Error()
+		reportContent.Success = false
 		return err
 	}
+	reportContent.FromID = Sn.Config().ID
+	reportContent.ToID = pi.ID.Pretty()
+
+	//if config.Gconfig.ElkReport2 {
+	//	elkClient.AddLogAsync(reportContent)
+	//}
 	return nil
+}
+
+type ReportContent struct {
+	FromID string
+	ToID   string
+
+	TestType string
+	Success  bool
+	Error    string
 }
 
 func DownloadFromRandNode(ctx context.Context) error {
@@ -240,7 +267,7 @@ func RunTX() {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
-	rand.Seed(int64(os.Getpid()))
+	rand.Seed(int64(os.Getpid()) + time.Now().Unix())
 
 	go func() {
 		for {

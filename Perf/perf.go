@@ -128,12 +128,13 @@ func testOne(clt *client.YTHostClient, task *message.TestMinerPerfTask, timeOut 
 }
 
 func GetBlock(data []byte) (res []byte, err error) {
+
 	var msg message.TestGetBlock
 	err = proto.Unmarshal(data, &msg)
 	if err != nil {
+		log.Println("[perf]", err)
 		return
 	}
-
 	var resMsg message.TestGetBlockRes
 	switch msg.Msg {
 	case MSG_DOWNLOAD:
@@ -144,11 +145,11 @@ func GetBlock(data []byte) (res []byte, err error) {
 	case MSG_UPLOAD:
 		tk := &TokenPool.Token{}
 		err := tk.FillFromString(msg.AllocID)
-		log.Println("[perf]check token", msg.AllocID)
 		if err == nil && TokenPool.Utp().Check(tk) {
+
 			statistics.DefaultStat.RXTest.AddSuccess()
 		} else {
-			log.Println("[perf]", err, TokenPool.Utp().Check(tk))
+			log.Println("[perf]check token", msg.AllocID, err)
 		}
 
 	case MSG_DOWNLOAD_TK:

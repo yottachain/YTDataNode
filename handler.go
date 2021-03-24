@@ -128,7 +128,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TokenPool.TokenPool = TokenPool.Utp()
 	var tokenType = "upload"
-	var level int32 = 1
+	// 目前全都为0
+	var level int32 = 0
 	err := proto.Unmarshal(data, &GTMsg)
 
 	if err == nil {

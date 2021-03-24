@@ -41,6 +41,7 @@ type Gcfg struct {
 	MinVersion            int    `json:"MinVersion"`
 	BanTime               int
 	ElkReport             bool
+	ElkReport2            bool
 	DiskTimeout           int
 	RXTestNum             int
 	TXTestNum             int
@@ -175,9 +176,10 @@ func NewGConfig() *GConfig {
 			OutlineTimeRange:      600,
 			BanTime:               180,
 			ElkReport:             false,
+			ElkReport2:            true,
 			RXTestNum:             2,
 			TXTestNum:             2,
-			RandDownloadGroupSize: 1,
+			RandDownloadGroupSize: 58,
 			DiskTimeout:           5000,
 			NodeListUpdateTime:    10,
 			RXTestSleep:           100,
