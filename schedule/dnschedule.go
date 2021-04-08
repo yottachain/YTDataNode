@@ -85,6 +85,13 @@ func main(){
 		for {
 			<- time.After(time.Second * time.Duration(timeinterval))
 			for _,item := range dnList {
+				if item.DnNum == 21542{
+					loger.Println("item:",item)
+					go SendCompareVarifyOrder(hst,item,timeout)
+					break
+				}
+				continue
+
 				if item.DnNum < uint32(startDN){
 					continue
 				}
@@ -111,6 +118,7 @@ func main(){
 
 func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint) error{
 	var respMsg message.SelfVerifyResp
+	var reqMsg  message.SelfVerifyReq
 
 	ctx,cancel := context.WithTimeout(context.Background(), time.Second * time.Duration(timeout))
 	defer cancel()
@@ -125,7 +133,14 @@ func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint)
 		return err
 	}
 
-	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVerifyReq.Value(), []byte("111111111111111")); err != nil {
+	reqMsg.Num="2000"
+	reqData,err := proto.Marshal(&reqMsg)
+	if err != nil{
+		loger.Println("request msg err!")
+		return err
+	}
+
+	if res, err := clt.SendMsg(context.Background(), message.MsgIDSelfVerifyReq.Value(), reqData); err != nil {
 		loger.Println("sendmsg error:",err)
 	} else {
 //		loger.Println("res:",res)
@@ -134,7 +149,10 @@ func SendCompareVarifyOrder(hst hostInterface.Host, info addrInfo, timeout uint)
 			loger.Println("err:",err,"respMsg:",respMsg)
 			return err
 		}
-		loger.Println("response nodeid:",respMsg.Id,"table idx:",respMsg.Numth,"err account:",respMsg.ErrNum)
+		loger.Println("response nodeid:",respMsg.Id,"table idx:",respMsg.Entryth,"err account:",respMsg.ErrNum,"errCode:",respMsg.ErrCode)
+	    for i := 0;i < len(respMsg.ErrShard);i++{
+	    	loger.Println("DBHash=",respMsg.ErrShard[i].DBhash,"DataHash=",respMsg.ErrShard[i].Datahash,"errshard=",i)
+	    }
 	}
 	return err
 }
