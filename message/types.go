@@ -39,6 +39,7 @@ const (
 	MsgIDTestMinerPerfTask     msgType = 0xe76a
 	MsgIDTestGetBlock          msgType = 0xe76b
 	MsgIDTestGetBlockRes       msgType = 0xe76c
+	MsgIDError                 msgType = 0x5913
 )
 
 type msgType int32
