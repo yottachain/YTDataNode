@@ -223,6 +223,29 @@ message SelfVerifyResp{
     repeated HashToHash errShard =6;
 }
 
+//MessageID:0xe87a
+message GcReq{
+    bytes delPubKey=1;
+    string  taskId=2;
+    repeated bytes Gclist=3;
+}
+
+//MessageID:0xe87b
+message GcResp{
+    string  taskId=1;
+    string  ErrCode=2;
+}
+
+//MessageID:0xe87e
+message GcStatusReq{
+    string  taskId=1;
+}
+
+//MessageID:0xe87f
+message GcStatusResp{
+    string  taskId=1;
+    string  status=2;
+}
 
 //MessageID:0x1b32
 message DownloadYTFSFile{

@@ -29,6 +29,7 @@ import (
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
 
+	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 	ytfs "github.com/yottachain/YTFS"
@@ -170,6 +171,43 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), nil
 	})
 
+	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.GcReq
+		var res message.GcResp
+		var resp []byte
+
+		GcW := gc.GcWorker{sn}
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[gcdel] message.GcReq error:",err)
+			res.ErrCode = "100"
+			resp,err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		}
+
+		go GcW.GcHandle(msg)
+		resp,err = proto.Marshal(&res)
+
+		return append(message.MsgIDGcResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error){
+		var msg message.GcStatusReq
+		var res message.GcStatusResp
+		var resp []byte
+
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[gcdel] message.GcReq error:",err)
+			res.Status = "100"
+			resp,err := proto.Marshal(&res)
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		}
+
+		GcW := gc.GcWorker{sn}
+		res = GcW.GetGcStatus(msg)
+		resp,err = proto.Marshal(&res)
+		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+	})
+
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle(data)
 		if err != nil {
@@ -188,11 +226,11 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.SelfVerifyReq
-		var msgresp message.SelfVerifyResp
+		var res message.SelfVerifyResp
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[verify] message.SelfVerifyReq error:",err)
-			msgresp.ErrCode = "100"
-			resp,err := proto.Marshal(&msgresp)
+			res.ErrCode = "100"
+			resp,err := proto.Marshal(&res)
 			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 		}
 		
