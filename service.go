@@ -180,14 +180,15 @@ func (sn *storageNode) Service() {
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:",err)
 			res.ErrCode = "100"
+			res.TaskId = "nil"
 			resp,err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
+		go GcW.GcHandle(msg)
+
 		res.TaskId = msg.TaskId
 		res.ErrCode = "000"
-
-		go GcW.GcHandle(msg)
 		resp,err = proto.Marshal(&res)
 
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
