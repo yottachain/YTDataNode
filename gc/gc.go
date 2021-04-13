@@ -28,8 +28,8 @@ type GcWorker struct{
 
 const GcDir  = "/gcstatus/"
 
-func Init(dirName string){
-    filePath := util.GetYTFSPath() + dirName
+func init(){
+    filePath := util.GetYTFSPath() + GcDir
     status_exist,_ := util.PathExists(filePath)
     if status_exist == false {
         err := os.Mkdir(filePath, os.ModePerm)
@@ -56,6 +56,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
 
+    log.Println("[gcdel] start, taskid:",msg.TaskId)
     config := gc.Sn.Config()
     if ! config.UseKvDb {
         err = fmt.Errorf("not support indexdb for gc")
@@ -109,7 +110,10 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
 
 func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
     var res message.GcStatusResp
+    res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
+    log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
+
     status_exist,_ := util.PathExists(filePath)
     if ! status_exist {
         fmt.Println("[gcdel] statusfile not exist,filepath:",filePath)
