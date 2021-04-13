@@ -112,6 +112,8 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
     var res message.GcStatusResp
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
+    log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
+
     status_exist,_ := util.PathExists(filePath)
     if ! status_exist {
         fmt.Println("[gcdel] statusfile not exist,filepath:",filePath)
