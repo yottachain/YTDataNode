@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
@@ -71,8 +72,8 @@ func (re *RecoverEngine) Len() uint32 {
 //GetShardWkCnt = FailDecodeTaskID + Success + FailShard + FailSendShard + FailToken + FailConn （近似相等）
 //ConcurrentTask = ConcurrenGetShard （理想情况）
 
-func (re *RecoverEngine) GetStat() *RecoverStat {
-	return &RecoverStat{
+func (re *RecoverEngine) GetStat() *statistics.RecoverStat {
+	return &statistics.RecoverStat{
 		re.rcvstat.rebuildTask,
 		re.rcvstat.concurrentTask,
 		re.rcvstat.concurrenGetShard,
