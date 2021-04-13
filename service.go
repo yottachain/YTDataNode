@@ -190,18 +190,18 @@ func (sn *storageNode) Service() {
 		var msg message.SelfVerifyReq
 		var msgresp message.SelfVerifyResp
 		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[verify] message.SelfVerifyReq error:",err)
+			log.Println("[verify] message.SelfVerifyReq error:", err)
 			msgresp.ErrCode = "100"
-			resp,err := proto.Marshal(&msgresp)
+			resp, err := proto.Marshal(&msgresp)
 			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 		}
-		
+
 		verifynum := msg.Num
 		vfs := verifySlice.VerifySler{sn}
 		result := vfs.VerifySlice(verifynum)
-		resp,err := proto.Marshal(&result)
+		resp, err := proto.Marshal(&result)
 		if err != nil {
-			log.Println("[verify] Marshal resp error:",err)
+			log.Println("[verify] Marshal resp error:", err)
 		}
 		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 	})
@@ -327,11 +327,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
-	if rce.Len() == 0 {
-		msg.Rebuilding = 0
-	} else {
-		msg.Rebuilding = 1
-	}
+	msg.Rebuilding = rce.Len()
 
 	resData, err := proto.Marshal(&msg)
 	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
