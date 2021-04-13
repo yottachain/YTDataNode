@@ -184,6 +184,9 @@ func (sn *storageNode) Service() {
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
+		res.TaskId = msg.TaskId
+		res.ErrCode = "000"
+
 		go GcW.GcHandle(msg)
 		resp,err = proto.Marshal(&res)
 
