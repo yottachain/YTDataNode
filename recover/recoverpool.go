@@ -5,13 +5,15 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
 	"time"
 	//"sync"
 )
 
-var getShardPool chan int
-var poolG chan int
-var totalCap int = 2000
+var DownloadCount *statistics.WaitCount
+var RunningCount *statistics.WaitCount
+
+var totalCap int32 = 10
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 //var realConTask uint16 = 20
 var realConTask uint16 = 1
@@ -20,7 +22,7 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time) {
 	re.IncConTask()
 	re.processTask(task, pkgstart)
 	re.DecConTask()
-	poolG <- 0
+	RunningCount.Add()
 }
 
 func (re *RecoverEngine) processRequests() {
@@ -61,7 +63,7 @@ func (re *RecoverEngine) processRequests() {
 			continue
 		}
 
-		<-poolG
+		RunningCount.Remove()
 		re.IncRbdTask()
 		log.Println("[recover] create_gorutine, realRecoverTask=", re.rcvstat.rebuildTask)
 		go re.doRequest(requestT, startTsk)
@@ -94,11 +96,11 @@ func (re *RecoverEngine) modifyPoolSize() {
 
 		if realConCurrent < realConCurrent_N {
 			for k := uint16(0); k < realConCurrent_N-realConCurrent; k++ {
-				getShardPool <- 0
+				DownloadCount.Add()
 			}
 
 			for k := uint16(0); k < realConTask_N-realConTask; k++ {
-				poolG <- 0
+				RunningCount.Add()
 			}
 
 			realConCurrent = realConCurrent_N
@@ -107,11 +109,11 @@ func (re *RecoverEngine) modifyPoolSize() {
 
 		if realConCurrent > realConCurrent_N {
 			for k := uint16(0); k < realConCurrent-realConCurrent_N; k++ {
-				<-getShardPool
+				DownloadCount.Remove()
 			}
 
 			for k := uint16(0); k < realConTask-realConTask_N; k++ {
-				<-poolG
+				RunningCount.Remove()
 			}
 			realConCurrent = realConCurrent_N
 			realConTask = realConTask_N
@@ -122,22 +124,17 @@ func (re *RecoverEngine) modifyPoolSize() {
 }
 
 func (re *RecoverEngine) RunPool() {
-	poolG = make(chan int, totalCap)
-	defer close(poolG)
-
-	getShardPool = make(chan int, totalCap)
-	defer close(getShardPool)
+	RunningCount = statistics.NewWaitCount(totalCap)
+	DownloadCount = statistics.NewWaitCount(totalCap)
 
 	go re.processRequests()
 
-	//go re.modifyPoolSize()
-
 	for i := uint16(0); i < realConCurrent; i++ {
-		getShardPool <- 0
+		DownloadCount.Add()
 	}
 
 	for k := uint16(0); k < realConTask; k++ {
-		poolG <- 0
+		RunningCount.Add()
 	}
 
 	for {

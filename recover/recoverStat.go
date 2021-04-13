@@ -1,5 +1,7 @@
 package recover
 
+import "github.com/yottachain/YTDataNode/statistics"
+
 type RecoverStat struct {
 	RebuildTask       uint64 `json:"RebuildTask"`       //下发重建的任务总数
 	ConcurrentTask    uint64 `json:"ConcurrentTask"`    //并发进行的重建任务数
@@ -27,4 +29,6 @@ type RecoverStat struct {
 	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
 	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
 	AckSuccRebuild    uint64 `json:"AckSuccRebuild"`    //sn确认的成功重建分片数
+	RunningCount      *statistics.WaitCount
+	DownloadingCount  *statistics.WaitCount
 }
