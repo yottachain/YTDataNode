@@ -40,6 +40,10 @@ const (
 	MsgIDTestGetBlock          msgType = 0xe76b
 	MsgIDTestGetBlockRes       msgType = 0xe76c
 	MsgIDError                 msgType = 0x5913
+	MsgIDGcReq                 msgType = 0xe87a
+	MsgIDGcResp                msgType = 0xe87b
+	MsgIDGcStatusReq           msgType = 0xe87e
+	MsgIDGcStatusResp          msgType = 0xe87f
 )
 
 type msgType int32
