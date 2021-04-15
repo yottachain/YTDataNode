@@ -20,7 +20,11 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNod
 func (twq *TaskWaitQueue) GetTask() *Task {
 	// 之后替换成硬盘队列
 	if tsk := twq.Pop().Payload; tsk != nil {
-		return tsk.(*Task)
+		res, ok := tsk.(*Task)
+		if !ok {
+			return nil
+		}
+		return res
 	}
 	return nil
 }

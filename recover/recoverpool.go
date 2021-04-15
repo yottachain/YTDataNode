@@ -32,6 +32,9 @@ func (re *RecoverEngine) processRequests() {
 
 	for {
 		requestT := re.waitQueue.GetTask()
+		if requestT == nil {
+			continue
+		}
 		receiveTask++
 		//log.Println("[recover] create_gorutine, recieveTask=",receiveTask,"notexecTask=",notexecTask)
 
