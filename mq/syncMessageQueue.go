@@ -26,6 +26,9 @@ func (s SyncList) Pop() *Msg {
 
 	if e := s.Front(); e != nil {
 		defer s.Remove(e)
+		if e.Value == nil {
+			return nil
+		}
 		return e.Value.(*Msg)
 	} else {
 		return nil
