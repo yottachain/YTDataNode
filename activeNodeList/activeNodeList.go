@@ -176,6 +176,8 @@ func HasNodeid(id string) bool {
 	}
 
 	for _, v := range nodeList {
+		log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
+		log.Println("[recover][hasNodeid] test request dnid:",id)
 		if v.NodeID == id {
 			//log.Println("[recover]find shard:",id)
 			return true
