@@ -178,10 +178,10 @@ func (sn *storageNode) Service() {
 
 		GcW := gc.GcWorker{sn}
 		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:",err)
+			log.Println("[gcdel] message.GcReq error:", err)
 			res.ErrCode = "100"
 			res.TaskId = "nil"
-			resp,err := proto.Marshal(&res)
+			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
@@ -189,26 +189,26 @@ func (sn *storageNode) Service() {
 
 		res.TaskId = msg.TaskId
 		res.ErrCode = "000"
-		resp,err = proto.Marshal(&res)
+		resp, err = proto.Marshal(&res)
 
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error){
+	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.GcStatusReq
 		var res message.GcStatusResp
 		var resp []byte
 
 		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:",err)
+			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "100"
-			resp,err := proto.Marshal(&res)
+			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 		}
 
 		GcW := gc.GcWorker{sn}
 		res = GcW.GetGcStatus(msg)
-		resp,err = proto.Marshal(&res)
+		resp, err = proto.Marshal(&res)
 		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 	})
 
@@ -232,18 +232,19 @@ func (sn *storageNode) Service() {
 		var msg message.SelfVerifyReq
 		var res message.SelfVerifyResp
 		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[verify] message.SelfVerifyReq error:",err)
+
+			log.Println("[verify] message.SelfVerifyReq error:", err)
 			res.ErrCode = "100"
-			resp,err := proto.Marshal(&res)
+			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 		}
-		
+
 		verifynum := msg.Num
 		vfs := verifySlice.VerifySler{sn}
 		result := vfs.VerifySlice(verifynum)
-		resp,err := proto.Marshal(&result)
+		resp, err := proto.Marshal(&result)
 		if err != nil {
-			log.Println("[verify] Marshal resp error:",err)
+			log.Println("[verify] Marshal resp error:", err)
 		}
 		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 	})
@@ -362,6 +363,11 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.Ban = true
 		statistics.DefaultStat.RXTokenFillRate = 1
 	}
+
+	// 设置重建任务并发限制
+	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TokenPool.Utp().Save()
@@ -369,11 +375,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
-	if rce.Len() == 0 {
-		msg.Rebuilding = 0
-	} else {
-		msg.Rebuilding = 1
-	}
+	msg.Rebuilding = rce.Len()
 
 	resData, err := proto.Marshal(&msg)
 	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)

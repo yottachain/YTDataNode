@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
@@ -37,46 +38,9 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
-type Task struct {
-	SnID        int32
-	Data        []byte
-	ExpriedTime int64
-	TaskLife    int32
-	SrcNodeID   int32
-}
-
-type RebuildCount struct {
-	rebuildTask       uint64
-	concurrentTask    uint64
-	concurrenGetShard uint64
-	successRebuild    uint64
-	failRebuild       uint64
-	reportTask        uint64
-	getShardWkCnt     uint64
-	failDecodeTaskID  uint64
-	successShard      uint64
-	failShard         uint64
-	failSendShard     uint64
-	failToken         uint64
-	failConn          uint64
-	failLessShard     uint64
-	passJudge         uint64
-	sucessConn        uint64
-	successToken      uint64
-	shardforRebuild   uint64
-	rowRebuildSucc    uint64
-	columnRebuildSucc uint64
-	globalRebuildSucc uint64
-	preRebuildSucc    uint64
-	successPutToken   uint64
-	sendTokenReq      uint64
-	successVersion    uint64
-	ackSuccRebuild    uint64
-}
-
 type RecoverEngine struct {
 	sn            node.StorageNode
-	queue         chan *Task
+	waitQueue     *TaskWaitQueue
 	replyQueue    chan *TaskMsgResult
 	le            *LRCEngine
 	tstdata       [164]lrcpkg.Shard
@@ -86,19 +50,9 @@ type RecoverEngine struct {
 	ElkClient     *YTElkProducer.Client
 }
 
-type RcvDbgLog struct {
-	Nodeid     string
-	Shardid    string
-	Locnodeid  string
-	Locversion uint32
-	Time       string
-	Errtype    string
-	Errstr     string
-}
-
 func New(sn node.StorageNode) (*RecoverEngine, error) {
 	var re = new(RecoverEngine)
-	re.queue = make(chan *Task, max_task_num)
+	re.waitQueue = NewTaskWaitQueue()
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.le = NewLRCEngine(re.getShard, re.IncRbdSucc)
@@ -110,36 +64,7 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 }
 
 func (re *RecoverEngine) Len() uint32 {
-	return uint32(len(re.queue))
-}
-
-type RecoverStat struct {
-	RebuildTask       uint64 `json:"RebuildTask"`       //下发重建的任务总数
-	ConcurrentTask    uint64 `json:"ConcurrentTask"`    //并发进行的重建任务数
-	ConcurrenGetShard uint64 `json:"ConcurenGetShard"`  //并发拉取分片数
-	SuccessRebuild    uint64 `json:"SuccessRebuild"`    //成功的重建的任务总数
-	FailRebuild       uint64 `json:"FailRebuild"`       //重建失败的任务总数
-	ReportTask        uint64 `json:"ReportTask"`        //上报的任务总数（包括重建成功和失败的上报）
-	GetShardWkCnt     uint64 `json:"getShardWkCnt"`     //拉取分片的总次数
-	FailDecodeTaskID  uint64 `json:"failDecodeTaskID"`  //拉取分片时，解码需拉取的分片信息的错误总数（有可能需拉取的分片信息不全）
-	Success           uint64 `json:"Success"`           //成功拉取的分片总数
-	FailShard         uint64 `json:"FailShard"`         //不存在的总分片数（分片丢失）
-	FailSendShard     uint64 `json:"FailSendShard"`     //分片存在，但是传输过程中分片丢失
-	FailToken         uint64 `json:"FailToken"`         //拉取分片时，获取不到token的总次数
-	FailConn          uint64 `json:"failConn"`          //拉取分片时，无法连接的总数
-	FailLessShard     uint64 `json:"failLessShard"`     //在线矿机数不够，无法获取足够分片
-	PassJudge         uint64 `json:"passJudge"`         //预判重建成功
-	SuccessConn       uint64 `json:"sucessConn"`        //连接成功数
-	SuccessToken      uint64 `json:"successToken"`      //获取token成功
-	ShardforRebuild   uint64 `json:"shardforRebuild"`   //下载总分片数
-	RowRebuildSucc    uint64 `json:"RowRebuildSucc"`    //行方式重建成功
-	ColumnRebuildSucc uint64 `json:"ColumnRebuildSucc"` //列方式重建成功
-	GlobalRebuildSucc uint64 `json:"GlobalRebuildSucc"` //全局方式重建成功
-	RreRebuildSucc    uint64 `json:"RreRebuildSucc"`    //预重建成功
-	SuccessPutToken   uint64 `json:"SuccessPutToken"`   //成功释放token总数
-	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
-	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
-	AckSuccRebuild    uint64 `json:"AckSuccRebuild"`    //sn确认的成功重建分片数
+	return uint32(re.waitQueue.Len())
 }
 
 //RebuildTask = ReportTask    （近似相等）
@@ -147,8 +72,8 @@ type RecoverStat struct {
 //GetShardWkCnt = FailDecodeTaskID + Success + FailShard + FailSendShard + FailToken + FailConn （近似相等）
 //ConcurrentTask = ConcurrenGetShard （理想情况）
 
-func (re *RecoverEngine) GetStat() *RecoverStat {
-	return &RecoverStat{
+func (re *RecoverEngine) GetStat() *statistics.RecoverStat {
+	return &statistics.RecoverStat{
 		re.rcvstat.rebuildTask,
 		re.rcvstat.concurrentTask,
 		re.rcvstat.concurrenGetShard,
@@ -175,6 +100,8 @@ func (re *RecoverEngine) GetStat() *RecoverStat {
 		re.rcvstat.sendTokenReq,
 		re.rcvstat.successVersion,
 		re.rcvstat.ackSuccRebuild,
+		RunningCount,
+		DownloadCount,
 	}
 }
 
@@ -513,20 +440,6 @@ type TaskMsgResult struct {
 	SrcNodeID   int32
 }
 
-func (re *RecoverEngine) PutTask(task []byte, snid int32, expried int64, srcNodeId int32, tasklife int32) error {
-	select {
-	case re.queue <- &Task{
-		SnID:        snid,
-		Data:        task,
-		ExpriedTime: expried,
-		TaskLife:    tasklife,
-		SrcNodeID:   srcNodeId,
-	}:
-	default:
-	}
-	return nil
-}
-
 // 多重建任务消息处理
 func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	var mtdMsg message.MultiTaskDescription
@@ -544,7 +457,7 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 			continue
 		}
 
-		if err := re.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
+		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -575,16 +488,16 @@ func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
 //	startTsk := time.Now()
 //	go func() {
 //		for {
-//			ts := <-re.queue
+//			ts := <-re.waitQueue
 //			if 0 == re.startTskTmCtl {
 //				startTsk = time.Now()
-//				log.Println("[recover] task_package start_time=", time.Now().Unix(), "len=", len(re.queue)+1)
+//				log.Println("[recover] task_package start_time=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
 //				re.startTskTmCtl++
 //			}
 //
 //			if time.Now().Sub(startTsk).Seconds() > (1800 - 60) {
-//				if len(re.queue) <= 0 {
-//					log.Println("[recover] task_package now_time_expired=", time.Now().Unix(), "len=", len(re.queue)+1)
+//				if len(re.waitQueue) <= 0 {
+//					log.Println("[recover] task_package now_time_expired=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
 //					re.startTskTmCtl = 0
 //				}
 //				continue
@@ -610,9 +523,9 @@ func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
 //				res.SrcNodeID = ts.SrcNodeID
 //				re.PutReplyQueue(res)
 //			}
-//			if len(re.queue) <= 0 {
+//			if len(re.waitQueue) <= 0 {
 //				re.startTskTmCtl = 0
-//				log.Println("[recover] task_package now_time_que_empty=", time.Now().Unix(), "len=", len(re.queue)+1)
+//				log.Println("[recover] task_package now_time_que_empty=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
 //				continue
 //			}
 //		}

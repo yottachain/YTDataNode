@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/yottachain/YTDataNode/logger"
-	recover2 "github.com/yottachain/YTDataNode/recover"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
 	"sync"
 	"time"
@@ -30,7 +29,7 @@ type Stat struct {
 	RXNetLatency         int64 // 上传网路延迟
 	RXDiskLatency        int64 // 上传硬盘延迟
 	GconfigMd5           string
-	RebuildShardStat     *recover2.RecoverStat
+	RebuildShardStat     *RecoverStat
 	TXTokenFillRate      time.Duration
 	TXToken              int64 // 下载发送token数量，改为仅RPC接口
 	TXSuccess            int64 // 下载成功数量，改为仅RPC接口

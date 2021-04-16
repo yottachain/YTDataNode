@@ -88,6 +88,12 @@ message StatusRepResp {
     string relayUrl=2;                 
 }
 
+message ErrorMessage{
+    int32 code=1;
+    string msg=2;
+}
+
+
 message StringMsg{
     string msg=1;
 }
