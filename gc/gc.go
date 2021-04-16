@@ -3,6 +3,7 @@ package gc
 import (
     "fmt"
     "github.com/gogo/protobuf/proto"
+    "github.com/mr-tron/base58"
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
     sni "github.com/yottachain/YTDataNode/storageNodeInterface"
@@ -101,6 +102,7 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
     var err error
     var key ydcommon.IndexTableKey
     copy(key[:],ent)
+    fmt.Println("[gcdel] GcHashProcess key=",base58.Encode(key[:]))
     err = gc.Sn.YTFS().GcProcess(key)
     if err != nil{
         log.Println("[gcdel] gc error:",err)
