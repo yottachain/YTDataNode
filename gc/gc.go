@@ -75,7 +75,9 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         return
     }
 
+    fmt.Println("[gcdel][gclist] len_Gclist=",len(msg.Gclist))
     for _, ent := range msg.Gclist {
+        fmt.Println("[gcdel][gclist] base58=",base58.Encode(ent), "string=",string(ent))
         err = gc.GcHashProcess(ent)
         if err != nil{
             log.Println("[gcdel] GcHashProcess error:",err)
