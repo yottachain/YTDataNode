@@ -33,6 +33,9 @@ func (wc *WaitCount) Remove() {
 }
 
 func (wc *WaitCount) SetMax(n int32) {
+	if n <= 0 {
+		n = 1
+	}
 	atomic.StoreInt32(&wc.max, n)
 }
 
