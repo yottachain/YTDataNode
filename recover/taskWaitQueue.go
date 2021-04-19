@@ -1,9 +1,13 @@
 package recover
 
-import "github.com/yottachain/YTDataNode/mq"
+import (
+	"fmt"
+	"github.com/yottachain/YTDataNode/mq"
+)
 
 type TaskWaitQueue struct {
 	*mq.BaseMessageQueue
+	Max int
 }
 
 func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNodeId int32, tasklife int32) error {
@@ -13,6 +17,9 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNod
 		ExpriedTime: expried,
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
+	}
+	if twq.BaseMessageQueue.Len() > twq.Max {
+		return fmt.Errorf("task queue full")
 	}
 	return twq.Push("new_rebuild_task", t)
 }
@@ -30,5 +37,5 @@ func (twq *TaskWaitQueue) GetTask() *Task {
 }
 
 func NewTaskWaitQueue() *TaskWaitQueue {
-	return &TaskWaitQueue{mq.NewBaseMessageQueue(1)}
+	return &TaskWaitQueue{mq.NewBaseMessageQueue(1), 2000}
 }
