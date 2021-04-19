@@ -13,7 +13,7 @@ import (
 var DownloadCount *statistics.WaitCount
 var RunningCount *statistics.WaitCount
 
-var totalCap int32 = 2000
+var totalCap int32 = 10
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 //var realConTask uint16 = 20
 var realConTask uint16 = 1

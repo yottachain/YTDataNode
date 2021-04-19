@@ -365,8 +365,8 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	}
 
 	// 设置重建任务并发限制
-	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
-	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
 
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
