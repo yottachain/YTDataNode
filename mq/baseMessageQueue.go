@@ -35,7 +35,7 @@ func (bmq *BaseMessageQueue) Push(name string, payload interface{}) error {
 		Payload: payload,
 	}:
 	default:
-		bmq.waitQueue.Push(name, payload)
+		return bmq.waitQueue.Push(name, payload)
 	}
 	return nil
 }
