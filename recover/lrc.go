@@ -215,16 +215,16 @@ effortwk:
 		//k++
 		peer := td.Locations[idx]
 		sw := Switchcnt{0, 0, 0, 0}
-		if lrch.si.ShardExist[idx] == 0 {
-			log.Println("[recover] shard_not_online, cannot get the shard,idx=", idx)
-			shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
-			if err2 != nil {
-				log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
-				indexs2 = append(indexs2, idx)
-				continue
-			}
-			lrch.le.IncRbdSucc(0)
-		} else {
+		//if lrch.si.ShardExist[idx] == 0 {
+		//	log.Println("[recover] shard_not_online, cannot get the shard,idx=", idx)
+		//	shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
+		//	if err2 != nil {
+		//		log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
+		//		indexs2 = append(indexs2, idx)
+		//		continue
+		//	}
+		//	lrch.le.IncRbdSucc(0)
+		//} else {
 			// 过期时间 1小时
 			//outtimer := time.After(time.Hour)
 			log.Println("[recover] shard_online, get the shard,idx=", idx)
@@ -272,7 +272,7 @@ effortwk:
 				//	break
 				//}
 			//}
-		}
+		//}
 
 		if len(shard) < 16384 {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
