@@ -7,7 +7,6 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
-	"strings"
 	"time"
 )
 
@@ -211,9 +210,9 @@ effortwk:
 
 	//log.Println("[recover]need shard list", indexs, len(indexs))
 
-	k := 0
+	//k := 0
 	for _, idx := range indexs {
-		k++
+		//k++
 		peer := td.Locations[idx]
 		sw := Switchcnt{0, 0, 0, 0}
 		if lrch.si.ShardExist[idx] == 0 {
@@ -221,6 +220,7 @@ effortwk:
 			shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
 			if err2 != nil {
 				log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
+				indexs2 = append(indexs2, idx)
 				continue
 			}
 			lrch.le.IncRbdSucc(0)
@@ -246,18 +246,19 @@ effortwk:
 				shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
 				if err2 != nil {
 					log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
-					if strings.Contains(err.Error(), "Get data Slice fail") {
-						continue
-					}
+					//if strings.Contains(err.Error(), "Get data Slice fail") {
+					//	continue
+					//}
+					//
+					//if strings.Contains(err.Error(), "version is too low") {
+					//	continue
+					//}
 
-					if strings.Contains(err.Error(), "version is too low") {
-						continue
-					}
 					indexs2 = append(indexs2, idx)
-						continue
-					}
-					lrch.le.IncRbdSucc(0)
+					continue
 				}
+					lrch.le.IncRbdSucc(0)
+			}
 
 				//out := false
 				//
@@ -281,6 +282,7 @@ effortwk:
 
 		if !message.VerifyVHF(shard, td.Hashs[idx]) {
 			log.Println("[recover] shard_verify_failed! idx=", idx, "shardindex=", shard[0], "reqVHF=", base58.Encode(td.Hashs[idx]), "shardVHF=", base58.Encode(message.CaculateHash(shard)))
+			indexs2 = append(indexs2, idx)
 			continue
 		}
 
@@ -318,10 +320,12 @@ effortwk:
 		goto start
 	}
 	//return nil, fmt.Errorf("rebuild data failed, efforttms goto zero")
+	fmt.Println("[recover] len(indexs2)=",len(indexs2))
 	if len(indexs2) > 0 {
 		effortsw = 1
 		goto effortwk
 	}
+
 	return nil, fmt.Errorf("rebuild data failed")
 }
 
