@@ -75,7 +75,9 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         return
     }
 
+    fmt.Println("[gcdel][gclist] len_Gclist=",len(msg.Gclist))
     for _, ent := range msg.Gclist {
+        fmt.Println("[gcdel][gclist] base58=",base58.Encode(ent), "string=",string(ent))
         err = gc.GcHashProcess(ent)
         if err != nil{
             log.Println("[gcdel] GcHashProcess error:",err)
@@ -101,7 +103,14 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
 func (gc *GcWorker)GcHashProcess(ent []byte) error{
     var err error
     var key ydcommon.IndexTableKey
-    copy(key[:],ent)
+    entstr := string(ent)
+    k,err := base58.Decode(entstr)
+    if err != nil{
+        fmt.Println("[gcdel] decode hashstr error:",err)
+        return err
+    }
+
+    copy(key[:],k)
     fmt.Println("[gcdel] GcHashProcess key=",base58.Encode(key[:]))
     err = gc.Sn.YTFS().GcProcess(key)
     if err != nil{
