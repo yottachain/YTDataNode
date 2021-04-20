@@ -14,7 +14,7 @@ var FileLogger = &lumberjack.Logger{
 	MaxSize:    128,
 	Compress:   false,
 	MaxAge:     7,
-	MaxBackups: 30,
+	MaxBackups: 5,
 }
 
 func init() {
