@@ -196,7 +196,7 @@ start:
 	var indexs []int16
 	var indexs2 []int16
 	var effortsw int8 = 0
-	var efforttms int8 = 30
+	//var efforttms int8 = 30
 
 	for i := sl.Front(); i != nil; i = i.Next() {
 		indexs = append(indexs, i.Value.(int16))
@@ -226,7 +226,7 @@ effortwk:
 			lrch.le.IncRbdSucc(0)
 		} else {
 			// 过期时间 1小时
-			outtimer := time.After(time.Hour)
+			//outtimer := time.After(time.Hour)
 			log.Println("[recover] shard_online, get the shard,idx=", idx)
 
 			if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-65 {
@@ -237,43 +237,43 @@ effortwk:
 			}
 
 			// 总是重试直到超时
-			for {
-				shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
+			//for {
+			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
 
-				if err != nil {
-					log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())
+			if err != nil {
+				log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())
 
-					shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
-					if err2 != nil {
-						log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
-						if strings.Contains(err.Error(), "Get data Slice fail") {
-							continue
-						}
+				shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
+				if err2 != nil {
+					log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
+					if strings.Contains(err.Error(), "Get data Slice fail") {
+						continue
+					}
 
-						if strings.Contains(err.Error(), "version is too low") {
-							continue
-						}
-						indexs2 = append(indexs2, idx)
+					if strings.Contains(err.Error(), "version is too low") {
+						continue
+					}
+					indexs2 = append(indexs2, idx)
 						continue
 					}
 					lrch.le.IncRbdSucc(0)
 				}
 
-				out := false
-
-				select {
-				case <-outtimer:
-					out = true
-				default:
-					continue
-				}
-				if out {
-					break
-				}
-			}
+				//out := false
+				//
+				//select {
+				//case <-outtimer:
+				//	out = true
+				//default:
+				//	continue
+				//}
+				//if out {
+				//	break
+				//}
+			//}
 		}
 
-		if len(shard) < 1 {
+		if len(shard) < 16384 {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue
@@ -290,7 +290,7 @@ effortwk:
 		} //rebuild success
 		status, err := lrch.si.AddShardData(lrch.si.Handle, shard)
 		if err != nil {
-			log.Println("[recover] mainrecover: ", err)
+			log.Println("[recover] mainrecover error: ", err)
 			continue
 		}
 		if status > 0 {
@@ -310,9 +310,9 @@ effortwk:
 		return nil, fmt.Errorf("rebuild data failed, time expired")
 	}
 
-	efforttms--
+	// efforttms--
 
-	if efforttms <= 0 && n < 3 {
+	if  n < 3 {
 		indexs2 = indexs2[0:0]
 		effortsw = 0
 		goto start
