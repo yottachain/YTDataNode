@@ -419,7 +419,10 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 			case -8:
 				// 可采购空间不足
 				TokenPool.Utp().Stop()
+			case -12:
+				log.Printf("采购空间出错\n")
 			}
+
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
