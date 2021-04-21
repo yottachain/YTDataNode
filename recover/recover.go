@@ -100,8 +100,8 @@ func (re *RecoverEngine) GetStat() *statistics.RecoverStat {
 		re.rcvstat.sendTokenReq,
 		re.rcvstat.successVersion,
 		re.rcvstat.ackSuccRebuild,
-		RunningCount,
-		DownloadCount,
+		*RunningCount,
+		*DownloadCount,
 	}
 }
 
