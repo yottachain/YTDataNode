@@ -15,20 +15,20 @@ func (wc *WaitCount) Add() {
 	if atomic.LoadInt32(&wc.curr) < atomic.LoadInt32(&wc.max) {
 		atomic.AddInt32(&wc.curr, 1)
 	}
-	if atomic.LoadInt32(&wc.curr) >= atomic.LoadInt32(&wc.max) {
-		wc.q <- struct{}{}
-	}
+	//if atomic.LoadInt32(&wc.curr) >= atomic.LoadInt32(&wc.max) {
+	//	wc.q <- struct{}{}
+	//}
 }
 
 func (wc *WaitCount) Remove() {
 	if atomic.LoadInt32(&wc.curr) > 0 {
 		atomic.AddInt32(&wc.curr, -1)
-		if atomic.LoadInt32(&wc.curr) < atomic.LoadInt32(&wc.max) {
-			select {
-			case <-wc.q:
-			default:
-			}
-		}
+		//if atomic.LoadInt32(&wc.curr) < atomic.LoadInt32(&wc.max) {
+		//	select {
+		//	case <-wc.q:
+		//	default:
+		//	}
+		//}
 	}
 }
 
