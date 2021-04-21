@@ -2,7 +2,6 @@ package recover
 
 import (
 	"sync"
-	"time"
 )
 
 var (
@@ -106,15 +105,8 @@ func (re *RecoverEngine) IncFailLessShard() {
 }
 
 func (re *RecoverEngine) GetConShardPass() {
-	for {
-		<-time.After(time.Millisecond)
-		ConGetShardPoolLK.Lock()
-		if DownloadCount.Len() > 0 {
-			DownloadCount.Remove()
-			ConGetShardPoolLK.Unlock()
-			break
-		}
-		ConGetShardPoolLK.Unlock()
+	if DownloadCount.Len() > 0 {
+		DownloadCount.Remove()
 	}
 }
 
