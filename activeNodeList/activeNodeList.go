@@ -15,8 +15,8 @@ import (
 var locker = sync.RWMutex{}
 
 func getUrl() string {
-	//var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
-	var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
+	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	//var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 
 	if config.IsDev == 2 {
 		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
@@ -175,13 +175,12 @@ func HasNodeid(id string) bool {
 		Update()
 	}
 
-
-	log.Println("[recover][hasNodeid]  len_nodelist=",len(nodeList));
+	log.Println("[recover][hasNodeid]  len_nodelist=", len(nodeList))
 	for _, v := range nodeList {
 		//log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
 		//log.Println("[recover][hasNodeid] test request dnid:",id)
 		if v.NodeID == id {
-			log.Println("[recover][hasNodeid] find shard:",id)
+			log.Println("[recover][hasNodeid] find shard:", id)
 			return true
 		}
 	}
