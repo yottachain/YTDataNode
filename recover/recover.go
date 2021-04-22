@@ -844,8 +844,8 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 	can, err := re.PreTstRecover(lrcshd, msg)
 	if err != nil || !can {
 		re.IncFailLessShard()
-		body := re.MakeJudgeElkReport(lrcshd, msg)
-		go re.reportLog(body)
+		//body := re.MakeJudgeElkReport(lrcshd, msg)
+		//go re.reportLog(body)
 		return &res
 	}
 

@@ -149,7 +149,7 @@ effortwk:
 			return nil, fmt.Errorf("rebuild data failed, time expired")
 		}//rebuild success
 
-		status := lrch.si.AddShardData(lrch.si.Handle, shard)
+		status,_ := lrch.si.AddShardData(lrch.si.Handle, shard)
 		if status > 0{
 			data, status2 := lrch.si.GetRebuildData(lrch.si)
 			if status2 > 0 {
