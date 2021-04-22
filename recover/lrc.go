@@ -7,6 +7,7 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
+	"strings"
 	"time"
 )
 
@@ -215,49 +216,49 @@ effortwk:
 		//k++
 		peer := td.Locations[idx]
 		sw := Switchcnt{0, 0, 0, 0}
-		//if lrch.si.ShardExist[idx] == 0 {
-		//	log.Println("[recover] shard_not_online, cannot get the shard,idx=", idx)
-		//	shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
-		//	if err2 != nil {
-		//		log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
-		//		indexs2 = append(indexs2, idx)
-		//		continue
-		//	}
-		//	lrch.le.IncRbdSucc(0)
-		//} else {
-		// 过期时间 1小时
-		//outtimer := time.After(time.Hour)
-		log.Println("[recover] shard_online, get the shard,idx=", idx)
-
-		if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-65 {
-			log.Println("[recover] rebuild time expired! spendtime=", time.Now().Sub(pkgstart).Seconds(), "taskid=", BytesToInt64(td.Id[0:8]))
-			//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
-			//go re.reportLog(logelk)
-			return nil, fmt.Errorf("rebuild data failed, time expired")
-		}
-
-		shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
-
-		if err != nil {
-			log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())
-
+		if lrch.si.ShardExist[idx] == 0 {
+			log.Println("[recover] shard_not_online, cannot get the shard,idx=", idx)
 			shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
 			if err2 != nil {
 				log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
-				//if strings.Contains(err.Error(), "Get data Slice fail") {
-				//	continue
-				//}
-				//
-				//if strings.Contains(err.Error(), "version is too low") {
-				//	continue
-				//}
-
 				indexs2 = append(indexs2, idx)
 				continue
 			}
 			lrch.le.IncRbdSucc(0)
-		}
+		} else {
+			// 过期时间 1小时
+			//outtimer := time.After(time.Hour)
+			log.Println("[recover] shard_online, get the shard,idx=", idx)
 
+			if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-65 {
+				log.Println("[recover] rebuild time expired! spendtime=", time.Now().Sub(pkgstart).Seconds(), "taskid=", BytesToInt64(td.Id[0:8]))
+				//logelk:=re.MakeReportLog(peer.NodeId,td.Hashs[idx],"timeOut",err)
+				//go re.reportLog(logelk)
+				return nil, fmt.Errorf("rebuild data failed, time expired")
+			}
+
+			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
+
+			if err != nil {
+				log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())
+
+				shard, _, err2 = lrch.RecoverOrigShard(lrch.si, uint16(idx), uint8(n), td, &number, &sw, tasklife)
+				if err2 != nil {
+					log.Println("[recover] rebuild miss shard error:", err, " idx=", idx)
+					if strings.Contains(err.Error(), "Get data Slice fail") {
+						continue
+					}
+
+					if strings.Contains(err.Error(), "version is too low") {
+						continue
+					}
+
+					indexs2 = append(indexs2, idx)
+					continue
+				}
+				lrch.le.IncRbdSucc(0)
+			}
+		}
 		//out := false
 		//
 		//select {
