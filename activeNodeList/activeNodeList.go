@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"math"
 	"net/http"
@@ -15,14 +14,14 @@ import (
 var locker = sync.RWMutex{}
 
 func getUrl() string {
-	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
-	//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
-
-	if config.IsDev == 2 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
-	} else if config.IsDev == 1 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
-	}
+	//var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	////url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+	//
+	//if config.IsDev == 2 {
+	//	url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+	//} else if config.IsDev == 1 {
+		url := "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
+	//}
 
 	return url
 }
