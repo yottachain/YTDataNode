@@ -2,106 +2,61 @@ package recover
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 var (
-	RbdTaskLK         sync.Mutex
-	SuccRbdLk         sync.Mutex
-	FailRbdLk         sync.Mutex
-	ShardWkCntLk      sync.Mutex
-	FailDcdTaskIDLK   sync.Mutex
-	SuccShardLk       sync.Mutex
-	FailShardLK       sync.Mutex
-	FailSndShardLk    sync.Mutex
-	FailTokenLk       sync.Mutex
-	FailConnLk        sync.Mutex
 	ConcurrentShardLk sync.Mutex
 	ConCurrentTaskLK  sync.Mutex
 	ConGetShardPoolLK sync.Mutex
-	FailLessShardLK   sync.Mutex
-	PassJudgeLK       sync.Mutex
-	SuccConnLk        sync.Mutex
-	SuccTokenLk       sync.Mutex
-	ShardForRBDLk     sync.Mutex
-	RowRbdSuccLK      sync.Mutex
-	ColRbdSuccLk      sync.Mutex
-	GlobalRbdSuccLk   sync.Mutex
-	PreRbdSuccLk      sync.Mutex
-	SuccPutTokenLK    sync.Mutex
-	SendTokenReqLk    sync.Mutex
-	succVersionTokLk  sync.Mutex
 )
 
 func (re *RecoverEngine) IncSuccVersion() {
-	succVersionTokLk.Lock()
-	defer succVersionTokLk.Unlock()
-	re.rcvstat.successVersion++
+	atomic.AddUint64(&re.rcvstat.successVersion,1)
 }
 
 func (re *RecoverEngine) IncSendTokReq() {
-	SendTokenReqLk.Lock()
-	defer SendTokenReqLk.Unlock()
-	re.rcvstat.sendTokenReq++
+	atomic.AddUint64(&re.rcvstat.sendTokenReq,1)
 }
 
 func (re *RecoverEngine) IncSuccPutTok() {
-	SuccPutTokenLK.Lock()
-	defer SuccPutTokenLK.Unlock()
-	re.rcvstat.successPutToken++
+	atomic.AddUint64(&re.rcvstat.successPutToken,1)
 }
 
 func (re *RecoverEngine) IncGlobalRbdSucc() {
-	GlobalRbdSuccLk.Lock()
-	defer GlobalRbdSuccLk.Unlock()
-	re.rcvstat.globalRebuildSucc++
+	atomic.AddUint64(&re.rcvstat.globalRebuildSucc,1)
 }
 
 func (re *RecoverEngine) IncColRbdSucc() {
-	ColRbdSuccLk.Lock()
-	defer ColRbdSuccLk.Unlock()
-	re.rcvstat.columnRebuildSucc++
+	atomic.AddUint64(&re.rcvstat.columnRebuildSucc,1)
 }
 
 func (re *RecoverEngine) IncRowRbdSucc() {
-	RowRbdSuccLK.Lock()
-	defer RowRbdSuccLK.Unlock()
-	re.rcvstat.rowRebuildSucc++
+	atomic.AddUint64(&re.rcvstat.rowRebuildSucc,1)
 }
 
 func (re *RecoverEngine) IncPreRbdSucc() {
-	PreRbdSuccLk.Lock()
-	defer PreRbdSuccLk.Unlock()
-	re.rcvstat.preRebuildSucc++
+	atomic.AddUint64(&re.rcvstat.preRebuildSucc,1)
 }
 
 func (re *RecoverEngine) IncShardForRbd() {
-	ShardForRBDLk.Lock()
-	defer ShardForRBDLk.Unlock()
-	re.rcvstat.shardforRebuild++
+	atomic.AddUint64(&re.rcvstat.shardforRebuild,1)
 }
 
 func (re *RecoverEngine) IncSuccToken() {
-	SuccTokenLk.Lock()
-	defer SuccTokenLk.Unlock()
-	re.rcvstat.successToken++
+	atomic.AddUint64(&re.rcvstat.successToken,1)
 }
 
 func (re *RecoverEngine) IncSuccConn() {
-	SuccConnLk.Lock()
-	defer SuccConnLk.Unlock()
-	re.rcvstat.sucessConn++
+	atomic.AddUint64(&re.rcvstat.sucessConn,1)
 }
 
 func (re *RecoverEngine) IncPassJudge() {
-	PassJudgeLK.Lock()
-	defer PassJudgeLK.Unlock()
-	re.rcvstat.passJudge++
+	atomic.AddUint64(&re.rcvstat.passJudge,1)
 }
 
 func (re *RecoverEngine) IncFailLessShard() {
-	FailLessShardLK.Lock()
-	defer FailLessShardLK.Unlock()
-	re.rcvstat.failLessShard++
+	atomic.AddUint64(&re.rcvstat.failLessShard,1)
 }
 
 func (re *RecoverEngine) GetConShardPass() {
@@ -141,69 +96,47 @@ func (re *RecoverEngine) DecConShard() {
 }
 
 func (re *RecoverEngine) IncFailConn() {
-	FailConnLk.Lock()
-	defer FailConnLk.Unlock()
-	re.rcvstat.failConn++
+	atomic.AddUint64(&re.rcvstat.failConn,1)
 }
 
 func (re *RecoverEngine) IncFailToken() {
-	FailTokenLk.Lock()
-	defer FailTokenLk.Unlock()
-	re.rcvstat.failToken++
+	atomic.AddUint64(&re.rcvstat.failToken,1)
 }
 
 func (re *RecoverEngine) IncFailSendShard() {
-	FailSndShardLk.Lock()
-	defer FailSndShardLk.Unlock()
-	re.rcvstat.failSendShard++
+	atomic.AddUint64(&re.rcvstat.failSendShard,1)
 }
 
 func (re *RecoverEngine) IncFailShard() {
-	FailShardLK.Lock()
-	defer FailShardLK.Unlock()
-	re.rcvstat.failShard++
+	atomic.AddUint64(&re.rcvstat.failShard,1)
 }
 
 func (re *RecoverEngine) IncSuccShard() {
-	SuccShardLk.Lock()
-	defer SuccShardLk.Unlock()
-	re.rcvstat.successShard++
+	atomic.AddUint64(&re.rcvstat.successShard,1)
 }
 
 func (re *RecoverEngine) IncFailDcdTask() {
-	FailDcdTaskIDLK.Lock()
-	defer FailDcdTaskIDLK.Unlock()
-	re.rcvstat.failDecodeTaskID++
+	atomic.AddUint64(&re.rcvstat.failDecodeTaskID,1)
 }
 
 func (re *RecoverEngine) IncGetShardWK() {
-	ShardWkCntLk.Lock()
-	defer ShardWkCntLk.Unlock()
-	re.rcvstat.getShardWkCnt++
+	atomic.AddUint64(&re.rcvstat.getShardWkCnt,1)
 }
 
 func (re *RecoverEngine) IncRbdTask() {
-	RbdTaskLK.Lock()
-	defer RbdTaskLK.Unlock()
-	re.rcvstat.rebuildTask++
+	atomic.AddUint64(&re.rcvstat.rebuildTask,1)
 }
 
 func (re *RecoverEngine) IncReportRbdTask() {
-	RbdTaskLK.Lock()
-	defer RbdTaskLK.Unlock()
-	re.rcvstat.reportTask++
+	atomic.AddUint64(&re.rcvstat.reportTask,1)
 }
 
 func (re *RecoverEngine) IncSuccRbd() {
-	SuccRbdLk.Lock()
-	defer SuccRbdLk.Unlock()
-	re.rcvstat.successRebuild++
+	atomic.AddUint64(&re.rcvstat.successRebuild,1)
 }
 
 func (re *RecoverEngine) IncFailRbd() {
-	FailRbdLk.Lock()
-	defer FailRbdLk.Unlock()
-	re.rcvstat.failRebuild++
+	atomic.AddUint64(&re.rcvstat.failRebuild,1)
 }
 
 func (re *RecoverEngine) IncRbdSucc(n uint16) {
