@@ -22,7 +22,7 @@ func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time) {
 	re.IncConTask()
 	re.processTask(task, pkgstart)
 	re.DecConTask()
-	RunningCount.Add()
+	RunningCount.Remove()
 }
 
 func (re *RecoverEngine) processRequests() {
@@ -66,7 +66,7 @@ func (re *RecoverEngine) processRequests() {
 			continue
 		}
 
-		RunningCount.Remove()
+		RunningCount.Add()
 		re.IncRbdTask()
 		log.Println("[recover] create_gorutine, realRecoverTask=", re.rcvstat.rebuildTask)
 		go re.doRequest(requestT, startTsk)

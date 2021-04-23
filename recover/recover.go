@@ -361,52 +361,52 @@ func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash
 		sw.swconn++
 	}
 
-	peerVersion := clt.RemotePeerVersion()
-	if int(peerVersion) < int(config.Gconfig.MinVersion) {
-		err = fmt.Errorf("remote dn version is too low!")
-		if config.Gconfig.ElkReport {
-			//logelk := re.MakeReportLog(id, hash, "failVersion", err)
-			//go re.reportLog(logelk)
-		}
-		return nil, err
-	}
+	//peerVersion := clt.RemotePeerVersion()
+	//if int(peerVersion) < int(config.Gconfig.MinVersion) {
+	//	err = fmt.Errorf("remote dn version is too low!")
+	//	if config.Gconfig.ElkReport {
+	//		//logelk := re.MakeReportLog(id, hash, "failVersion", err)
+	//		//go re.reportLog(logelk)
+	//	}
+	//	return nil, err
+	//}
 
 	re.IncSuccVersion()
 	re.GetConShardPass()
 
-	tok, err := re.getRdToken(clt, sw)
-	if err != nil {
-		re.IncFailToken()
-		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		re.ReturnConShardPass()
-		return nil, err
+	//tok, err := re.getRdToken(clt, sw)
+	//if err != nil {
+	//	re.IncFailToken()
+	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+	//	re.ReturnConShardPass()
+	//	return nil, err
+	//
+	//}
 
-	}
+	//var resGetToken message.NodeCapacityResponse
+	//err = proto.Unmarshal(tok[2:], &resGetToken)
+	//if err != nil {
+	//	re.IncFailToken()
+	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+	//	re.ReturnConShardPass()
+	//	return nil, err
+	//}
 
-	var resGetToken message.NodeCapacityResponse
-	err = proto.Unmarshal(tok[2:], &resGetToken)
-	if err != nil {
-		re.IncFailToken()
-		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		re.ReturnConShardPass()
-		return nil, err
-	}
+	//if !resGetToken.Writable {
+	//	re.IncFailToken()
+	//	err = fmt.Errorf("resGetToken.Writable is false")
+	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
+	//	re.ReturnConShardPass()
+	//	return nil, err
+	//}
 
-	if !resGetToken.Writable {
-		re.IncFailToken()
-		err = fmt.Errorf("resGetToken.Writable is false")
-		log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		re.ReturnConShardPass()
-		return nil, err
-	}
-
-	if 0 == sw.swtoken {
-		re.IncSuccToken()
-		sw.swtoken++
-	}
+	//if 0 == sw.swtoken {
+	//	re.IncSuccToken()
+	//	sw.swtoken++
+	//}
 
 	var res message.DownloadShardResponse
-	shardBuf, err := re.getShardData(resGetToken.AllocId, id, taskID, addrs, hash, n, sw, clt)
+	shardBuf, err := re.getShardData("", id, taskID, addrs, hash, n, sw, clt)
 	if err != nil {
 		re.ReturnConShardPass()
 		return nil, err
@@ -424,9 +424,9 @@ func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash
 		re.IncSuccShard()
 		sw.swshard++
 	}
-
-	re.putToken(resGetToken.AllocId, clt)
-	log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.rcvstat.successShard, base64.StdEncoding.EncodeToString(hash), *n)
+	//
+	//re.putToken(resGetToken.AllocId, clt)
+	//log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.rcvstat.successShard, base64.StdEncoding.EncodeToString(hash), *n)
 
 	*n = *n + 1
 	return res.Data, nil
