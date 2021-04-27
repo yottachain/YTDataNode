@@ -150,5 +150,9 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
         res.Status = "fileUnmarshalErr"
     }
 
+    err = os.Remove(filePath)
+    if err !=nil {
+        fmt.Println("[gcdel] delete status file error:",err)
+    }
     return res
 }
