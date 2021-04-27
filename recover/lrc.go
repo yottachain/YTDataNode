@@ -259,19 +259,6 @@ effortwk:
 				lrch.le.IncRbdSucc(0)
 			}
 		}
-		//out := false
-		//
-		//select {
-		//case <-outtimer:
-		//	out = true
-		//default:
-		//	continue
-		//}
-		//if out {
-		//	break
-		//}
-		//}
-		//}
 
 		if len(shard) < 16384 {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)

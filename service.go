@@ -179,7 +179,7 @@ func (sn *storageNode) Service() {
 		GcW := gc.GcWorker{sn}
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "100"
+			res.ErrCode = "errReq"
 			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -188,7 +188,7 @@ func (sn *storageNode) Service() {
 		go GcW.GcHandle(msg)
 
 		res.TaskId = msg.TaskId
-		res.ErrCode = "000"
+		res.ErrCode = "succ"
 		resp, err = proto.Marshal(&res)
 
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -201,7 +201,7 @@ func (sn *storageNode) Service() {
 
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "100"
+			res.Status = "errstatusreq"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 		}
