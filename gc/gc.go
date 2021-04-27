@@ -53,7 +53,7 @@ func SavetoFile(filepath string,value []byte) error{
 func (gc *GcWorker)GcHandle(msg message.GcReq) {
     var err error
     var res message.GcStatusResp
-    res.Status = "000"
+    res.Status = "succ"
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
 
@@ -62,7 +62,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
     if ! config.UseKvDb {
         err = fmt.Errorf("not support indexdb for gc")
         log.Println("[gcdel] error:",err,"taskid:",msg.TaskId)
-        res.Status = "222"
+        res.Status = "DBcfgerr"
         value,err := proto.Marshal(&res)
         if err != nil{
             fmt.Println("[gcdel] Marshal gcstatusresp error:",err,"taskid:",msg.TaskId)
@@ -75,14 +75,17 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         return
     }
 
+    res.Total = int32(len(msg.Gclist))
     fmt.Println("[gcdel][gclist] len_Gclist=",len(msg.Gclist))
+
     for _, ent := range msg.Gclist {
         fmt.Println("[gcdel][gclist] base58=",base58.Encode(ent), "string=",string(ent))
         err = gc.GcHashProcess(ent)
         if err != nil{
             log.Println("[gcdel] GcHashProcess error:",err)
-            res.Status = "200"
-            break;
+            res.Status = "gcerr"
+            res.Fail++
+            continue;
         }
     }
 
@@ -121,6 +124,7 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
 
 func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
     var res message.GcStatusResp
+    res.Status = "succ"
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
     log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
@@ -128,21 +132,21 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
     status_exist,_ := util.PathExists(filePath)
     if ! status_exist {
         fmt.Println("[gcdel] statusfile not exist,filepath:",filePath)
-        res.Status = "333"
+        res.Status = "nofile"
         return res
     }
 
     value, err := ioutil.ReadFile(filePath)
     if err != nil{
         fmt.Println("[gcdel] read status file error:",err,"filepath:",filePath)
-        res.Status = "201"
+        res.Status = "fileRdErr"
         return res
     }
 
     err = proto.Unmarshal(value,&res)
     if err !=nil{
         fmt.Println("[gcdel] unmarshal statusfile to resp error:",err,"filepath:",filePath)
-        res.Status = "201"
+        res.Status = "fileUnmarshalErr"
     }
 
     return res

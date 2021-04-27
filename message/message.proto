@@ -251,6 +251,9 @@ message GcStatusReq{
 message GcStatusResp{
     string  taskId=1;
     string  status=2;
+    int32  total=3;
+    int32  fail=4;
+    repeated bytes errlist=5;
 }
 
 //MessageID:0x1b32
