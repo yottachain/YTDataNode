@@ -156,11 +156,12 @@ func (sn *storageNode) Service() {
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		if err := rcv.HandleMuilteTaskMsg(data); err == nil {
-			log.Println("[recover]success")
-		} else {
-			log.Println("[recover]error", err)
+		fl, flerr := os.OpenFile(path.Join(util.GetYTFSPath(), "rcpackage.data"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if flerr == nil {
+			fl.Write(data)
 		}
+		fl.Close()
+		err := rcv.HandleMuilteTaskMsg(data)
 
 		//记录上次数据
 		//go func() {
@@ -168,7 +169,7 @@ func (sn *storageNode) Service() {
 		//	defer fd.Close()
 		//	fd.Write(data)
 		//}()
-		return message.MsgIDVoidResponse.Bytes(), nil
+		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
