@@ -85,6 +85,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
             log.Println("[gcdel] GcHashProcess error:",err)
             res.Status = "gcerr"
             res.Fail++
+            res.Errlist = append(res.Errlist, ent)
             continue;
         }
     }
