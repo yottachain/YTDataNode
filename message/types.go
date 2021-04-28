@@ -44,6 +44,8 @@ const (
 	MsgIDGcResp                msgType = 0xe87b
 	MsgIDGcStatusReq           msgType = 0xe87e
 	MsgIDGcStatusResp          msgType = 0xe87f
+	MsgIDGcdelStatusfileReq    msgType = 0xe88e
+	MsgIDGcdelStatusfileResp   msgType = 0xe88f
 )
 
 type msgType int32

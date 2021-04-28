@@ -212,6 +212,24 @@ func (sn *storageNode) Service() {
 		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 	})
 
+	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.GcdelStatusfileReq
+		var res message.GcdelStatusfileResp
+		var resp []byte
+
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errdelreq"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
+		GcW := gc.GcWorker{sn}
+		res = GcW.GcDelStatusfile(msg)
+		resp, err = proto.Marshal(&res)
+		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+	})
+
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle(data)
 		if err != nil {
