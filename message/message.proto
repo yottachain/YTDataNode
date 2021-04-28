@@ -256,6 +256,17 @@ message GcStatusResp{
     repeated bytes errlist=5;
 }
 
+//MessageID:0xe88e
+message GcdelStatusfileReq{
+    string  taskId=1;
+}
+
+//MessageID:0xe88f
+message GcdelStatusfileResp{
+    string  taskId=1;
+    string  status=2;
+}
+
 //MessageID:0x1b32
 message DownloadYTFSFile{
     string name=1;

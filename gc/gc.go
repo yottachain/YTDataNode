@@ -83,11 +83,15 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         err = gc.GcHashProcess(ent)
         if err != nil{
             log.Println("[gcdel] GcHashProcess error:",err)
-            res.Status = "gcerr"
+            res.Status = "parterr"
             res.Fail++
             res.Errlist = append(res.Errlist, ent)
             continue;
         }
+    }
+
+    if res.Fail == res.Total{
+        res.Status = "allerr"
     }
 
     value,err := proto.Marshal(&res)
@@ -149,10 +153,29 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
         fmt.Println("[gcdel] unmarshal statusfile to resp error:",err,"filepath:",filePath)
         res.Status = "fileUnmarshalErr"
     }
+    return res
+}
 
-    err = os.Remove(filePath)
-    if err !=nil {
-        fmt.Println("[gcdel] delete status file error:",err)
+func (gc *GcWorker)GcDelStatusfile(msg message.GcdelStatusfileReq) (message.GcdelStatusfileResp){
+    var res message.GcdelStatusfileResp
+    res.TaskId = msg.TaskId
+    res.Status = "ok"
+
+    filePath := util.GetYTFSPath() + GcDir + msg.TaskId
+    log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
+
+    status_exist,_ := util.PathExists(filePath)
+    if ! status_exist {
+        fmt.Println("[gcdel] statusfile not exist,filepath:",filePath)
+        res.Status = "nofile"
+        return res
     }
+
+    err := os.Remove(filePath)
+    if err !=nil {
+       fmt.Println("[gcdel] delete status file error:",err)
+        res.Status = "delerr"
+    }
+
     return res
 }
