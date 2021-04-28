@@ -153,8 +153,7 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
         fmt.Println("[gcdel] unmarshal statusfile to resp error:",err,"filepath:",filePath)
         res.Status = "fileUnmarshalErr"
     }
-
-
+    return res
 }
 
 func (gc *GcWorker)GcDelStatusfile(msg message.GcdelStatusfileReq) (message.GcdelStatusfileResp){
