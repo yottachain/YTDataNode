@@ -156,11 +156,6 @@ func (sn *storageNode) Service() {
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		fl, flerr := os.OpenFile(path.Join(util.GetYTFSPath(), "rcpackage.data"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if flerr == nil {
-			fl.Write(data)
-		}
-		fl.Close()
 		err := rcv.HandleMuilteTaskMsg(data)
 
 		//记录上次数据

@@ -56,7 +56,7 @@ func (re *RecoverEngine) RecoverTst(td message.TaskDescription, lrch *LRCHandler
 		peer := td.Locations[index]
 		//log.Println("[recover] [prejudge] peer.NodeId=",peer.NodeId)
 		if !activeNodeList.HasNodeid(peer.NodeId) {
-			//fmt.Println("[recover] [prejudge] dn_not_exist  peer.NodeId=",peer.NodeId)
+			fmt.Println("[recover] [prejudge] dn_not_exist  peer.NodeId=", peer.NodeId)
 			lrch.si.ShardExist[index] = 0
 			continue
 		}

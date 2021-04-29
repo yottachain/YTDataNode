@@ -25,7 +25,6 @@ import (
 	"github.com/yottachain/YTFS/common"
 	lrcpkg "github.com/yottachain/YTLRC"
 	_ "net/http/pprof"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -432,12 +431,14 @@ func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash
 	return res.Data, nil
 }
 
+// TaskMsgResult 重建任务结果对象
 type TaskMsgResult struct {
-	ID          []byte
-	RES         int32
-	BPID        int32
-	ExpriedTime int64
-	SrcNodeID   int32
+	ID          []byte // 重建任务ID
+	RES         int32  // 重建任务结果 0：success 1：error
+	BPID        int32  // 需要回复的BP的ID
+	ExpriedTime int64  // 任务过期时间
+	SrcNodeID   int32  // 来源节点ID
+	ErrorMsg    error
 }
 
 // 多重建任务消息处理
@@ -453,9 +454,9 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		// 如果大于过期时间跳过
-		if time.Now().Unix() > mtdMsg.ExpiredTime {
-			continue
-		}
+		//if time.Now().Unix() > mtdMsg.ExpiredTime {
+		//	continue
+		//}
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
@@ -464,77 +465,32 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
 	return nil
 }
 
-func (re *RecoverEngine) processTask(ts *Task, pkgstart time.Time) {
-	msg := ts.Data
-	if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
-		res := re.execRCTask(msg[2:], ts.ExpriedTime)
-		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
-		re.PutReplyQueue(res)
-	} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
-		res := re.execLRCTask(msg[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
-		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
-		re.PutReplyQueue(res)
-	} else {
-		res := re.execCPTask(msg[2:], ts.ExpriedTime)
-		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
-		re.PutReplyQueue(res)
-	}
-}
+/**
+ * @Description: 分发不同类型的任务给不同执行器，目前只考虑LRC任务
+ * @receiver re
+ * @param ts 任务
+ * @param pkgstart 任务包开始时间
+ */
+func (re *RecoverEngine) descriptionTask(ts *Task, pkgstart time.Time) {
+	var msgID int16
+	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
+	var res *TaskMsgResult
 
-//func (re *RecoverEngine) Run() {
-//	startTsk := time.Now()
-//	go func() {
-//		for {
-//			ts := <-re.waitQueue
-//			if 0 == re.startTskTmCtl {
-//				startTsk = time.Now()
-//				log.Println("[recover] task_package start_time=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
-//				re.startTskTmCtl++
-//			}
-//
-//			if time.Now().Sub(startTsk).Seconds() > (1800 - 60) {
-//				if len(re.waitQueue) <= 0 {
-//					log.Println("[recover] task_package now_time_expired=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
-//					re.startTskTmCtl = 0
-//				}
-//				continue
-//			}
-//
-//			re.IncRbdTask()
-//			msg := ts.Data
-//			if bytes.Equal(msg[0:2], message.MsgIDTaskDescript.Bytes()) {
-//				res := re.execRCTask(msg[2:], ts.ExpriedTime)
-//				res.BPID = ts.SnID
-//				res.SrcNodeID = ts.SrcNodeID
-//				re.PutReplyQueue(res)
-//			} else if bytes.Equal(msg[0:2], message.MsgIDLRCTaskDescription.Bytes()) {
-//				log.Printf("[recover]LRC start\n")
-//				res := re.execLRCTask(msg[2:], ts.ExpriedTime, startTsk, ts.TaskLife)
-//				res.BPID = ts.SnID
-//				res.SrcNodeID = ts.SrcNodeID
-//				log.Println("[recover][report] res=", res.BPID, "reportTask=", re.rcvstat.reportTask, "rebuildTask=", re.rcvstat.rebuildTask)
-//				re.PutReplyQueue(res)
-//			} else {
-//				res := re.execCPTask(msg[2:], ts.ExpriedTime)
-//				res.BPID = ts.SnID
-//				res.SrcNodeID = ts.SrcNodeID
-//				re.PutReplyQueue(res)
-//			}
-//			if len(re.waitQueue) <= 0 {
-//				re.startTskTmCtl = 0
-//				log.Println("[recover] task_package now_time_que_empty=", time.Now().Unix(), "len=", len(re.waitQueue)+1)
-//				continue
-//			}
-//		}
-//	}()
-//
-//	for {
-//		re.MultiReply()
-//	}
-//}
+	switch int32(msgID) {
+	case message.MsgIDLRCTaskDescription.Value():
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
+		if res.ErrorMsg != nil {
+			log.Println("[recover] err")
+		}
+		res.BPID = ts.SnID
+		res.SrcNodeID = ts.SrcNodeID
+	case message.MsgIDTaskDescriptCP.Value():
+		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+	default:
+		log.Println("[recover] unknown msgID")
+	}
+	re.PutReplyQueue(res)
+}
 
 func (re *RecoverEngine) PutReplyQueue(res *TaskMsgResult) {
 	select {
@@ -674,65 +630,44 @@ func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg messa
 	}
 }
 
-func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart time.Time, tasklife int32) *TaskMsgResult {
-	var res TaskMsgResult
-	res.ExpriedTime = expried
-	var msg message.TaskDescription
-
-	if err := proto.Unmarshal(msgData, &msg); err != nil {
-		log.Printf("[recover]proto check error:%s", err)
-		res.RES = 1
-	}
-
-	res.ID = msg.Id
-	res.RES = 1
-	defer log.Printf("[recover]LRC recover shard end %d", BytesToInt64(msg.Id[0:8]))
-
+/**
+ * @Description: 用任务消息初始化LRC任务句柄
+ * @receiver re
+ * @param msg
+ * @return *LRCHandler
+ * @return error
+ */
+func (re *RecoverEngine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCHandler, error) {
 	lrc := &lrcpkg.Shardsinfo{}
-	lrcshd := &lrcpkg.Shardsinfo{}
 
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
 	lrc.RecoverNum = 13
 	lrc.Lostindex = uint16(msg.RecoverId)
 
-	lrcshd = lrc
-	//can, err := re.PreTstRecover(lrcshd, msg)
-	//if err != nil || !can {
-	//	re.IncFailLessShard()
-	//	if config.Gconfig.ElkReport {
-	//		//body := re.MakeJudgeElkReport(lrcshd, msg)
-	//		//go re.reportLog(body)
-	//	}
-	//	return &res
-	//}
+	return re.le.GetLRCHandler(lrc)
+}
 
-	re.IncPassJudge()
+/**
+ * @Description: 验证重建后的数据并保存
+ * @receiver re
+ * @param recoverData
+ * @param msg
+ * @param res
+ * @return *TaskMsgResult
+ */
+func (re *RecoverEngine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.TaskDescription, res *TaskMsgResult) error {
+	hashBytes := md5.Sum(recoverData)
+	hash := hashBytes[:]
 
-	lrc.ShardExist = lrcshd.ShardExist
-
-	h, err := re.le.GetLRCHandler(lrc)
-	if err != nil {
-		log.Printf("[recover]LRC get Handler failed %s", err)
-		return &res
-	}
-
-	log.Printf("[recover]lost idx %d: %s\n", lrc.Lostindex, base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId]))
-	recoverData, err := h.Recover(msg, pkgstart, tasklife)
-	if err != nil {
-		log.Printf("[recover]LRC recover shard failed %s", err)
-		re.IncFailRbd()
-		return &res
-	}
-
-	m5 := md5.New()
-	m5.Write(recoverData)
-	hash := m5.Sum(nil)
-	// 校验hash失败
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
-		exec.Command("rm -rf recover*").Output()
 		re.IncFailRbd()
-		log.Printf("[recover]fail shard saved %s recoverID %x hash %s\n", BytesToInt64(msg.Id[0:8]), msg.RecoverId, base58.Encode(msg.Hashs[msg.RecoverId]))
-		return &res
+
+		return fmt.Errorf(
+			"[recover]fail shard saved %s recoverID %x hash %s\n",
+			BytesToInt64(msg.Id[0:8]),
+			msg.RecoverId,
+			base58.Encode(msg.Hashs[msg.RecoverId]),
+		)
 	}
 
 	var key [common.HashLength]byte
@@ -740,19 +675,61 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expried int64, pkgstart tim
 
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		re.IncFailRbd()
-		log.Printf("[recover]LRC recover shard saved failed%s\n", err)
-		return &res
+		return fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
+	}
+	return nil
+}
+
+/**
+ * @Description: 执行lrc 重建任务
+ * @receiver re
+ * @param msgData 单个重建消息
+ * @param expried 过期时间
+ * @param pkgstart 任务包开始时间
+ * @param tasklife 任务存活周期
+ * @return *TaskMsgResult 任务执行结果
+ */
+func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
+	// @TODO 初始化返回
+	res = &TaskMsgResult{}
+	res.ExpriedTime = expired
+	res.RES = 1
+
+	// @TODO 解析任务消息
+	var msg message.TaskDescription
+	if res.ErrorMsg = proto.Unmarshal(msgData, &msg); res.ErrorMsg != nil {
+		return
+	}
+	res.ID = msg.Id
+
+	// @TODO 结束前打印日志
+	defer log.Printf("[recover]LRC recover shard end %d", BytesToInt64(msg.Id[0:8]))
+
+	// @TODO 初始化LRC句柄
+	h, err := re.initLRCHandlerByMsg(msg)
+	if err != nil {
+		res.ErrorMsg = err
+		return
 	}
 
-	if time.Now().Sub(pkgstart).Seconds() > float64(tasklife)-60 {
-		log.Println("[recover] rebuild time expired!")
-		return &res
+	// @TODO LRC恢复
+	recoverData, err := h.Recover(msg, pkgStart, taskLife)
+	if err != nil {
+		res.ErrorMsg = err
+		re.IncFailRbd()
+		return
 	}
 
-	re.IncSuccRbd()
-	log.Println("[recover] LRC shard recover success, spendtime=", time.Now().Sub(pkgstart).Seconds())
+	// @TODO 验证并保存数据
+	if res.ErrorMsg = re.verifyLRCRecoveredDataAndSave(recoverData, msg, res); res.ErrorMsg != nil {
+		return
+	}
+
+	log.Println("[recover] LRC shard recover success, spendtime=", time.Now().Sub(pkgStart).Seconds())
 	res.RES = 0
-	return &res
+	re.IncSuccRbd()
+
+	return
 }
 
 // 副本集任务
