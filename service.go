@@ -178,6 +178,13 @@ func (sn *storageNode) Service() {
 
 		GcW := gc.GcWorker{sn}
 		res.Dnid = sn.config.IndexID
+
+		if !config.Gconfig.GcOpen{
+			res.ErrCode = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		}
+
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.ErrCode = "errReq"
@@ -209,6 +216,12 @@ func (sn *storageNode) Service() {
 		var resp []byte
 
 		res.Dnid = sn.config.IndexID
+		if !config.Gconfig.GcOpen{
+			res.Status = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		}
+
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errstatusreq"
@@ -221,7 +234,7 @@ func (sn *storageNode) Service() {
 			res.Status = "errNodeid"
 			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 		}
 
 		GcW := gc.GcWorker{sn}
@@ -234,8 +247,14 @@ func (sn *storageNode) Service() {
 		var msg message.GcdelStatusfileReq
 		var res message.GcdelStatusfileResp
 		var resp []byte
-
 		res.Dnid = sn.config.IndexID
+
+		if !config.Gconfig.GcOpen{
+			res.Status = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errdelreq"
@@ -248,7 +267,7 @@ func (sn *storageNode) Service() {
 			res.Status = "errNodeid"
 			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 		}
 
 		GcW := gc.GcWorker{sn}
