@@ -43,6 +43,11 @@ func init(){
 }
 
 func SavetoFile(filepath string,value []byte) error{
+    status_exist,_ := util.PathExists(filepath)
+    if status_exist {
+        _ = os.Remove(filepath)
+    }
+
     err := ioutil.WriteFile(filepath, value,0666)
     if err != nil{
         fmt.Println("[gcdel] save value to file error",err,"filepath:",filepath)
@@ -75,7 +80,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         return
     }
 
-    res.Total = int32(len(msg.Gclist))
+    //res.Total = int32(len(msg.Gclist))
     fmt.Println("[gcdel][gclist] len_Gclist=",len(msg.Gclist))
 
     for _, ent := range msg.Gclist {
@@ -86,8 +91,8 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
             res.Status = "parterr"
             res.Fail++
             res.Errlist = append(res.Errlist, ent)
-            continue;
         }
+        res.Total++
     }
 
     if res.Fail == res.Total{
@@ -103,9 +108,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
     if err != nil{
         fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
     }
-
     return
-    //return res, err
 }
 
 func (gc *GcWorker)GcHashProcess(ent []byte) error{
