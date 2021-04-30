@@ -91,7 +91,6 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
             res.Status = "parterr"
             res.Fail++
             res.Errlist = append(res.Errlist, ent)
-            continue;
         }
         res.Total++
     }
@@ -109,9 +108,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
     if err != nil{
         fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
     }
-
     return
-    //return res, err
 }
 
 func (gc *GcWorker)GcHashProcess(ent []byte) error{
