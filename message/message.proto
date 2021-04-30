@@ -232,39 +232,45 @@ message SelfVerifyResp{
 //MessageID:0xe87a
 message GcReq{
     bytes delPubKey=1;
-    string  taskId=2;
-    repeated bytes Gclist=3;
+    uint32  dnid=2;
+    string  taskId=3;
+    repeated bytes Gclist=4;
 }
 
 //MessageID:0xe87b
 message GcResp{
     string  taskId=1;
-    string  ErrCode=2;
+    uint32  dnid=2;
+    string  ErrCode=3;
 }
 
 //MessageID:0xe87e
 message GcStatusReq{
     string  taskId=1;
+    uint32  dnid=2;
 }
 
 //MessageID:0xe87f
 message GcStatusResp{
     string  taskId=1;
-    string  status=2;
-    int32  total=3;
-    int32  fail=4;
-    repeated bytes errlist=5;
+    uint32  dnid=2;
+    string  status=3;
+    int32  total=4;
+    int32  fail=5;
+    repeated bytes errlist=6;
 }
 
 //MessageID:0xe88e
 message GcdelStatusfileReq{
     string  taskId=1;
+    uint32  dnid=2;
 }
 
 //MessageID:0xe88f
 message GcdelStatusfileResp{
     string  taskId=1;
-    string  status=2;
+    uint32  dnid=2;
+    string  status=3;
 }
 
 //MessageID:0x1b32

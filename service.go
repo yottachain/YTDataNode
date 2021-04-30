@@ -177,9 +177,18 @@ func (sn *storageNode) Service() {
 		var resp []byte
 
 		GcW := gc.GcWorker{sn}
+		res.Dnid = sn.config.IndexID
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.ErrCode = "errReq"
+			res.TaskId = "nil"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.ErrCode = "errNodeid"
 			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -199,11 +208,20 @@ func (sn *storageNode) Service() {
 		var res message.GcStatusResp
 		var resp []byte
 
+		res.Dnid = sn.config.IndexID
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errstatusreq"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errNodeid"
+			res.TaskId = "nil"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
 		GcW := gc.GcWorker{sn}
@@ -217,11 +235,20 @@ func (sn *storageNode) Service() {
 		var res message.GcdelStatusfileResp
 		var resp []byte
 
+		res.Dnid = sn.config.IndexID
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errdelreq"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errNodeid"
+			res.TaskId = "nil"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
 		GcW := gc.GcWorker{sn}
