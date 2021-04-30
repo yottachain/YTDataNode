@@ -16,7 +16,7 @@ var realConTask uint16 = 1
 
 func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time) {
 	re.IncConTask()
-	re.descriptionTask(task, pkgstart)
+	re.dispatchTask(task, pkgstart)
 	re.DecConTask()
 	RunningCount.Remove()
 }

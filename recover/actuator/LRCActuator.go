@@ -8,13 +8,55 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	lrc "github.com/yottachain/YTLRC"
 	"sync"
 	"time"
 )
+
+type shardsMap struct {
+	shards map[int16][]byte
+	mutex  sync.Mutex
+}
+
+func (s *shardsMap) Len() int {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return len(s.shards)
+}
+
+func (s *shardsMap) Set(key int16, data []byte) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.shards[key] = data
+}
+
+func (s *shardsMap) Get(key int16) (data []byte, ok bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	data, ok = s.shards[key]
+	return
+}
+
+func (s *shardsMap) GetMap() map[int16][]byte {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.shards
+}
+
+func (s shardsMap) Init() *shardsMap {
+	s.shards = make(map[int16][]byte)
+	return &s
+}
 
 /**
  * @Description: LRC执行器
@@ -23,7 +65,7 @@ type LRCTaskActuator struct {
 	downloader shardDownloader.ShardDownloader // 下载器
 	lrcHandler *lrc.Shardsinfo                 // lrc句柄
 	msg        message.TaskDescription         // 重建消息
-	shards     map[int16][]byte                // 重建所需分片
+	shards     *shardsMap                      // 重建所需分片
 }
 
 /**
@@ -31,13 +73,19 @@ type LRCTaskActuator struct {
  * @receiver L
  * @return error
  */
-func (L *LRCTaskActuator) initLRCHandler() error {
+func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l := &lrc.Shardsinfo{}
 
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
 	l.RecoverNum = 13
 	l.Lostindex = uint16(L.msg.RecoverId)
+	l.GetRCHandle(l)
+	l.SetHandleParam(l.Handle, uint8(L.msg.RecoverId), uint8(stage))
 	L.lrcHandler = l
+
+	log.Println("[recover]", "执行阶段", stage)
+
+	L.shards = shardsMap{}.Init()
 
 	return nil
 }
@@ -49,6 +97,7 @@ func (L *LRCTaskActuator) initLRCHandler() error {
  * @return error
  */
 func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
+
 	if L.lrcHandler == nil {
 		return nil, fmt.Errorf("lrc handler is nil")
 	}
@@ -56,8 +105,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	indexes := make([]int16, 0)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
-	if L.shards != nil {
-		for index, shard := range L.shards {
+	if L.shards.Len() > 0 {
+		for index, shard := range L.shards.GetMap() {
 			if shard == nil {
 				indexes = append(indexes, index)
 			}
@@ -95,7 +144,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		hash := L.msg.Hashs[shardIndex]
 		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash)
 		if err != nil {
-			return nil, fmt.Errorf("add download task fail")
+			return nil, fmt.Errorf("add download task fail %s", err.Error())
 		}
 
 		// @TODO 移步等待下载任务执行完成
@@ -106,7 +155,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			defer cancel()
 			shard, err := d.Get(ctx)
 			if err == nil {
-				L.shards[shardIndex] = shard
+				L.shards.Set(shardIndex, shard)
 			}
 		}(shardIndex)
 	}
@@ -120,8 +169,13 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
  * @return ok
  * @return lossShard 丢失分片
  */
-func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool, lossShard []int16) {
-	panic("impl it")
+func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
+	for _, v := range L.shards.GetMap() {
+		if v == nil {
+			return false
+		}
+	}
+	return true
 }
 
 /**
@@ -139,13 +193,13 @@ start:
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
-		downloadTask, err := L.addDownloadTask(time.Minute, needShardIndexes...)
+		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
 		if err != nil {
 			return err
 		}
 		downloadTask.Wait()
 
-		if ok, _ := L.checkNeedShardsExist(); !ok {
+		if ok := L.checkNeedShardsExist(); !ok {
 			// @TODO 如果检查分片不足跳回开头继续下载
 			goto start
 		}
@@ -161,10 +215,10 @@ start:
  * @return error
  */
 func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
-	for _, v := range L.shards {
-		_, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v)
-		if err != nil {
-			return nil, err
+	for _, v := range L.shards.GetMap() {
+		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v)
+		if err != nil || status != 0 {
+			return nil, fmt.Errorf("add shard error: %d %s", status, err.Error())
 		}
 	}
 
@@ -186,8 +240,24 @@ func (L *LRCTaskActuator) verifyLRCRecoveredData(recoverData []byte) error {
 	hash := hashBytes[:]
 
 	if !bytes.Equal(hash, L.msg.Hashs[L.msg.RecoverId]) {
-		return fmt.Errorf("recovered data hash verify fail")
+		return fmt.Errorf("recovered data hash verify fail %s %s", hex.EncodeToString(hash), hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]))
 	}
+	return nil
+}
+
+/**
+ * @Description: 解析任务消息
+ * @receiver L
+ * @param msgData
+ * @return error
+ */
+func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
+	var msg message.TaskDescription
+	err := proto.UnmarshalMerge(msgData, &msg)
+	if err != nil {
+		return err
+	}
+	L.msg = msg
 	return nil
 }
 
@@ -198,17 +268,20 @@ func (L *LRCTaskActuator) verifyLRCRecoveredData(recoverData []byte) error {
  * @param opts
  * @return err
  */
-func (L *LRCTaskActuator) ExecTask(msg message.TaskDescription, opts Options) (err error) {
-	L.msg = msg
+func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, err error) {
+	err = L.parseMsgData(msgData)
+	if err != nil {
+		return
+	}
 
 	// @TODO 初始化LRC句柄
-	err = L.initLRCHandler()
+	err = L.initLRCHandler(opts.Stage)
 	if err != nil {
 		return
 	}
 
 	// @TODO 下载分片
-	ctx, cancel := context.WithTimeout(context.Background(), time.Now().Sub(opts.Expired))
+	ctx, cancel := context.WithTimeout(context.Background(), opts.Expired.Sub(time.Now()))
 	defer cancel()
 	err = L.downloadLoop(ctx)
 	if err != nil {
@@ -226,5 +299,15 @@ func (L *LRCTaskActuator) ExecTask(msg message.TaskDescription, opts Options) (e
 		return
 	}
 
+	data = recoverData
+
 	return
+}
+
+func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {
+	return &LRCTaskActuator{
+		downloader: downloader,
+		lrcHandler: nil,
+		msg:        message.TaskDescription{},
+	}
 }

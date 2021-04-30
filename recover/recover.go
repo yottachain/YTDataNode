@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/recover/actuator"
+	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
@@ -38,27 +40,31 @@ const (
 )
 
 type RecoverEngine struct {
-	sn            node.StorageNode
-	waitQueue     *TaskWaitQueue
-	replyQueue    chan *TaskMsgResult
-	le            *LRCEngine
-	tstdata       [164]lrcpkg.Shard
-	rcvstat       RebuildCount
-	Upt           *TokenPool.TokenPool
-	startTskTmCtl uint8
-	ElkClient     *YTElkProducer.Client
+	sn                node.StorageNode
+	waitQueue         *TaskWaitQueue
+	replyQueue        chan *TaskMsgResult
+	le                *LRCEngine
+	tstdata           [164]lrcpkg.Shard
+	rcvstat           RebuildCount
+	Upt               *TokenPool.TokenPool
+	startTskTmCtl     uint8
+	ElkClient         *YTElkProducer.Client
+	DefaultDownloader shardDownloader.ShardDownloader
 }
 
 func New(sn node.StorageNode) (*RecoverEngine, error) {
+
 	var re = new(RecoverEngine)
 	re.waitQueue = NewTaskWaitQueue()
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
+	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 5)
 	re.le = NewLRCEngine(re.getShard, re.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
 	logtb := sn.Config().BPMd5()
 	tbstr := "dnlog-" + strings.ToLower(base58.Encode(logtb))
 	re.ElkClient = NewElkClient(tbstr)
+
 	return re, nil
 }
 
@@ -471,25 +477,29 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
  * @param ts 任务
  * @param pkgstart 任务包开始时间
  */
-func (re *RecoverEngine) descriptionTask(ts *Task, pkgstart time.Time) {
+func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
 	var msgID int16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
-		if res.ErrorMsg != nil {
-			log.Println("[recover] err")
-		}
-		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
+		go func() {
+			res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
+			if res.ErrorMsg != nil {
+				log.Println("[recover]", res.ErrorMsg)
+				res.RES = 1
+			}
+			res.BPID = ts.SnID
+			res.SrcNodeID = ts.SrcNodeID
+			re.PutReplyQueue(res)
+		}()
 	case message.MsgIDTaskDescriptCP.Value():
 		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
 	default:
 		log.Println("[recover] unknown msgID")
 	}
-	re.PutReplyQueue(res)
+
 }
 
 func (re *RecoverEngine) PutReplyQueue(res *TaskMsgResult) {
@@ -694,40 +704,55 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	res = &TaskMsgResult{}
 	res.ExpriedTime = expired
 	res.RES = 1
+	taskActuator := actuator.New(re.DefaultDownloader)
 
-	// @TODO 解析任务消息
-	var msg message.TaskDescription
-	if res.ErrorMsg = proto.Unmarshal(msgData, &msg); res.ErrorMsg != nil {
+	var recoverData []byte
+	// @TODO 执行恢复任务
+	for _, opts := range []actuator.Options{
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_BASE,
+		},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_ROW,
+		},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_COL,
+		},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_FULL,
+		},
+	} {
+
+		data, err := taskActuator.ExecTask(
+			msgData,
+			opts,
+		)
+		// @TODO 如果重建成功退出循环
+		if err == nil && data != nil {
+			recoverData = data
+			break
+		}
+	}
+
+	if recoverData == nil {
+		res.ErrorMsg = fmt.Errorf("all rebuild stage fail")
+		res.RES = 1
 		return
 	}
-	res.ID = msg.Id
 
-	// @TODO 结束前打印日志
-	defer log.Printf("[recover]LRC recover shard end %d", BytesToInt64(msg.Id[0:8]))
-
-	// @TODO 初始化LRC句柄
-	h, err := re.initLRCHandlerByMsg(msg)
-	if err != nil {
-		res.ErrorMsg = err
+	// @TODO 存储重建完成的分片
+	hashBytes := md5.Sum(recoverData)
+	hash := hashBytes[:]
+	var key [common.HashLength]byte
+	copy(key[:], hash)
+	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+		res.ErrorMsg = fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 		return
 	}
-
-	// @TODO LRC恢复
-	recoverData, err := h.Recover(msg, pkgStart, taskLife)
-	if err != nil {
-		res.ErrorMsg = err
-		re.IncFailRbd()
-		return
-	}
-
-	// @TODO 验证并保存数据
-	if res.ErrorMsg = re.verifyLRCRecoveredDataAndSave(recoverData, msg, res); res.ErrorMsg != nil {
-		return
-	}
-
-	log.Println("[recover] LRC shard recover success, spendtime=", time.Now().Sub(pkgStart).Seconds())
-	res.RES = 0
-	re.IncSuccRbd()
 
 	return
 }
