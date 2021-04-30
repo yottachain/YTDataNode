@@ -49,7 +49,8 @@ type Gcfg struct {
 	RXTestSleep           int
 	TXTestSleep           int
 	NodeListUpdateTime    int
-}
+	GcOpen                bool
+ }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
 	return reflect.DeepEqual(&g, &ng)
@@ -184,6 +185,7 @@ func NewGConfig() *GConfig {
 			NodeListUpdateTime:    10,
 			RXTestSleep:           100,
 			TXTestSleep:           100,
+			GcOpen:                true,
 		},
 		OnUpdate: nil,
 	}
