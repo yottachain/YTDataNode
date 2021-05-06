@@ -71,7 +71,14 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	if len(resBuf) < 3 {
 		return nil, fmt.Errorf("shard len <3")
 	}
-	return resBuf, nil
+
+	var resMsg message.DownloadShardResponse
+	err = proto.Unmarshal(resBuf[2:], &resMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return resMsg.Data, nil
 }
 
 /**
@@ -109,7 +116,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		atomic.AddInt32(&d.stat.Success, 1)
 
 		d.taskRes.Store(IDString, &shardChan)
-		shardChan <- resBuf[2:]
+		shardChan <- resBuf
 
 	}()
 

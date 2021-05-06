@@ -484,16 +484,14 @@ func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
-		go func() {
-			res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
-			if res.ErrorMsg != nil {
-				log.Println("[recover]", res.ErrorMsg)
-				res.RES = 1
-			}
-			res.BPID = ts.SnID
-			res.SrcNodeID = ts.SrcNodeID
-			re.PutReplyQueue(res)
-		}()
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
+		if res.ErrorMsg != nil {
+			log.Println("[recover]", res.ErrorMsg)
+			res.RES = 1
+		}
+		res.BPID = ts.SnID
+		res.SrcNodeID = ts.SrcNodeID
+		re.PutReplyQueue(res)
 	case message.MsgIDTaskDescriptCP.Value():
 		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
 	default:
@@ -709,10 +707,10 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	var recoverData []byte
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
-			Stage:   actuator.RECOVER_STAGE_BASE,
-		},
+		//actuator.Options{
+		//	Expired: time.Now().Add(time.Minute * 5),
+		//	Stage:   actuator.RECOVER_STAGE_BASE,
+		//},
 		actuator.Options{
 			Expired: time.Now().Add(time.Minute * 5),
 			Stage:   actuator.RECOVER_STAGE_ROW,
@@ -727,6 +725,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 		},
 	} {
 
+		startTime := time.Now()
 		data, err := taskActuator.ExecTask(
 			msgData,
 			opts,
@@ -736,6 +735,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 			recoverData = data
 			break
 		}
+		fmt.Printf("[recover] %d 阶段耗时 %f s 失败: %s\n", opts.Stage, time.Now().Sub(startTime).Seconds(), err.Error())
 	}
 
 	if recoverData == nil {

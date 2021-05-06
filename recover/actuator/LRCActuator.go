@@ -147,7 +147,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			return nil, fmt.Errorf("add download task fail %s", err.Error())
 		}
 
-		// @TODO 移步等待下载任务执行完成
+		// @TODO 异步等待下载任务执行完成
 		go func(index int16) {
 			defer wg.Done()
 
@@ -199,6 +199,9 @@ start:
 		}
 		downloadTask.Wait()
 
+		if L.shards.Len() < len(needShardIndexes) {
+			goto start
+		}
 		if ok := L.checkNeedShardsExist(); !ok {
 			// @TODO 如果检查分片不足跳回开头继续下载
 			goto start
@@ -217,8 +220,8 @@ start:
 func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	for _, v := range L.shards.GetMap() {
 		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v)
-		if err != nil || status != 0 {
-			return nil, fmt.Errorf("add shard error: %d %s", status, err.Error())
+		if err != nil || status < 1 {
+			return nil, fmt.Errorf("add shard error: %d %s", status, err)
 		}
 	}
 
