@@ -651,9 +651,9 @@ func (re *RecoverEngine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCH
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
 	lrc.RecoverNum = 13
 	lrc.Lostindex = uint16(msg.RecoverId)
-
 	return re.le.GetLRCHandler(lrc)
 }
+
 
 /**
  * @Description: 验证重建后的数据并保存

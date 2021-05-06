@@ -173,9 +173,25 @@ func (sn *storageNode) Service() {
 		var resp []byte
 
 		GcW := gc.GcWorker{sn}
+		res.Dnid = sn.config.IndexID
+
+		if !config.Gconfig.GcOpen{
+			res.ErrCode = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		}
+
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "100"
+			res.ErrCode = "errReq"
+			res.TaskId = "nil"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.ErrCode = "errNodeid"
 			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -184,7 +200,7 @@ func (sn *storageNode) Service() {
 		go GcW.GcHandle(msg)
 
 		res.TaskId = msg.TaskId
-		res.ErrCode = "000"
+		res.ErrCode = "succ"
 		resp, err = proto.Marshal(&res)
 
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -195,9 +211,24 @@ func (sn *storageNode) Service() {
 		var res message.GcStatusResp
 		var resp []byte
 
+		res.Dnid = sn.config.IndexID
+		if !config.Gconfig.GcOpen{
+			res.Status = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		}
+
 		if err := proto.Unmarshal(data, &msg); err != nil {
 			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "100"
+			res.Status = "errstatusreq"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errNodeid"
+			res.TaskId = "nil"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 		}
@@ -206,6 +237,39 @@ func (sn *storageNode) Service() {
 		res = GcW.GetGcStatus(msg)
 		resp, err = proto.Marshal(&res)
 		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.GcdelStatusfileReq
+		var res message.GcdelStatusfileResp
+		var resp []byte
+		res.Dnid = sn.config.IndexID
+
+		if !config.Gconfig.GcOpen{
+			res.Status = "errNotOpenGc"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errdelreq"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
+		if msg.Dnid != sn.config.IndexID{
+			log.Println("[gcdel] message.GcReq error:", err)
+			res.Status = "errNodeid"
+			res.TaskId = "nil"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		}
+
+		GcW := gc.GcWorker{sn}
+		res = GcW.GcDelStatusfile(msg)
+		resp, err = proto.Marshal(&res)
+		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
