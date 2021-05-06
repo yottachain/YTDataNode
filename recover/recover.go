@@ -545,9 +545,6 @@ func (re *RecoverEngine) MultiReply() error {
 			}
 		}
 	}()
-	if l := len(resmsg); l > 0 {
-		fmt.Println("[recover][report]  len(resmsg)=", len(resmsg))
-	}
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		if data, err := proto.Marshal(v); err != nil {
@@ -561,7 +558,6 @@ func (re *RecoverEngine) MultiReply() error {
 					log.Println("[recover][report]Send msg error: ", err)
 					break
 				}
-
 				resp, err := re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
 				if err == nil {
 					if len(resp) < 3 {
@@ -654,7 +650,6 @@ func (re *RecoverEngine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCH
 	return re.le.GetLRCHandler(lrc)
 }
 
-
 /**
  * @Description: 验证重建后的数据并保存
  * @receiver re
@@ -726,10 +721,11 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	} {
 
 		startTime := time.Now()
-		data, err := taskActuator.ExecTask(
+		data, resID, err := taskActuator.ExecTask(
 			msgData,
 			opts,
 		)
+		res.ID = resID
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data

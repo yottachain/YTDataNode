@@ -271,7 +271,7 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
  * @param opts
  * @return err
  */
-func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, err error) {
+func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, msgID []byte, err error) {
 	err = L.parseMsgData(msgData)
 	if err != nil {
 		return
@@ -303,6 +303,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, e
 	}
 
 	data = recoverData
+	msgID = L.msg.Id
 
 	return
 }
