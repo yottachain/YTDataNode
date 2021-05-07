@@ -117,7 +117,6 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 
 		d.taskRes.Store(IDString, &shardChan)
 		shardChan <- resBuf
-
 	}()
 
 	return &downloadWait{shardChan: &shardChan}, nil

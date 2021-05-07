@@ -751,6 +751,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	}
 
 	res.RES = 0
+	log.Println("恢复成功")
 	return
 }
 

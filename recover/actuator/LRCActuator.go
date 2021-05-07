@@ -19,8 +19,13 @@ import (
 	"time"
 )
 
+type Shard struct {
+	Index int16
+	Data  []byte
+}
+
 type shardsMap struct {
-	shards map[int16][]byte
+	shards map[string]*Shard
 	mutex  sync.Mutex
 }
 
@@ -31,14 +36,14 @@ func (s *shardsMap) Len() int {
 	return len(s.shards)
 }
 
-func (s *shardsMap) Set(key int16, data []byte) {
+func (s *shardsMap) Set(key string, data *Shard) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.shards[key] = data
 }
 
-func (s *shardsMap) Get(key int16) (data []byte, ok bool) {
+func (s *shardsMap) Get(key string) (data *Shard, ok bool) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -46,7 +51,7 @@ func (s *shardsMap) Get(key int16) (data []byte, ok bool) {
 	return
 }
 
-func (s *shardsMap) GetMap() map[int16][]byte {
+func (s *shardsMap) GetMap() map[string]*Shard {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -54,7 +59,7 @@ func (s *shardsMap) GetMap() map[int16][]byte {
 }
 
 func (s shardsMap) Init() *shardsMap {
-	s.shards = make(map[int16][]byte)
+	s.shards = make(map[string]*Shard)
 	return &s
 }
 
@@ -106,9 +111,9 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
-		for index, shard := range L.shards.GetMap() {
+		for _, shard := range L.shards.GetMap() {
 			if shard == nil {
-				indexes = append(indexes, index)
+				indexes = append(indexes, shard.Index)
 			}
 		}
 		return indexes, nil
@@ -148,16 +153,19 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		}
 
 		// @TODO 异步等待下载任务执行完成
-		go func(index int16) {
+		go func(key []byte, d shardDownloader.DownloaderWait, index int16) {
 			defer wg.Done()
 
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
 			shard, err := d.Get(ctx)
 			if err == nil {
-				L.shards.Set(shardIndex, shard)
+				L.shards.Set(hex.EncodeToString(key), &Shard{
+					Index: shardIndex,
+					Data:  shard,
+				})
 			}
-		}(shardIndex)
+		}(hash, d, shardIndex)
 	}
 
 	return wg, nil
@@ -218,9 +226,11 @@ start:
  * @return error
  */
 func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
+	var status int16
+
 	for _, v := range L.shards.GetMap() {
-		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v)
-		if err != nil || status < 1 {
+		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
+		if err != nil || status < 0 {
 			return nil, fmt.Errorf("add shard error: %d %s", status, err)
 		}
 	}
@@ -230,6 +240,30 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		return nil, fmt.Errorf("recover data fail,status: %d", status)
 	}
 	return data, nil
+
+	//if status > 0 {
+	//	data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
+	//	if data == nil {
+	//		return nil, fmt.Errorf("recover data fail,status: %d", status)
+	//	}
+	//	return data, nil
+	//
+	//} else {
+	//	buf := bytes.NewBuffer([]byte{})
+	//	for _, v := range L.shards.GetMap() {
+	//		hash := md5.Sum(v.Data)
+	//		fmt.Fprintln(
+	//			buf,
+	//			"恢复失败 已添加",
+	//			fmt.Sprintf(" %d 分片hash %s 原 hash %s",
+	//				v.Index,
+	//				hex.EncodeToString(hash[:]),
+	//				hex.EncodeToString(L.msg.Hashs[v.Index]),
+	//			))
+	//	}
+	//	log.Println(buf.String())
+	//	return nil, fmt.Errorf("恢复失败 %d", status)
+	//}
 }
 
 /**
@@ -304,7 +338,6 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	}
 
 	data = recoverData
-
 	return
 }
 
