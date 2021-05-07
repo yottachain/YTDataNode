@@ -39,8 +39,16 @@ func handLogConn(conn *net.TCPConn) {
 	log.SetOutput(io.MultiWriter(conn, FileLogger))
 }
 
-var Println = log.Println
-var Printf = log.Printf
-var Fatalln = log.Fatalln
-var Fatalf = log.Fatalf
+var Println = func(args ...interface{}) {
+	go log.Println(args...)
+}
+var Printf = func(fmtStr string, args ...interface{}) {
+	go log.Printf(fmtStr, args...)
+}
+var Fatalln = func(args ...interface{}) {
+	go log.Fatalln(args...)
+}
+var Fatalf = func(fmtStr string, args ...interface{}) {
+	go log.Fatalf(fmtStr, args...)
+}
 var Fatal = log.Fatal
