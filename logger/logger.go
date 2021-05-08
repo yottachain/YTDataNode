@@ -1,21 +1,23 @@
 package log
 
 import (
+	"fmt"
 	"github.com/natefinch/lumberjack"
 	"github.com/yottachain/YTDataNode/util"
 	"io"
 	"log"
 	"net"
 	"path"
+	"time"
 )
 
-var FileLogger = &lumberjack.Logger{
+var FileLogger = newSyncWriter(&lumberjack.Logger{
 	Filename:   path.Join(util.GetYTFSPath(), "output.log"),
 	MaxSize:    128,
 	Compress:   false,
 	MaxAge:     7,
-	MaxBackups: 5,
-}
+	MaxBackups: 1,
+})
 
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
@@ -39,8 +41,43 @@ func handLogConn(conn *net.TCPConn) {
 	log.SetOutput(io.MultiWriter(conn, FileLogger))
 }
 
-var Println = log.Println
-var Printf = log.Printf
-var Fatalln = log.Fatalln
-var Fatalf = log.Fatalf
+type syncWriter struct {
+	dist io.Writer
+	q    chan struct{}
+}
+
+func (s syncWriter) Write(p []byte) (n int, err error) {
+	defer func() {
+		select {
+		case <-s.q:
+		default:
+		}
+	}()
+
+	select {
+	case s.q <- struct{}{}:
+		return s.dist.Write(p)
+	case <-time.After(time.Second):
+		return 0, fmt.Errorf("time out")
+	}
+}
+func newSyncWriter(dist io.Writer) *syncWriter {
+	return &syncWriter{
+		dist,
+		make(chan struct{}, 1),
+	}
+}
+
+var Println = func(v ...interface{}) {
+	go log.Println(v...)
+}
+var Printf = func(str string, v ...interface{}) {
+	go log.Printf(str, v...)
+}
+var Fatalln = func(v ...interface{}) {
+	go log.Fatalln(v...)
+}
+var Fatalf = func(str string, v ...interface{}) {
+	go log.Fatalf(str, v...)
+}
 var Fatal = log.Fatal
