@@ -15,6 +15,7 @@ import (
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
+	"sync/atomic"
 
 	//"github.com/docker/docker/pkg/locker"
 	"github.com/gogo/protobuf/proto"
@@ -58,7 +59,7 @@ func New(sn node.StorageNode) (*RecoverEngine, error) {
 	re.waitQueue = NewTaskWaitQueue()
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
-	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 5)
+	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 20)
 	re.le = NewLRCEngine(re.getShard, re.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
 	logtb := sn.Config().BPMd5()
@@ -484,6 +485,7 @@ func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
+		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
 		if res.ErrorMsg != nil {
 			log.Println("[recover]", res.ErrorMsg)
@@ -491,6 +493,11 @@ func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
 		}
 		res.BPID = ts.SnID
 		res.SrcNodeID = ts.SrcNodeID
+
+		if res.RES != 0 {
+			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
+		}
+
 		re.PutReplyQueue(res)
 	case message.MsgIDTaskDescriptCP.Value():
 		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
@@ -693,19 +700,21 @@ func (re *RecoverEngine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg m
  * @return *TaskMsgResult 任务执行结果
  */
 func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
+
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
 	res.ExpriedTime = expired
 	res.RES = 1
 	taskActuator := actuator.New(re.DefaultDownloader)
+	defer taskActuator.Free()
 
 	var recoverData []byte
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-		//actuator.Options{
-		//	Expired: time.Now().Add(time.Minute * 5),
-		//	Stage:   actuator.RECOVER_STAGE_BASE,
-		//},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_BASE,
+		},
 		actuator.Options{
 			Expired: time.Now().Add(time.Minute * 5),
 			Stage:   actuator.RECOVER_STAGE_ROW,
@@ -719,7 +728,6 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
-
 		startTime := time.Now()
 		data, resID, err := taskActuator.ExecTask(
 			msgData,
@@ -729,6 +737,18 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
+
+			switch opts.Stage {
+			case 0:
+				atomic.AddUint64(&statistics.DefaultStatusCount.Success0, 1)
+			case 1:
+				atomic.AddUint64(&statistics.DefaultStatusCount.Success1, 1)
+			case 2:
+				atomic.AddUint64(&statistics.DefaultStatusCount.Success2, 1)
+			case 3:
+				atomic.AddUint64(&statistics.DefaultStatusCount.Success3, 1)
+			}
+
 			break
 		}
 		fmt.Printf("[recover] %d 阶段耗时 %f s 失败: %s\n", opts.Stage, time.Now().Sub(startTime).Seconds(), err.Error())

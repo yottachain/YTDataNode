@@ -153,7 +153,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		}
 
 		// @TODO 异步等待下载任务执行完成
-		go func(key []byte, d shardDownloader.DownloaderWait, index int16) {
+		func(key []byte, d shardDownloader.DownloaderWait, index int16) {
 			defer wg.Done()
 
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
@@ -165,6 +165,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 					Data:  shard,
 				})
 			}
+
 		}(hash, d, shardIndex)
 	}
 
@@ -339,6 +340,11 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 
 	data = recoverData
 	return
+}
+
+func (L *LRCTaskActuator) Free() {
+	L.lrcHandler.FreeHandle()
+	L.lrcHandler.FreeRecoverData()
 }
 
 func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {

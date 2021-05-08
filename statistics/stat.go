@@ -140,43 +140,4 @@ func InitDefaultStat() {
 	DefaultStat.ReportTime = time.Now()
 	DefaultStat.RXTest = new(RateCounter)
 	DefaultStat.TXTest = new(RateCounter)
-
-	//go func() {
-	//	fl, err := os.OpenFile(".stat", os.O_CREATE|os.O_RDONLY, 0644)
-	//	if err != nil {
-	//		log.Println("[stat]", err.Error())
-	//		return
-	//	}
-	//
-	//	buf, err := ioutil.ReadAll(fl)
-	//	if err != nil {
-	//		log.Println("[stat]", err.Error())
-	//		return
-	//	}
-	//	fl.Close()
-	//
-	//	if len(buf) > 0 {
-	//		var ns Stat
-	//		if err := json.Unmarshal(buf, &ns); err != nil {
-	//			log.Println("[stat]", err.Error())
-	//			return
-	//		}
-	//		DefaultStat = ns
-	//	}
-	//}()
-	//
-	//go func() {
-	//	for {
-	//		<-time.After(time.Second)
-	//		fl2, err := os.OpenFile(".stat", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
-	//		buf := DefaultStat.JsonEncode()
-	//		if err != nil || buf == nil {
-	//			log.Println("[stat] write", err.Error())
-	//		} else {
-	//			fl2.Write(buf)
-	//		}
-	//
-	//		fl2.Close()
-	//	}
-	//}()
 }
