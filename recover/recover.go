@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
@@ -711,22 +712,19 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	var recoverData []byte
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
-			Stage:   actuator.RECOVER_STAGE_BASE,
-		},
+
 		actuator.Options{
 			Expired: time.Now().Add(time.Minute * 5),
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
-		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
-			Stage:   actuator.RECOVER_STAGE_COL,
-		},
-		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
-			Stage:   actuator.RECOVER_STAGE_FULL,
-		},
+		//actuator.Options{
+		//	Expired: time.Now().Add(time.Minute * 5),
+		//	Stage:   actuator.RECOVER_STAGE_COL,
+		//},
+		//actuator.Options{
+		//	Expired: time.Now().Add(time.Minute * 5),
+		//	Stage:   actuator.RECOVER_STAGE_FULL,
+		//},
 	} {
 		startTime := time.Now()
 		data, resID, err := taskActuator.ExecTask(
@@ -751,7 +749,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 
 			break
 		}
-		fmt.Printf("[recover] %d 阶段耗时 %f s 失败: %s\n", opts.Stage, time.Now().Sub(startTime).Seconds(), err.Error())
+		fmt.Printf("[recover] 任务 %s %d 阶段耗时 %f s 失败: %s\n", hex.EncodeToString(res.ID), opts.Stage, time.Now().Sub(startTime).Seconds(), err.Error())
 	}
 
 	if recoverData == nil {

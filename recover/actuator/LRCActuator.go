@@ -71,6 +71,7 @@ type LRCTaskActuator struct {
 	lrcHandler *lrc.Shardsinfo                 // lrc句柄
 	msg        message.TaskDescription         // 重建消息
 	shards     *shardsMap                      // 重建所需分片
+	opts       Options
 }
 
 /**
@@ -85,7 +86,6 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.RecoverNum = 13
 	l.Lostindex = uint16(L.msg.RecoverId)
 	l.GetRCHandle(l)
-	l.SetHandleParam(l.Handle, uint8(L.msg.RecoverId), uint8(stage))
 	L.lrcHandler = l
 
 	log.Println("[recover]", "执行阶段", stage)
@@ -102,6 +102,7 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
  * @return error
  */
 func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
+	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
 
 	if L.lrcHandler == nil {
 		return nil, fmt.Errorf("lrc handler is nil")
@@ -109,7 +110,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	indexes := make([]int16, 0)
 
-	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
+	//// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
 		for _, shard := range L.shards.GetMap() {
 			if shard == nil {
@@ -158,13 +159,11 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
-			shard, err := d.Get(ctx)
-			if err == nil {
-				L.shards.Set(hex.EncodeToString(key), &Shard{
-					Index: shardIndex,
-					Data:  shard,
-				})
-			}
+			shard, _ := d.Get(ctx)
+			L.shards.Set(hex.EncodeToString(key), &Shard{
+				Index: shardIndex,
+				Data:  shard,
+			})
 
 		}(hash, d, shardIndex)
 	}
@@ -202,6 +201,7 @@ start:
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
+		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id))
 		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
 		if err != nil {
 			return err
@@ -227,44 +227,38 @@ start:
  * @return error
  */
 func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
-	var status int16
-
+	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
 	for _, v := range L.shards.GetMap() {
-		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
-		if err != nil || status < 0 {
-			return nil, fmt.Errorf("add shard error: %d %s", status, err)
+		status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
+		_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+		fmt.Println("add shard", stage, v.Index, "status", status, "任务", hex.EncodeToString(L.msg.Id))
+		if status > 0 {
+			data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
+			if data == nil {
+				return nil, fmt.Errorf("recover data fail,status: %d", status)
+			}
+			return data, nil
+		} else if status < 0 {
+			hash := md5.Sum(v.Data)
+			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash", hex.EncodeToString(hash[:]))
 		}
 	}
 
-	data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
-	if data == nil {
-		return nil, fmt.Errorf("recover data fail,status: %d", status)
+	buf := bytes.NewBuffer([]byte{})
+	for _, v := range L.shards.GetMap() {
+		hash := md5.Sum(v.Data)
+		fmt.Fprintln(
+			buf,
+			"恢复失败 已添加",
+			fmt.Sprintf(" %d 分片hash %s 原 hash %s 任务 %s",
+				v.Index,
+				hex.EncodeToString(hash[:]),
+				hex.EncodeToString(L.msg.Hashs[v.Index]),
+				hex.EncodeToString(L.msg.Id),
+			))
 	}
-	return data, nil
-
-	//if status > 0 {
-	//	data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
-	//	if data == nil {
-	//		return nil, fmt.Errorf("recover data fail,status: %d", status)
-	//	}
-	//	return data, nil
-	//
-	//} else {
-	//	buf := bytes.NewBuffer([]byte{})
-	//	for _, v := range L.shards.GetMap() {
-	//		hash := md5.Sum(v.Data)
-	//		fmt.Fprintln(
-	//			buf,
-	//			"恢复失败 已添加",
-	//			fmt.Sprintf(" %d 分片hash %s 原 hash %s",
-	//				v.Index,
-	//				hex.EncodeToString(hash[:]),
-	//				hex.EncodeToString(L.msg.Hashs[v.Index]),
-	//			))
-	//	}
-	//	log.Println(buf.String())
-	//	return nil, fmt.Errorf("恢复失败 %d", status)
-	//}
+	log.Println(buf.String())
+	return nil, fmt.Errorf("缺少分片")
 }
 
 /**
@@ -307,6 +301,7 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
  * @return err
  */
 func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, msgID []byte, err error) {
+	L.opts = opts
 	err = L.parseMsgData(msgData)
 	msgID = L.msg.Id
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTHost/clientStore"
 	"sync"
@@ -64,8 +65,9 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 		return nil, err
 	}
 
-	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	resBuf, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
+		log.Println("下载失败", err)
 		return nil, err
 	}
 	if len(resBuf) < 3 {
@@ -75,6 +77,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	var resMsg message.DownloadShardResponse
 	err = proto.Unmarshal(resBuf[2:], &resMsg)
 	if err != nil {
+		log.Println("下载失败", err)
 		return nil, err
 	}
 
