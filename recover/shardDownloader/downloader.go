@@ -65,7 +65,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 		return nil, err
 	}
 
-	resBuf, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
 		log.Println("下载失败", err)
 		return nil, err

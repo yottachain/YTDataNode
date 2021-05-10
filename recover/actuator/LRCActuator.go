@@ -113,7 +113,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	//// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
 		for _, shard := range L.shards.GetMap() {
-			if shard == nil {
+			if shard.Data == nil {
 				indexes = append(indexes, shard.Index)
 			}
 		}
@@ -179,7 +179,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
  */
 func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
 	for _, v := range L.shards.GetMap() {
-		if v == nil {
+		if v.Data == nil {
 			return false
 		}
 	}
@@ -193,15 +193,20 @@ func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
  * @return error
  */
 func (L *LRCTaskActuator) downloadLoop(ctx context.Context) error {
+	var errCount uint64
 
 start:
+	if errCount > 30 {
+		return nil
+	}
+	errCount++
 
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
-		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id))
+		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
 		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
 		if err != nil {
 			return err
@@ -240,7 +245,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
-			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash", hex.EncodeToString(hash[:]))
+			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash", hex.EncodeToString(hash[:]), v.Data)
 		}
 	}
 
