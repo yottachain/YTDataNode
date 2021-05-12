@@ -124,6 +124,10 @@ func (wh *WriteHandler) Run() {
 	}()
 }
 
+func (wh *WriteHandler) GetMaxSpace() uint64 {
+	return wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) - 10
+}
+
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
 	var GTMsg message.NodeCapacityRequest
 	var xtp *TokenPool.TokenPool = TokenPool.Utp()
@@ -165,8 +169,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	//	fmt.Println("[get token] error:", err.Error())
 	//}
 
-	//如果 剩余空间不足10个分片停止发放token
-	if wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len() + 10) {
+	// 如果 剩余空间不足10个分片停止发放token
+	if wh.GetMaxSpace() <= (wh.YTFS().Len()) {
 		tk = nil
 		err = fmt.Errorf("YTFS： space is not enough")
 	}

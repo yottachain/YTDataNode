@@ -111,11 +111,14 @@ func (sn *storageNode) Service() {
 		}
 		return res, nil
 	})
-	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		statistics.AddCounnectCount(head.RemotePeerID)
-		defer statistics.SubCounnectCount(head.RemotePeerID)
-		return wh.Handle(data, head), nil
-	})
+	// 如果进程没有被禁止写入注册上传处理器
+	if sn.Config().DisableWrite == false {
+		_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+			statistics.AddCounnectCount(head.RemotePeerID)
+			defer statistics.SubCounnectCount(head.RemotePeerID)
+			return wh.Handle(data, head), nil
+		})
+	}
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
 		log.Printf("[download] get shard request from %s\n request buf %s\n", head.RemotePeerID.Pretty(), hex.EncodeToString(data))
@@ -175,7 +178,7 @@ func (sn *storageNode) Service() {
 		GcW := gc.GcWorker{sn}
 		res.Dnid = sn.config.IndexID
 
-		if !config.Gconfig.GcOpen{
+		if !config.Gconfig.GcOpen {
 			res.ErrCode = "errNotOpenGc"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
@@ -189,7 +192,7 @@ func (sn *storageNode) Service() {
 			return append(message.MsgIDGcResp.Bytes(), resp...), err
 		}
 
-		if msg.Dnid != sn.config.IndexID{
+		if msg.Dnid != sn.config.IndexID {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.ErrCode = "errNodeid"
 			res.TaskId = "nil"
@@ -212,7 +215,7 @@ func (sn *storageNode) Service() {
 		var resp []byte
 
 		res.Dnid = sn.config.IndexID
-		if !config.Gconfig.GcOpen{
+		if !config.Gconfig.GcOpen {
 			res.Status = "errNotOpenGc"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
@@ -225,7 +228,7 @@ func (sn *storageNode) Service() {
 			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 		}
 
-		if msg.Dnid != sn.config.IndexID{
+		if msg.Dnid != sn.config.IndexID {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errNodeid"
 			res.TaskId = "nil"
@@ -245,7 +248,7 @@ func (sn *storageNode) Service() {
 		var resp []byte
 		res.Dnid = sn.config.IndexID
 
-		if !config.Gconfig.GcOpen{
+		if !config.Gconfig.GcOpen {
 			res.Status = "errNotOpenGc"
 			resp, err := proto.Marshal(&res)
 			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
@@ -258,7 +261,7 @@ func (sn *storageNode) Service() {
 			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 		}
 
-		if msg.Dnid != sn.config.IndexID{
+		if msg.Dnid != sn.config.IndexID {
 			log.Println("[gcdel] message.GcReq error:", err)
 			res.Status = "errNodeid"
 			res.TaskId = "nil"
