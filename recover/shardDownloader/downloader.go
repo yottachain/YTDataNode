@@ -11,6 +11,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
 	"sync"
 	"sync/atomic"
@@ -58,8 +59,14 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 		return nil, err
 	}
 
+	tkString, err := d.GetToken(ctx, clt)
+	if err != nil {
+		return nil, err
+	}
+
 	var msg message.DownloadShardRequest
 	msg.VHF = shardID
+	msg.AllocId = tkString
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		return nil, err
@@ -82,6 +89,27 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	}
 
 	return resMsg.Data, nil
+}
+
+func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (string, error) {
+	var getTokenRequestMsg message.NodeCapacityRequest
+	getTokenRequestMsg.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
+	buf, err := proto.Marshal(&getTokenRequestMsg)
+	if err != nil {
+		return "", err
+	}
+	resBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), buf)
+	if err != nil {
+		return "", err
+	}
+
+	var resMsg message.NodeCapacityResponse
+	err = proto.Unmarshal(resBuf[2:], &resMsg)
+	if err != nil {
+		return "", err
+	}
+
+	return resMsg.AllocId, nil
 }
 
 /**
@@ -107,7 +135,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 			<-d.q
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
