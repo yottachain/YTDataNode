@@ -714,15 +714,15 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	for _, opts := range []actuator.Options{
 
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
+			Expired: time.Now().Add(time.Minute * 20),
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
+			Expired: time.Now().Add(time.Minute * 20),
 			Stage:   actuator.RECOVER_STAGE_COL,
 		},
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
+			Expired: time.Now().Add(time.Minute * 20),
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
