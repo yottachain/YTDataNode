@@ -717,14 +717,14 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 			Expired: time.Now().Add(time.Minute * 5),
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
-		//actuator.Options{
-		//	Expired: time.Now().Add(time.Minute * 5),
-		//	Stage:   actuator.RECOVER_STAGE_COL,
-		//},
-		//actuator.Options{
-		//	Expired: time.Now().Add(time.Minute * 5),
-		//	Stage:   actuator.RECOVER_STAGE_FULL,
-		//},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_COL,
+		},
+		actuator.Options{
+			Expired: time.Now().Add(time.Minute * 5),
+			Stage:   actuator.RECOVER_STAGE_FULL,
+		},
 	} {
 		startTime := time.Now()
 		data, resID, err := taskActuator.ExecTask(
