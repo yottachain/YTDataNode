@@ -62,7 +62,8 @@ type Config struct {
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
 	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
-	bpListMd5 []byte
+	bpListMd5    []byte
+	DisableWrite bool
 }
 
 // DefaultYTFSOptions default config

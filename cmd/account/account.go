@@ -8,6 +8,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/transaction"
 	"os"
+	"strconv"
+	"strings"
 )
 
 //var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
@@ -475,6 +477,45 @@ func getDepInfo() {
 		fmt.Println("____________________________________")
 		fmt.Println("")
 	}
+}
+
+func GetDepSpaceApi() (int64, error) {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hdddeposit12",
+		Scope:      "hdddeposit12",
+		Table:      "miner2dep",
+		LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+		UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+		Index:      "1",
+		Limit:      1,
+		JSON:       true,
+		KeyType:    "int64",
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var res []struct {
+		AccountName string `json:"account_name"`
+		Deposit     string `json:"deposit"`
+	}
+	err = json.Unmarshal(out.Rows, &res)
+	if err != nil {
+		return 0, err
+	}
+
+	var depNum int64
+	for _, v := range res {
+		depNumStr := strings.ReplaceAll(v.Deposit, "YTA", "")
+		depNumStr = strings.ReplaceAll(depNumStr, "yta", "")
+
+		i, err := strconv.ParseInt(depNumStr, 10, 64)
+		if err == nil {
+			depNum += i
+		}
+	}
+
+	return depNum, nil
 }
 
 func init() {
