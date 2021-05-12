@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
@@ -226,6 +227,51 @@ start:
 }
 
 /**
+ * @Description: 预判重建能否成功
+ * @receiver L
+ * @return ok
+ */
+func (L *LRCTaskActuator) preJudge() (ok bool) {
+	defer func() {
+		if !ok {
+			log.Println("预判失败 阶段", L.opts.Stage, "任务", hex.EncodeToString(L.msg.Id))
+		}
+	}()
+
+	indexes, err := L.getNeedShardList()
+	if err != nil {
+		return false
+	}
+
+	var onLineShardIndexes = make([]int16, 0)
+	for _, index := range indexes {
+		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); ok {
+			onLineShardIndexes = append(onLineShardIndexes, index)
+		} else {
+			// 如果是行列校验，所需分片必须都在线
+			if L.opts.Stage < 3 {
+				return false
+			}
+		}
+	}
+
+	// 如果是全局校验填充假数据，尝试校验
+	if L.opts.Stage >= 3 {
+		for _, index := range onLineShardIndexes {
+			// 填充假数据
+			L.lrcHandler.ShardExist[index] = 1
+
+			if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, L.opts.TestData[index][:]); status > 0 {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
+/**
  * @Description: 恢复数据
  * @receiver L
  * @return []byte
@@ -316,6 +362,11 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	// @TODO 初始化LRC句柄
 	err = L.initLRCHandler(opts.Stage)
 	if err != nil {
+		return
+	}
+
+	// 预判
+	if ok := L.preJudge(); !ok {
 		return
 	}
 

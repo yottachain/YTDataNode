@@ -710,20 +710,21 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	defer taskActuator.Free()
 
 	var recoverData []byte
+	expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 20),
+			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 20),
+			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_COL,
 		},
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 20),
-			Stage:   actuator.RECOVER_STAGE_FULL,
+			Expired:  expiredTime,
+			Stage:    actuator.RECOVER_STAGE_FULL,
+			TestData: re.tstdata,
 		},
 	} {
 		startTime := time.Now()
