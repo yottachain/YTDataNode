@@ -232,11 +232,6 @@ start:
  * @return ok
  */
 func (L *LRCTaskActuator) preJudge() (ok bool) {
-	defer func() {
-		if !ok {
-			log.Println("预判失败 阶段", L.opts.Stage, "任务", hex.EncodeToString(L.msg.Id))
-		}
-	}()
 
 	indexes, err := L.getNeedShardList()
 	if err != nil {
@@ -367,11 +362,12 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 
 	// 预判
 	if ok := L.preJudge(); !ok {
+		err = fmt.Errorf("预判失败 阶段 %d任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
 		return
 	}
 
 	// @TODO 下载分片
-	ctx, cancel := context.WithTimeout(context.Background(), opts.Expired.Sub(time.Now()))
+	ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
 	defer cancel()
 	err = L.downloadLoop(ctx)
 	if err != nil {
