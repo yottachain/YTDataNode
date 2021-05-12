@@ -135,7 +135,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 			<-d.q
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
