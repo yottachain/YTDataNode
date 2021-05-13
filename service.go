@@ -11,7 +11,7 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
+	"github.com/yottachain/YTDataNode/verifySlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"log"
