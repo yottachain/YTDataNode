@@ -479,7 +479,32 @@ func getDepInfo() {
 	}
 }
 
-func GetDepSpaceApi() (int64, error) {
+func GetDepRateApi() (int64, error) {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hdddeposit12",
+		Scope:      "hdddeposit12",
+		Table:      "gdepositrate",
+		LowerBound: fmt.Sprintf("%d", cfg.IndexID),
+		UpperBound: fmt.Sprintf("%d", cfg.IndexID),
+		Index:      "1",
+		Limit:      1,
+		JSON:       true,
+		KeyType:    "int64",
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var res []struct {
+		AccountName string `json:"account_name"`
+		Deposit     string `json:"deposit"`
+	}
+	err = json.Unmarshal(out.Rows, &res)
+
+	return 1, nil
+}
+
+func GetDepAmountApi() (int64, error) {
 	out, err := api.GetTableRows(eos.GetTableRowsRequest{
 		Code:       "hdddeposit12",
 		Scope:      "hdddeposit12",
