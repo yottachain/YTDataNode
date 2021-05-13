@@ -6,8 +6,10 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
 	"strconv"
@@ -15,7 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 
@@ -32,28 +33,37 @@ var disableWrite = false
 type WriteHandler struct {
 	StorageNode
 	RequestQueue chan *wRequest
-	db           *leveldb.DB
+	db           *gorocksdb.DB
+	seq           int64
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
+	seq := slicecompare.GetSeqFromDb()
 	return &WriteHandler{
 		sn,
 		make(chan *wRequest, 1000),
 		nil,
+		seq,
 	}
+}
+
+type YTres struct{
+	err error
+	seq int64
+	hash []byte
 }
 
 type wRequest struct {
 	Key   common.IndexTableKey
 	Data  []byte
-	Error chan error
+	ytres chan YTres
 }
 
 func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
 	rq := &wRequest{
 		key,
 		data,
-		make(chan error),
+		make(chan YTres),
 	}
 	select {
 	case wh.RequestQueue <- rq:
@@ -62,8 +72,8 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
-	case err := <-rq.Error:
-		return err
+	case ytres := <-rq.ytres:
+		return ytres.err
 	case <-ctx.Done():
 		return fmt.Errorf("get error time out")
 	}
@@ -101,7 +111,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 
 	for _, rq := range rqs {
 		select {
-		case rq.Error <- err:
+		case rq.ytres <- err:
 		default:
 			continue
 		}

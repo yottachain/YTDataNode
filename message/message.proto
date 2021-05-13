@@ -38,6 +38,8 @@ message UploadShardResponse  {
 message UploadShard2CResponse {
    int32 RES= 1;
    string DNSIGN =2;
+   int64 seq =3;
+   bytes hash =4;
 }
 
 message DownloadShardRequest {

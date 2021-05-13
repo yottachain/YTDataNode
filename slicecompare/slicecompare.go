@@ -13,12 +13,15 @@ import (
 	"time"
 )
 
+const seqkey  = "seqkeyforcompare"
+
 var SliceCompareDir string = "/" + "gc"
 var FileNextIdx string ="/" + "gc/next_index_file"
 var ComparedIdxFile string = "/" + "gc/compared_index_file"
 var FileDB_tmp string = "/" + "gc/temp_index_kvdb"
 var FileDB_sn string = "/" + "gc/sn_index_kvdb"
 var FileDB_todel string = "/" + "gc/entry_to_del_kvdb"
+
 var Entrycountdownld int32 = 1000
 
 
@@ -38,6 +41,11 @@ func ForInit(fileName string, value string){
 			fmt.Println(err)
 		}
 	}
+}
+
+func GetSeqFromDb() int64{
+	var seq int64
+	return seq
 }
 
 func InitDir(dirName string){
