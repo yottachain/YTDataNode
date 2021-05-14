@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
@@ -46,6 +47,11 @@ func ForInit(fileName string, value string){
 func GetSeqFromDb() int64{
 	var seq int64
 	return seq
+}
+
+func PutSeqToDb(seq int64,db gorocksdb.DB) error{
+	var err error
+	return err
 }
 
 func InitDir(dirName string){

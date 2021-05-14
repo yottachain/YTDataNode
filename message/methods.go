@@ -68,7 +68,7 @@ func (req *UploadShardRequest) GetResponseToBPByCode(code int32, nodeID string, 
 }
 
 // GetResponseToClientByCode 生成客户端返回消息
-func (req *UploadShardRequest) GetResponseToClientByCode(code int32, privkey string) ([]byte, error) {
+func (req *UploadShardRequest) GetResponseToClientByCode(code int32, seq int64, hash []byte, privkey string) ([]byte, error) {
 	var res UploadShard2CResponse
 	if code == 0 || code == 102 {
 		pk, err := util.Libp2pPkey2eosPkey(privkey)

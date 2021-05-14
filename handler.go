@@ -56,15 +56,17 @@ type YTres struct{
 type wRequest struct {
 	Key   common.IndexTableKey
 	Data  []byte
-	ytres chan YTres
+	ytres YTres
+	err   chan error
 }
 
-func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
+func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) (YTres, error) {
 	rq := &wRequest{
-		key,
-		data,
-		make(chan YTres),
+		Key:key,
+		Data:data,
+		err:make(chan error),
 	}
+
 	select {
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
@@ -72,10 +74,12 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
-	case ytres := <-rq.ytres:
-		return ytres.err
+	case err := <-rq.err:
+		return rq.ytres, err
 	case <-ctx.Done():
-		return fmt.Errorf("get error time out")
+		var ytres YTres
+		err := fmt.Errorf("get error time out")
+		return ytres, err
 	}
 }
 
@@ -90,6 +94,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key[:]
+
 		default:
 			continue
 		}
@@ -98,6 +103,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 	log.Printf("[ytfs]flush start:%d\n", number)
 	_, err := wh.putShard(rqmap)
 	if err == nil {
+		wh.seq = wh.seq + int64(number)
+		slicecompare.PutSeqToDb(wh.seq, *wh.db)
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		log.Printf("[ytfs]flush failure:%s\n", err.Error())
@@ -111,7 +118,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 
 	for _, rq := range rqs {
 		select {
-		case rq.ytres <- err:
+		case rq.err <- err:
 		default:
 			continue
 		}
