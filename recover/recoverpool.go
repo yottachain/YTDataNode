@@ -6,22 +6,19 @@ import (
 	//"sync"
 )
 
-var DownloadCount *statistics.WaitCount
-var RunningCount *statistics.WaitCount
-
 var totalCap int32 = 50
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 //var realConTask uint16 = 20
 var realConTask uint16 = 1
 
-func (re *RecoverEngine) doRequest(task *Task, pkgstart time.Time) {
-	re.IncConTask()
+func (re *Engine) doRequest(task *Task, pkgstart time.Time) {
+	statistics.DefaultRebuildCount.IncConTask()
 	re.dispatchTask(task, pkgstart)
-	re.DecConTask()
-	RunningCount.Remove()
+	statistics.DefaultRebuildCount.DecConTask()
+	statistics.RunningCount.Remove()
 }
 
-func (re *RecoverEngine) processRequests() {
+func (re *Engine) processRequests() {
 	startTsk := time.Now()
 
 	for {
@@ -30,15 +27,15 @@ func (re *RecoverEngine) processRequests() {
 			continue
 		}
 
-		RunningCount.Add()
-		re.IncRbdTask()
+		statistics.RunningCount.Add()
+		statistics.DefaultRebuildCount.IncRbdTask()
 		go re.doRequest(requestT, startTsk)
 	}
 }
 
-func (re *RecoverEngine) RunPool() {
-	RunningCount = statistics.NewWaitCount(totalCap)
-	DownloadCount = statistics.NewWaitCount(totalCap)
+func (re *Engine) RunPool() {
+	statistics.RunningCount = statistics.NewWaitCount(totalCap)
+	statistics.DownloadCount = statistics.NewWaitCount(totalCap)
 
 	go re.processRequests()
 

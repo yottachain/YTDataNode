@@ -1,7 +1,6 @@
 package actuator
 
 import (
-	lrc "github.com/yottachain/YTLRC"
 	"time"
 )
 
@@ -18,9 +17,8 @@ const (
 )
 
 type Options struct {
-	Expired  time.Time    // 超时时间
-	Stage    RecoverStage // 重建阶段 0. 行 1. 列 2. 全局
-	TestData [164]lrc.Shard
+	Expired time.Time    // 超时时间
+	Stage   RecoverStage // 重建阶段 0. 行 1. 列 2. 全局
 }
 
 /**

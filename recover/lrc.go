@@ -23,11 +23,9 @@ type LRCEngine struct {
 	IncRbdSucc IncRbdSuccCnt
 }
 
-func NewLRCEngine(gsfunc GetShardFuncLrc, incrbdsucc IncRbdSuccCnt) *LRCEngine {
+func NewLRCEngine(incrbdsucc IncRbdSuccCnt) *LRCEngine {
 	var le LRCEngine
 	le.lrc = lrcpkg.Shardsinfo{}
-
-	le.GetShard = gsfunc
 
 	le.IncRbdSucc = incrbdsucc
 
