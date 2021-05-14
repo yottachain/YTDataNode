@@ -4,9 +4,7 @@
 package statistics
 
 import (
-	log "github.com/yottachain/YTDataNode/logger"
 	"sync/atomic"
-	"time"
 )
 
 type SuccessError struct {
@@ -40,10 +38,4 @@ type statusCount struct {
 var DefaultStatusCount statusCount
 
 func init() {
-	go func() {
-		for {
-			<-time.After(time.Second * 5)
-			log.Println("重建状态", DefaultStatusCount)
-		}
-	}()
 }

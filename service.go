@@ -154,7 +154,6 @@ func (sn *storageNode) Service() {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
-	rcv.EncodeForRecover()
 	//go rce.Run()
 	go rcv.RunPool()
 
@@ -353,7 +352,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine) {
+func Report(sn *storageNode, rce *rc.Engine) {
 	if disableReport {
 		log.Println("miner disable")
 		//return
@@ -419,7 +418,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
-	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
+	statistics.DefaultStat.RebuildShardStat = statistics.DefaultRebuildCount.GetStat()
 	statistics.DefaultStat.IndexDBOpt = sn.config.Options
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
@@ -427,9 +426,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.RXTokenFillRate = 1
 	}
 
-	// 设置重建任务并发限制
-	statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
-	statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	//// 设置重建任务并发限制
+	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
 
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 

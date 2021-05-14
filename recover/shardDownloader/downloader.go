@@ -9,8 +9,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
 	"sync"
@@ -56,13 +56,19 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
 	if err != nil {
+		statistics.DefaultRebuildCount.IncFailConn()
 		return nil, err
 	}
-
+	// 连接成功计数
+	statistics.DefaultRebuildCount.IncConShard()
+	statistics.DefaultRebuildCount.IncSendTokReq()
 	tkString, err := d.GetToken(ctx, clt)
 	if err != nil {
+		statistics.DefaultRebuildCount.IncFailToken()
 		return nil, err
 	}
+	// 获取分片token成功计数
+	statistics.DefaultRebuildCount.IncSuccToken()
 
 	var msg message.DownloadShardRequest
 	msg.VHF = shardID
@@ -74,7 +80,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
-		log.Println("下载失败", err)
+		statistics.DefaultRebuildCount.IncFailShard()
 		return nil, err
 	}
 	if len(resBuf) < 3 {
@@ -84,14 +90,16 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	var resMsg message.DownloadShardResponse
 	err = proto.Unmarshal(resBuf[2:], &resMsg)
 	if err != nil {
-		log.Println("下载失败", err)
 		return nil, err
 	}
 
+	// 获取分片成功计数
+	statistics.DefaultRebuildCount.IncSuccShard()
 	return resMsg.Data, nil
 }
 
 func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (string, error) {
+
 	var getTokenRequestMsg message.NodeCapacityRequest
 	getTokenRequestMsg.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
 	buf, err := proto.Marshal(&getTokenRequestMsg)

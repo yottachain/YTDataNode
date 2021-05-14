@@ -15,6 +15,7 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
+	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
 	"sync"
 	"time"
@@ -149,6 +150,9 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 	for _, shardIndex := range indexes {
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
+
+		//  下载分片计数加一
+		statistics.DefaultRebuildCount.IncShardForRbd()
 		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash)
 		if err != nil {
 			return nil, fmt.Errorf("add download task fail %s", err.Error())
@@ -256,7 +260,7 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 			// 填充假数据
 			L.lrcHandler.ShardExist[index] = 1
 
-			if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, L.opts.TestData[index][:]); status > 0 {
+			if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, TestData[index][:]); status > 0 {
 				return true
 			}
 		}
@@ -360,11 +364,13 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 		return
 	}
 
-	// 预判
+	// @TODO 预判
 	if ok := L.preJudge(); !ok {
 		err = fmt.Errorf("预判失败 阶段 %d任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
 		return
 	}
+	// 成功预判计数加一
+	statistics.DefaultRebuildCount.IncPassJudge()
 
 	// @TODO 下载分片
 	ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
@@ -386,6 +392,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	}
 
 	data = recoverData
+	// 成功重建计数加一
+	statistics.DefaultRebuildCount.IncSuccRbd()
 	return
 }
 
