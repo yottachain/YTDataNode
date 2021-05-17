@@ -140,6 +140,7 @@ func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (st
 func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (DownloaderWait, error) {
 	IDString := hex.EncodeToString(shardID)
 	shardChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
 
 	// @TODO 异步执行下载
 	d.q <- struct{}{}
@@ -157,7 +158,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
-			shardChan <- nil
+			errChan <- err
 			return
 		}
 		atomic.AddInt32(&d.stat.Success, 1)
@@ -166,7 +167,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		shardChan <- resBuf
 	}()
 
-	return &downloadWait{shardChan: &shardChan}, nil
+	return &downloadWait{shardChan: &shardChan, errChan: &errChan}, nil
 }
 
 func (d downloader) GetShards(shardList ...[]byte) [][]byte {
@@ -178,10 +179,13 @@ func (d downloader) GetShards(shardList ...[]byte) [][]byte {
  */
 type downloadWait struct {
 	shardChan *chan []byte
+	errChan   *chan error
 }
 
 func (d *downloadWait) Get(ctx context.Context) ([]byte, error) {
 	select {
+	case err := <-*d.errChan:
+		return nil, err
 	case <-ctx.Done():
 		return nil, fmt.Errorf("ctx done")
 	case shard := <-*d.shardChan:
