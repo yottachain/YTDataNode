@@ -17,6 +17,7 @@ import (
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
+	"strings"
 	"sync"
 	"time"
 )
@@ -148,6 +149,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 	wg.Add(len(indexes))
 	// @TODO 循环添加下载任务
 	for _, shardIndex := range indexes {
+		// 中断循环开关
+		var brk = false
+		if brk {
+			break
+		}
+
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
 
@@ -164,7 +171,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
-			shard, _ := d.Get(ctx)
+			shard, err := d.Get(ctx)
+			// @TODO 如果因为分片不存在导致错误，直接中断
+			if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
+				brk = true
+			}
+
 			L.shards.Set(hex.EncodeToString(key), &Shard{
 				Index: shardIndex,
 				Data:  shard,

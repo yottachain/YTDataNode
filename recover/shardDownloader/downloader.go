@@ -13,6 +13,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -54,13 +55,14 @@ type downloader struct {
  */
 func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []string, shardID []byte) ([]byte, error) {
 
+	statistics.DefaultRebuildCount.IncConShard()
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
 	if err != nil {
 		statistics.DefaultRebuildCount.IncFailConn()
 		return nil, err
 	}
 	// 连接成功计数
-	statistics.DefaultRebuildCount.IncConShard()
+	statistics.DefaultRebuildCount.IncSuccConn()
 	statistics.DefaultRebuildCount.IncSendTokReq()
 	tkString, err := d.GetToken(ctx, clt)
 	if err != nil {
@@ -80,7 +82,12 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
-		statistics.DefaultRebuildCount.IncFailShard()
+		if strings.Contains(err.Error(), "Get data Slice fail") {
+			statistics.DefaultRebuildCount.IncFailSendShard()
+		} else {
+			statistics.DefaultRebuildCount.IncFailShard()
+		}
+
 		return nil, err
 	}
 	if len(resBuf) < 3 {
@@ -94,6 +101,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	}
 
 	// 获取分片成功计数
+	statistics.DefaultRebuildCount.DecConShard()
 	statistics.DefaultRebuildCount.IncSuccShard()
 	return resMsg.Data, nil
 }
@@ -132,6 +140,7 @@ func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (st
 func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (DownloaderWait, error) {
 	IDString := hex.EncodeToString(shardID)
 	shardChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
 
 	// @TODO 异步执行下载
 	d.q <- struct{}{}
@@ -149,7 +158,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
-			shardChan <- nil
+			errChan <- err
 			return
 		}
 		atomic.AddInt32(&d.stat.Success, 1)
@@ -158,7 +167,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		shardChan <- resBuf
 	}()
 
-	return &downloadWait{shardChan: &shardChan}, nil
+	return &downloadWait{shardChan: &shardChan, errChan: &errChan}, nil
 }
 
 func (d downloader) GetShards(shardList ...[]byte) [][]byte {
@@ -170,10 +179,13 @@ func (d downloader) GetShards(shardList ...[]byte) [][]byte {
  */
 type downloadWait struct {
 	shardChan *chan []byte
+	errChan   *chan error
 }
 
 func (d *downloadWait) Get(ctx context.Context) ([]byte, error) {
 	select {
+	case err := <-*d.errChan:
+		return nil, err
 	case <-ctx.Done():
 		return nil, fmt.Errorf("ctx done")
 	case shard := <-*d.shardChan:
