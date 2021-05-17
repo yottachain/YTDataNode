@@ -13,6 +13,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -54,13 +55,14 @@ type downloader struct {
  */
 func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []string, shardID []byte) ([]byte, error) {
 
+	statistics.DefaultRebuildCount.IncConShard()
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
 	if err != nil {
 		statistics.DefaultRebuildCount.IncFailConn()
 		return nil, err
 	}
 	// 连接成功计数
-	statistics.DefaultRebuildCount.IncConShard()
+	statistics.DefaultRebuildCount.IncSuccConn()
 	statistics.DefaultRebuildCount.IncSendTokReq()
 	tkString, err := d.GetToken(ctx, clt)
 	if err != nil {
@@ -80,7 +82,12 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
-		statistics.DefaultRebuildCount.IncFailShard()
+		if strings.Contains(err.Error(), "Get data Slice fail") {
+			statistics.DefaultRebuildCount.IncFailSendShard()
+		} else {
+			statistics.DefaultRebuildCount.IncFailShard()
+		}
+
 		return nil, err
 	}
 	if len(resBuf) < 3 {
@@ -94,6 +101,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	}
 
 	// 获取分片成功计数
+	statistics.DefaultRebuildCount.DecConShard()
 	statistics.DefaultRebuildCount.IncSuccShard()
 	return resMsg.Data, nil
 }
