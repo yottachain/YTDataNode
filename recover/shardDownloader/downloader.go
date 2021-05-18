@@ -92,9 +92,11 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 			elkClt.AddLogAsync(struct {
 				ID       string
+				Form     string
 				ErrorMsg string
 			}{
 				base58.Encode(msg.VHF),
+				nodeId,
 				err.Error(),
 			})
 
