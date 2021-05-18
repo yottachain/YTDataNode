@@ -9,8 +9,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
 	"strings"
@@ -18,6 +21,8 @@ import (
 	"sync/atomic"
 	"time"
 )
+
+var elkClt = util.NewElkClient("rebuild", &config.Gconfig.ElkReport2)
 
 type stat struct {
 	Downloading int32
@@ -83,9 +88,18 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
 		if strings.Contains(err.Error(), "Get data Slice fail") {
-			statistics.DefaultRebuildCount.IncFailSendShard()
-		} else {
 			statistics.DefaultRebuildCount.IncFailShard()
+
+			elkClt.AddLogAsync(struct {
+				ID       string
+				ErrorMsg string
+			}{
+				base58.Encode(msg.VHF),
+				err.Error(),
+			})
+
+		} else {
+			statistics.DefaultRebuildCount.IncFailSendShard()
 		}
 
 		return nil, err
