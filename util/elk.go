@@ -8,9 +8,9 @@ import (
 
 func NewElkClient(tbstr string, open *bool) YTElkProducer.Client {
 	elkConf := elasticsearch.Config{
-		Addresses: []string{"https://elk1-nm.yottachain.net"},
+		Addresses: []string{"https://es-dlbhgdje.public.tencentelasticsearch.com:9200"},
 		Username:  "elastic",
-		Password:  "yotta_2021",
+		Password:  "yotta@2021",
 	}
 
 	ytESConfig := conf.YTESConfig{
