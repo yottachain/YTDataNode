@@ -12,6 +12,7 @@ import (
 	"github.com/yottachain/YTDataNode/recover/actuator"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
@@ -40,6 +41,8 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
+var elkClt = util.NewElkClient("rebuildReply", &config.Gconfig.ElkReport2)
+
 type Engine struct {
 	sn                node.StorageNode
 	waitQueue         *TaskWaitQueue
@@ -47,7 +50,6 @@ type Engine struct {
 	le                *LRCEngine
 	Upt               *TokenPool.TokenPool
 	startTskTmCtl     uint8
-	ElkClient         *YTElkProducer.Client
 	DefaultDownloader shardDownloader.ShardDownloader
 }
 
@@ -60,9 +62,6 @@ func New(sn node.StorageNode) (*Engine, error) {
 	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 20)
 	re.le = NewLRCEngine(statistics.DefaultRebuildCount.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
-	logtb := sn.Config().BPMd5()
-	tbstr := "dnlog-" + strings.ToLower(base58.Encode(logtb))
-	re.ElkClient = NewElkClient(tbstr)
 
 	return re, nil
 }
@@ -144,11 +143,6 @@ func (re *Engine) reportLog(body interface{}) {
 	//	return
 	//}
 
-	if re.ElkClient == nil {
-		log.Println("[recover][elk][error] no elkclient")
-		return
-	}
-	(*re.ElkClient).AddLogAsync(body)
 	time.Sleep(time.Second * 10)
 }
 
@@ -156,11 +150,6 @@ func (re *Engine) MakeReportLog(nodeid string, hash []byte, errtype string, err 
 	//if ! config.Gconfig.ElkReport{
 	//	return nil
 	//}
-
-	if re.ElkClient == nil {
-		log.Println("[recover][elk][error] no elkclient")
-		return nil
-	}
 
 	ShardId := base64.StdEncoding.EncodeToString(hash)
 	NowTm := time.Now().Format("2006/01/02 15:04:05")
@@ -353,40 +342,66 @@ func (re *Engine) MultiReply() error {
 			}
 		}
 	}()
+
+	type errorLog struct {
+		ErrorMsg  string
+		retryTime int
+	}
+
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		if data, err := proto.Marshal(v); err != nil {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
 		} else {
-			reportTms := 6
-			for {
-				reportTms--
-				if 0 >= reportTms {
-					log.Println("[recover][report]Send msg error: ", err)
-					break
-				}
-				resp, err := re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-				if err == nil {
-					if len(resp) < 3 {
-						continue
-					}
+			for reportTms := 0; reportTms < 5; reportTms++ {
+				if isReturn, err := re.tryReply(int(k), data); err != nil && !isReturn {
+					elkClt.AddLogAsync(errorLog{
+						ErrorMsg:  err.Error(),
+						retryTime: reportTms + 1,
+					})
 
-					var res message.MultiTaskOpResultRes
-					err = proto.Unmarshal(resp[2:], &res)
-					if err != nil {
-						continue
-					} else {
-						if 0 == res.ErrCode {
-							statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
-						}
-					}
-					break
+					// 如果报错继续循环
+					continue
 				}
+				// 如果不报错退出循环
+				break
 			}
 		}
 	}
 	return nil
+}
+
+/**
+ * @Description: 尝试回报重建结果
+ * @receiver re
+ * @param index
+ * @param data
+ * @return bool
+ * @return error
+ */
+func (re *Engine) tryReply(index int, data []byte) (bool, error) {
+	resp, err := re.sn.SendBPMsg(index, message.MsgIDMultiTaskOPResult.Value(), data)
+	if err != nil {
+		return false, err
+	}
+
+	if len(resp) < 3 {
+		return false, fmt.Errorf("response too short")
+	}
+
+	var res message.MultiTaskOpResultRes
+	err = proto.Unmarshal(resp[2:], &res)
+	if err != nil {
+		return false, err
+	}
+
+	if 0 == res.ErrCode {
+		statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
+	} else {
+		return true, fmt.Errorf("sn return error %d", res.ErrCode)
+	}
+	return false, nil
 }
 
 func (re *Engine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
@@ -418,10 +433,6 @@ func (re *Engine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg message.Task
 	//if ! config.Gconfig.ElkReport{
 	//	return nil
 	//}
-	if re.ElkClient == nil {
-		log.Println("[recover][elk] error,no client")
-		return nil
-	}
 	localid := re.sn.Config().ID
 	lostidx := lrcShd.Lostindex
 	losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
