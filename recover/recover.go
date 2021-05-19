@@ -535,9 +535,9 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			recoverData = data
 			switch opts.Stage {
 			case 1:
-				statistics.DefaultRebuildCount.IncColRbdSucc()
-			case 2:
 				statistics.DefaultRebuildCount.IncRowRbdSucc()
+			case 2:
+				statistics.DefaultRebuildCount.IncColRbdSucc()
 			case 3:
 				statistics.DefaultRebuildCount.IncGlobalRbdSucc()
 			}
