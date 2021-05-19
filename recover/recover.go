@@ -525,6 +525,16 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
+
+		switch opts.Stage {
+		case 1:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.RowRebuildCount, 1)
+		case 2:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.ColRebuildCount, 1)
+		case 3:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
+		}
+
 		data, resID, err := taskActuator.ExecTask(
 			msgData,
 			opts,

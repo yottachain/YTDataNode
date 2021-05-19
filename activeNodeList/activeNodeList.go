@@ -175,12 +175,10 @@ func HasNodeid(id string) bool {
 		Update()
 	}
 
-	log.Println("[recover][hasNodeid]  len_nodelist=", len(nodeList))
 	for _, v := range nodeList {
 		//log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
 		//log.Println("[recover][hasNodeid] test request dnid:",id)
 		if v.NodeID == id {
-			log.Println("[recover][hasNodeid] find shard:", id)
 			return true
 		}
 	}
