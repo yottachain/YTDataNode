@@ -220,7 +220,7 @@ func (rc *RebuildCount) GetStat() *RecoverStat {
 		rc.sendTokenReq,
 		rc.successVersion,
 		rc.ackSuccRebuild,
-		*RunningCount,
-		*DownloadCount,
+		rc.concurrentTask,
+		rc.concurrenGetShard,
 	}
 }
