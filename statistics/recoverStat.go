@@ -27,6 +27,6 @@ type RecoverStat struct {
 	SendTokenReq      uint64 `json:"SendToken"`         //发送token请求计数
 	SuccessVersion    uint64 `json:"successVersion"`    //版本验证通过
 	AckSuccRebuild    uint64 `json:"AckSuccRebuild"`    //sn确认的成功重建分片数
-	RunningCount      WaitCount
-	DownloadingCount  WaitCount
+	RunningCount      uint64
+	DownloadingCount  uint64
 }

@@ -59,8 +59,9 @@ type downloader struct {
  * @return error
  */
 func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []string, shardID []byte) ([]byte, error) {
-
 	statistics.DefaultRebuildCount.IncConShard()
+	defer statistics.DefaultRebuildCount.DecConShard()
+
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
 	if err != nil {
 		statistics.DefaultRebuildCount.IncFailConn()
@@ -117,7 +118,6 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	}
 
 	// 获取分片成功计数
-	statistics.DefaultRebuildCount.DecConShard()
 	statistics.DefaultRebuildCount.IncSuccShard()
 	return resMsg.Data, nil
 }
@@ -218,11 +218,11 @@ func New(store *clientStore.ClientStore, max int) *downloader {
 	d.q = make(chan struct{}, max)
 	//d.taskRes = sync.Map{}
 
-	go func() {
-		for {
-			<-time.After(time.Second * 10)
-			d.stat.Print()
-		}
-	}()
+	//go func() {
+	//	for {
+	//		<-time.After(time.Second * 10)
+	//		d.stat.Print()
+	//	}
+	//}()
 	return d
 }
