@@ -355,14 +355,18 @@ func (re *Engine) MultiReply() error {
 			continue
 		} else {
 			for reportTms := 0; reportTms < 5; reportTms++ {
-				if isReturn, err := re.tryReply(int(k), data); err != nil && !isReturn {
+				if isReturn, err := re.tryReply(int(k), data); err != nil {
+
 					elkClt.AddLogAsync(errorLog{
 						ErrorMsg:  err.Error(),
 						retryTime: reportTms + 1,
 					})
 
-					// 如果报错继续循环
-					continue
+					if !isReturn {
+						// 如果报错且sn没有返回继续循环
+						continue
+					}
+
 				}
 				// 如果不报错退出循环
 				break
