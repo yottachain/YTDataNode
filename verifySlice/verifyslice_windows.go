@@ -22,13 +22,6 @@ type VerifySler struct {
 func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
 
-	//config, err := config.ReadConfig()
-	//if err != nil{
-	//	log.Println("[verifyslice] [error] read datanode config error:",err)
-	//	resp.ErrCode = "101"
-	//	return resp
-	//}
-
 	num,_ := strconv.ParseUint(verifyNum,10,64)
 
 	resp = vfs.VerifySliceIdxdb(num)

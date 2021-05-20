@@ -13,6 +13,8 @@ const (
 	MsgIDVoidResponse          msgType = 0xe64f
 	MsgIDUploadShard2CResponse msgType = 0x1978
 	MsgIDDownloadShardRequest  msgType = 0x1757
+	MsgIDSliceCompareReq       msgType = 0x1818
+	MsgIDSliceCompareResp      msgType = 0x1819
 	MsgIDDownloadShardResponse msgType = 0x7a56
 	MsgIDNodeRegReq            msgType = 0x12aa
 	MsgIDNodeRegResp           msgType = 0xfb92
@@ -46,6 +48,7 @@ const (
 	MsgIDGcStatusResp          msgType = 0xe87f
 	MsgIDGcdelStatusfileReq    msgType = 0xe88e
 	MsgIDGcdelStatusfileResp   msgType = 0xe88f
+
 )
 
 type msgType int32

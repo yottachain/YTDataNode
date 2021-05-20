@@ -102,6 +102,10 @@ func (sn *storageNode) Service() {
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
 	wh = NewWriteHandler(sn)
+	if wh == nil {
+		log.Println("[error] WriteHandler is nil")
+		return
+	}
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -152,7 +156,6 @@ func (sn *storageNode) Service() {
 	}
 
 	rcv.EncodeForRecover()
-	//go rce.Run()
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -168,41 +171,10 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcReq
-		var res message.GcResp
 		var resp []byte
-
 		GcW := gc.GcWorker{sn}
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen{
-			res.ErrCode = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errReq"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID{
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		go GcW.GcHandle(msg)
-
-		res.TaskId = msg.TaskId
-		res.ErrCode = "succ"
-		resp, err = proto.Marshal(&res)
-
+		res, err := GcW.GcMsgChk(data)
+		resp, _ = proto.Marshal(&res)
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
 	})
 

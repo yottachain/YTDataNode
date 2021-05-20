@@ -38,8 +38,31 @@ message UploadShardResponse  {
 message UploadShard2CResponse {
    int32 RES= 1;
    string DNSIGN =2;
-   int64 seq =3;
+   uint64 seq =3;
    bytes hash =4;
+}
+
+//用于sn发送对账列表
+//seq：哈希对应的序列号
+//hash：对账用哈希
+message SeqToHash{
+    uint64 seq=1;
+    bytes hash=2;
+}
+
+//msgid = 0x1818   矿机对账请求
+//endseq: 本次对账的结束序列号
+//nodeid：矿机id
+message SliceCompareReq{
+    uint64  endseq =1;
+    uint32  nodeid =2;
+    repeated  SeqToHash cplist =3;
+}
+
+//msgid = 0x1819   矿机对账请求
+message SliceCompareResp{
+   uint64  endedseq =1;
+   uint32  nodeid =2;
 }
 
 message DownloadShardRequest {
@@ -58,7 +81,6 @@ message NodeRegReq {
     repeated string addrs=4;     
     bool relay=5;
 }
-
 
 message NodeRegResp {                        
     uint32 id= 1;                                    

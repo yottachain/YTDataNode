@@ -1,10 +1,10 @@
 package slicecompare
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/util"
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const seqkey  = "seqkeyforcompare"
+const Seqkey  = "seqkeyforcompare"
 
 var SliceCompareDir string = "/" + "gc"
 var FileNextIdx string ="/" + "gc/next_index_file"
@@ -44,12 +44,25 @@ func ForInit(fileName string, value string){
 	}
 }
 
-func GetSeqFromDb() int64{
-	var seq int64
-	return seq
+func GetSeqFromDb(db *leveldb.DB) (uint64, error){
+	var seq uint64
+	val,err := db.Get([]byte(Seqkey),nil)
+	if err !=nil {
+		if err == leveldb.ErrNotFound{
+			bval := make([]byte,8)
+			binary.LittleEndian.PutUint64(bval,0)
+			err = db.Put([]byte(Seqkey),bval,nil)
+			return 0, err
+		}else{
+			fmt.Println("[slicecompare] get seq val from leveldb error")
+			return -1, err
+		}
+	}
+	seq = binary.LittleEndian.Uint64(val)
+	return seq, nil
 }
 
-func PutSeqToDb(seq int64,db gorocksdb.DB) error{
+func PutSeqToDb(seq uint64,hash []byte, db *leveldb.DB) error{
 	var err error
 	return err
 }
@@ -93,8 +106,7 @@ func NewSliceComparer() *SliceComparer {
 	}
 }
 
-
-func (sc *SliceComparer)OpenLevelDB(DBName string) (db *leveldb.DB,err error){
+func OpenLevelDB(DBName string) (db *leveldb.DB,err error){
 	DBPath := util.GetYTFSPath() + DBName
 	db,err = leveldb.OpenFile(DBPath,nil)
 	if err != nil{
@@ -272,3 +284,4 @@ func cleanDB(nameOfDB string){
 		}
 	}
 }
+

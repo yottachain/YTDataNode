@@ -4,6 +4,7 @@ import (
     "fmt"
     "github.com/gogo/protobuf/proto"
     "github.com/mr-tron/base58"
+    "github.com/yottachain/YTDataNode/config"
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
     sni "github.com/yottachain/YTDataNode/storageNodeInterface"
@@ -53,6 +54,53 @@ func SavetoFile(filepath string,value []byte) error{
         fmt.Println("[gcdel] save value to file error",err,"filepath:",filepath)
     }
     return err
+}
+
+func (gc *GcWorker)GcMsgChk(data []byte) (message.GcResp, error) {
+    var msg message.GcReq
+    var res message.GcResp
+
+    res.Dnid = gc.Sn.Config().IndexID
+
+    if err := proto.Unmarshal(data, &msg); err != nil {
+        log.Println("[gcdel] message.GcReq error:", err)
+        res.ErrCode = "errReq"
+        res.TaskId = "nil"
+        err := fmt.Errorf("errReq")
+        return res, err
+    }
+
+    if !config.Gconfig.GcOpen{
+        res.ErrCode = "errNotOpenGc"
+        err := fmt.Errorf("errNotOpenGc")
+        return  res, err
+    }
+
+    if err := gc.GcTestSysSpace(msg); err != nil {
+        log.Println("[gcdel] message.GcReq error:", err)
+        res.ErrCode = "errnospace"
+        res.TaskId = "nil"
+        err := fmt.Errorf("errnospace")
+        return res, err
+    }
+
+    if msg.Dnid != gc.Sn.Config().IndexID{
+        log.Println("[gcdel] message.GcReq error")
+        res.ErrCode = "errNodeid"
+        res.TaskId = "nil"
+        err := fmt.Errorf("errNodeid")
+        return res, err
+    }
+
+    go gc.GcHandle(msg)
+
+    res.TaskId = msg.TaskId
+    res.ErrCode = "succ"
+    return res, nil
+}
+
+func (gc *GcWorker)GcStatusMsgChk(msg message.GcReq, data []byte) (message.GcResp, error){
+
 }
 
 func (gc *GcWorker)GcHandle(msg message.GcReq) {
@@ -109,6 +157,25 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
     }
     return
+}
+
+func (gc *GcWorker) GcTestSysSpace(msg message.GcReq) error {
+    var res message.GcStatusResp
+    var err error
+    res.Status = "succ"
+    res.TaskId = msg.TaskId
+    filePath := util.GetYTFSPath() + GcDir + msg.TaskId
+    value,err := proto.Marshal(&res)
+    if err != nil{
+        fmt.Println("[gcdel] Marshal gcstatusresp error:",err,"taskid:",msg.TaskId)
+        return err
+    }
+
+    err = SavetoFile(filePath,value)
+    if err != nil{
+        fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
+    }
+    return err
 }
 
 func (gc *GcWorker)GcHashProcess(ent []byte) error{
