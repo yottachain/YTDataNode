@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
+	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -90,13 +91,15 @@ func (wh *WriteHandler) batchWrite(number int) {
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
-		//log.Printf("[ytfs]flush failure:%s\n", err.Error())
-		//statistics.DefaultStat.Lock()
-		//statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
-		//if statistics.DefaultStat.YTFSErrorCount > 100 {
-		//	disableWrite = true
-		//}
-		//statistics.DefaultStat.Unlock()
+		if _, ok := os.LookupEnv("no-ytfs-error"); !ok {
+			log.Printf("[ytfs]flush failure:%s\n", err.Error())
+			statistics.DefaultStat.Lock()
+			statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
+			if statistics.DefaultStat.YTFSErrorCount > 100 {
+				disableWrite = true
+			}
+			statistics.DefaultStat.Unlock()
+		}
 	}
 
 	for _, rq := range rqs {
