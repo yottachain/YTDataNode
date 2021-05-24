@@ -91,7 +91,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
-		if _, ok := os.LookupEnv("no-ytfs-error"); !ok {
+		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
 			log.Printf("[ytfs]flush failure:%s\n", err.Error())
 			statistics.DefaultStat.Lock()
 			statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
