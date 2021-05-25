@@ -41,7 +41,7 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
-var elkClt = util.NewElkClient("rebuildReply", &config.Gconfig.ElkReport2)
+var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
 
 type Engine struct {
 	sn                node.StorageNode
