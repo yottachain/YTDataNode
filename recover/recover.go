@@ -43,6 +43,11 @@ const (
 
 var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
 
+type elkErrorLog struct {
+	ErrorMsg  string
+	RetryTime int
+}
+
 type Engine struct {
 	sn                node.StorageNode
 	waitQueue         *TaskWaitQueue
@@ -301,6 +306,10 @@ func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
 	default:
+		elkClt.AddLogAsync(elkErrorLog{
+			ErrorMsg:  "push reply msg fail",
+			RetryTime: 0,
+		})
 	}
 }
 
@@ -343,11 +352,6 @@ func (re *Engine) MultiReply() error {
 		}
 	}()
 
-	type errorLog struct {
-		ErrorMsg  string
-		retryTime int
-	}
-
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		data, err := proto.Marshal(v)
@@ -362,14 +366,14 @@ func (re *Engine) MultiReply() error {
 					// 如果报错且sn没有返回继续循环
 					continue
 				}
-				elkClt.AddLogAsync(errorLog{
+				elkClt.AddLogAsync(elkErrorLog{
 					ErrorMsg:  err.Error(),
-					retryTime: reportTms + 1,
+					RetryTime: reportTms + 1,
 				})
 			} else {
-				elkClt.AddLogAsync(errorLog{
+				elkClt.AddLogAsync(elkErrorLog{
 					ErrorMsg:  "no error",
-					retryTime: reportTms + 1,
+					RetryTime: reportTms + 1,
 				})
 			}
 			// 如果不报错退出循环
