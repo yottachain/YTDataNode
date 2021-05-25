@@ -41,7 +41,7 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
-var elkClt = util.NewElkClient("rebuildReply", &config.Gconfig.ElkReport2)
+var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
 
 type Engine struct {
 	sn                node.StorageNode
@@ -350,27 +350,30 @@ func (re *Engine) MultiReply() error {
 
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
-		if data, err := proto.Marshal(v); err != nil {
+		data, err := proto.Marshal(v)
+		if err != nil {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
-		} else {
-			for reportTms := 0; reportTms < 5; reportTms++ {
-				if isReturn, err := re.tryReply(int(k), data); err != nil {
+		}
 
-					elkClt.AddLogAsync(errorLog{
-						ErrorMsg:  err.Error(),
-						retryTime: reportTms + 1,
-					})
-
-					if !isReturn {
-						// 如果报错且sn没有返回继续循环
-						continue
-					}
-
+		for reportTms := 0; reportTms < 5; reportTms++ {
+			if isReturn, err := re.tryReply(int(k), data); err != nil {
+				if !isReturn {
+					// 如果报错且sn没有返回继续循环
+					continue
 				}
-				// 如果不报错退出循环
-				break
+				elkClt.AddLogAsync(errorLog{
+					ErrorMsg:  err.Error(),
+					retryTime: reportTms + 1,
+				})
+			} else {
+				elkClt.AddLogAsync(errorLog{
+					ErrorMsg:  "no error",
+					retryTime: reportTms + 1,
+				})
 			}
+			// 如果不报错退出循环
+			break
 		}
 	}
 	return nil
