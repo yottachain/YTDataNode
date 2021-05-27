@@ -282,6 +282,32 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 	return true
 }
 
+func (L *LRCTaskActuator) backupTask() ([]byte, error) {
+	if L.msg.BackupLocation == nil {
+		return nil, fmt.Errorf("no backup")
+	}
+	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
+		return nil, fmt.Errorf("backup is offline")
+	}
+
+	for i := 0; i < 5; i++ {
+		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId, L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
+		if err != nil {
+			return nil, err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		data, err := dw.Get(ctx)
+		if err != nil {
+			continue
+		}
+		return data, nil
+	}
+
+	return nil, fmt.Errorf("download backup fail")
+}
+
 /**
  * @Description: 恢复数据
  * @receiver L
@@ -363,10 +389,17 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
  * @return err
  */
 func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, msgID []byte, err error) {
+
 	L.opts = opts
 	err = L.parseMsgData(msgData)
 	msgID = L.msg.Id
 	if err != nil {
+		return
+	}
+
+	// @TODO 如果是备份恢复阶段，直接执行备份恢复
+	if L.opts.Stage == 0 {
+		data, err = L.backupTask()
 		return
 	}
 
