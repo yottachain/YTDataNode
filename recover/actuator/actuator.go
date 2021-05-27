@@ -10,7 +10,7 @@ import (
 type RecoverStage uint8
 
 const (
-	RECOVER_STAGE_BASE RecoverStage = iota
+	RECOVER_STAGE_CP RecoverStage = iota
 	RECOVER_STAGE_ROW
 	RECOVER_STAGE_COL
 	RECOVER_STAGE_FULL

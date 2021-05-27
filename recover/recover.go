@@ -537,6 +537,10 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	for _, opts := range []actuator.Options{
 		actuator.Options{
 			Expired: expiredTime,
+			Stage:   actuator.RECOVER_STAGE_CP,
+		},
+		actuator.Options{
+			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
 		actuator.Options{
