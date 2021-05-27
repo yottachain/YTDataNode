@@ -302,6 +302,7 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 		if err != nil {
 			continue
 		}
+		log.Printf("%s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
 		return data, nil
 	}
 
