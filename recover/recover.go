@@ -398,7 +398,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	}
 
 	if len(resp) < 3 {
-		return false, fmt.Errorf("response too short")
+		return false, fmt.Errorf("response too short %d", len(resp))
 	}
 
 	var res message.MultiTaskOpResultRes
