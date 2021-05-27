@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
@@ -398,7 +399,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	}
 
 	if len(resp) < 3 {
-		return false, fmt.Errorf("response too short %d", len(resp))
+		return false, fmt.Errorf("response too short %d %s", len(resp), hex.EncodeToString(resp[0:2]))
 	}
 
 	var res message.MultiTaskOpResultRes
