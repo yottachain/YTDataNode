@@ -201,68 +201,17 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcStatusReq
-		var res message.GcStatusResp
-		var resp []byte
-
-		res.Dnid = sn.config.IndexID
-		if !config.Gconfig.GcOpen{
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errstatusreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID{
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
 		GcW := gc.GcWorker{sn}
-		res = GcW.GetGcStatus(msg)
-		resp, err = proto.Marshal(&res)
+		res, _ := GcW.GetGcStatusHdl(data)
+		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcdelStatusfileReq
-		var res message.GcdelStatusfileResp
-		var resp []byte
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen{
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errdelreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID{
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
 
 		GcW := gc.GcWorker{sn}
-		res = GcW.GcDelStatusfile(msg)
-		resp, err = proto.Marshal(&res)
+		res,_ := GcW.GcDelStatusFileHdl(data)
+		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 	})
 
@@ -286,7 +235,6 @@ func (sn *storageNode) Service() {
 		var msg message.SelfVerifyReq
 		var res message.SelfVerifyResp
 		if err := proto.Unmarshal(data, &msg); err != nil {
-
 			log.Println("[verify] message.SelfVerifyReq error:", err)
 			res.ErrCode = "100"
 			resp, err := proto.Marshal(&res)

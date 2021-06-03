@@ -197,6 +197,34 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
     return err
 }
 
+func (gc *GcWorker)GetGcStatusHdl(data []byte)(message.GcStatusResp, error){
+    var msg message.GcStatusReq
+    var res message.GcStatusResp
+    var err error
+
+    if err := proto.Unmarshal(data, &msg); err != nil {
+        log.Println("[gcdel] message.GcReq error:", err)
+        res.Status = "errstatusreq"
+        return res, err
+    }
+
+    res.Dnid = gc.Sn.Config().IndexID
+    if !config.Gconfig.GcOpen{
+        res.Status = "errNotOpenGc"
+        return res, err
+    }
+
+    if msg.Dnid != gc.Sn.Config().IndexID{
+        log.Println("[gcdel] message.GcReq error:", err)
+        res.Status = "errNodeid"
+        res.TaskId = "nil"
+        return res, err
+    }
+
+    res = gc.GetGcStatus(msg)
+    return res, nil
+}
+
 func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
     var res message.GcStatusResp
     res.Status = "succ"
@@ -224,6 +252,38 @@ func (gc *GcWorker)GetGcStatus(msg message.GcStatusReq) (message.GcStatusResp){
         res.Status = "fileUnmarshalErr"
     }
     return res
+}
+
+func (gc *GcWorker)GcDelStatusFileHdl(data []byte)(message.GcdelStatusfileResp, error){
+    var msg message.GcdelStatusfileReq
+    var res message.GcdelStatusfileResp
+    var err error
+    res.Dnid = gc.Sn.Config().IndexID
+
+    if err := proto.Unmarshal(data, &msg); err != nil {
+        log.Println("[gcdel] message.GcReq error:", err)
+        res.Status = "errdelreq"
+        err = fmt.Errorf("errdelreq")
+        return res, err
+    }
+
+    if !config.Gconfig.GcOpen{
+        res.Status = "errNotOpenGc"
+        err = fmt.Errorf("errNotOpenGc")
+        log.Println("[gcdel] error:", err)
+        return res, err
+    }
+
+    if msg.Dnid != gc.Sn.Config().IndexID{
+        res.Status = "errNodeid"
+        res.TaskId = "nil"
+        err = fmt.Errorf("errNodeid")
+        log.Println("[gcdel] error:", err)
+        return res, err
+    }
+
+    res = gc.GcDelStatusfile(msg)
+    return res, nil
 }
 
 func (gc *GcWorker)GcDelStatusfile(msg message.GcdelStatusfileReq) (message.GcdelStatusfileResp){
