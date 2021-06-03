@@ -6,7 +6,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/syndtr/goleveldb/leveldb"
+	//"github.com/tecbot/gorocksdb"
+
 	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
@@ -30,22 +31,24 @@ import (
 
 var disableWrite = false
 
+
+
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
 	RequestQueue chan *wRequest
-	db           *leveldb.DB
+	TmpDB        *slicecompare.CompDB
 	seq           uint64
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
-	db,err := slicecompare.OpenLevelDB("compare_db")
+	TDB,err := slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
 	if err != nil{
          log.Println("[slicecompare] open compare_db error")
          return nil
 	}
 
-	seq, err := slicecompare.GetSeqFromDb(db)
+	seq, err := slicecompare.GetSeqFromDb(TDB, slicecompare.Seqkey)
 	if err != nil {
 		log.Println("[slicecompare] get seq from compare_db error")
 		return nil
@@ -54,7 +57,7 @@ func NewWriteHandler(sn StorageNode) *WriteHandler {
 	return &WriteHandler{
 		sn,
 		make(chan *wRequest, 1000),
-		db,
+		TDB,
 		seq,
 	}
 }
@@ -109,7 +112,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key[:]
-			err = slicecompare.PutSeqToDb(wh.seq, hashkey[i], wh.db)
+			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
 			if err != nil{
 				log.Println("[slicecompare] put slice hash to db error, hash",base58.Encode(hashkey[i]))
 			    goto OUT
@@ -123,7 +126,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 	_, err = wh.putShard(rqmap)
 	if err == nil {
 		wh.seq = wh.seq + uint64(number)
-		err = slicecompare.PutSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.db)
+		err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		log.Printf("[ytfs]flush failure:%s\n", err.Error())

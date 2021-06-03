@@ -50,6 +50,7 @@ type Gcfg struct {
 	TXTestSleep           int
 	NodeListUpdateTime    int
 	GcOpen                bool
+	SliceCompareOpen      bool
  }
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
@@ -186,6 +187,7 @@ func NewGConfig() *GConfig {
 			RXTestSleep:           100,
 			TXTestSleep:           100,
 			GcOpen:                true,
+			SliceCompareOpen:      true,
 		},
 		OnUpdate: nil,
 	}

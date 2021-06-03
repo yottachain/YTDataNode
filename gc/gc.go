@@ -56,7 +56,7 @@ func SavetoFile(filepath string,value []byte) error{
     return err
 }
 
-func (gc *GcWorker)GcMsgChk(data []byte) (message.GcResp, error) {
+func (gc *GcWorker)GcMsgChkHdl(data []byte) (message.GcResp, error) {
     var msg message.GcReq
     var res message.GcResp
 
@@ -99,9 +99,9 @@ func (gc *GcWorker)GcMsgChk(data []byte) (message.GcResp, error) {
     return res, nil
 }
 
-func (gc *GcWorker)GcStatusMsgChk(msg message.GcReq, data []byte) (message.GcResp, error){
-
-}
+//func (gc *GcWorker)GcStatusMsgChk(msg message.GcReq, data []byte) (message.GcResp, error){
+//
+//}
 
 func (gc *GcWorker)GcHandle(msg message.GcReq) {
     var err error

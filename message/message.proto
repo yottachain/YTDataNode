@@ -46,23 +46,58 @@ message UploadShard2CResponse {
 //seq：哈希对应的序列号
 //hash：对账用哈希
 message SeqToHash{
-    uint64 seq=1;
-    bytes hash=2;
+    uint64 Seq=1;
+    bytes Hash=2;
 }
 
 //msgid = 0x1818   矿机对账请求
 //endseq: 本次对账的结束序列号
 //nodeid：矿机id
 message SliceCompareReq{
-    uint64  endseq =1;
-    uint32  nodeid =2;
-    repeated  SeqToHash cplist =3;
+    string  TaskId =1;
+    uint64  StartSeq =2;
+    uint64  EndSeq =3;
+    uint32  NodeId =4;
+    repeated  SeqToHash CpList =5;
 }
 
 //msgid = 0x1819   矿机对账请求
 message SliceCompareResp{
-   uint64  endedseq =1;
-   uint32  nodeid =2;
+    string TaskId =1;
+    uint32 NodeId =2;
+    string ErrCode =3;
+}
+
+//msgid = 0x1820
+message SliceCompareStatusReq{
+    string TaskId =1;
+    uint32 NodeId =2;
+}
+
+//msgid = 0x1821
+message SliceCompareStatusResp{
+   string  TaskId =1;
+   uint64  StartSeq =2;
+   uint64  EndSeq =3;
+   uint32  NodeId =4;
+   string  ErrCode =5;
+   uint32  DnMissNum =6;
+   uint32  SnMissNum =7;
+   uint32  CompareNum =8;
+   repeated bytes DnMissList =9;
+}
+
+//MessageID:0x1822
+message CpDelStatusfileReq{
+    string  TaskId=1;
+    uint32  NodeId=2;
+}
+
+//MessageID:0x1823
+message CpDelStatusfileResp{
+    string  TaskId=1;
+    uint32  NodeId=2;
+    string  ErrCode=3;
 }
 
 message DownloadShardRequest {

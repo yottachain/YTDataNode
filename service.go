@@ -11,9 +11,10 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/verifySlice"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
+	"github.com/yottachain/YTDataNode/verifySlice"
 	"log"
 	"math/rand"
 	"os"
@@ -120,6 +121,27 @@ func (sn *storageNode) Service() {
 		defer statistics.SubCounnectCount(head.RemotePeerID)
 		return wh.Handle(data, head), nil
 	})
+
+	slc := &slicecompare.SliceComparer{sn}
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		res, _ := slc.CompareMsgChkHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		res,err := slc.CompareMsgStatusChkHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		res,_ := slc.CompareMsgDelfileHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
+	})
+
+
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
 		log.Printf("[download] get shard request from %s\n request buf %s\n", head.RemotePeerID.Pretty(), hex.EncodeToString(data))
@@ -173,7 +195,7 @@ func (sn *storageNode) Service() {
 	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var resp []byte
 		GcW := gc.GcWorker{sn}
-		res, err := GcW.GcMsgChk(data)
+		res, err := GcW.GcMsgChkHdl(data)
 		resp, _ = proto.Marshal(&res)
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
 	})
