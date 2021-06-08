@@ -14,6 +14,7 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
+	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -129,13 +130,15 @@ func (wh *WriteHandler) batchWrite(number int) {
 		err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
-		log.Printf("[ytfs]flush failure:%s\n", err.Error())
-		statistics.DefaultStat.Lock()
-		statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
-		if statistics.DefaultStat.YTFSErrorCount > 100 {
-			disableWrite = true
+		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
+			log.Printf("[ytfs]flush failure:%s\n", err.Error())
+			statistics.DefaultStat.Lock()
+			statistics.DefaultStat.YTFSErrorCount = statistics.DefaultStat.YTFSErrorCount + 1
+			if statistics.DefaultStat.YTFSErrorCount > 100 {
+				disableWrite = true
+			}
+			statistics.DefaultStat.Unlock()
 		}
-		statistics.DefaultStat.Unlock()
 	}
 OUT:
 	for _, rq := range rqs {
@@ -161,6 +164,10 @@ func (wh *WriteHandler) Run() {
 			}
 		}
 	}()
+}
+
+func (wh *WriteHandler) GetMaxSpace() uint64 {
+	return wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) - 10
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
@@ -204,8 +211,8 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	//	fmt.Println("[get token] error:", err.Error())
 	//}
 
-	//如果 剩余空间不足10个分片停止发放token
-	if wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) <= (wh.YTFS().Len() + 10) {
+	// 如果 剩余空间不足10个分片停止发放token
+	if wh.GetMaxSpace() <= (wh.YTFS().Len()) {
 		tk = nil
 		err = fmt.Errorf("YTFS： space is not enough")
 	}
@@ -237,9 +244,9 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)
-	if tk != nil {
-		log.Printf("[task pool]get token return %s pid %s ip %v type %o\n", tk.String(), id.Pretty(), ip, tokenType)
-	}
+	//if tk != nil {
+	//	log.Printf("[task pool]get token return %s pid %s ip %v type %o\n", tk.String(), id.Pretty(), ip, tokenType)
+	//}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
 }

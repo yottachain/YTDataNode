@@ -116,11 +116,15 @@ func (sn *storageNode) Service() {
 		}
 		return res, nil
 	})
-	_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		statistics.AddCounnectCount(head.RemotePeerID)
-		defer statistics.SubCounnectCount(head.RemotePeerID)
-		return wh.Handle(data, head), nil
-	})
+
+    // 如果进程没有被禁止写入注册上传处理器
+    if sn.Config().DisableWrite == false {
+        _ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+            statistics.AddCounnectCount(head.RemotePeerID)
+            defer statistics.SubCounnectCount(head.RemotePeerID)
+            return wh.Handle(data, head), nil
+        })
+    }
 
 	slc := &slicecompare.SliceComparer{sn}
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
@@ -140,7 +144,6 @@ func (sn *storageNode) Service() {
 		resp,err := proto.Marshal(&res)
 		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
 	})
-
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
@@ -177,7 +180,8 @@ func (sn *storageNode) Service() {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
-	rcv.EncodeForRecover()
+	//go rce.Run()
+
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -197,6 +201,7 @@ func (sn *storageNode) Service() {
 		GcW := gc.GcWorker{sn}
 		res, err := GcW.GcMsgChkHdl(data)
 		resp, _ = proto.Marshal(&res)
+
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
 	})
 
@@ -208,7 +213,6 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-
 		GcW := gc.GcWorker{sn}
 		res,_ := GcW.GcDelStatusFileHdl(data)
 		resp, err := proto.Marshal(&res)
@@ -292,7 +296,7 @@ func (sn *storageNode) Service() {
 var first = true
 
 // Report 上报状态
-func Report(sn *storageNode, rce *rc.RecoverEngine) {
+func Report(sn *storageNode, rce *rc.Engine) {
 	if disableReport {
 		log.Println("miner disable")
 		//return
@@ -358,7 +362,7 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 	statistics.DefaultStat.Unlock()
 	statistics.DefaultStat.Mean()
 	statistics.DefaultStat.GconfigMd5 = config.Gconfig.MD5()
-	statistics.DefaultStat.RebuildShardStat = rce.GetStat()
+	statistics.DefaultStat.RebuildShardStat = statistics.DefaultRebuildCount.GetStat()
 	statistics.DefaultStat.IndexDBOpt = sn.config.Options
 	statistics.DefaultStat.Ban = false
 	if time.Now().Sub(lt) < time.Duration(config.Gconfig.BanTime)*time.Second {
@@ -366,9 +370,9 @@ func Report(sn *storageNode, rce *rc.RecoverEngine) {
 		statistics.DefaultStat.RXTokenFillRate = 1
 	}
 
-	// 设置重建任务并发限制
-	statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
-	statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	//// 设置重建任务并发限制
+	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
+	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
 
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 

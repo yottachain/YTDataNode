@@ -53,6 +53,7 @@ type Gcfg struct {
 	SliceCompareOpen      bool
  }
 
+
 func (g Gcfg) IsEqua(ng Gcfg) bool {
 	return reflect.DeepEqual(&g, &ng)
 }
@@ -142,7 +143,6 @@ func (gc *GConfig) Load() {
 		log.Printf("[gconfig]%s\n", err.Error())
 		return
 	}
-	log.Printf("[gconfig]读取配置 %v\n", gc.Gcfg)
 }
 
 func (gc *GConfig) Save() {

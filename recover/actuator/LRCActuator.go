@@ -11,10 +11,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
+	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
+	"strings"
 	"sync"
 	"time"
 )
@@ -113,7 +116,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	//// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
 		for _, shard := range L.shards.GetMap() {
-			if shard == nil {
+			if shard.Data == nil {
 				indexes = append(indexes, shard.Index)
 			}
 		}
@@ -146,8 +149,17 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 	wg.Add(len(indexes))
 	// @TODO 循环添加下载任务
 	for _, shardIndex := range indexes {
+		// 中断循环开关
+		var brk = false
+		if brk {
+			break
+		}
+
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
+
+		//  下载分片计数加一
+		statistics.DefaultRebuildCount.IncShardForRbd()
 		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash)
 		if err != nil {
 			return nil, fmt.Errorf("add download task fail %s", err.Error())
@@ -159,7 +171,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
-			shard, _ := d.Get(ctx)
+			shard, err := d.Get(ctx)
+			// @TODO 如果因为分片不存在导致错误，直接中断
+			if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
+				brk = true
+			}
+
 			L.shards.Set(hex.EncodeToString(key), &Shard{
 				Index: shardIndex,
 				Data:  shard,
@@ -179,7 +196,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
  */
 func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
 	for _, v := range L.shards.GetMap() {
-		if v == nil {
+		if v.Data == nil {
 			return false
 		}
 	}
@@ -193,15 +210,20 @@ func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
  * @return error
  */
 func (L *LRCTaskActuator) downloadLoop(ctx context.Context) error {
+	var errCount uint64
 
 start:
+	if errCount > 30 {
+		return nil
+	}
+	errCount++
 
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
-		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id))
+		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
 		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
 		if err != nil {
 			return err
@@ -218,6 +240,73 @@ start:
 	}
 
 	return nil
+}
+
+/**
+ * @Description: 预判重建能否成功
+ * @receiver L
+ * @return ok
+ */
+func (L *LRCTaskActuator) preJudge() (ok bool) {
+
+	indexes, err := L.getNeedShardList()
+	if err != nil {
+		return false
+	}
+
+	var onLineShardIndexes = make([]int16, 0)
+	for _, index := range indexes {
+		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); ok {
+			onLineShardIndexes = append(onLineShardIndexes, index)
+		} else {
+			// 如果是行列校验，所需分片必须都在线
+			if L.opts.Stage < 3 {
+				return false
+			}
+		}
+	}
+
+	// 如果是全局校验填充假数据，尝试校验
+	if L.opts.Stage >= 3 {
+		for _, index := range onLineShardIndexes {
+			// 填充假数据
+			L.lrcHandler.ShardExist[index] = 1
+
+			if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, TestData[index][:]); status > 0 {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
+func (L *LRCTaskActuator) backupTask() ([]byte, error) {
+	if L.msg.BackupLocation == nil {
+		return nil, fmt.Errorf("no backup")
+	}
+	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
+		return nil, fmt.Errorf("backup is offline")
+	}
+
+	for i := 0; i < 5; i++ {
+		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId, L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
+		if err != nil {
+			return nil, err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		data, err := dw.Get(ctx)
+		if err != nil {
+			continue
+		}
+		log.Printf("%s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
+		return data, nil
+	}
+
+	return nil, fmt.Errorf("download backup fail")
 }
 
 /**
@@ -240,7 +329,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
-			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash", hex.EncodeToString(hash[:]))
+			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash", hex.EncodeToString(hash[:]), v.Data)
 		}
 	}
 
@@ -301,10 +390,17 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
  * @return err
  */
 func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, msgID []byte, err error) {
+
 	L.opts = opts
 	err = L.parseMsgData(msgData)
 	msgID = L.msg.Id
 	if err != nil {
+		return
+	}
+
+	// @TODO 如果是备份恢复阶段，直接执行备份恢复
+	if L.opts.Stage == 0 {
+		data, err = L.backupTask()
 		return
 	}
 
@@ -314,8 +410,16 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 		return
 	}
 
+	// @TODO 预判
+	if ok := L.preJudge(); !ok {
+		err = fmt.Errorf("预判失败 阶段 %d任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
+		return
+	}
+	// 成功预判计数加一
+	statistics.DefaultRebuildCount.IncPassJudge()
+
 	// @TODO 下载分片
-	ctx, cancel := context.WithTimeout(context.Background(), opts.Expired.Sub(time.Now()))
+	ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
 	defer cancel()
 	err = L.downloadLoop(ctx)
 	if err != nil {
@@ -334,6 +438,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	}
 
 	data = recoverData
+	// 成功重建计数加一
+	statistics.DefaultRebuildCount.IncSuccRbd()
 	return
 }
 

@@ -1,6 +1,8 @@
 package actuator
 
-import "time"
+import (
+	"time"
+)
 
 /**
  * @Description: 重建恢复类型
@@ -8,7 +10,7 @@ import "time"
 type RecoverStage uint8
 
 const (
-	RECOVER_STAGE_BASE RecoverStage = iota
+	RECOVER_STAGE_CP RecoverStage = iota
 	RECOVER_STAGE_ROW
 	RECOVER_STAGE_COL
 	RECOVER_STAGE_FULL

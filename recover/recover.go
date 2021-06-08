@@ -13,6 +13,7 @@ import (
 	"github.com/yottachain/YTDataNode/recover/actuator"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
@@ -41,78 +42,41 @@ const (
 	max_reply_wait_time = time.Second * 60
 )
 
-type RecoverEngine struct {
+var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
+
+type elkErrorLog struct {
+	ErrorMsg  string
+	RetryTime int
+}
+
+type Engine struct {
 	sn                node.StorageNode
 	waitQueue         *TaskWaitQueue
 	replyQueue        chan *TaskMsgResult
 	le                *LRCEngine
-	tstdata           [164]lrcpkg.Shard
-	rcvstat           RebuildCount
 	Upt               *TokenPool.TokenPool
 	startTskTmCtl     uint8
-	ElkClient         *YTElkProducer.Client
 	DefaultDownloader shardDownloader.ShardDownloader
 }
 
-func New(sn node.StorageNode) (*RecoverEngine, error) {
+func New(sn node.StorageNode) (*Engine, error) {
 
-	var re = new(RecoverEngine)
+	var re = new(Engine)
 	re.waitQueue = NewTaskWaitQueue()
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 20)
-	re.le = NewLRCEngine(re.getShard, re.IncRbdSucc)
+	re.le = NewLRCEngine(statistics.DefaultRebuildCount.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
-	logtb := sn.Config().BPMd5()
-	tbstr := "dnlog-" + strings.ToLower(base58.Encode(logtb))
-	re.ElkClient = NewElkClient(tbstr)
 
 	return re, nil
 }
 
-func (re *RecoverEngine) Len() uint32 {
+func (re *Engine) Len() uint32 {
 	return uint32(re.waitQueue.Len())
 }
 
-//RebuildTask = ReportTask    （近似相等）
-//RebuildTask = SuccessRebuild + FailRebuild  （近似相等）
-//GetShardWkCnt = FailDecodeTaskID + Success + FailShard + FailSendShard + FailToken + FailConn （近似相等）
-//ConcurrentTask = ConcurrenGetShard （理想情况）
-
-func (re *RecoverEngine) GetStat() *statistics.RecoverStat {
-	return &statistics.RecoverStat{
-		re.rcvstat.rebuildTask,
-		re.rcvstat.concurrentTask,
-		re.rcvstat.concurrenGetShard,
-		re.rcvstat.successRebuild,
-		re.rcvstat.failRebuild,
-		re.rcvstat.getShardWkCnt,
-		re.rcvstat.reportTask,
-		re.rcvstat.failDecodeTaskID,
-		re.rcvstat.successShard,
-		re.rcvstat.failShard,
-		re.rcvstat.failSendShard,
-		re.rcvstat.failToken,
-		re.rcvstat.failConn,
-		re.rcvstat.failLessShard,
-		re.rcvstat.passJudge,
-		re.rcvstat.sucessConn,
-		re.rcvstat.successToken,
-		re.rcvstat.shardforRebuild,
-		re.rcvstat.rowRebuildSucc,
-		re.rcvstat.columnRebuildSucc,
-		re.rcvstat.globalRebuildSucc,
-		re.rcvstat.preRebuildSucc,
-		re.rcvstat.successPutToken,
-		re.rcvstat.sendTokenReq,
-		re.rcvstat.successVersion,
-		re.rcvstat.ackSuccRebuild,
-		*RunningCount,
-		*DownloadCount,
-	}
-}
-
-func (re *RecoverEngine) recoverShard(description *message.TaskDescription) error {
+func (re *Engine) recoverShard(description *message.TaskDescription) error {
 	defer func() {
 		err := recover()
 		fmt.Println("err:", err)
@@ -158,7 +122,7 @@ func (re *RecoverEngine) recoverShard(description *message.TaskDescription) erro
 	return nil
 }
 
-func (re *RecoverEngine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
+func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
 	return nil, nil //refer to getShard
 }
 
@@ -180,28 +144,18 @@ func NewElkClient(tbstr string) *YTElkProducer.Client {
 	return &client
 }
 
-func (re *RecoverEngine) reportLog(body interface{}) {
+func (re *Engine) reportLog(body interface{}) {
 	//if ! config.Gconfig.ElkReport{
 	//	return
 	//}
 
-	if re.ElkClient == nil {
-		log.Println("[recover][elk][error] no elkclient")
-		return
-	}
-	(*re.ElkClient).AddLogAsync(body)
 	time.Sleep(time.Second * 10)
 }
 
-func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype string, err error) *RcvDbgLog {
+func (re *Engine) MakeReportLog(nodeid string, hash []byte, errtype string, err error) *RcvDbgLog {
 	//if ! config.Gconfig.ElkReport{
 	//	return nil
 	//}
-
-	if re.ElkClient == nil {
-		log.Println("[recover][elk][error] no elkclient")
-		return nil
-	}
 
 	ShardId := base64.StdEncoding.EncodeToString(hash)
 	NowTm := time.Now().Format("2006/01/02 15:04:05")
@@ -218,40 +172,40 @@ func (re *RecoverEngine) MakeReportLog(nodeid string, hash []byte, errtype strin
 	}
 }
 
-func (re *RecoverEngine) parmCheck(id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt) ([]byte, error) {
+func (re *Engine) parmCheck(id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt) ([]byte, error) {
 	if 0 == sw.swget {
-		re.IncShardForRbd()
+		statistics.DefaultRebuildCount.IncShardForRbd()
 		sw.swget++
 	}
 
-	re.IncGetShardWK()
+	statistics.DefaultRebuildCount.IncGetShardWK()
 	btid, err := base58.Decode(taskID)
 	if err != nil {
-		re.IncFailDcdTask()
+		statistics.DefaultRebuildCount.IncFailDcdTask()
 		return btid, err
 	}
 
 	if 0 == len(id) {
 		err = fmt.Errorf("zero length id")
-		re.IncFailDcdTask()
+		statistics.DefaultRebuildCount.IncFailDcdTask()
 		return btid, err
 	}
 
 	if 0 == len(addrs) {
 		err = fmt.Errorf("zero length addrs")
-		re.IncFailDcdTask()
+		statistics.DefaultRebuildCount.IncFailDcdTask()
 		return btid, err
 	}
 
 	if 0 == len(hash) {
 		err = fmt.Errorf("zero length hash")
-		re.IncFailDcdTask()
+		statistics.DefaultRebuildCount.IncFailDcdTask()
 		return btid, err
 	}
 	return btid, nil
 }
 
-func (re *RecoverEngine) getRdToken(clt *client.YTHostClient, sw *Switchcnt) ([]byte, error) {
+func (re *Engine) getRdToken(clt *client.YTHostClient, sw *Switchcnt) ([]byte, error) {
 	var getToken message.NodeCapacityRequest
 	getToken.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
 	getTokenData, _ := proto.Marshal(&getToken)
@@ -280,165 +234,6 @@ func (re *RecoverEngine) getRdToken(clt *client.YTHostClient, sw *Switchcnt) ([]
 	return tok, err
 }
 
-func (re *RecoverEngine) getShardData(token, id, taskid string, addrs []string, hash []byte, n *int, sw *Switchcnt, clt *client.YTHostClient) ([]byte, error) {
-	btid, _ := base58.Decode(taskid)
-	var msg message.DownloadShardRequest
-	msg.VHF = hash
-	msg.AllocId = token
-
-	buf, err := proto.Marshal(&msg)
-	if err != nil {
-		re.IncFailToken()
-		log.Printf("[recover:%d] failToken[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		re.ReturnConShardPass()
-		return nil, err
-	}
-	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	re.IncConShard()
-	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
-	re.DecConShard()
-	if err != nil {
-		if strings.Contains(err.Error(), "Get data Slice fail") {
-			re.IncFailShard()
-			if config.Gconfig.ElkReport {
-				logelk := re.MakeReportLog(id, hash, "failShard", err)
-				go re.reportLog(logelk)
-			}
-			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
-		} else {
-			re.IncFailSendShard()
-			if config.Gconfig.ElkReport {
-				logelk := re.MakeReportLog(id, hash, "failSendShard", err)
-				go re.reportLog(logelk)
-			}
-			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
-		}
-		return nil, err
-	}
-
-	if len(shardBuf) < 3 {
-		re.IncFailSendShard()
-		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, addrs)
-		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
-	}
-	return shardBuf, err
-}
-
-func (re *RecoverEngine) putToken(token string, clt *client.YTHostClient) {
-	bkctxto, cancels2 := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancels2()
-
-	var msgbck message.DownloadTKCheck
-	msgbck.Tk = token
-	buf, err := proto.Marshal(&msgbck)
-	_, err = clt.SendMsg(bkctxto, message.MsgIDDownloadTKCheck.Value(), buf)
-	if err != nil {
-		log.Println("[recover] return token error,err=", err.Error())
-	} else {
-		re.IncSuccPutTok()
-	}
-}
-
-func (re *RecoverEngine) getShard(id string, taskID string, addrs []string, hash []byte, n *int, sw *Switchcnt, tasklife int32) ([]byte, error) {
-	btid, err := re.parmCheck(id, taskID, addrs, hash, n, sw)
-	if err != nil {
-		log.Println("[recover] parmcheck error :", err)
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
-	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
-	if err != nil {
-		log.Println("[recover][debug] getShardcnn  err=", err)
-		re.IncFailConn()
-		if config.Gconfig.ElkReport {
-			//logelk:=re.MakeReportLog(id,hash,"failConn",err)
-			//go re.reportLog(logelk)
-		}
-		log.Printf("[recover:%d] failConn[%v] get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failConn, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-		return nil, err
-	}
-
-	if 0 == sw.swconn {
-		re.IncSuccConn()
-		sw.swconn++
-	}
-
-	//peerVersion := clt.RemotePeerVersion()
-	//if int(peerVersion) < int(config.Gconfig.MinVersion) {
-	//	err = fmt.Errorf("remote dn version is too low!")
-	//	if config.Gconfig.ElkReport {
-	//		//logelk := re.MakeReportLog(id, hash, "failVersion", err)
-	//		//go re.reportLog(logelk)
-	//	}
-	//	return nil, err
-	//}
-
-	re.IncSuccVersion()
-	re.GetConShardPass()
-
-	//tok, err := re.getRdToken(clt, sw)
-	//if err != nil {
-	//	re.IncFailToken()
-	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-	//	re.ReturnConShardPass()
-	//	return nil, err
-	//
-	//}
-
-	//var resGetToken message.NodeCapacityResponse
-	//err = proto.Unmarshal(tok[2:], &resGetToken)
-	//if err != nil {
-	//	re.IncFailToken()
-	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-	//	re.ReturnConShardPass()
-	//	return nil, err
-	//}
-
-	//if !resGetToken.Writable {
-	//	re.IncFailToken()
-	//	err = fmt.Errorf("resGetToken.Writable is false")
-	//	log.Printf("[recover:%d] failToken [%v] get token err! get shard [%s] error[%d] %s addr %v id %d \n", BytesToInt64(btid[0:8]), re.rcvstat.failToken, base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs, id)
-	//	re.ReturnConShardPass()
-	//	return nil, err
-	//}
-
-	//if 0 == sw.swtoken {
-	//	re.IncSuccToken()
-	//	sw.swtoken++
-	//}
-
-	var res message.DownloadShardResponse
-	shardBuf, err := re.getShardData("", id, taskID, addrs, hash, n, sw, clt)
-	if err != nil {
-		re.ReturnConShardPass()
-		return nil, err
-	}
-	re.ReturnConShardPass()
-
-	err = proto.Unmarshal(shardBuf[2:], &res)
-	if err != nil {
-		re.IncFailSendShard()
-		log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s\n", BytesToInt64(btid[0:8]), re.rcvstat.failSendShard, base64.StdEncoding.EncodeToString(hash), *n, err.Error())
-		return nil, err
-	}
-
-	if 0 == sw.swshard {
-		re.IncSuccShard()
-		sw.swshard++
-	}
-	//
-	//re.putToken(resGetToken.AllocId, clt)
-	//log.Printf("[recover:%d] successShard[%d] get shard [%s] success[%d]\n", BytesToInt64(btid[0:8]), re.rcvstat.successShard, base64.StdEncoding.EncodeToString(hash), *n)
-
-	*n = *n + 1
-	return res.Data, nil
-}
-
 // TaskMsgResult 重建任务结果对象
 type TaskMsgResult struct {
 	ID          []byte // 重建任务ID
@@ -450,7 +245,7 @@ type TaskMsgResult struct {
 }
 
 // 多重建任务消息处理
-func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
+func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	var mtdMsg message.MultiTaskDescription
 	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
 		return err
@@ -479,7 +274,7 @@ func (re *RecoverEngine) HandleMuilteTaskMsg(msgData []byte) error {
  * @param ts 任务
  * @param pkgstart 任务包开始时间
  */
-func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
+func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	var msgID int16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
@@ -508,14 +303,18 @@ func (re *RecoverEngine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 }
 
-func (re *RecoverEngine) PutReplyQueue(res *TaskMsgResult) {
+func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
 	default:
+		elkClt.AddLogAsync(elkErrorLog{
+			ErrorMsg:  "push reply msg fail",
+			RetryTime: 0,
+		})
 	}
 }
 
-func (re *RecoverEngine) reply(res *TaskMsgResult) error {
+func (re *Engine) reply(res *TaskMsgResult) error {
 	var msgData message.TaskOpResult
 	msgData.Id = res.ID
 	msgData.RES = res.RES
@@ -529,7 +328,7 @@ func (re *RecoverEngine) reply(res *TaskMsgResult) error {
 }
 
 //
-func (re *RecoverEngine) MultiReply() error {
+func (re *Engine) MultiReply() error {
 	var resmsg = make(map[int32]*message.MultiTaskOpResult)
 
 	func() {
@@ -546,51 +345,78 @@ func (re *RecoverEngine) MultiReply() error {
 				_r.ExpiredTime = res.ExpriedTime
 				_r.SrcNodeID = res.SrcNodeID
 				resmsg[res.BPID] = _r
-				re.IncReportRbdTask()
+				statistics.DefaultRebuildCount.IncReportRbdTask()
 
 			case <-time.After(max_reply_wait_time):
 				return
 			}
 		}
 	}()
+
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
-		if data, err := proto.Marshal(v); err != nil {
+		data, err := proto.Marshal(v)
+		if err != nil {
 			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
 			continue
-		} else {
-			reportTms := 6
-			for {
-				reportTms--
-				if 0 >= reportTms {
-					log.Println("[recover][report]Send msg error: ", err)
-					break
-				}
-				resp, err := re.sn.SendBPMsg(int(k), message.MsgIDMultiTaskOPResult.Value(), data)
-				if err == nil {
-					if len(resp) < 3 {
-						continue
-					}
+		}
 
-					var res message.MultiTaskOpResultRes
-					err = proto.Unmarshal(resp[2:], &res)
-					if err != nil {
-						continue
-					} else {
-						if 0 == res.ErrCode {
-							re.rcvstat.ackSuccRebuild += uint64(res.SuccNum)
-						}
-					}
-					log.Println("[recover][report] multi reply success, rebuildTask=", re.rcvstat.rebuildTask, "reportTask=", re.rcvstat.reportTask, "ackSuccRebuild", re.rcvstat.ackSuccRebuild)
-					break
+		for reportTms := 0; reportTms < 5; reportTms++ {
+			if isReturn, err := re.tryReply(int(k), data); err != nil {
+				elkClt.AddLogAsync(elkErrorLog{
+					ErrorMsg:  err.Error(),
+					RetryTime: reportTms + 1,
+				})
+				if !isReturn {
+					// 如果报错且sn没有返回继续循环
+					continue
 				}
+			} else {
+				elkClt.AddLogAsync(elkErrorLog{
+					ErrorMsg:  "no error",
+					RetryTime: reportTms + 1,
+				})
 			}
+			// 如果不报错退出循环
+			break
 		}
 	}
 	return nil
 }
 
-func (re *RecoverEngine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
+/**
+ * @Description: 尝试回报重建结果
+ * @receiver re
+ * @param index
+ * @param data
+ * @return bool
+ * @return error
+ */
+func (re *Engine) tryReply(index int, data []byte) (bool, error) {
+	resp, err := re.sn.SendBPMsg(index, message.MsgIDMultiTaskOPResult.Value(), data)
+	if err != nil {
+		return false, err
+	}
+
+	if len(resp) < 3 {
+		return false, fmt.Errorf("response too short %d %s", len(resp), hex.EncodeToString(resp[0:2]))
+	}
+
+	var res message.MultiTaskOpResultRes
+	err = proto.Unmarshal(resp[2:], &res)
+	if err != nil {
+		return false, err
+	}
+
+	if 0 == res.ErrCode {
+		statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
+	} else {
+		return true, fmt.Errorf("sn return error %d", res.ErrCode)
+	}
+	return false, nil
+}
+
+func (re *Engine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
 	var res TaskMsgResult
 	res.ExpriedTime = expried
 	var msg message.TaskDescription
@@ -615,14 +441,10 @@ type PreJudgeReport struct {
 	ShardExist string
 }
 
-func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg message.TaskDescription) *PreJudgeReport {
+func (re *Engine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg message.TaskDescription) *PreJudgeReport {
 	//if ! config.Gconfig.ElkReport{
 	//	return nil
 	//}
-	if re.ElkClient == nil {
-		log.Println("[recover][elk] error,no client")
-		return nil
-	}
 	localid := re.sn.Config().ID
 	lostidx := lrcShd.Lostindex
 	losthash := base64.StdEncoding.EncodeToString(msg.Hashs[msg.RecoverId])
@@ -649,7 +471,7 @@ func (re *RecoverEngine) MakeJudgeElkReport(lrcShd *lrcpkg.Shardsinfo, msg messa
  * @return *LRCHandler
  * @return error
  */
-func (re *RecoverEngine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCHandler, error) {
+func (re *Engine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCHandler, error) {
 	lrc := &lrcpkg.Shardsinfo{}
 
 	lrc.OriginalCount = uint16(len(msg.Hashs) - int(msg.ParityShardCount))
@@ -666,12 +488,12 @@ func (re *RecoverEngine) initLRCHandlerByMsg(msg message.TaskDescription) (*LRCH
  * @param res
  * @return *TaskMsgResult
  */
-func (re *RecoverEngine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.TaskDescription, res *TaskMsgResult) error {
+func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.TaskDescription, res *TaskMsgResult) error {
 	hashBytes := md5.Sum(recoverData)
 	hash := hashBytes[:]
 
 	if !bytes.Equal(hash, msg.Hashs[msg.RecoverId]) {
-		re.IncFailRbd()
+		statistics.DefaultRebuildCount.IncFailRbd()
 
 		return fmt.Errorf(
 			"[recover]fail shard saved %s recoverID %x hash %s\n",
@@ -685,7 +507,7 @@ func (re *RecoverEngine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg m
 	copy(key[:], hash)
 
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
-		re.IncFailRbd()
+		statistics.DefaultRebuildCount.IncFailRbd()
 		return fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 	}
 	return nil
@@ -700,7 +522,7 @@ func (re *RecoverEngine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg m
  * @param tasklife 任务存活周期
  * @return *TaskMsgResult 任务执行结果
  */
-func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
+func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
 
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
@@ -710,23 +532,36 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 	defer taskActuator.Free()
 
 	var recoverData []byte
+	expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-
 		actuator.Options{
-			Expired: time.Now().Add(time.Minute * 5),
+			Expired: expiredTime,
+			Stage:   actuator.RECOVER_STAGE_CP,
+		},
+		actuator.Options{
+			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
-		//actuator.Options{
-		//	Expired: time.Now().Add(time.Minute * 5),
-		//	Stage:   actuator.RECOVER_STAGE_COL,
-		//},
-		//actuator.Options{
-		//	Expired: time.Now().Add(time.Minute * 5),
-		//	Stage:   actuator.RECOVER_STAGE_FULL,
-		//},
+		actuator.Options{
+			Expired: expiredTime,
+			Stage:   actuator.RECOVER_STAGE_COL,
+		},
+		actuator.Options{
+			Expired: expiredTime,
+			Stage:   actuator.RECOVER_STAGE_FULL,
+		},
 	} {
-		startTime := time.Now()
+
+		switch opts.Stage {
+		case 1:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.RowRebuildCount, 1)
+		case 2:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.ColRebuildCount, 1)
+		case 3:
+			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
+		}
+
 		data, resID, err := taskActuator.ExecTask(
 			msgData,
 			opts,
@@ -735,26 +570,22 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
-
 			switch opts.Stage {
-			case 0:
-				atomic.AddUint64(&statistics.DefaultStatusCount.Success0, 1)
 			case 1:
-				atomic.AddUint64(&statistics.DefaultStatusCount.Success1, 1)
+				statistics.DefaultRebuildCount.IncRowRbdSucc()
 			case 2:
-				atomic.AddUint64(&statistics.DefaultStatusCount.Success2, 1)
+				statistics.DefaultRebuildCount.IncColRbdSucc()
 			case 3:
-				atomic.AddUint64(&statistics.DefaultStatusCount.Success3, 1)
+				statistics.DefaultRebuildCount.IncGlobalRbdSucc()
 			}
-
 			break
 		}
-		fmt.Printf("[recover] 任务 %s %d 阶段耗时 %f s 失败: %s\n", hex.EncodeToString(res.ID), opts.Stage, time.Now().Sub(startTime).Seconds(), err.Error())
 	}
 
 	if recoverData == nil {
 		res.ErrorMsg = fmt.Errorf("all rebuild stage fail")
 		res.RES = 1
+		statistics.DefaultRebuildCount.IncFailLessShard()
 		return
 	}
 
@@ -774,7 +605,7 @@ func (re *RecoverEngine) execLRCTask(msgData []byte, expired int64, pkgStart tim
 }
 
 // 副本集任务
-func (re *RecoverEngine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
+func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	var msg message.TaskDescriptionCP
 	var result TaskMsgResult
 	result.ExpriedTime = expried

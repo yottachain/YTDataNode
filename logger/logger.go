@@ -68,8 +68,16 @@ func newSyncWriter(dist io.Writer) *syncWriter {
 	}
 }
 
-var Println = log.Println
-var Printf = log.Printf
-var Fatalln = log.Fatalln
-var Fatalf = log.Fatalf
+var Println = func(v ...interface{}) {
+	go log.Println(v...)
+}
+var Printf = func(str string, v ...interface{}) {
+	go log.Printf(str, v...)
+}
+var Fatalln = func(v ...interface{}) {
+	go log.Fatalln(v...)
+}
+var Fatalf = func(str string, v ...interface{}) {
+	go log.Fatalf(str, v...)
+}
 var Fatal = log.Fatal

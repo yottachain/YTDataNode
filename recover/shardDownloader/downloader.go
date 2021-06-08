@@ -9,13 +9,17 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
-	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+//var elkClt = util.NewElkClient("rebuild", &config.Gconfig.ElkReport2)
 
 type stat struct {
 	Downloading int32
@@ -52,22 +56,52 @@ type downloader struct {
  * @return error
  */
 func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []string, shardID []byte) ([]byte, error) {
+	statistics.DefaultRebuildCount.IncConShard()
+	defer statistics.DefaultRebuildCount.DecConShard()
 
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
 	if err != nil {
+		statistics.DefaultRebuildCount.IncFailConn()
 		return nil, err
 	}
+	// 连接成功计数
+	statistics.DefaultRebuildCount.IncSuccConn()
+	statistics.DefaultRebuildCount.IncSendTokReq()
+	tkString, err := d.GetToken(ctx, clt)
+	if err != nil {
+		statistics.DefaultRebuildCount.IncFailToken()
+		return nil, err
+	}
+	// 获取分片token成功计数
+	statistics.DefaultRebuildCount.IncSuccToken()
 
 	var msg message.DownloadShardRequest
 	msg.VHF = shardID
+	msg.AllocId = tkString
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		return nil, err
 	}
 
-	resBuf, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	if err != nil {
-		log.Println("下载失败", err)
+		if strings.Contains(err.Error(), "Get data Slice fail") {
+			statistics.DefaultRebuildCount.IncFailShard()
+
+			//elkClt.AddLogAsync(struct {
+			//	ID       string
+			//	Form     string
+			//	ErrorMsg string
+			//}{
+			//	base58.Encode(msg.VHF),
+			//	nodeId,
+			//	err.Error(),
+			//})
+
+		} else {
+			statistics.DefaultRebuildCount.IncFailSendShard()
+		}
+
 		return nil, err
 	}
 	if len(resBuf) < 3 {
@@ -77,11 +111,34 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	var resMsg message.DownloadShardResponse
 	err = proto.Unmarshal(resBuf[2:], &resMsg)
 	if err != nil {
-		log.Println("下载失败", err)
 		return nil, err
 	}
 
+	// 获取分片成功计数
+	statistics.DefaultRebuildCount.IncSuccShard()
 	return resMsg.Data, nil
+}
+
+func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (string, error) {
+
+	var getTokenRequestMsg message.NodeCapacityRequest
+	getTokenRequestMsg.RequestMsgID = message.MsgIDMultiTaskDescription.Value() + 1
+	buf, err := proto.Marshal(&getTokenRequestMsg)
+	if err != nil {
+		return "", err
+	}
+	resBuf, err := clt.SendMsg(ctx, message.MsgIDNodeCapacityRequest.Value(), buf)
+	if err != nil {
+		return "", err
+	}
+
+	var resMsg message.NodeCapacityResponse
+	err = proto.Unmarshal(resBuf[2:], &resMsg)
+	if err != nil {
+		return "", err
+	}
+
+	return resMsg.AllocId, nil
 }
 
 /**
@@ -96,6 +153,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (DownloaderWait, error) {
 	IDString := hex.EncodeToString(shardID)
 	shardChan := make(chan []byte, 1)
+	errChan := make(chan error, 1)
 
 	// @TODO 异步执行下载
 	d.q <- struct{}{}
@@ -107,13 +165,13 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 			<-d.q
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
-			shardChan <- nil
+			errChan <- err
 			return
 		}
 		atomic.AddInt32(&d.stat.Success, 1)
@@ -122,7 +180,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		shardChan <- resBuf
 	}()
 
-	return &downloadWait{shardChan: &shardChan}, nil
+	return &downloadWait{shardChan: &shardChan, errChan: &errChan}, nil
 }
 
 func (d downloader) GetShards(shardList ...[]byte) [][]byte {
@@ -134,10 +192,13 @@ func (d downloader) GetShards(shardList ...[]byte) [][]byte {
  */
 type downloadWait struct {
 	shardChan *chan []byte
+	errChan   *chan error
 }
 
 func (d *downloadWait) Get(ctx context.Context) ([]byte, error) {
 	select {
+	case err := <-*d.errChan:
+		return nil, err
 	case <-ctx.Done():
 		return nil, fmt.Errorf("ctx done")
 	case shard := <-*d.shardChan:
@@ -154,11 +215,11 @@ func New(store *clientStore.ClientStore, max int) *downloader {
 	d.q = make(chan struct{}, max)
 	//d.taskRes = sync.Map{}
 
-	go func() {
-		for {
-			<-time.After(time.Second * 10)
-			d.stat.Print()
-		}
-	}()
+	//go func() {
+	//	for {
+	//		<-time.After(time.Second * 10)
+	//		d.stat.Print()
+	//	}
+	//}()
 	return d
 }

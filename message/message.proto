@@ -184,6 +184,7 @@ message TaskDescription{
     repeated P2PLocation locations=3;
     int32 parityShardCount=4;
     int32 recoverId=5;
+    P2PLocation backupLocation=6;
 }
 
 //id:任务ID,在上报重建结果(TaskOpResult)时,传入

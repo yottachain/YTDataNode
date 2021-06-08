@@ -62,7 +62,8 @@ type Config struct {
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
 	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
-	bpListMd5 []byte
+	bpListMd5    []byte
+	DisableWrite bool
 }
 
 // DefaultYTFSOptions default config
@@ -391,7 +392,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 246
+	return 265
 }
 
 func Version() uint32 {
