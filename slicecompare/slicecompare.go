@@ -22,15 +22,15 @@ import (
 
 const FinishKey = "key_finishcompareseq"
 const Seqkey  = "seqkey_forcompare"
-const Comparedb  = "compare_db"
-const CpStatusDir = "compare_status"
+const Comparedb  = "/compare_db/"
+const CpStatusDir = "/compare_status/"
 
-var SliceCompareDir string = "/" + "gc"
-var FileNextIdx string ="/" + "gc/next_index_file"
-var ComparedIdxFile string = "/" + "gc/compared_index_file"
-var FileDB_tmp string = "/" + "gc/temp_index_kvdb"
-var FileDB_sn string = "/" + "gc/sn_index_kvdb"
-var FileDB_todel string = "/" + "gc/entry_to_del_kvdb"
+var SliceCompareDir string =  CpStatusDir
+//var FileNextIdx string ="/" + "gc/next_index_file"
+//var ComparedIdxFile string = "/" + "gc/compared_index_file"
+//var FileDB_tmp string = "/" + "gc/temp_index_kvdb"
+//var FileDB_sn string = "/" + "gc/sn_index_kvdb"
+//var FileDB_todel string = "/" + "gc/entry_to_del_kvdb"
 
 var Entrycountdownld int32 = 1000
 
@@ -41,9 +41,8 @@ type CompDB struct {
 }
 
 func init(){
-    InitDir(SliceCompareDir)
-    ForInit(FileNextIdx,"000000000000000000000000")
-	ForInit(ComparedIdxFile,"000000000000000000000000")
+	InitDir(Comparedb)
+    InitDir(CpStatusDir)
 }
 
 func ForInit(fileName string, value string){
@@ -110,9 +109,10 @@ func OpenTmpRocksDB(DBName string) (*CompDB, error){
 	var tmp CompDB
 	DBPath := util.GetYTFSPath() + DBName
 	opt := gorocksdb.NewDefaultOptions()
+	opt.SetCreateIfMissing(true)
 	db, err := gorocksdb.OpenDb(opt,DBPath)
 	if err != nil{
-		fmt.Printf("open DB:%s error",DBPath)
+		fmt.Printf("open DB:%s error %s",DBPath,err.Error())
 		return nil,err
 	}
 
@@ -173,6 +173,7 @@ func SavetoFile(filepath string,value []byte) error{
 }
 
 func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *CompDB){
+	return
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 	res,_ := sc.CompareHashFromSn(msg, Tdb)
 	stus,_ := proto.Marshal(&res)
@@ -244,6 +245,11 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *Comp
     BStartSeq := make([]byte,8)
     binary.LittleEndian.PutUint64(BStartSeq,msg.StartSeq)
 
+    if !sc.Sn.Config().UseKvDb{
+    	log.Println("[slicecompare][error] use indexdb, gc failed")
+	    return
+    }
+
 	Tdb.Ro.SetFillCache(false)
     iter := Tdb.Db.NewIterator(Tdb.Ro)
     for iter.SeekToFirst(); iter.Valid(); iter.Next(){
@@ -305,10 +311,14 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *Comp
 		dnhash,err := Tdb.Db.Get(Tdb.Ro, BKey)
 
 		if err != nil || len(dnhash.Data()) != 16{
-            fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, hash, err)
-            res.DnMissList = append(res.DnMissList, seqtohash.Hash)
-            atomic.AddUint32(&res.DnMissNum,1)
-            continue
+           fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, hash, err)
+           res.DnMissList = append(res.DnMissList, seqtohash.Hash)
+           atomic.AddUint32(&res.DnMissNum,1)
+           continue
+		}
+
+		if len(seqtohash.Hash)==0 {
+			continue
 		}
 
 		hash = base58.Encode(seqtohash.Hash)
