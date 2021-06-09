@@ -557,7 +557,8 @@ func init() {
 			changePoolIDCmd,
 			changeDepAccCmd,
 		)
-		baseNodeUrl = "http://dnapi1.yottachain.net:8888"
+		//baseNodeUrl = "http://dnapi1.yottachain.net:8888"
+		baseNodeUrl = "http://117.161.69.111:8888"
 		if url, ok := os.LookupEnv("base_node_url"); ok {
 			baseNodeUrl = url
 		}
