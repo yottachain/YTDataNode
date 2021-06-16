@@ -44,14 +44,15 @@ func (vfs *VerifySler)GetUsedEntOfRange(n, m, h, n_Rangeth uint64,  fl_IdxDB *os
 func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries uint64, fl_IdxDB *os.File)([]ydcommon.IndexItem,error){
     var verifyTab []ydcommon.IndexItem
     var kvItem ydcommon.IndexItem
-    verifyedItem := start_Item
+    var  verifyedItem uint64  = 0
+    totalverify := start_Item
 
     n_Rangeth := start_Item/m                 //range zoom index
     m_Itermth := start_Item%m
     buf := make([]byte,20,20)
     begin := true
     for {
-        log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
+        //log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
         if n_Rangeth >= (n + 1) {
             log.Println("[confirmslice] all hash in indexdb has verified, will to return!")
             slicecompare.SaveValueToFile(strconv.FormatUint(0, 10), VerifyedNumFile)
@@ -72,18 +73,18 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
                 begin = false
             }
 
-            if verifyedItem >= start_Item+traverEntries {
+            if verifyedItem >= traverEntries {
                 log.Println("[confirmslice] Has verified 2000 item, will to return!")
-                slicecompare.SaveValueToFile(strconv.FormatUint(verifyedItem, 10), VerifyedNumFile)
+                slicecompare.SaveValueToFile(strconv.FormatUint(totalverify, 10), VerifyedNumFile)
                 break
             }
 
             verifyedItem++
-
-            fl_IdxDB.Seek(int64(pos), io.SeekStart)
+            totalverify++
+            _, _ = fl_IdxDB.Seek(int64(pos), io.SeekStart)
             k, err := fl_IdxDB.Read(buf)
             if (err != nil) || (k != 20) {
-                fmt.Println("[confirmslice]get index error:", err)
+                fmt.Println("[confirmslice][verify]get index error:", err)
                 continue
             }
 
@@ -95,6 +96,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
             verifyTab = append(verifyTab, kvItem)
             pos = pos + 20
         }
+        totalverify = totalverify + m -usedSize
         n_Rangeth++
     }
     return verifyTab, nil
