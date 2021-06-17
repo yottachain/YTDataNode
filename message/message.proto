@@ -39,8 +39,8 @@ message UploadShard2CResponse {
    int32 RES= 1;
    string DNSIGN =2;
    uint64 seq =3;
-   bytes hash =4;
 }
+
 
 //用于sn发送对账列表
 //seq：哈希对应的序列号

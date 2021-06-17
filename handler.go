@@ -65,7 +65,7 @@ func NewWriteHandler(sn StorageNode) *WriteHandler {
 
 type YTres struct{
 	seq uint64
-	hash []byte
+	//hash []byte
 }
 
 type wRequest struct {
@@ -109,7 +109,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 		case rq := <-wh.RequestQueue:
 			atomic.AddUint64(&wh.seq,1)
 			rq.ytres.seq = wh.seq
-			rq.ytres.hash = rq.Key[:]
+			//rq.ytres.hash = rq.Key[:]
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key[:]
@@ -269,10 +269,11 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
 		log.Printf("[slicecompare] origin  shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
-	    log.Println("[slicecompare] return ytres.seq=",ytres.seq,"ytres.hash=",base58.Encode(ytres.hash))
+	    //log.Println("[slicecompare] return ytres.seq=",ytres.seq,"ytres.hash=",base58.Encode(ytres.hash))
 	}
 
-	res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, ytres.hash, wh.Config().PrivKeyString())
+	//res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, ytres.hash, wh.Config().PrivKeyString())
+	res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
 		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
