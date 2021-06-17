@@ -277,6 +277,8 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *Comp
 	    if err != nil{
 	    	fmt.Println("[slicecompare] gc error:", err, "hash",base58.Encode(GcHash))
 	    }
+	    _ = Tdb.Db.Delete(Tdb.Wo, Bkey)
+	    return
     }
 
 	err := PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
@@ -317,7 +319,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *Comp
            continue
 		}
 
-		if len(seqtohash.Hash)==0 {
+		if len(seqtohash.Hash) != 16 {
 			continue
 		}
 
