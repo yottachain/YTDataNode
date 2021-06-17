@@ -76,7 +76,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
             if verifyedItem >= traverEntries {
                 log.Println("[confirmslice] Has verified 2000 item, will to return!")
                 slicecompare.SaveValueToFile(strconv.FormatUint(totalverify, 10), VerifyedNumFile)
-                break
+                return  verifyTab, nil
             }
 
             verifyedItem++
@@ -96,7 +96,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
             verifyTab = append(verifyTab, kvItem)
             pos = pos + 20
         }
-        totalverify = totalverify + m -usedSize
+        totalverify = totalverify + m - usedSize
         n_Rangeth++
     }
     return verifyTab, nil
@@ -119,10 +119,13 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
     for _, v := range verifyTab {
         ret,err := vfs.Sn.YTFS().VerifySliceOne(v.Hash)
         if err != nil {
+            log.Println("[verify] error:",err,"hash:",base58.Encode(v.Hash[:]),"pos:",v.OffsetIdx)
             var errHash message.HashToHash
             errHash.Datahash = ret.Datahash
             errHash.DBhash = ret.DBhash
             hashTab = append(hashTab,&errHash)
+        }else{
+            log.Println("[verify] success, hash:",base58.Encode(v.Hash[:]),"pos:",v.OffsetIdx)
         }
     }
     return verifyedItem, hashTab, nil

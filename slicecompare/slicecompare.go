@@ -173,7 +173,7 @@ func SavetoFile(filepath string,value []byte) error{
 }
 
 func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *CompDB){
-	return
+	//return
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 	res,_ := sc.CompareHashFromSn(msg, Tdb)
 	stus,_ := proto.Marshal(&res)
