@@ -8,15 +8,16 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTHost/client"
 	"github.com/yottachain/YTHost/clientStore"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 //var elkClt = util.NewElkClient("rebuild", &config.Gconfig.ElkReport2)
@@ -215,11 +216,11 @@ func New(store *clientStore.ClientStore, max int) *downloader {
 	d.q = make(chan struct{}, max)
 	//d.taskRes = sync.Map{}
 
-	//go func() {
-	//	for {
-	//		<-time.After(time.Second * 10)
-	//		d.stat.Print()
-	//	}
-	//}()
+	go func() {
+		for {
+			<-time.After(time.Second * 10)
+			d.stat.Print()
+		}
+	}()
 	return d
 }
