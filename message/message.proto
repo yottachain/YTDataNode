@@ -266,6 +266,7 @@ message ListDNIResp{
 //msgid = 0xd97a
 message SelfVerifyReq{
     string  Num =1;
+    string  StartItem =2;
 }
 
 message HashToHash{

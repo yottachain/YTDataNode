@@ -19,11 +19,11 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
 
 	num,_ := strconv.ParseUint(verifyNum,10,64)
 
-	resp = vfs.VerifySliceIdxdb(num)
+	resp = vfs.VerifySliceIdxdb(num, startItem)
 	return resp
 }

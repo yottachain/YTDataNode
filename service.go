@@ -246,8 +246,9 @@ func (sn *storageNode) Service() {
 		}
 
 		verifynum := msg.Num
+		startItem := msg.StartItem
 		vfs := verifySlice.VerifySler{sn}
-		result := vfs.VerifySlice(verifynum)
+		result := vfs.VerifySlice(verifynum, startItem)
 		resp, err := proto.Marshal(&result)
 		if err != nil {
 			log.Println("[verify] Marshal resp error:", err)

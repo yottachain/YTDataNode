@@ -60,6 +60,8 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
         }
 
         usedSize, err := vfs.GetUsedEntOfRange(n, m, h, n_Rangeth, fl_IdxDB)
+        fmt.Println("[debug][verify] n=",n, "n_Ranges=",n_Rangeth,"m=",m,"usedSize=",usedSize)
+
         if err != nil || usedSize > m{
             n_Rangeth++
             continue
@@ -131,7 +133,7 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
     return verifyedItem, hashTab, nil
 }
 
-func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     cfg,err := config.ReadConfig()
     dir := util.GetYTFSPath()
@@ -168,6 +170,10 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64) (message.SelfVerify
     m := uint64(header.RangeCoverage)
     str_pos,_ := slicecompare.GetValueFromFile(VerifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
+    if len(startItem) > 0{
+        start_pos,_ = strconv.ParseUint(startItem,10,64)
+    }
+
     varyfiedNum,hashTab,_ := vfs.SliceHashVarify(n, m, h, start_pos, travelEntries, fl_IdxDB)
     resp.Entryth = strconv.FormatUint(varyfiedNum,10)
     resp.ErrShard = hashTab

@@ -44,12 +44,16 @@ func openKVDB() (*gorocksdb.DB, error) {
 }
 
 
-func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     var errhash message.HashToHash
     //var hashTab []ytfs.Hashtohash
 
     startkey,err := slicecompare.GetValueFromFile(VerifyedKvFile)
+    if len(startItem) > 0{
+        startkey = startItem
+    }
+
     //startkey :=
     hashTab,beginKey,err := vfs.Sn.YTFS().VerifySlice(startkey,traveEntries)
     if err != nil {

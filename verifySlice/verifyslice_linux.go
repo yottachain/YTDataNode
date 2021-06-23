@@ -21,7 +21,7 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
 
 	config, err := config.ReadConfig()
@@ -34,10 +34,10 @@ func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
 	num,err := strconv.ParseUint(verifyNum,10,64)
 
 	if config.UseKvDb {
-		resp = vfs.VerifySlicekvdb(num)
+		resp = vfs.VerifySlicekvdb(num, startItem)
 		return resp
 	}
 
-	resp = vfs.VerifySliceIdxdb(num)
+	resp = vfs.VerifySliceIdxdb(num,startItem)
 	return resp
 }
