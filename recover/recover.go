@@ -547,9 +547,6 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			msgData,
 			opts,
 		)
-		if err != nil {
-			log.Println("恢复失败", err, hex.EncodeToString(resID))
-		}
 		res.ID = resID
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {

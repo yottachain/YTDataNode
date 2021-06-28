@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
 	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
@@ -173,6 +174,9 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
 			shard, err := d.Get(ctx)
+			if err != nil {
+				log.Println("[recover]download shard fail ", addrInfo.Addrs, addrInfo.NodeId, base58.Encode(hash))
+			}
 			// @TODO 如果因为分片不存在导致错误，直接中断
 			if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
 				brk = true
