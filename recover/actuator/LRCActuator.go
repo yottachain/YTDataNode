@@ -10,6 +10,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
@@ -17,9 +21,6 @@ import (
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
-	"strings"
-	"sync"
-	"time"
 )
 
 type Shard struct {
@@ -214,7 +215,7 @@ func (L *LRCTaskActuator) downloadLoop(ctx context.Context) error {
 
 start:
 	if errCount > 30 {
-		return nil
+		return fmt.Errorf("download error count > 30")
 	}
 	errCount++
 
