@@ -140,7 +140,6 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (
     fileName := path.Join(dir, "index.db")
     fl_IdxDB, err := os.Open(fileName)
     defer fl_IdxDB.Close()
-
     if err != nil {
         log.Println("[verifyslice] error:", err.Error())
         resp.ErrCode="102"
@@ -170,7 +169,8 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (
     m := uint64(header.RangeCoverage)
     str_pos,_ := slicecompare.GetValueFromFile(VerifyedNumFile)
     start_pos,_ := strconv.ParseUint(str_pos,10,32)
-    if len(startItem) > 0{
+
+    if len(startItem) > 0 {
         start_pos,_ = strconv.ParseUint(startItem,10,64)
     }
 

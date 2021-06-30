@@ -50,18 +50,18 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
     //var hashTab []ytfs.Hashtohash
 
     startkey,err := slicecompare.GetValueFromFile(VerifyedKvFile)
-    if len(startItem) > 0{
+    if len(startItem) > 0 {
         startkey = startItem
     }
 
     //startkey :=
     hashTab,beginKey,err := vfs.Sn.YTFS().VerifySlice(startkey,traveEntries)
+    slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
     if err != nil {
         resp.ErrCode = "200"
         log.Println("[verify] error:",err)
         return resp
     }
-    slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
 
     log.Println("[verify] len_hashTab=",len(hashTab))
     for i:= 0; i < len(hashTab); i++{
