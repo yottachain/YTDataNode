@@ -6,8 +6,12 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
+	//"github.com/tecbot/gorocksdb"
+
+	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
 	"os"
@@ -16,7 +20,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 
@@ -29,33 +32,56 @@ import (
 
 var disableWrite = false
 
+
+
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
 	RequestQueue chan *wRequest
-	db           *leveldb.DB
+	TmpDB        *slicecompare.CompDB
+	seq           uint64
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
+	TDB,err := slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
+	if err != nil{
+         log.Println("[slicecompare] open compare_db error")
+         return nil
+	}
+
+	seq, err := slicecompare.GetSeqFromDb(TDB, slicecompare.Seqkey)
+	if err != nil {
+		log.Println("[slicecompare] get seq from compare_db error")
+		return nil
+	}
+
 	return &WriteHandler{
 		sn,
 		make(chan *wRequest, 1000),
-		nil,
+		TDB,
+		seq,
 	}
+}
+
+type YTres struct{
+	seq uint64
+	//hash []byte
 }
 
 type wRequest struct {
 	Key   common.IndexTableKey
 	Data  []byte
-	Error chan error
+	ytres YTres
+	err   chan error
 }
 
-func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
+func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) (YTres, error) {
 	rq := &wRequest{
-		key,
-		data,
-		make(chan error),
+		Key:key,
+		Data:data,
+		err:make(chan error),
 	}
+
 	select {
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
@@ -63,14 +89,17 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
-	case err := <-rq.Error:
-		return err
+	case err := <-rq.err:
+		return rq.ytres, err
 	case <-ctx.Done():
-		return fmt.Errorf("get error time out")
+		var ytres YTres
+		err := fmt.Errorf("get error time out")
+		return ytres, err
 	}
 }
 
 func (wh *WriteHandler) batchWrite(number int) {
+	var err error
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
@@ -78,17 +107,27 @@ func (wh *WriteHandler) batchWrite(number int) {
 	for i := 0; i < number; i++ {
 		select {
 		case rq := <-wh.RequestQueue:
+			atomic.AddUint64(&wh.seq,1)
+			rq.ytres.seq = wh.seq
+			//rq.ytres.hash = rq.Key[:]
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key[:]
+			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
+			if err != nil{
+				log.Println("[slicecompare] put slice hash to db error, hash",base58.Encode(hashkey[i]))
+			    goto OUT
+			}
 		default:
 			continue
 		}
 	}
 
 	log.Printf("[ytfs]flush start:%d\n", number)
-	_, err := wh.putShard(rqmap)
+	_, err = wh.putShard(rqmap)
 	if err == nil {
+		wh.seq = wh.seq + uint64(number)
+		err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
 		log.Printf("[ytfs]flush sucess:%d\n", number)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
@@ -101,10 +140,10 @@ func (wh *WriteHandler) batchWrite(number int) {
 			statistics.DefaultStat.Unlock()
 		}
 	}
-
+OUT:
 	for _, rq := range rqs {
 		select {
-		case rq.Error <- err:
+		case rq.err <- err:
 		default:
 			continue
 		}
@@ -224,15 +263,17 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()
 	// 添加超时
-	resCode := wh.saveSlice(ctx, msg)
+	resCode, ytres := wh.saveSlice(ctx, msg)
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
-		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+		log.Printf("[slicecompare] origin  shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	    //log.Println("[slicecompare] return ytres.seq=",ytres.seq,"ytres.hash=",base58.Encode(ytres.hash))
 	}
 
-	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
+	//res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, ytres.hash, wh.Config().PrivKeyString())
+	res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
 		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
@@ -265,13 +306,13 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 	}
 }
 
-func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
-
+func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
+	var ytres YTres
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
-		return 105
+		return 105, ytres
 	}
 	tk, err := TokenPool.NewTokenFromString(msg.AllocId)
 	if err != nil {
@@ -282,12 +323,12 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 		wh.Host().ClientStore().Close(pid)
 		recover()
-		return 105
+		return 105, ytres
 	}
 	if !TokenPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
-		return 105
+		return 105, ytres
 	}
 	atomic.AddInt64(&statistics.DefaultStat.RXRequest, 1)
 	TokenPool.Utp().NetLatency.Add(time.Now().Sub(tk.Tm))
@@ -304,17 +345,17 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	// 2. 验证数据Hash
 	if msg.VerifyVHF(msg.DAT) == false {
 		log.Println(fmt.Errorf("Verify VHF fail"))
-		return 100
+		return 100, ytres
 	}
 	// 3. 将数据写入YTFS-disk
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
 	putStartTime := time.Now()
-	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
+	ytres, err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
-			return 102
+			return 102, ytres
 		}
 		log.Println("数据写入错误error:", err.Error())
 		if strings.Contains(err.Error(), "no space") {
@@ -326,7 +367,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if strings.Contains(err.Error(), "Range is full") {
 			atomic.AddInt64(&statistics.DefaultStat.RangeFullError, 1)
 		}
-		return 101
+		return 101, ytres
 	}
 	log.Println("return msg", 0)
 
@@ -339,7 +380,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 	TokenPool.Utp().Delete(tk)
 
-	return 0
+	return 0, ytres
 }
 
 // DownloadHandler 下载处理器
