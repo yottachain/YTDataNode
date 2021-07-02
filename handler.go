@@ -38,16 +38,12 @@ var disableWrite = false
 type WriteHandler struct {
 	StorageNode
 	RequestQueue chan *wRequest
-	TmpDB        *slicecompare.CompDB
+	TmpDB        *CompDB
 	seq           uint64
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
-	TDB,err := slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
-	if err != nil{
-         log.Println("[slicecompare] open compare_db error")
-         return nil
-	}
+	TDB := sn.GetCompareDb()
 
 	seq, err := slicecompare.GetSeqFromDb(TDB, slicecompare.Seqkey)
 	if err != nil {

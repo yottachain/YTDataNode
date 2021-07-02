@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -114,6 +115,7 @@ type storageNode struct {
 	addrsmanager  *AddrsManager
 	runtimeStatus RuntimeStatus
 	owner         *Owner
+	TmpDB        *CompDB
 }
 
 func (sn *storageNode) Owner() *Owner {
@@ -140,6 +142,10 @@ func (sn *storageNode) GetBP() int {
 }
 func (sn *storageNode) Addrs() []string {
 	return sn.addrsmanager.GetAddStrings()
+}
+
+func (sn *storageNode) GetCompareDb() *CompDB{
+	return sn.TmpDB
 }
 
 func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, error) {
@@ -191,6 +197,12 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	}
 	sn.ytfs = ys
 	if err != nil {
+		return nil, err
+	}
+
+	sn.TmpDB, err = slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
+	if err != nil{
+		log.Println("[slicecompare] open compare_db error")
 		return nil, err
 	}
 
