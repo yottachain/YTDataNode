@@ -7,6 +7,8 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tecbot/gorocksdb"
+
+	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/logger"
@@ -23,22 +25,20 @@ import (
 const FinishKey = "key_finishcompareseq"
 const Seqkey  = "seqkey_forcompare"
 const Comparedb  = "/compare_db/"
+
 const CpStatusDir = "/compare_status/"
 
 var SliceCompareDir string =  CpStatusDir
-//var FileNextIdx string ="/" + "gc/next_index_file"
-//var ComparedIdxFile string = "/" + "gc/compared_index_file"
-//var FileDB_tmp string = "/" + "gc/temp_index_kvdb"
-//var FileDB_sn string = "/" + "gc/sn_index_kvdb"
-//var FileDB_todel string = "/" + "gc/entry_to_del_kvdb"
 
 var Entrycountdownld int32 = 1000
 
-type CompDB struct {
-	Db  *gorocksdb.DB
-	Ro  *gorocksdb.ReadOptions
-	Wo  *gorocksdb.WriteOptions
-}
+//type CompDB struct {
+//	Db  *gorocksdb.DB
+//	Ro  *gorocksdb.ReadOptions
+//	Wo  *gorocksdb.WriteOptions
+//}
+
+//type CompDB sni.CompDB
 
 func init(){
 	InitDir(Comparedb)
@@ -57,7 +57,25 @@ func ForInit(fileName string, value string){
 	}
 }
 
-func GetSeqFromDb(Tdb *CompDB, key string) (uint64, error){
+func OpenTmpRocksDB(DBName string) (*sni.CompDB, error){
+	var tmp sni.CompDB
+	DBPath := util.GetYTFSPath() + DBName
+	opt := gorocksdb.NewDefaultOptions()
+	opt.SetCreateIfMissing(true)
+	db, err := gorocksdb.OpenDb(opt,DBPath)
+	if err != nil{
+		fmt.Printf("[slicecompare]open DB:%s error %s",DBPath,err.Error())
+		return nil,err
+	}
+
+	tmp.Db = db
+	tmp.Ro = gorocksdb.NewDefaultReadOptions()
+	tmp.Wo = gorocksdb.NewDefaultWriteOptions()
+
+	return &tmp ,nil
+}
+
+func GetSeqFromDb(Tdb *sni.CompDB, key string) (uint64, error){
 	var seq uint64
 	Slc,err := Tdb.Db.Get(Tdb.Ro,[]byte(key))
 	if err !=nil || Slc.Data() == nil {
@@ -70,7 +88,7 @@ func GetSeqFromDb(Tdb *CompDB, key string) (uint64, error){
 	return seq, nil
 }
 
-func PutKSeqToDb(seq uint64,hash []byte, Tdb *CompDB) error{
+func PutKSeqToDb(seq uint64,hash []byte, Tdb *sni.CompDB) error{
 	var err error
 	Kseq := make([]byte,8)
 	binary.LittleEndian.PutUint64(Kseq,seq)
@@ -78,7 +96,7 @@ func PutKSeqToDb(seq uint64,hash []byte, Tdb *CompDB) error{
 	return err
 }
 
-func PutVSeqToDb(seq uint64,hash []byte, Tdb *CompDB) error{
+func PutVSeqToDb(seq uint64,hash []byte, Tdb *sni.CompDB) error{
 	var err error
 	Vseq := make([]byte,8)
 	binary.LittleEndian.PutUint64(Vseq,seq)
@@ -105,24 +123,6 @@ type SliceComparer struct {
 	Sn sni.StorageNode
 }
 
-func OpenTmpRocksDB(DBName string) (*CompDB, error){
-	var tmp CompDB
-	DBPath := util.GetYTFSPath() + DBName
-	opt := gorocksdb.NewDefaultOptions()
-	opt.SetCreateIfMissing(true)
-	db, err := gorocksdb.OpenDb(opt,DBPath)
-	if err != nil{
-		fmt.Printf("open DB:%s error %s",DBPath,err.Error())
-		return nil,err
-	}
-
-	tmp.Db = db
-	tmp.Ro = gorocksdb.NewDefaultReadOptions()
-	tmp.Wo = gorocksdb.NewDefaultWriteOptions()
-
-	return &tmp ,nil
-}
-
 func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp, error) {
 	var msg message.SliceCompareReq
 	var res message.SliceCompareResp
@@ -145,12 +145,13 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 		return res, err
 	}
 
-	Tdb,err := OpenTmpRocksDB(Comparedb)
-	if err != nil{
-		res.ErrCode = "ErrOpenCompareDb"
-		err := fmt.Errorf("ErrOpenCompareDb")
-		return res, err
-	}
+	Tdb := sc.Sn.GetCompareDb()
+	//Tdb,err := OpenTmpRocksDB(Comparedb)
+	//if err != nil{
+	//	res.ErrCode = "ErrOpenCompareDb"
+	//	err := fmt.Errorf("ErrOpenCompareDb")
+	//	return res, err
+	//}
 
 	go sc.RunRealCompare(msg, Tdb)
 
@@ -172,7 +173,7 @@ func SavetoFile(filepath string,value []byte) error{
 	return err
 }
 
-func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *CompDB){
+func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *sni.CompDB){
 	//return
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 	res,_ := sc.CompareHashFromSn(msg, Tdb)
@@ -240,7 +241,7 @@ func (sc *SliceComparer)CompareMsgStatusChkHdl(data []byte)(message.SliceCompare
 	return res, err
 }
 
-func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *CompDB){
+func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *sni.CompDB){
 	GcW := &gc.GcWorker{sc.Sn}
     BStartSeq := make([]byte,8)
     binary.LittleEndian.PutUint64(BStartSeq,msg.StartSeq)
@@ -278,7 +279,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *Comp
 	    	fmt.Println("[slicecompare] gc error:", err, "hash",base58.Encode(GcHash))
 	    }
 	    _ = Tdb.Db.Delete(Tdb.Wo, Bkey)
-	    return
+
     }
 
 	err := PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
@@ -287,7 +288,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *Comp
 	}
 }
 
-func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *CompDB) (message.SliceCompareStatusResp, error){
+func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.CompDB) (message.SliceCompareStatusResp, error){
 	var seq uint64
 	var hash string
 	var res message.SliceCompareStatusResp
