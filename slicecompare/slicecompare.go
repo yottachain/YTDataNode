@@ -295,6 +295,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 
 	res.NodeId = msg.NodeId
 	res.TaskId = msg.TaskId
+	res.ErrCode = "succ"
 	BKey := make([]byte,8)
 	comparedseq, err := GetSeqFromDb(Tdb, FinishKey)
 	if err != nil{
@@ -303,6 +304,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		return res, err
 	}
 
+	//res.CompareNum = uint32(msg.EndSeq - msg.StartSeq)
 	for _, seqtohash := range msg.CpList {
 		atomic.AddUint32(&res.CompareNum,1)
 		seq = seqtohash.Seq
