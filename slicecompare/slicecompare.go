@@ -387,9 +387,9 @@ func (sc *SliceComparer)CompareMsgDelfileHdl(data []byte)(message.CpDelStatusfil
 
 	res.TaskId = msg.TaskId
 	if !config.Gconfig.SliceCompareOpen{
-		res.ErrCode = "errNotOpenGc"
-		err = fmt.Errorf("errNotOpenGc")
-		return res, err
+		//res.ErrCode = "errNotOpenGc"
+		//err = fmt.Errorf("errNotOpenGc")
+		//return res, err
 	}
 
 	if msg.NodeId != sc.Sn.Config().IndexID{
