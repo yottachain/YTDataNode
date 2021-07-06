@@ -226,8 +226,8 @@ func (sc *SliceComparer)CompareMsgStatusChkHdl(data []byte)(message.SliceCompare
 	res.TaskId = msg.TaskId
 
 	if !config.Gconfig.SliceCompareOpen{
-		res.ErrCode = "errNotOpenGc"
-		return res, err
+		//res.ErrCode = "errNotOpenGc"
+		//return res, err
 	}
 
 	if msg.NodeId != sc.Sn.Config().IndexID{
