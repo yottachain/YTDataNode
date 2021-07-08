@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -126,7 +127,8 @@ func (sn *storageNode) Service() {
         })
     }
 
-	slc := &slicecompare.SliceComparer{sn}
+    var slcLock sync.Mutex
+	slc := &slicecompare.SliceComparer{sn,slcLock}
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
 		res, _ := slc.CompareMsgChkHdl(data)
 		resp,err := proto.Marshal(&res)

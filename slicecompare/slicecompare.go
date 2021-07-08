@@ -182,16 +182,11 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 	}
 
 	Tdb := sc.Sn.GetCompareDb()
-	//Tdb,err := OpenTmpRocksDB(Comparedb)
-	//if err != nil{
-	//	res.ErrCode = "ErrOpenCompareDb"
-	//	err := fmt.Errorf("ErrOpenCompareDb")
-	//	return res, err
-	//}
 
 	go sc.RunRealCompare(msg, Tdb)
-
 	res.ErrCode = "Succ"
+	sc.Lock.Unlock()
+
 	return res, err
 }
 
