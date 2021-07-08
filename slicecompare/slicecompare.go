@@ -7,6 +7,7 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tecbot/gorocksdb"
+	"sync"
 
 	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
@@ -121,6 +122,33 @@ func InitDir(dirName string){
 
 type SliceComparer struct {
 	Sn sni.StorageNode
+	Lock  sync.Mutex
+}
+
+func (sc *SliceComparer) ChkStatusFile(msg message.SliceCompareReq) error{
+	var status message.SliceCompareStatusResp
+	var err error
+
+	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
+	//status_exist,_ := util.PathExists(filePath)
+	//if status_exist {
+	//	value,_ := ioutil.ReadFile(filePath)
+	//	_ = proto.Unmarshal(value,&status)
+	//	if status.ErrCode != "Running" {
+	//		err = fmt.Errorf("TaskRunned")
+	//		return err
+	//	}
+	//}
+
+	status.ErrCode = "Running"
+	stus,_ := proto.Marshal(&status)
+	err = SavetoFile(filePath,stus)
+	if err != nil{
+		fmt.Println("Save start compare status to file, error:",err)
+		return err
+	}
+
+	return nil
 }
 
 func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp, error) {
@@ -128,12 +156,20 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 	var res message.SliceCompareResp
 	var err error
 
+	sc.Lock.Lock()
+
 	res.NodeId = sc.Sn.Config().IndexID
 	if err := proto.Unmarshal(data, &msg); err != nil {
 		log.Println("[gcdel] message.slicecomparereq error:", err)
 		res.ErrCode = "errReq"
 		res.TaskId = msg.TaskId
 		err := fmt.Errorf("errReq")
+		return res, err
+	}
+
+	res.TaskId = msg.TaskId
+	if err = sc.ChkStatusFile(msg); err != nil{
+		res.ErrCode = err.Error()
 		return res, err
 	}
 
@@ -159,18 +195,26 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 	return res, err
 }
 
-func SavetoFile(filepath string,value []byte) error{
-	status_exist,_ := util.PathExists(filepath)
+func SavetoFile(filePath string,value []byte) error{
+	var status message.SliceCompareStatusResp
+	var err error
+	status_exist,_ := util.PathExists(filePath)
 	if status_exist {
-		err := fmt.Errorf("fileExist")
-		return err
+		value,_ := ioutil.ReadFile(filePath)
+		_ = proto.Unmarshal(value,&status)
+		if status.ErrCode != "Running" {
+			err = fmt.Errorf("TaskRunned")
+			return err
+		}
 	}
 
-	err := ioutil.WriteFile(filepath, value,0666)
+	err = ioutil.WriteFile(filePath, value,0666)
 	if err != nil{
-		fmt.Println("[gcdel] save value to file error",err,"filepath:",filepath)
+		fmt.Println("[gcdel] save value to file error",err,"filepath:",filePath)
+		err = fmt.Errorf("SaveFileErr")
+		return err
 	}
-	return err
+	return nil
 }
 
 func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *sni.CompDB){
@@ -316,7 +360,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		dnhash,err := Tdb.Db.Get(Tdb.Ro, BKey)
 
 		if err != nil || len(dnhash.Data()) != 16{
-           fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, hash, err)
+           fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, seqtohash.Hash, err)
            res.DnMissList = append(res.DnMissList, seqtohash.Hash)
            atomic.AddUint32(&res.DnMissNum,1)
            continue
@@ -329,7 +373,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		hash = base58.Encode(seqtohash.Hash)
 		Strdnhash := base58.Encode(dnhash.Data())
 		if Strdnhash != hash{
-			fmt.Println("[slicecompare] error, dnhash:",Strdnhash,"snhash",hash)
+			fmt.Println("[slicecompare] error, dnhash:",Strdnhash,"snhash:",hash)
 			res.DnMissList = append(res.DnMissList, seqtohash.Hash)
 			atomic.AddUint32(&res.DnMissNum,1)
 			continue
@@ -337,7 +381,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 
 		err = Tdb.Db.Delete(Tdb.Wo, BKey)
 		if err != nil{
-			fmt.Println("[slicecompare] delete item from compare_db error, dnhash:",Strdnhash,"snhash",hash)
+			fmt.Println("[slicecompare] delete item from compare_db error, dnhash:",Strdnhash,"snhash:",hash)
 			res.DnMissList = append(res.DnMissList, seqtohash.Hash)
 			atomic.AddUint32(&res.DnMissNum,1)
 			continue
@@ -352,7 +396,7 @@ func (sc *SliceComparer)CompareDelStatusfile(msg message.CpDelStatusfileReq) (me
 	var res message.CpDelStatusfileResp
 	res.TaskId = msg.TaskId
 	res.NodeId = msg.NodeId
-	res.ErrCode = "Ok"
+	res.ErrCode = "Succ"
 
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 	log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
