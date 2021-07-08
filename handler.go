@@ -95,7 +95,7 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 }
 
 func (wh *WriteHandler) batchWrite(number int) {
-	var err error
+	var err, err2 error
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
@@ -122,9 +122,9 @@ func (wh *WriteHandler) batchWrite(number int) {
 	log.Printf("[ytfs]flush start:%d\n", number)
 	_, err = wh.putShard(rqmap)
 	if err == nil {
-		wh.seq = wh.seq + uint64(number)
-		err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
-		log.Printf("[ytfs]flush sucess:%d\n", number)
+		//wh.seq = wh.seq + uint64(number)
+		//err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
+		log.Printf("[ytfs]flush sucess:%d\n", number,"wh.seq",wh.seq)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
 			log.Printf("[ytfs]flush failure:%s\n", err.Error())
@@ -135,6 +135,12 @@ func (wh *WriteHandler) batchWrite(number int) {
 			}
 			statistics.DefaultStat.Unlock()
 		}
+	}
+
+	wh.seq = wh.seq + uint64(number)
+	err2 = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
+	if err2 != nil{
+		fmt.Println("[slicecompare] PutVSeqToDb error:",err)
 	}
 OUT:
 	for _, rq := range rqs {
