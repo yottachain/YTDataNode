@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-var ctl chan struct{}
+//var ctl chan struct{}
 
 var stop = false
 
