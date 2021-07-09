@@ -24,6 +24,8 @@ import (
 	"time"
 )
 
+//var ctl chan struct{}
+
 var stop = false
 
 var errNoTK = fmt.Errorf("notk")
@@ -233,12 +235,14 @@ func RunRX() {
 	// rx
 	for {
 		if stop {
-			<-time.After(time.Hour)
+			log.Println("[randDownload] RunRX stop nowtime:",time.Now())
+			<-time.After(time.Minute * 30)
 			continue
 		}
 		if execChan == nil {
 			continue
 		}
+		log.Println("[randDownload] RunRX start nowtime:",time.Now())
 		ec := *execChan
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
@@ -290,12 +294,14 @@ func RunTX() {
 	// tx
 	for {
 		if stop {
-			<-time.After(time.Hour)
+			log.Println("[randDownload] RunTX stop nowtime:",time.Now())
+			<-time.After(time.Minute * 30)
 			continue
 		}
 		if execChan == nil {
 			continue
 		}
+		log.Println("[randDownload] RunTX start nowtime:",time.Now())
 		ec := *execChan
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
@@ -320,10 +326,24 @@ func RunTX() {
 }
 
 func Run() {
+	go RunCtl()
 	go RunRX()
 	go RunTX()
 }
 
+func RunCtl(){
+	for{
+		Start()
+		<- time.After(time.Hour * 2)
+		Stop()
+		<- time.After(time.Hour * 22)
+	}
+}
+
 func Stop() {
 	stop = true
+}
+
+func Start(){
+	stop = false
 }
