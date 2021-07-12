@@ -20,7 +20,6 @@ import (
 101   marshal gcstatusresp error
 200   gc process error
 201   read status file error
-222   not use rocksdb
 333   status file not exist(maybe task was running or some error happened)
 */
 
