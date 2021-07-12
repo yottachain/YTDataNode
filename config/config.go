@@ -5,17 +5,17 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 	"time"
+
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -80,9 +80,6 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	opts.TotalVolumn = 2 << 41
 	opts.IndexTableCols = 1 << 14
 	opts.IndexTableRows = 1 << 28
-	if runtime.GOOS == "linux" {
-		opts.UseKvDb = true
-	}
 	return opts
 }
 
@@ -109,11 +106,6 @@ func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 		IndexTableRows: uint32(n),
 		DataBlockSize:  d,
 		TotalVolumn:    size,
-		UseKvDb:        true,
-	}
-
-	if runtime.GOOS == "windows" {
-		opts.UseKvDb = false
 	}
 
 	return opts

@@ -1,11 +1,10 @@
 package verifySlice
 
 import (
+	"strconv"
+
 	"github.com/yottachain/YTDataNode/message"
 	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/logger"
-	"strconv"
 )
 
 /* verify errCode
@@ -21,22 +20,10 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
+func (vfs *VerifySler) VerifySlice(verifyNum string) message.SelfVerifyResp {
 	var resp message.SelfVerifyResp
 
-	config, err := config.ReadConfig()
-	if err != nil{
-		log.Println("[verifyslice] [error] read datanode config error:",err)
-		resp.ErrCode = "101"
-		return resp
-	}
-
-	num,err := strconv.ParseUint(verifyNum,10,64)
-
-	if config.UseKvDb {
-		resp = vfs.VerifySlicekvdb(num)
-		return resp
-	}
+	num, _ := strconv.ParseUint(verifyNum, 10, 64)
 
 	resp = vfs.VerifySliceIdxdb(num)
 	return resp
