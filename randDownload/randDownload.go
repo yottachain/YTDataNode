@@ -240,7 +240,7 @@ func RunRX(RxCtl chan struct{}) {
 		if times % 2000 == 0{
 			log.Println("[randDownload] RunRX start nowtime:",time.Now())
 		}
-		
+
 		if stop {
 			//log.Println("[randDownload] RunRX stop nowtime:",time.Now())
 			<-time.After(time.Minute * 60)
