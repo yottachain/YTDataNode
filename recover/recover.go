@@ -8,18 +8,23 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/recover/actuator"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
-	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTElkProducer"
 	"github.com/yottachain/YTElkProducer/conf"
 	"github.com/yottachain/YTHost/client"
-	"sync/atomic"
 
 	//"github.com/docker/docker/pkg/locker"
+	_ "net/http/pprof"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mr-tron/base58/base58"
@@ -29,10 +34,6 @@ import (
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTFS/common"
 	lrcpkg "github.com/yottachain/YTLRC"
-	_ "net/http/pprof"
-	"strings"
-	"sync"
-	"time"
 	//"io"
 )
 
@@ -41,8 +42,6 @@ const (
 	max_task_num        = 1000
 	max_reply_wait_time = time.Second * 60
 )
-
-var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
 
 type elkErrorLog struct {
 	ErrorMsg  string
@@ -307,10 +306,6 @@ func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
 	default:
-		elkClt.AddLogAsync(elkErrorLog{
-			ErrorMsg:  "push reply msg fail",
-			RetryTime: 0,
-		})
 	}
 }
 
@@ -363,19 +358,12 @@ func (re *Engine) MultiReply() error {
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
-				elkClt.AddLogAsync(elkErrorLog{
-					ErrorMsg:  err.Error(),
-					RetryTime: reportTms + 1,
-				})
+
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
 				}
 			} else {
-				elkClt.AddLogAsync(elkErrorLog{
-					ErrorMsg:  "no error",
-					RetryTime: reportTms + 1,
-				})
 			}
 			// 如果不报错退出循环
 			break
