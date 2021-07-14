@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/yottachain/YTDataNode/Perf"
@@ -21,7 +20,6 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 
@@ -30,7 +28,6 @@ import (
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
 
-	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
 	ytfs "github.com/yottachain/YTFS"
@@ -57,12 +54,6 @@ func (sn *storageNode) Service() {
 	InitTokenPool(&statistics.DefaultStat)
 
 	rms = service.NewRelayManage(sn.Host())
-
-	//gc := config.NewGConfig(sn.config)
-	//if err := gc.Get(); err != nil {
-	//	log.Printf("[gconfig] update error:%s\n", err.Error())
-	//}
-	//go gc.UpdateService(context.Background(), time.Minute)
 
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
@@ -92,15 +83,6 @@ func (sn *storageNode) Service() {
 
 	statistics.DefaultStat.TokenQueueLen = 200
 	var wh *WriteHandler
-	//// 每次更新重置utp
-	//gc.OnUpdate = func(c config.Gcfg) {
-	//	//utp = uploadTaskPool.New(gc.MaxConn, gc.TTL, time.Millisecond*gc.TokenInterval)
-	//	log.Println("[gconfig]", "update", gc.MaxConn, gc.TokenInterval, gc.TTL)
-	//	//wh = NewWriteHandler(sn, utp)
-	//	//wh.Run()
-	//	os.Exit(0)
-	//}
-	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
 	wh = NewWriteHandler(sn)
 
@@ -170,174 +152,12 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcReq
-		var res message.GcResp
-		var resp []byte
-
-		GcW := gc.GcWorker{sn}
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen {
-			res.ErrCode = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errReq"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		go GcW.GcHandle(msg)
-
-		res.TaskId = msg.TaskId
-		res.ErrCode = "succ"
-		resp, err = proto.Marshal(&res)
-
-		return append(message.MsgIDGcResp.Bytes(), resp...), err
-	})
-
-	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcStatusReq
-		var res message.GcStatusResp
-		var resp []byte
-
-		res.Dnid = sn.config.IndexID
-		if !config.Gconfig.GcOpen {
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errstatusreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		GcW := gc.GcWorker{sn}
-		res = GcW.GetGcStatus(msg)
-		resp, err = proto.Marshal(&res)
-		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-	})
-
-	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcdelStatusfileReq
-		var res message.GcdelStatusfileResp
-		var resp []byte
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen {
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errdelreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		GcW := gc.GcWorker{sn}
-		res = GcW.GcDelStatusfile(msg)
-		resp, err = proto.Marshal(&res)
-		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-	})
-
-	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		err := remoteDebug.Handle(data)
-		if err != nil {
-			log.Println("[debug]", err)
-		}
-		return message.MsgIDVoidResponse.Bytes(), err
-	})
-
 	_ = sn.Host().RegisterHandler(message.MsgIDDebug.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		err := remoteDebug.Handle2(data)
 		if err != nil {
 			log.Println("[debug]", err)
 		}
 		return message.MsgIDVoidResponse.Bytes(), err
-	})
-
-	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.SelfVerifyReq
-		var res message.SelfVerifyResp
-		if err := proto.Unmarshal(data, &msg); err != nil {
-
-			log.Println("[verify] message.SelfVerifyReq error:", err)
-			res.ErrCode = "100"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
-		}
-
-		verifynum := msg.Num
-		vfs := verifySlice.VerifySler{sn}
-		result := vfs.VerifySlice(verifynum)
-		resp, err := proto.Marshal(&result)
-		if err != nil {
-			log.Println("[verify] Marshal resp error:", err)
-		}
-		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
-	})
-
-	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.UploadShardRequestTest
-		if err := proto.Unmarshal(data, &msg); err == nil {
-			log.Println("[sleep]", msg.Sleep)
-			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
-		} else {
-			log.Println("[sleep]", err)
-		}
-		var res message.UploadShard2CResponse
-		res.RES = 0
-
-		buf, err := proto.Marshal(&res)
-		tk := TokenPool.NewToken()
-		tk.FillFromString(msg.AllocId)
-		atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
-		TokenPool.Utp().Delete(tk)
-		log.Println("test upload return", head.RemotePeerID)
-		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
-	})
-
-	// 测试矿机性能
-	_ = sn.Host().RegisterHandler(message.MsgIDTestMinerPerfTask.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
-		return Perf.TestMinerPerfHandler(requestData)
-	})
-	_ = sn.Host().RegisterHandler(message.MsgIDTestGetBlock.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
-		return Perf.GetBlock(requestData)
 	})
 
 	go sn.Host().Accept()
@@ -427,10 +247,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		statistics.DefaultStat.RXTokenFillRate = 1
 	}
 
-	//// 设置重建任务并发限制
-	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
-	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
-
 	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TokenPool.Utp().Save()
@@ -447,19 +263,9 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	//defer cancel()
-
-	//if clt, err := sn.Host().ClientStore().GetByAddrString(ctx, bp.ID, bp.Addrs); err != nil {
-	//	log.Println("Connect bp fail", err)
-	//} else {
-	//
-	//}
 
 	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
-	//res, err := clt.SendMsg(ctx, message.MsgIDStatusRepReq.Value(), resData)
 	res, err := sn.SendBPMsg(sn.GetBP(), message.MsgIDStatusRepReq.Value(), resData)
-	//defer clt.Close()
 	if err != nil {
 		log.Println("Send report msg fail:", err)
 	} else {
