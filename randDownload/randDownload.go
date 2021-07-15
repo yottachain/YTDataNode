@@ -207,7 +207,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	return nil
 }
-func RunRX() {
+func RunRX(RxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -232,17 +232,23 @@ func RunRX() {
 		}
 	}()
 
+	times := uint64(0)
 	// rx
 	for {
+		<- RxCtl
+		times++
+		if times % 2000 == 0{
+			log.Println("[randDownload] RunRX start nowtime:",time.Now())
+		}
+
 		if stop {
-			log.Println("[randDownload] RunRX stop nowtime:",time.Now())
-			<-time.After(time.Minute * 30)
+			//log.Println("[randDownload] RunRX stop nowtime:",time.Now())
+			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
 			continue
 		}
-		log.Println("[randDownload] RunRX start nowtime:",time.Now())
 		ec := *execChan
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
@@ -267,7 +273,7 @@ func RunRX() {
 	}
 }
 
-func RunTX() {
+func RunTX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -291,17 +297,21 @@ func RunTX() {
 		}
 	}()
 
+	times := uint64(0)
 	// tx
 	for {
+		<- TxCtl
+		times++
+		if times % 2000 == 0{
+			log.Println("[randDownload] RunTX start nowtime:",time.Now())
+		}
 		if stop {
-			log.Println("[randDownload] RunTX stop nowtime:",time.Now())
-			<-time.After(time.Minute * 30)
+			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
 			continue
 		}
-		log.Println("[randDownload] RunTX start nowtime:",time.Now())
 		ec := *execChan
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
@@ -326,17 +336,24 @@ func RunTX() {
 }
 
 func Run() {
-	go RunCtl()
-	go RunRX()
-	go RunTX()
+	RxCtl := make(chan struct{})
+	TxCtl := make(chan struct{})
+	go RunCtl(RxCtl,TxCtl)
+	go RunRX(RxCtl)
+	go RunTX(TxCtl)
 }
 
-func RunCtl(){
+func RunCtl( RxCtl, TxCtl chan struct{}){
 	for{
-		Start()
-		<- time.After(time.Hour * 2)
-		Stop()
-		<- time.After(time.Hour * 22)
+		start := time.Now()
+		for{
+			RxCtl <- struct{}{}
+			TxCtl <- struct{}{}
+			if time.Now().Sub(start).Seconds() >= 7200{
+				break
+			}
+		}
+		<-time.After(time.Hour * 22)
 	}
 }
 
@@ -344,6 +361,6 @@ func Stop() {
 	stop = true
 }
 
-func Start(){
-	stop = false
-}
+//func Start(){
+//	stop = false
+//}

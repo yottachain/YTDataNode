@@ -130,18 +130,21 @@ func (sn *storageNode) Service() {
     var slcLock sync.Mutex
 	slc := &slicecompare.SliceComparer{sn,slcLock}
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve compare request!")
 		res, _ := slc.CompareMsgChkHdl(data)
 		resp,err := proto.Marshal(&res)
 		return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve get compare status request!")
 		res,err := slc.CompareMsgStatusChkHdl(data)
 		resp,err := proto.Marshal(&res)
 		return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve delete compare_status request!")
 		res,_ := slc.CompareMsgDelfileHdl(data)
 		resp,err := proto.Marshal(&res)
 		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err

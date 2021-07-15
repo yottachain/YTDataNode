@@ -156,7 +156,7 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 	var res message.SliceCompareResp
 	var err error
 
-	sc.Lock.Lock()
+	//sc.Lock.Lock()
 
 	res.NodeId = sc.Sn.Config().IndexID
 	if err := proto.Unmarshal(data, &msg); err != nil {
@@ -185,7 +185,7 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 
 	go sc.RunRealCompare(msg, Tdb)
 	res.ErrCode = "Succ"
-	sc.Lock.Unlock()
+	//sc.Lock.Unlock()
 
 	return res, err
 }
