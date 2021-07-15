@@ -280,10 +280,11 @@ func (sc *SliceComparer)CompareMsgStatusChkHdl(data []byte)(message.SliceCompare
 	return res, err
 }
 
-func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *sni.CompDB){
+func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,resaddr *message.SliceCompareStatusResp,Tdb *sni.CompDB){
 	GcW := &gc.GcWorker{sc.Sn}
     BStartSeq := make([]byte,8)
     binary.LittleEndian.PutUint64(BStartSeq,msg.StartSeq)
+	snmissseq := make([]uint64, 1)
 
     if !sc.Sn.Config().UseKvDb{
     	log.Println("[slicecompare][error] use indexdb, gc failed")
@@ -318,12 +319,18 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,Tdb *sni.
 	    	fmt.Println("[slicecompare] gc error:", err, "hash",base58.Encode(GcHash))
 	    }
 	    _ = Tdb.Db.Delete(Tdb.Wo, Bkey)
-
+	    snmissseq = append(snmissseq, seq)
+	    (*resaddr).DnMissList = append((*resaddr).DnMissList, GcHash)
+	    (*resaddr).DnMissNum++
     }
 
 	err := PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
 	if err != nil{
 		log.Println("[slicecompare] ErrPutComparedSeq")
+	}
+
+	if len(snmissseq) > 0{
+		log.Println("[slicecompare]task:",msg.TaskId," snmissseq:",snmissseq)
 	}
 }
 
@@ -383,7 +390,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		}
 	}
 
-	go sc.RedundencySliceGc(msg, Tdb)
+	sc.RedundencySliceGc(msg, &res, Tdb)
 	return res, err
 }
 
