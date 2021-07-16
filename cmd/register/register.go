@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/yottachain/YTDataNode/logger"
+	"log"
 	"math"
-	"path"
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
@@ -42,59 +40,16 @@ var isDebug = false
 
 var yOrN byte
 
-func init() {
-	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
-	ok, err := util.PathExists(filename)
-	if err == nil && ok {
-		viper.SetConfigType("yaml")
-		fl, err := os.OpenFile(filename, os.O_RDONLY, 0644)
-		if err != nil {
-			panic(err)
-		}
-		defer fl.Close()
-		viper.ReadConfig(fl)
-		isDebug = true
-		fmt.Println("---------DEBUG MODE------")
-		baseNodeUrl = viper.GetString("baseNodeUrl")
-		fmt.Println("baseNodeUrl:", baseNodeUrl)
-		BPList = viper.GetStringSlice("snips")
-		api = eos.New(baseNodeUrl)
-	}
-	BPList = getNodeList()
-}
-
-type PoolInfo []struct {
-	PoolID    string `json:"pool_id"`
-	PoolOwner string `json:"pool_owner"`
-	MaxSpace  uint64 `json:"max_space"`
-}
-
-func getPoolInfo(poolID string) (PoolInfo, error) {
-	out, err := api.GetTableRows(eos.GetTableRowsRequest{
-		Code:       "hddpool12345",
-		Scope:      "hddpool12345",
-		Table:      "storepool",
-		Index:      "1",
-		Limit:      1,
-		LowerBound: poolID,
-		UpperBound: poolID,
-		JSON:       true,
-		KeyType:    "name",
-	})
-	if err != nil {
-		return nil, err
-	}
-	var res PoolInfo
-	json.Unmarshal(out.Rows, &res)
-	return res, nil
-}
-
 var RegisterCmd = &cobra.Command{
 	Short: "注册账号",
 	Use:   "register",
 	Run: func(cmd *cobra.Command, args []string) {
-		//var poolID string
-		BPList = getNodeList()
+		if len(args) > 0 {
+			baseNodeUrl = args[0]
+			for _, bp := range args {
+				BPList = append(BPList, bp)
+			}
+		}
 		fmt.Println("bplist", BPList)
 		initConfig, err := readCfg()
 		if err != nil || initConfig.IndexID == 0 {
@@ -107,17 +62,7 @@ var RegisterCmd = &cobra.Command{
 				fmt.Println("取消注册")
 				os.Exit(1)
 			}
-		} else {
-			if initConfig.PoolID != "" {
-				fmt.Printf("已加入%s矿池，是否需要加入新的矿池", initConfig.PoolID)
-				fmt.Scanf("%c\n", yOrN)
-				if yOrN == 'n' {
-					fmt.Println("取消加入新矿池")
-					os.Exit(1)
-				}
-			}
 		}
-		step2()
 		fmt.Println("注册完成，请使用daemon启动")
 	},
 }
@@ -161,17 +106,7 @@ func newCfg() (*config.Config, error) {
 	if err != nil {
 		log.Println(err)
 	}
-getMC:
-	fmt.Println("请输入存储分组数:可能取值8～20间")
-	_, err = fmt.Scanf("%d\n", &mc)
-	if err != nil {
-		log.Println(err)
-		goto getMC
-	}
-	if mc < 14 || mc > 20 {
-		fmt.Println("请输入范围14～20的数", mc)
-		goto getMC
-	}
+	mc = 20
 	commander.InitBySignleStorage(size*GB, 1<<mc)
 	_cfg, err := config.ReadConfig()
 	if err != nil {
@@ -211,13 +146,13 @@ func step1() {
 	minerid, bi = getNewMinerID()
 	initConfig.IndexID = uint32(minerid)
 
-	fmt.Println("请输入抵押账号用户名：")
-	fmt.Scanf("%s\n", &depAcc)
+	// fmt.Println("请输入抵押账号用户名：")
+	// fmt.Scanf("%s\n", &depAcc)
 	fmt.Println("请输入抵押额度(YTA)：")
 
-	fmt.Scanf("%d\n", &depAmount)
-	fmt.Println("请输入矿机管理员账号：")
-	fmt.Scanf("%s\n", &adminacc)
+	// fmt.Scanf("%d\n", &depAmount)
+	// fmt.Println("请输入矿机管理员账号：")
+	// fmt.Scanf("%s\n", &adminacc)
 	action := &eos.Action{
 		Account: eos.AN("hddpool12345"),
 		Name:    eos.ActN("newminer"),
@@ -273,111 +208,6 @@ post:
 	initConfig.Adminacc = adminacc
 	initConfig.Save()
 }
-
-func step2() {
-	var poolID string
-	var txSigned string
-	var minerOwner string
-
-	fmt.Println("是否加入矿池:y/n?")
-	fmt.Scanf("%c\n", &yOrN)
-	if yOrN == 'n' {
-		fmt.Println("取消加入矿池")
-		os.Exit(1)
-	}
-	type Data struct {
-		MinerID    uint64          `json:"miner_id"`
-		PoolID     eos.AccountName `json:"pool_id"`
-		Minerowner eos.AccountName `json:"minerowner"`
-		MaxSpace   uint64          `json:"max_space"`
-	}
-getPoolInfo:
-	log.Println("请输入矿池id")
-	fmt.Scanf("%s\n", &poolID)
-	log.Println("请输入配额")
-	fmt.Scanf("%d\n", &maxSpace)
-	log.Println("请输入收益账号")
-	fmt.Scanf("%s\n", &minerOwner)
-	//log.Println("请输入配额（单位：block）")
-	//fmt.Scanf("%d\n", &maxSpace)
-	pi, err := getPoolInfo(poolID)
-	if err != nil || len(pi) == 0 {
-		fmt.Println("获取矿池信息失败！", pi, err)
-		goto getPoolInfo
-	}
-	action := &eos.Action{
-		Account: eos.AN("hddpool12345"),
-		Name:    eos.ActN("addm2pool"),
-		Authorization: []eos.PermissionLevel{
-			{Actor: eos.AN(adminacc), Permission: eos.PN("active")},
-			{Actor: eos.AN(pi[0].PoolOwner), Permission: eos.PN("active")},
-		},
-		ActionData: eos.NewActionData(Data{
-			MinerID:    minerid,
-			Minerowner: eos.AN(minerOwner),
-			PoolID:     eos.AN(pi[0].PoolID),
-			MaxSpace:   maxSpace,
-		}),
-	}
-	txOpts := &eos.TxOptions{}
-	txOpts.FillFromChain(api)
-	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
-	tx.SetExpiration(time.Minute * 30)
-	log.Printf("交易信息 %v", action)
-addPoolSign:
-	fmt.Println("请对交易进行签名并粘贴：")
-	fmt.Println("----------------------")
-	txjson, err := json.Marshal(tx)
-	fmt.Printf("%s\n", txjson)
-	txSigned = util.ReadStringLine(os.Stdin, 4096)
-	json.Unmarshal([]byte(txSigned), &tx)
-	if err != nil {
-		fmt.Println("签名错误：", err)
-		goto addPoolSign
-	}
-	err = addPool(tx)
-	if err != nil {
-		fmt.Println("加入矿池失败：", err)
-		goto addPoolSign
-	}
-	initConfig, err := readCfg()
-	if err != nil {
-		log.Println("读取配置失败")
-	}
-	initConfig.PoolID = poolID
-	initConfig.Save()
-}
-
-func addPool(tx *eos.SignedTransaction) error {
-	packedtx, err := tx.Pack(eos.CompressionZlib)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	//out, err := api.PushTransaction(packedtx)
-	//if err != nil {
-	//	return err
-	//}
-	//log.Println(out.StatusCode, out.BlockID)
-	//return nil
-	buf, err := json.Marshal(packedtx)
-	//cfg, err := readCfg()
-	//if err != nil {
-	//	bi = int(cfg.IndexID) % len(BPList)
-	//}
-	resp, err := http.Post(fmt.Sprintf("http://%s:8082/changeminerpool", BPList[bi]), "applaction/json", bytes.NewBuffer(buf))
-	if err != nil {
-		return err
-	}
-	fmt.Println(fmt.Sprintf("send to: http://%s:8082/changeminerpool", BPList[bi]))
-	if resp.StatusCode != 200 {
-		res, err := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
-	}
-
-	return nil
-}
-
 func preRegister(tx *eos.SignedTransaction) error {
 	packedtx, err := tx.Pack(eos.CompressionZlib)
 
@@ -409,28 +239,8 @@ func preRegister(tx *eos.SignedTransaction) error {
 }
 
 func getNodeList() []string {
-	if isDebug {
-		return BPList
-	}
+
 	var list []string
-	//resp, err := http.Get("http://download.yottachain.io/config/bpsn-test.json")
-	//if err != nil {
-	//	log.Println("获取BP失败")
-	//	os.Exit(1)
-	//}
-	//buf, err := ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	//	log.Println("获取BP失败")
-	//	os.Exit(1)
-	//}
-	//listStr := `
-	//["49.234.139.206",
-	//"129.211.72.15",
-	//"122.152.203.189",
-	//"212.129.153.253",
-	//"49.235.52.30"]
-	//`
-	//buf := bytes.NewBufferString(listStr)
 	for i := 0; i < 21; i++ {
 		if i < 10 {
 			list = append(list, fmt.Sprintf("sn0%d.yottachain.net", i))
@@ -438,10 +248,6 @@ func getNodeList() []string {
 			list = append(list, fmt.Sprintf("sn%d.yottachain.net", i))
 		}
 	}
-	//err = json.Unmarshal(buf, &list)
-	//if err != nil {
-	//	log.Println(err)
-	//}
 	return list
 }
 
