@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/cmd/update"
-	ytfs "github.com/yottachain/YTFS"
 	"io"
 	"net/http"
 	"os/signal"
@@ -14,10 +12,14 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/cmd/update"
+	ytfs "github.com/yottachain/YTFS"
+
 	"os"
 	"os/exec"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
 
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
@@ -40,7 +42,7 @@ func Init() error {
 }
 
 func InitBySignleStorage(size uint64, m uint32) error {
-	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
+	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size))
 	cfg.Save()
 	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
 	if err != nil {

@@ -84,11 +84,11 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 }
 
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
-func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
+func GetYTFSOptionsByParams(size uint64) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
-	m := 2048
-	n = uint32(size / uint64(d) / uint64(m))
+	m := 1024
+	n := uint32(size / uint64(d) / uint64(m))
 	opts := &ytfsOpts.Options{
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{

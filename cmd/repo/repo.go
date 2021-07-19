@@ -2,7 +2,7 @@ package repoCmd
 
 import (
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
+	"log"
 	"os"
 	"path"
 
@@ -45,7 +45,7 @@ var rebuildCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size*GB, 1<<mc))
+		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size * GB))
 		err = backData(cfg)
 		if err != nil {
 			if err == os.ErrExist {
