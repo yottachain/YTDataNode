@@ -183,6 +183,10 @@ func step1() {
 	// 		fmt.Println(err)
 	// 		goto post
 	// 	}
+	err = preRegister(tx)
+	if err != nil {
+		panic("注册失败：" + err.Error())
+	}
 	initConfig.Adminacc = adminacc
 	initConfig.Save()
 }
