@@ -126,8 +126,6 @@ func readCfg() (*config.Config, error) {
 
 func step1() {
 
-	var regTxsigned string
-
 	type minerData struct {
 		MinerID   uint64          `json:"minerid"`
 		AdminAcc  eos.AccountName `json:"adminacc"`
