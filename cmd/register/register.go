@@ -158,7 +158,7 @@ func step1() {
 			minerid,
 			eos.AN("admin"),
 			eos.AN("depAcc"),
-			newYTAAssect(depAmount),
+			newYTAAssect(1024 * 1024 * 10),
 			initConfig.PubKey,
 		}),
 	}
