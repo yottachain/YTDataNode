@@ -105,6 +105,7 @@ func newCfg() (*config.Config, error) {
 	if err != nil {
 		log.Println(err)
 	}
+	depAmount = int64(size)
 	mc = 20
 	commander.InitBySignleStorage(size*GB, 1<<mc)
 	_cfg, err := config.ReadConfig()
@@ -145,9 +146,6 @@ func step1() {
 
 	// fmt.Println("请输入抵押账号用户名：")
 	// fmt.Scanf("%s\n", &depAcc)
-	fmt.Println("请输入抵押额度(YTA)：")
-
-	fmt.Scanf("%d\n", &depAmount)
 	// fmt.Println("请输入矿机管理员账号：")
 	// fmt.Scanf("%s\n", &adminacc)
 	action := &eos.Action{
