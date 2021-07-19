@@ -34,6 +34,7 @@ var depAcc string
 var depAmount int64 = 1024 * 1024 * 1024 * 10
 var kb = eos.NewKeyBag()
 var maxSpace uint64 = 268435456
+var Size uint64
 
 var isDebug = false
 
@@ -98,15 +99,9 @@ func getNewMinerID() (uint64, int) {
 
 func newCfg() (*config.Config, error) {
 	var GB uint64 = 1 << 30
-	var size uint64 = 4096
 	var mc byte = 14
-	fmt.Println("请输入矿机存储空间大小GB例如4T=4096:")
-	_, err := fmt.Scanf("%d\n", &size)
-	if err != nil {
-		log.Println(err)
-	}
 	mc = 20
-	commander.InitBySignleStorage(size*GB, 1<<mc)
+	commander.InitBySignleStorage(Size*GB, 1<<mc)
 	_cfg, err := config.ReadConfig()
 	if err != nil {
 		return nil, err

@@ -104,6 +104,7 @@ func main() {
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
+	registerCmd.RegisterCmd.Flags().Uint64VarP(&registerCmd.Size, "size", "s", 4096, "注册空间大小")
 
 	RootCommand := &cobra.Command{
 		Version: fmt.Sprintf("%s", "1.0.15g"),
