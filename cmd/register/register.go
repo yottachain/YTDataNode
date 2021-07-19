@@ -150,7 +150,7 @@ func step1() {
 	// fmt.Scanf("%s\n", &depAcc)
 	fmt.Println("请输入抵押额度(YTA)：")
 
-	// fmt.Scanf("%d\n", &depAmount)
+	fmt.Scanf("%d\n", &depAmount)
 	// fmt.Println("请输入矿机管理员账号：")
 	// fmt.Scanf("%s\n", &adminacc)
 	action := &eos.Action{
@@ -161,8 +161,8 @@ func step1() {
 		},
 		ActionData: eos.NewActionData(minerData{
 			minerid,
-			eos.AN(adminacc),
-			eos.AN(depAcc),
+			eos.AN("admin"),
+			eos.AN("depAcc"),
 			newYTAAssect(depAmount),
 			initConfig.PubKey,
 		}),
