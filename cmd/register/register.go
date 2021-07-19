@@ -51,18 +51,19 @@ var RegisterCmd = &cobra.Command{
 			}
 		}
 		fmt.Println("bplist", BPList)
-		initConfig, err := readCfg()
-		if err != nil || initConfig.IndexID == 0 {
-			fmt.Println("未查询到矿机注册信息，是否重新注册：y/n?")
-			fmt.Scanf("%c\n", &yOrN)
-			if yOrN == 'y' {
-				fmt.Println(yOrN)
-				step1()
-			} else {
-				fmt.Println("取消注册")
-				os.Exit(1)
-			}
-		}
+		// initConfig, err := readCfg()
+		// if err != nil || initConfig.IndexID == 0 {
+		// 	fmt.Println("未查询到矿机注册信息，是否重新注册：y/n?")
+		// 	fmt.Scanf("%c\n", &yOrN)
+		// 	if yOrN == 'y' {
+		// 		fmt.Println(yOrN)
+
+		// 	} else {
+		// 		fmt.Println("取消注册")
+		// 		os.Exit(1)
+		// 	}
+		// }
+		step1()
 		fmt.Println("注册完成，请使用daemon启动")
 	},
 }
@@ -162,26 +163,26 @@ func step1() {
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
 
-post:
-	fmt.Println("注册信息：")
-	fmt.Println("矿工ID：", minerid)
-	fmt.Println("管理账号用户名：", adminacc)
-	fmt.Println("抵押账号用户名：", depAcc)
-	fmt.Println("抵押额度：", depAmount)
-	fmt.Println("是否开始注册 y/n?")
-	fmt.Scanf("%c\n", &yOrN)
+	// post:
+	// 	fmt.Println("注册信息：")
+	// 	fmt.Println("矿工ID：", minerid)
+	// 	fmt.Println("管理账号用户名：", adminacc)
+	// 	fmt.Println("抵押账号用户名：", depAcc)
+	// 	fmt.Println("抵押额度：", depAmount)
+	// 	fmt.Println("是否开始注册 y/n?")
+	// 	fmt.Scanf("%c\n", &yOrN)
 
-	if yOrN == 'n' {
-		fmt.Println("取消注册")
-		jsonbuf, _ := json.Marshal(tx)
-		fmt.Println(string(jsonbuf))
-		os.Exit(1)
-	}
-	err = preRegister(tx)
-	if err != nil {
-		fmt.Println(err)
-		goto post
-	}
+	// 	if yOrN == 'n' {
+	// 		fmt.Println("取消注册")
+	// 		jsonbuf, _ := json.Marshal(tx)
+	// 		fmt.Println(string(jsonbuf))
+	// 		os.Exit(1)
+	// 	}
+	// 	err = preRegister(tx)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		goto post
+	// 	}
 	initConfig.Adminacc = adminacc
 	initConfig.Save()
 }
