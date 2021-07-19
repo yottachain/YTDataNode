@@ -137,6 +137,32 @@ func GetYTFSOptionsByParams2(totalSize uint64, storageSize uint64, m uint32) *yt
 	return opts
 }
 
+// GetYTFSOptionsByParams2 通过参数生成YTFS配置, 多storage配置
+func GetYTFSOptionsByParams3(totalSize uint64, storageSize uint64) *ytfsOpts.Options {
+	yp := util.GetYTFSPath()
+	n := totalSize / uint64(2048)
+	opts := &ytfsOpts.Options{
+		YTFSTag: "ytfs",
+		Storages: []ytfsOpts.StorageOptions{
+			{
+				StorageName:   path.Join(yp, "storage"),
+				StorageType:   0,
+				ReadOnly:      false,
+				SyncPeriod:    1,
+				StorageVolume: storageSize,
+				DataBlockSize: 1 << 14,
+			},
+		},
+		ReadOnly:       false,
+		SyncPeriod:     1,
+		IndexTableCols: 2048,
+		IndexTableRows: uint32(n),
+		DataBlockSize:  1 << 14,
+		TotalVolumn:    totalSize,
+	}
+	return opts
+}
+
 // NewConfig ..
 func NewConfig() *Config {
 	cfg := NewConfigByYTFSOptions(DefaultYTFSOptions())
