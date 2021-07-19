@@ -31,7 +31,7 @@ var bi int
 var minerid uint64
 var adminacc string
 var depAcc string
-var depAmount int64
+var depAmount int64 = 1024 * 1024 * 1024 * 10
 var kb = eos.NewKeyBag()
 var maxSpace uint64 = 268435456
 
@@ -105,7 +105,6 @@ func newCfg() (*config.Config, error) {
 	if err != nil {
 		log.Println(err)
 	}
-	depAmount = int64(size)
 	mc = 20
 	commander.InitBySignleStorage(size*GB, 1<<mc)
 	_cfg, err := config.ReadConfig()
@@ -158,7 +157,7 @@ func step1() {
 			minerid,
 			eos.AN("admin"),
 			eos.AN("depAcc"),
-			newYTAAssect(1024 * 1024 * 1024 * 10),
+			newYTAAssect(depAmount),
 			initConfig.PubKey,
 		}),
 	}
