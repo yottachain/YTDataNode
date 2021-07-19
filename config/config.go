@@ -87,7 +87,8 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
-	m := size / uint64(d) / uint64(n)
+	m := 2048
+	n = uint32(size / uint64(d) / uint64(m))
 	opts := &ytfsOpts.Options{
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{
