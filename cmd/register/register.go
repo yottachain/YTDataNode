@@ -11,7 +11,6 @@ import (
 	"github.com/eoscanada/eos-go/ecc"
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/util"
 
 	//"github.com/eoscanada/eos-go/ecc"
 	"io/ioutil"
@@ -172,18 +171,6 @@ func step1() {
 	txOpts.FillFromChain(api)
 	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
 	tx.SetExpiration(time.Minute * 30)
-
-regTxsign:
-	fmt.Println("请对如下交易进行签名并粘贴:")
-	txjson, err := json.Marshal(tx)
-	fmt.Printf("%s\n", txjson)
-	fmt.Println("-----------------------------")
-	regTxsigned = util.ReadStringLine(os.Stdin, 4096)
-	json.Unmarshal([]byte(regTxsigned), &tx)
-	if err != nil {
-		fmt.Println("签名错误：", err)
-		goto regTxsign
-	}
 
 post:
 	fmt.Println("注册信息：")
