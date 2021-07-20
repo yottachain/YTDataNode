@@ -105,7 +105,7 @@ func DaemonWithBackground() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	log.SetFileLog()
 	var daemonC *exec.Cmd
-	go updateService(&daemonC)
+	// go updateService(&daemonC)
 	go func() {
 		var yOrN byte
 		<-sigs
