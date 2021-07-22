@@ -21,11 +21,18 @@ func GetCurrentUserHome() string {
 //
 // 如果存在环境变量ytfs_path则使用环境变量ytfs_path
 func GetYTFSPath() string {
+	const dirName = "YTFS"
+
 	ps, ok := os.LookupEnv("ytfs_path")
 	if ok {
 		return ps
 	}
-	return GetCurrentUserHome() + "/YTFS"
+	// 如果存在文件夹环境变量返回文件夹内指定目录
+	if ytfs_path := DefaultLocalEnv.GetFieldValue("ytfs_path"); ytfs_path != "" {
+		return ytfs_path
+	}
+
+	return path.Join(GetCurrentUserHome(), dirName)
 }
 
 // GetConfigPath 获取当前用户配置文件路径

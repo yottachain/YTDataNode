@@ -3,12 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
 
 	"github.com/yottachain/YTDataNode/util"
 
@@ -18,7 +19,7 @@ import (
 
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTHost"
+	host "github.com/yottachain/YTHost"
 	. "github.com/yottachain/YTHost/interface"
 	"github.com/yottachain/YTHost/option"
 
@@ -55,6 +56,10 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
+
+		if p := util.DefaultLocalEnv.GetFieldValue("nat_port"); p != "" {
+			port = p
+		}
 		if ip, ok := os.LookupEnv("local_host_ip"); ok {
 			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
 			laddr = strings.Replace(laddr, "\n", "", -1)
@@ -75,6 +80,11 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
+
+		if p := util.DefaultLocalEnv.GetFieldValue("nat_port"); p != "" {
+			port = p
+		}
+
 		addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
 		addr = strings.Replace(addr, "\n", "", -1)
 		pubma, err := multiaddr.NewMultiaddr(addr)
