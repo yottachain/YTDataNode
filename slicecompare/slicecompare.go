@@ -287,9 +287,16 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,resaddr *
 	snmissseq := make([]uint64, 1)
 
     if !sc.Sn.Config().UseKvDb{
+	    (*resaddr).ErrCode = "ErrDbForGc"
     	log.Println("[slicecompare][error] use indexdb, gc failed")
 	    return
     }
+
+	comparedseq, err := GetSeqFromDb(Tdb, FinishKey)
+	if err != nil{
+		(*resaddr).ErrCode = "ErrGetComparedSeq"
+		fmt.Println("[slicecompare] error:", (*resaddr).ErrCode)
+	}
 
 	Tdb.Ro.SetFillCache(false)
     iter := Tdb.Db.NewIterator(Tdb.Ro)
@@ -300,7 +307,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,resaddr *
 	    }
 
 	    seq := binary.LittleEndian.Uint64(Bkey)
-	    if seq < msg.StartSeq{
+	    if seq < msg.StartSeq || seq < comparedseq {
 	    	_ = Tdb.Db.Delete(Tdb.Wo, Bkey)
 	    	continue
 	    }
@@ -320,11 +327,11 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq,resaddr *
 	    }
 	    _ = Tdb.Db.Delete(Tdb.Wo, Bkey)
 	    snmissseq = append(snmissseq, seq)
-	    (*resaddr).DnMissList = append((*resaddr).DnMissList, GcHash)
-	    (*resaddr).DnMissNum++
+	    //(*resaddr).DnMissList = append((*resaddr).DnMissList, GcHash)
+	    (*resaddr).SnMissNum++
     }
 
-	err := PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
+	err = PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
 	if err != nil{
 		log.Println("[slicecompare] ErrPutComparedSeq")
 	}
@@ -342,6 +349,8 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	res.NodeId = msg.NodeId
 	res.TaskId = msg.TaskId
 	res.ErrCode = "succ"
+	res.StartSeq = msg.StartSeq
+	res.EndSeq = msg.EndSeq
 	BKey := make([]byte,8)
 	comparedseq, err := GetSeqFromDb(Tdb, FinishKey)
 	if err != nil{
@@ -354,9 +363,10 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	for _, seqtohash := range msg.CpList {
 		atomic.AddUint32(&res.CompareNum,1)
 		seq = seqtohash.Seq
-		if seq < comparedseq{
+		if seq < comparedseq || seq < msg.StartSeq || seq > msg.EndSeq {
 			continue
 		}
+
 
 		binary.LittleEndian.PutUint64(BKey, seq)
 		dnhash,err := Tdb.Db.Get(Tdb.Ro, BKey)

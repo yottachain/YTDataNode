@@ -338,22 +338,33 @@ func RunTX(TxCtl chan struct{}) {
 func Run() {
 	RxCtl := make(chan struct{})
 	TxCtl := make(chan struct{})
+
 	go RunCtl(RxCtl,TxCtl)
 	go RunRX(RxCtl)
 	go RunTX(TxCtl)
 }
 
 func RunCtl( RxCtl, TxCtl chan struct{}){
+	cfg,_ := config.ReadConfig()
+	dnid := cfg.IndexID
+
+	for{
+		if (dnid % 12) == (uint32(time.Now().Hour()) % 12) {
+			break
+		}
+		<- time.After(time.Second * 60)
+	}
+
 	for{
 		start := time.Now()
 		for{
 			RxCtl <- struct{}{}
 			TxCtl <- struct{}{}
-			if time.Now().Sub(start).Seconds() >= 7200{
+			if time.Now().Sub(start).Seconds() >= 3600{
 				break
 			}
 		}
-		<-time.After(time.Hour * 22)
+		<-time.After(time.Hour * 11)
 	}
 }
 

@@ -1,6 +1,7 @@
 package verifySlice
 
 import (
+	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
@@ -18,8 +19,16 @@ import (
     200   verify slice function error
 */
 
+type VrDB struct {
+	DB *gorocksdb.DB
+	ro  *gorocksdb.ReadOptions
+	wo  *gorocksdb.WriteOptions
+}
+
 type VerifySler struct {
 	Sn sni.StorageNode
+	Hdb *VrDB
+	Bdb *VrDB
 }
 
 
@@ -39,6 +48,18 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 	if err != nil{
 		log.Println("[verifyslice] [error] read datanode config error:",err)
 		resp.ErrCode = "101"
+		return resp
+	}
+
+	vfs.Hdb, err = openKVDB(verifyhashdb)
+	if err != nil{
+		resp.ErrCode = "ErrOpenHashdb"
+		return resp
+	}
+
+	vfs.Bdb, err = openKVDB(batchdb)
+	if err != nil{
+		resp.ErrCode = "ErrOpenBatchdb"
 		return resp
 	}
 

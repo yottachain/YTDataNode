@@ -1,10 +1,11 @@
 package verifySlice
 
 import (
-	"github.com/yottachain/YTDataNode/message"
-	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/message"
+	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
+	"regexp"
 	"strconv"
 )
 
@@ -21,7 +22,17 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
+
+func compressStr(str string) string {
+	if str == "" {
+		return ""
+	}
+
+	reg := regexp.MustCompile("\\s+")
+	return reg.ReplaceAllString(str, "")
+}
+
+func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
 
 	config, err := config.ReadConfig()
@@ -31,13 +42,15 @@ func (vfs *VerifySler)VerifySlice(verifyNum string) (message.SelfVerifyResp){
 		return resp
 	}
 
-	num,err := strconv.ParseUint(verifyNum,10,64)
+	num,_ := strconv.ParseUint(verifyNum,10,64)
+
+	startItem = compressStr(startItem)
 
 	if config.UseKvDb {
-		resp = vfs.VerifySlicekvdb(num)
+		resp = vfs.VerifySlicekvdb(num, startItem)
 		return resp
 	}
 
-	resp = vfs.VerifySliceIdxdb(num)
+	resp = vfs.VerifySliceIdxdb(num,startItem)
 	return resp
 }

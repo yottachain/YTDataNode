@@ -20,6 +20,10 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
+func NewVerifySler(){
+
+}
+
 func compressStr(str string) string {
 	if str == "" {
 		return ""

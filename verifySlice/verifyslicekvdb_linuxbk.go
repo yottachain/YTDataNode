@@ -17,15 +17,19 @@ import (
 var mdbFileName = "/maindb"
 var VerifyedKvFile string = "/gc/rock_verify"
 
+const verifyhashdb  = "/verifydir/hashdb"
+const batchdb = "/verifydir/batchdb"
+
+
 func (vfs *VerifySler) Scankvdb(){
 
 }
 
-func openKVDB() (*gorocksdb.DB, error) {
+func openKVDB(dbname string) (*VrDB, error) {
     //	var posIdx uint32
     //cfg,err := config.ReadConfig()
     dir := util.GetYTFSPath()
-    DBPath := dir + mdbFileName
+    DBPath := dir + dbname
 
     bbto := gorocksdb.NewDefaultBlockBasedTableOptions()
     bbto.SetBlockCache(gorocksdb.NewLRUCache(3 << 30))
@@ -38,9 +42,15 @@ func openKVDB() (*gorocksdb.DB, error) {
         fmt.Println("[kvdb] open rocksdb error")
         return nil, err
     }
-    return db, nil
-    //ro := gorocksdb.NewDefaultReadOptions()
-    //wo := gorocksdb.NewDefaultWriteOptions()
+    ro := gorocksdb.NewDefaultReadOptions()
+    wo := gorocksdb.NewDefaultWriteOptions()
+    VDB := &VrDB{
+        db,
+        ro,
+        wo,
+    }
+
+    return VDB, nil
 }
 
 
