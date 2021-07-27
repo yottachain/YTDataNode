@@ -2,11 +2,12 @@ package statistics
 
 import (
 	"encoding/json"
+	"sync"
+	"time"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/yottachain/YTDataNode/logger"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
-	"sync"
-	"time"
 )
 
 type Stat struct {
@@ -49,6 +50,7 @@ type Stat struct {
 	NoSpaceError    int64
 	RangeFullError  int64
 	IndexDBOpt      *ytfsOpts.Options
+	AllocSpace      uint64
 	sync.RWMutex
 }
 

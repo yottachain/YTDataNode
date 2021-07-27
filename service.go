@@ -5,15 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/yottachain/YTDataNode/Perf"
-	"github.com/yottachain/YTDataNode/TokenPool"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/diskHash"
-	"github.com/yottachain/YTDataNode/randDownload"
-	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
-	"github.com/yottachain/YTDataNode/statistics"
-	"github.com/yottachain/YTDataNode/util"
 	"log"
 	"math/rand"
 	"os"
@@ -23,6 +14,16 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/yottachain/YTDataNode/Perf"
+	"github.com/yottachain/YTDataNode/TokenPool"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/randDownload"
+	"github.com/yottachain/YTDataNode/setRLimit"
+	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
+	"github.com/yottachain/YTDataNode/statistics"
+	"github.com/yottachain/YTDataNode/util"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
@@ -400,6 +401,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	}
 
 	statistics.DefaultStat.Lock()
+	statistics.DefaultStat.AllocSpace = sn.config.AllocSpace
 	statistics.DefaultStat.AvailableTokenNumber = TokenPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.RXTokenFillRate = TokenPool.Utp().GetTFillTKSpeed()
