@@ -3,6 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
@@ -10,14 +17,8 @@ import (
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
-	"os"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/spotCheck"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -128,7 +129,7 @@ func (wh *WriteHandler) Run() {
 }
 
 func (wh *WriteHandler) GetMaxSpace() uint64 {
-	return wh.YTFS().Meta().YtfsSize/uint64(wh.YTFS().Meta().DataBlockSize) - 10
+	return wh.Config().AllocSpace/uint64(wh.YTFS().Meta().DataBlockSize) - 10
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
@@ -223,8 +224,16 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()
-	// 添加超时
-	resCode := wh.saveSlice(ctx, msg)
+
+	var resCode int32
+	// 判断剩余空间
+	if wh.GetMaxSpace() >= (wh.YTFS().Len()) {
+		resCode = wh.saveSlice(ctx, msg)
+	} else {
+		// 剩余空间不足
+		resCode = 106
+	}
+
 	if resCode != 0 {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
