@@ -41,6 +41,8 @@ const (
 	MsgIDSleepReturn           msgType = 0xe75c
 	MsgIDSelfVerifyReq         msgType = 0xd97a
 	MsgIDSelfVerifyResp        msgType = 0x58b7
+	MsgIDSelfVerifyQueryReq    msgType = 0xd97b
+	MsgIDSelfVerifyQueryResp   msgType = 0x58b8
 	MsgIDDownloadTKCheck       msgType = 0x1b34
 	MsgIDTestMinerPerfTask     msgType = 0xe76a
 	MsgIDTestGetBlock          msgType = 0xe76b

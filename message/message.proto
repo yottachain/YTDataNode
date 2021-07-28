@@ -262,6 +262,19 @@ message ListDNIResp{
     string nextid= 2;
 }
 
+//msgid=0xd97b
+message SelfVerifyQueryReq{
+    string Key =1;
+}
+
+//msgid=0x58b8
+message SelfVerifyQueryResp{
+    string Key =1;
+    uint32 BatchNum =2;
+    string Date=3;
+    string ErrCode =4;
+}
+
 //  本次需要校验的条数
 //msgid = 0xd97a
 message SelfVerifyReq{

@@ -20,8 +20,8 @@ type VerifySler struct {
 	Sn sni.StorageNode
 }
 
-func NewVerifySler(){
-
+func NewVerifySler(sn sni.StorageNode) (*VerifySler){
+	return &VerifySler{Sn:sn}
 }
 
 func compressStr(str string) string {
@@ -31,6 +31,13 @@ func compressStr(str string) string {
 
 	reg := regexp.MustCompile("\\s+")
 	return reg.ReplaceAllString(str, "")
+}
+
+func (vfs *VerifySler)MissSliceQuery(key string)(message.SelfVerifyQueryResp){
+	var resp message.SelfVerifyQueryResp
+	resp.ErrCode="ErrNotSupport"
+	//todo: miss slice query not support for windows now
+	return resp
 }
 
 func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp){

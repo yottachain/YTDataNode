@@ -240,6 +240,7 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
+	vfs := verifySlice.NewVerifySler(sn)
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.SelfVerifyReq
 		var res message.SelfVerifyResp
@@ -252,13 +253,32 @@ func (sn *storageNode) Service() {
 
 		verifynum := msg.Num
 		startItem := msg.StartItem
-		vfs := verifySlice.VerifySler{Sn:sn}
+		//vfs := verifySlice.VerifySler{Sn:sn}
 		result := vfs.VerifySlice(verifynum, startItem)
 		resp, err := proto.Marshal(&result)
 		if err != nil {
 			log.Println("[verify] Marshal resp error:", err)
 		}
 		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyQueryReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.SelfVerifyQueryReq
+		var res message.SelfVerifyQueryResp
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[verify] message.SelfVerifyReq error:", err)
+			res.ErrCode = "ErrUnmarshal"
+			//res.ErrCode = "100"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
+		}
+
+		result := vfs.MissSliceQuery(msg.Key)
+		resp, err := proto.Marshal(&result)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
+		return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {

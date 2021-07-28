@@ -4,12 +4,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/mr-tron/base58"
 	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	sni "github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
+
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -36,9 +38,21 @@ type VerifySler struct {
 	Sn         sni.StorageNode
 	Hdb        *VrDB
 	Bdb        *VrDB
-	VerifyTms  uint32
 }
 
+func NewVerifySler(sn sni.StorageNode) (*VerifySler){
+	Hdb, err := OpenKVDB(Verifyhashdb)
+	if err != nil{
+		fmt.Println("[verify] Open hashdb error:",err)
+	}
+
+	Bdb, err := OpenKVDB(Batchdb)
+	if err != nil{
+		fmt.Println("[verify] Open Batchdb error:",err)
+	}
+
+	return &VerifySler{sn,Hdb,Bdb,}
+}
 
 func compressStr(str string) string {
 	if str == "" {
@@ -120,21 +134,71 @@ func (vfs *VerifySler)VerifySliceReal(verifyNum string, startItem string) (messa
 	return resp
 }
 
+func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
+	var resp message.SelfVerifyQueryResp
+	resp.Key = Skey
+	resp.ErrCode = "Succ"
+	HKey, err := base58.Decode(Skey)
+	if err != nil {
+		resp.ErrCode = "ErrDecodeKey"
+		fmt.Println("Decode key error:",err)
+		return resp
+	}
+
+	VrfBch,err := vfs.Hdb.DB.Get(vfs.Hdb.Ro, HKey)
+	if err != nil {
+		resp.ErrCode = "ErrGetBatchNum"
+		fmt.Println("Get BatchNum of ",Skey," error",err.Error())
+		return resp
+	}
+
+	if !VrfBch.Exists(){
+		resp.ErrCode = "ErrNoHashKey"
+		fmt.Println("error, hash not exist, key:",Skey,"vrfbch",VrfBch)
+		return resp
+	}
+	Bbch := VrfBch.Data()
+	UIBch := binary.LittleEndian.Uint64(Bbch)
+	resp.BatchNum = uint32(UIBch)
+
+	VrfTm, err := vfs.Bdb.DB.Get(vfs.Bdb.Ro, Bbch)
+	if err != nil {
+		resp.ErrCode = "ErrGetBatchTm"
+		fmt.Println("Get Verify-time of ",UIBch," error",err.Error())
+		return resp
+	}
+
+	if !VrfTm.Exists(){
+		resp.ErrCode = "ErrNoBatchTm"
+		fmt.Println("error, batchnum not exist, batchnum:",UIBch)
+		return resp
+	}
+
+	STime := string(VrfTm.Data())
+	resp.Date = STime
+	fmt.Println("[query result] Hash:",Skey, "BatchNum:",UIBch, "Time:",STime)
+
+	return resp
+}
+
 func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp) {
 	var resp message.SelfVerifyResp
 	var err error
 
-	vfs.Hdb, err = OpenKVDB(Verifyhashdb)
-	defer vfs.Hdb.DB.Close()
+	rstdir := util.GetYTFSPath() + Verifyrstdir
+	err = ChkRsvSpace(rstdir, 1048576)
 	if err != nil{
+		log.Println("[verify] ChkRsvSpace error:",err.Error())
+		resp.ErrCode = "ErrChkRsvSpace"
+		return resp
+	}
+
+	if nil == vfs.Hdb{
 		resp.ErrCode = "ErrOpenHashdb"
 		return resp
 	}
 
-
-	vfs.Bdb, err = OpenKVDB(Batchdb)
-	defer vfs.Bdb.DB.Close()
-	if err != nil{
+	if nil == vfs.Bdb{
 		resp.ErrCode = "ErrOpenBatchdb"
 		return resp
 	}
@@ -158,7 +222,6 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 	resp.VrfBatch = Sbtch
 	resp.VrfTime = Date
 	_ = vfs.SaveVerifyToDb(resp)
-	rstdir := util.GetYTFSPath() + Verifyrstdir
 	rstfile := "rst"+Date +"_"+ Sbtch
 	res, _ := proto.Marshal(&resp)
 	_ = SavetoFile(rstdir,rstfile,res)

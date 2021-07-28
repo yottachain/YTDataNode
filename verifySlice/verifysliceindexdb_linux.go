@@ -28,7 +28,7 @@ func init(){
     slicecompare.ForInit(VerifyedNumFile,"0")
 }
 
-func (vfs *VerifySler)GetUsedEntOfRange(n, m, h, n_Rangeth uint64,  fl_IdxDB *os.File)(uint64, error){
+func (vfs *VerifySler) GetUsedEntOfRange(n, m, h, n_Rangeth uint64,  fl_IdxDB *os.File)(uint64, error){
     buf := make([]byte, 4)
     pos := n_Rangeth*(4+m*20) + h
     fl_IdxDB.Seek(int64(pos), io.SeekStart)
