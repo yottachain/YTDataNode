@@ -345,16 +345,6 @@ func Run() {
 }
 
 func RunCtl( RxCtl, TxCtl chan struct{}){
-	cfg,_ := config.ReadConfig()
-	dnid := cfg.IndexID
-
-	for{
-		if (dnid % 12) == (uint32(time.Now().Hour()) % 12) {
-			break
-		}
-		<- time.After(time.Second * 60)
-	}
-
 	for{
 		start := time.Now()
 		for{

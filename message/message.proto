@@ -287,7 +287,9 @@ message SelfVerifyResp{
     string  Num =3;
     string  errNum =4;
     string  errCode =5;
-    repeated HashToHash errShard =6;
+    string  vrfBatch =6;
+    string  vrfTime  =7;
+    repeated HashToHash errShard =8;
 }
 
 //MessageID:0xe87a

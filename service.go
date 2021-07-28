@@ -332,11 +332,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 
-	//mi := util.MinerInfo{ID: uint64(msg.Id)}
-	//if mi.IsNoSpace(msg.UsedSpace) {
-	//	TokenPool.Utp().Stop()
-	//}
-
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
@@ -434,7 +429,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 			case -12:
 				log.Printf("采购空间出错\n")
 			}
-
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {
