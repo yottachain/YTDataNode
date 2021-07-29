@@ -372,7 +372,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		dnhash,err := Tdb.Db.Get(Tdb.Ro, BKey)
 
 		if err != nil || len(dnhash.Data()) != 16{
-           fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, seqtohash.Hash, err)
+           fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, base58.Encode(seqtohash.Hash), err)
            res.DnMissList = append(res.DnMissList, seqtohash.Hash)
            atomic.AddUint32(&res.DnMissNum,1)
            continue
