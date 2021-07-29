@@ -12,6 +12,7 @@ require (
 	github.com/klauspost/reedsolomon v1.9.3
 	github.com/libp2p/go-libp2p-core v0.3.1
 	github.com/libp2p/go-libp2p-crypto v0.1.0
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mr-tron/base58 v1.1.3
 	github.com/multiformats/go-multiaddr v0.2.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
