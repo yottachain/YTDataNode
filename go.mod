@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20201104130540-2e1f801663c6
 	github.com/eoscanada/eos-go v0.9.0
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -27,6 +27,6 @@ require (
 	github.com/yottachain/YTFS v0.0.0-20210719080924-b605c930dc8d
 	github.com/yottachain/YTHost v1.0.2-0.20210309102115-a3b2780e2d96
 	github.com/yottachain/YTLRC v0.0.0-20210205104947-ea10d305f4fd
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )

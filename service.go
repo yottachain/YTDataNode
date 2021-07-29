@@ -382,6 +382,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
+	msg.AllocSpace = sn.config.AllocSpace
 
 	//mi := util.MinerInfo{ID: uint64(msg.Id)}
 	//if mi.IsNoSpace(msg.UsedSpace) {
