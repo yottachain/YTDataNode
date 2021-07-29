@@ -50,7 +50,6 @@ type Stat struct {
 	NoSpaceError    int64
 	RangeFullError  int64
 	IndexDBOpt      *ytfsOpts.Options
-	AllocSpace      uint64
 	sync.RWMutex
 }
 

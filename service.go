@@ -401,7 +401,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	}
 
 	statistics.DefaultStat.Lock()
-	statistics.DefaultStat.AllocSpace = sn.config.AllocSpace
 	statistics.DefaultStat.AvailableTokenNumber = TokenPool.Utp().FreeTokenLen()
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.RXTokenFillRate = TokenPool.Utp().GetTFillTKSpeed()
