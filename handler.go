@@ -138,7 +138,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 	}
 
-	wh.seq = wh.seq + uint64(number)
+	//wh.seq = wh.seq + uint64(number)
 	err2 = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
 	if err2 != nil{
 		fmt.Println("[slicecompare] PutVSeqToDb error:",err)
