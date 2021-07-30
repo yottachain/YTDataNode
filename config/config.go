@@ -382,9 +382,12 @@ func ReadConfig() (*Config, error) {
 		return nil, err
 	}
 	cfg.privKey = privk
-	if cfg.AllocSpace == 0 {
-		cfg.AllocSpace = cfg.Options.TotalVolumn
-	}
+	// if cfg.AllocSpace == 0 {
+	// 	cfg.AllocSpace = cfg.Options.TotalVolumn
+	// }
+
+	cfg.AllocSpace = 1024 * 1024 * 1024
+
 	return &cfg, nil
 }
 
