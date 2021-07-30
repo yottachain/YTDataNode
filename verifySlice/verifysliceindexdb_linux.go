@@ -60,7 +60,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
         }
 
         usedSize, err := vfs.GetUsedEntOfRange(n, m, h, n_Rangeth, fl_IdxDB)
-        fmt.Println("[debug][verify] n=",n, "n_Ranges=",n_Rangeth,"m=",m,"usedSize=",usedSize)
+        //fmt.Println("[debug][verify] n=",n, "n_Ranges=",n_Rangeth,"m=",m,"usedSize=",usedSize)
 
         if err != nil || usedSize > m{
             n_Rangeth++
@@ -132,7 +132,7 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
 
             hashTab = append(hashTab,&errHash)
         }else{
-            log.Println("[verify] success, hash:",base58.Encode(v.Hash[:]),"pos:",v.OffsetIdx)
+            //log.Println("[verify] success, hash:",base58.Encode(v.Hash[:]),"pos:",v.OffsetIdx)
         }
     }
     return verifyedItem, hashTab, nil

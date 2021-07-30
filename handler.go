@@ -114,7 +114,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 				log.Println("[slicecompare] put to compare_db error:",err.Error(),"compare_seq:",wh.seq, "hash:",base58.Encode(hashkey[i]))
 			    goto OUT
 			}
-			log.Println("[slicecompare] put to compare_db success,compare_seq:",wh.seq, "hash:",base58.Encode(hashkey[i]))
+			//log.Println("[slicecompare] put to compare_db success,compare_seq:",wh.seq, "hash:",base58.Encode(hashkey[i]))
 		default:
 			continue
 		}
