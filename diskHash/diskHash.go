@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/mr-tron/base58"
 	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
 	ytfs "github.com/yottachain/YTFS"
 	"github.com/yottachain/YTFS/common"
@@ -22,6 +24,7 @@ func randShard(n int) map[common.IndexTableKey][]byte {
 		rand.Read(buf)
 		key := md5.Sum(buf)
 		res[key] = buf
+		log.Println("[diskHash] base58_key:",base58.Encode(key[:]))
 	}
 	return res
 }
@@ -37,6 +40,7 @@ func GetHash(ytfs *ytfs.YTFS) (string, error) {
 	cfg := config.DefaultConfig
 	l := ytfs.Len()
 	if l < 5 {
+		log.Println("[diskHash] ytfs_len:",l)
 		err := randWrite(ytfs)
 		if err != nil {
 			return "", fmt.Errorf("write ytfs checkData error")
