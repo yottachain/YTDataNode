@@ -68,7 +68,7 @@ func (sn *storageNode) Service() {
 
 		}
 		time.Sleep(time.Duration(rand.Int63n(10)) * time.Second)
-		os.Exit(0)
+		// os.Exit(0)
 	}
 	var utp *TokenPool.TokenPool = TokenPool.Utp()
 	var dtp *TokenPool.TokenPool = TokenPool.Dtp()

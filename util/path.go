@@ -23,13 +23,14 @@ func GetCurrentUserHome() string {
 func GetYTFSPath() string {
 	const dirName = "YTFS"
 
-	ps, ok := os.LookupEnv("ytfs_path")
-	if ok {
-		return ps
-	}
 	// 如果存在文件夹环境变量返回文件夹内指定目录
 	if ytfs_path := DefaultLocalEnv.GetFieldValue("ytfs_path"); ytfs_path != "" {
 		return ytfs_path
+	}
+
+	ps, ok := os.LookupEnv("ytfs_path")
+	if ok {
+		return ps
 	}
 
 	return path.Join(GetCurrentUserHome(), dirName)
