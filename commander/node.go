@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os/signal"
 	"path"
-	"path/filepath"
 	"runtime"
 	"syscall"
 
@@ -206,13 +205,13 @@ func reboot(pid int) {
 }
 
 func GetCurrentPath() (string, error) {
-	file, err := exec.LookPath(os.Args[0])
-	if err != nil {
-		return "", err
-	}
-	path, err := filepath.Abs(file)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Dir(path), nil
+	// file, err := exec.LookPath(os.Args[0])
+	// if err != nil {
+	// 	return "", err
+	// }
+	// path, err := filepath.Abs(file)
+	// if err != nil {
+	// 	return "", err
+	// }
+	return os.Executable()
 }
