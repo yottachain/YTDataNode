@@ -2,13 +2,14 @@ package log
 
 import (
 	"fmt"
-	"github.com/natefinch/lumberjack"
-	"github.com/yottachain/YTDataNode/util"
 	"io"
 	"log"
 	"net"
 	"path"
 	"time"
+
+	"github.com/natefinch/lumberjack"
+	"github.com/yottachain/YTDataNode/util"
 )
 
 var FileLogger = newSyncWriter(&lumberjack.Logger{
@@ -25,7 +26,7 @@ func init() {
 
 func SetFileLog() {
 	log.SetOutput(FileLogger)
-	go LogService()
+	// go LogService()
 }
 
 func LogService() {
