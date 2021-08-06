@@ -386,8 +386,6 @@ func ReadConfig() (*Config, error) {
 	// 	cfg.AllocSpace = cfg.Options.TotalVolumn
 	// }
 
-	cfg.AllocSpace = 1024 * 1024 * 1024
-
 	return &cfg, nil
 }
 
