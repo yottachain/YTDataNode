@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/slicecompare"
 	"io/ioutil"
@@ -198,6 +199,16 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.ytfs = ys
 	if err != nil {
 		return nil, err
+	}
+
+	l := ys.PosIdx()
+	if l < 5 {
+		log.Println("[diskHash] ytfs_len:",l)
+		err := diskHash.RandWrite(ys, uint(l))
+		if err != nil {
+			log.Println("[diskHash] randWrite to ytfs error:", err)
+			return nil, fmt.Errorf("write ytfs checkData error")
+		}
 	}
 
 	sn.TmpDB, err = slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)

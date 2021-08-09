@@ -221,6 +221,7 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 	Date := Date()
 	resp.VrfBatch = Sbtch
 	resp.VrfTime = Date
+	resp.Num = verifyNum
 	_ = vfs.SaveVerifyToDb(resp)
 	rstfile := "rst"+Date +"_"+ Sbtch
 	res, _ := proto.Marshal(&resp)

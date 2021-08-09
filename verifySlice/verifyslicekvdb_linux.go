@@ -96,7 +96,7 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
     var resp message.SelfVerifyResp
     var errhash message.HashToHash
     //var hashTab []ytfs.Hashtohash
-
+    //log.Println("[verify] VerifySlicekvdb start")
     startkey,err := slicecompare.GetValueFromFile(VerifyedKvFile)
     if len(startItem) > 0 {
         startkey = startItem

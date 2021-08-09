@@ -7,6 +7,7 @@ import (
     "fmt"
     "github.com/golang/protobuf/proto"
     "github.com/mr-tron/base58"
+    log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTHost/clientStore"
     "strconv"
 
@@ -304,7 +305,7 @@ func main(){
     }else{
         sn := instance.GetStorageNode()
         gcw = gc.GcWorker{sn}
-        vfer := &verifySlice.VerifySler{Sn:sn}
+        vfer := verifySlice.NewVerifySler(sn)
 
         if VerifyErrKey !=""{
             ReInit(vfer)
@@ -316,6 +317,7 @@ func main(){
             <- time.After(time.Second * 1)
             vfer.VerifySlice(CntPerBatch, StartItem)
             if begin{
+                log.Println("verify start!!")
                 begin = false
                 StartItem = ""
             }

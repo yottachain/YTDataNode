@@ -42,9 +42,9 @@ func (vfs *VerifySler)MissSliceQuery(key string)(message.SelfVerifyQueryResp){
 
 func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
-
 	num,_ := strconv.ParseUint(verifyNum,10,64)
 	startItem = compressStr(startItem)
 	resp = vfs.VerifySliceIdxdb(num, startItem)
+	resp.Num = verifyNum
 	return resp
 }
