@@ -191,6 +191,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.host = hst
 
 	yp := util.GetYTFSPath()
+	log.Println("storage-node  GetYTFSPath:",yp)
 	ys, err := ytfs.Open(yp, cfg.Options)
 	if err != nil {
 		log.Println(err.Error())
