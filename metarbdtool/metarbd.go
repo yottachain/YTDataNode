@@ -235,6 +235,7 @@ func main(){
 	for {
 		tb,err:=ti.GetNoNilTableBytes()
 		if err !=nil {
+			fmt.Println("[kvdb]GetNoNilTableBytes error:",err.Error())
 			if err.Error() != "table_end"{
 				log.Println("get Table from indexdb err: ", err,"tableidx=",ti.GetTableIndex())
 				panic(err)
