@@ -360,7 +360,6 @@ func (re *Engine) MultiReply() error {
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
-
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
