@@ -2,11 +2,12 @@ package statistics
 
 import (
 	"encoding/json"
+	"sync"
+	"time"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/yottachain/YTDataNode/logger"
 	ytfsOpts "github.com/yottachain/YTFS/opt"
-	"sync"
-	"time"
 )
 
 type Stat struct {
