@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/yottachain/YTDataNode/cmd/update"
+	"github.com/yottachain/YTDataNode/diskHash"
 	ytfs "github.com/yottachain/YTFS"
 	"io"
 	"net/http"
@@ -42,10 +43,20 @@ func Init() error {
 func InitBySignleStorage(size uint64, m uint32) error {
 	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
 	cfg.Save()
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
 	if err != nil {
 		return err
 	}
+	l := yt.PosIdx()
+	if l < 5 {
+		log.Println("[diskHash] ytfs_len:",l)
+		err := diskHash.RandWrite(yt, uint(l))
+		if err != nil {
+			log.Println("[diskHash] randWrite to ytfs error:", err)
+			return fmt.Errorf("write ytfs checkData error")
+		}
+	}
+
 	defer yt.Close()
 	return nil
 }

@@ -15,7 +15,7 @@ func NewElkClient(tbstr string, open *bool) YTElkProducer.Client {
 
 	ytESConfig := conf.YTESConfig{
 		ESConf:      elkConf,
-		DebugMode:   true,
+		DebugMode:   false,
 		IndexPrefix: tbstr,
 		IndexType:   "log",
 	}

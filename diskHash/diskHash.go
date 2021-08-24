@@ -40,31 +40,36 @@ func RandWrite(ytfs *ytfs.YTFS, l uint) error {
 }
 
 func GetHash(ytfs *ytfs.YTFS) (string, error) {
-	cfg := config.DefaultConfig
+	//cfg := config.DefaultConfig
+	//
+	//s1 := cfg.Storages[0]
+	//fl, err := os.OpenFile(s1.StorageName, os.O_RDONLY, 0644)
+	//if err != nil {
+	//	log.Println("[diskHash] open store file error:", err)
+	//	return "", err
+	//}
+	//defer fl.Close()
+	//
+	//buf := make([]byte, CheckBlockSize)
+	//n, err := fl.Read(buf)
+	//if err != nil {
+	//	log.Println("[diskHash] read file to buf error:", err)
+	//	return "", err
+	//}
+	//if n < CheckBlockSize {
+	//	return "", fmt.Errorf("n < checkBlockSize %d\\%d", n, CheckBlockSize)
+	//}
 
-	s1 := cfg.Storages[0]
-	fl, err := os.OpenFile(s1.StorageName, os.O_RDONLY, 0644)
-	if err != nil {
-		log.Println("[diskHash] open store file error:", err)
-		return "", err
+	buf, err := ytfs.GetData(0)
+	if err != nil || len(buf) != 16384{
+		err = fmt.Errorf("GetDiskHashError")
+		return "diskHasherror", err
 	}
-	defer fl.Close()
-
-	buf := make([]byte, CheckBlockSize)
-	n, err := fl.Read(buf)
-	if err != nil {
-		log.Println("[diskHash] read file to buf error:", err)
-		return "", err
-	}
-	if n < CheckBlockSize {
-		return "", fmt.Errorf("n < checkBlockSize %d\\%d", n, CheckBlockSize)
-	}
-
 	md5buf := md5.Sum(buf)
-
 	log.Println("[diskHash] get_base58_key:",base58.Encode(md5buf[:]),"hex_string",hex.EncodeToString(md5buf[:]))
 	return hex.EncodeToString(md5buf[:]), nil
 }
+
 func GetHead() []byte {
 	cfg := config.DefaultConfig
 	s1 := cfg.Storages[0]

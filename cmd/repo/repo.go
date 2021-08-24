@@ -89,7 +89,7 @@ func copyData(oldCfg *config.Config, newCfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	yd, err := storage.OpenYottaDisk(&(oldCfg.Storages[0]))
+	yd, err := storage.OpenYottaDisk(&(oldCfg.Storages[0]),false)
 	if err != nil {
 		return err
 	}
