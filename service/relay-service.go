@@ -1,13 +1,11 @@
 package service
 
 import (
-	"fmt"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/yottachain/YTDataNode/logger"
-	"regexp"
+	"log"
 	"time"
 
-	"github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p-core/peer"
+
 	. "github.com/yottachain/YTHost/interface"
 )
 
@@ -27,23 +25,24 @@ func NewRelayManage(hst Host) *RelayManager {
 
 // UpdateAddr 更新中继地址
 func (rm *RelayManager) UpdateAddr(addr string) error {
-	if addr == "" {
-		return fmt.Errorf("addr required")
-	}
-	rm.addr = addr
+	// if addr == "" {
+	// 	return fmt.Errorf("addr required")
+	// }
+	// rm.addr = addr
 
-	rp, _ := regexp.Compile("/p2p-.+$")
-	res := rp.ReplaceAllString(addr, "")
-	ma, err := multiaddr.NewMultiaddr(res)
-	if err == nil {
-		pi, err := peer.AddrInfoFromP2pAddr(ma)
-		if err != nil {
-			return err
-		}
-		rm.peer = pi
-	}
+	// rp, _ := regexp.Compile("/p2p-.+$")
+	// res := rp.ReplaceAllString(addr, "")
+	// ma, err := multiaddr.NewMultiaddr(res)
+	// if err == nil {
+	// 	pi, err := peer.AddrInfoFromP2pAddr(ma)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	rm.peer = pi
+	// }
 	// log.Println(err, "中继地址解析错误")
-	return err
+	// return err
+	return nil
 }
 
 func (rm *RelayManager) ClearRelayAddrs() {

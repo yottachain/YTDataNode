@@ -338,7 +338,6 @@ func RunTX(TxCtl chan struct{}) {
 func Run() {
 	RxCtl := make(chan struct{})
 	TxCtl := make(chan struct{})
-
 	go RunCtl(RxCtl,TxCtl)
 	go RunRX(RxCtl)
 	go RunTX(TxCtl)

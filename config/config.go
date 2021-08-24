@@ -5,10 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,6 +12,11 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 
 	ci "github.com/libp2p/go-libp2p-crypto"
 	"github.com/yottachain/YTDataNode/util"
@@ -64,6 +65,7 @@ type Config struct {
 	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
 	bpListMd5    []byte
 	DisableWrite bool
+	AllocSpace   uint64
 }
 
 // DefaultYTFSOptions default config
@@ -156,6 +158,7 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
 	cfg.APIListen = ":9002"
 	cfg.Options = opts
+	cfg.AllocSpace = opts.TotalVolumn
 	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
 
 	cfg.Relay = true
@@ -379,6 +382,10 @@ func ReadConfig() (*Config, error) {
 		return nil, err
 	}
 	cfg.privKey = privk
+	// if cfg.AllocSpace == 0 {
+	// 	cfg.AllocSpace = cfg.Options.TotalVolumn
+	// }
+
 	return &cfg, nil
 }
 
@@ -392,7 +399,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 265
+	return 268
 }
 
 func Version() uint32 {

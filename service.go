@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTDataNode/verifySlice"
+
 	"log"
 	"math/rand"
 	"os"
@@ -351,6 +353,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.MaxDataSpace = sn.YTFS().Meta().YtfsSize / uint64(sn.YTFS().Meta().DataBlockSize)
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
+	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
