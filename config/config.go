@@ -88,11 +88,38 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	return opts
 }
 
+func InitRowsCols(size uint64)(uint64, uint64, error){
+	var d uint32 = 1 << 14
+	var m, n uint64
+	index := uint32(1)
+
+	for {
+		n = 1 << index
+		m = size / uint64(d) / uint64(n)
+		if m >= 512 && m <= 2048{
+			break
+		}
+
+		if index > 32 {
+			err := fmt.Errorf("storage size not suitable")
+			fmt.Println("[error]init failed, storage size not suitable!!")
+			return 0, 0, err
+		}
+		index++
+	}
+	return m, n, nil
+}
+
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
-func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
+func GetYTFSOptionsByParams(size uint64, mc uint32) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
-	m := size / uint64(d) / uint64(n)
+	m, n, err := InitRowsCols(size)
+	if err != nil{
+		log.Println("[init] InitRowsCols error:",err.Error())
+		return nil
+	}
+
 	opts := &ytfsOpts.Options{
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{

@@ -29,10 +29,21 @@ import (
 
 // Init 初始化
 func Init() error {
-	cfg := config.NewConfig()
-	cfg.Save()
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+	fmt.Println("[init] node Init")
+	var cfg *config.Config
+	if  !CfgFileExist(){
+		cfg = config.NewConfig()
+		cfg.Save()
+	}else {
+		var err error
+		cfg, err = config.ReadConfig()
+		if err != nil {
+			fmt.Println("[init] InitBySignleStorage error:", err.Error())
+			return err
+		}
+	}
 
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
 	if err != nil {
 		return err
 	}
@@ -40,9 +51,29 @@ func Init() error {
 	return nil
 }
 
-func InitBySignleStorage(size uint64, m uint32) error {
-	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
-	cfg.Save()
+func CfgFileExist() bool {
+	cfgPath := util.GetConfigPath()
+	bl, _ := util.PathExists(cfgPath)
+	return bl
+}
+
+func InitBySignleStorage(size uint64, mc uint32) error {
+	fmt.Println("[init]node InitBySignleStorage")
+	var cfg *config.Config
+
+	//cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
+	if !CfgFileExist(){
+		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
+		cfg.Save()
+	}else{
+		var err error
+		cfg, err = config.ReadConfig()
+		if err != nil{
+			fmt.Println("[init] InitBySignleStorage error:",err.Error())
+			return err
+		}
+	}
+
 	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
 	if err != nil {
 		return err
@@ -90,6 +121,11 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
+	if nil == sn {
+		log.Println("[init] GetStorageNode error: sn is nil")
+		return
+	}
+
 	log.Println("YTFS daemon success:", sn.Config().Version())
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())

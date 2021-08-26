@@ -3,6 +3,7 @@ package instance
 import (
 	node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
 )
 
@@ -13,11 +14,13 @@ func GetStorageNode() StorageNode {
 	if sn == nil {
 		cfg, err := config.ReadConfig()
 		if err != nil {
-			panic(err)
+			log.Println("[init] GetStorageNode ReadConfig error:",err.Error())
+			return nil
 		}
 		sn, err = node.NewStorageNode(cfg)
 		if err != nil {
-			panic(err)
+			log.Println("[init] GetStorageNode NewStorageNode error:",err.Error())
+			return nil
 		}
 	}
 	return sn

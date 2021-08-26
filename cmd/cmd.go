@@ -65,8 +65,12 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
-		commander.InitBySignleStorage(size, 1<<mc)
-		log.Println("YTFS init success")
+		err := commander.InitBySignleStorage(size, 1<<mc)
+		if err != nil {
+			log.Println("YTFS init failed")
+		}else{
+			log.Println("YTFS init success")
+		}
 	},
 }
 
