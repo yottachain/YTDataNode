@@ -57,13 +57,18 @@ func CfgFileExist() bool {
 	return bl
 }
 
-func InitBySignleStorage(size uint64, mc uint32) error {
+func InitBySignleStorage(size uint64, mc uint32, db string) error {
 	fmt.Println("[init]node InitBySignleStorage")
 	var cfg *config.Config
 
 	//cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
 	if !CfgFileExist(){
-		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
+		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc, db))
+		if cfg == nil{
+			err := fmt.Errorf("cfg is nil")
+			fmt.Println("[error] ",err.Error())
+			return err
+		}
 		cfg.Save()
 	}else{
 		var err error

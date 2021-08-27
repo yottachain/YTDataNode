@@ -156,6 +156,8 @@ func newCfg() (*config.Config, error) {
 	var GB uint64 = 1 << 30
 	var size uint64 = 4096
 	var mc byte = 14
+	var db string = "indexdb"
+
 	fmt.Println("请输入矿机存储空间大小GB例如4T=4096:")
 	_, err := fmt.Scanf("%d\n", &size)
 	if err != nil {
@@ -172,7 +174,25 @@ getMC:
 		fmt.Println("请输入范围14～20的数", mc)
 		goto getMC
 	}
-	commander.InitBySignleStorage(size*GB, 1<<mc)
+
+	fmt.Println("请输入选择使用的数据库: rocksdb | indexdb")
+	_, err = fmt.Scanf("%s\n", &db)
+	if err != nil {
+		log.Println(err)
+		goto getMC
+	}
+
+	if db != "rocksdb" && db != "indexdb"{
+		fmt.Println("数据库选择错误")
+		goto getMC
+	}
+
+	err = commander.InitBySignleStorage(size*GB, 1<<mc, db)
+	if err != nil{
+		fmt.Println("init storage error!")
+		return nil, err
+	}
+
 	_cfg, err := config.ReadConfig()
 	if err != nil {
 		return nil, err

@@ -21,6 +21,7 @@ import (
 
 var size uint64
 var mc uint32
+var db string
 var isDaemon bool = false
 
 var daemonCmd = &cobra.Command{
@@ -65,7 +66,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := commander.InitBySignleStorage(size, 1<<mc)
+		err := commander.InitBySignleStorage(size, 1<<mc, db)
 		if err != nil {
 			log.Println("YTFS init failed")
 		}else{
@@ -107,6 +108,7 @@ func main() {
 	//}()
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
+	initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{

@@ -88,33 +88,46 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	return opts
 }
 
-func InitRowsCols(size uint64)(uint64, uint64, error){
+func InitRowsCols(size uint64, mc uint32, db string)(uint64, uint64, error){
 	var d uint32 = 1 << 14
 	var m, n uint64
-	index := uint32(1)
 
-	for {
-		n = 1 << index
-		m = size / uint64(d) / uint64(n)
-		if m >= 512 && m <= 2048{
-			break
-		}
-
-		if index > 32 {
-			err := fmt.Errorf("storage size not suitable")
-			fmt.Println("[error]init failed, storage size not suitable!!")
-			return 0, 0, err
-		}
-		index++
+	n = uint64(mc)
+	m = size / uint64(d) / uint64(n)
+	if db == "rocksdb"{
+		return m, n, nil
 	}
+
+	if m < 512 || m > 2048{
+		err := fmt.Errorf("storage size not suitable")
+		fmt.Println("[error]init failed, storage size not suitable!!")
+		return 0, 0, err
+	}
+
+	//index := uint32(1)
+	//for {
+	//	n = 1 << index
+	//	m = size / uint64(d) / uint64(n)
+	//	if m >= 512 && m <= 2048{
+	//		break
+	//	}
+	//
+	//	if index > 32 {
+	//		err := fmt.Errorf("storage size not suitable")
+	//		fmt.Println("[error]init failed, storage size not suitable!!")
+	//		return 0, 0, err
+	//	}
+	//	index++
+	//}
 	return m, n, nil
 }
 
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
-func GetYTFSOptionsByParams(size uint64, mc uint32) *ytfsOpts.Options {
+func GetYTFSOptionsByParams(size uint64, mc uint32, db string) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
-	m, n, err := InitRowsCols(size)
+
+	m, n, err := InitRowsCols(size, mc, db)
 	if err != nil{
 		log.Println("[init] InitRowsCols error:",err.Error())
 		return nil
@@ -138,12 +151,20 @@ func GetYTFSOptionsByParams(size uint64, mc uint32) *ytfsOpts.Options {
 		IndexTableRows: uint32(n),
 		DataBlockSize:  d,
 		TotalVolumn:    size,
-		UseKvDb:        true,
+		UseKvDb:        false,
 	}
 
-	if runtime.GOOS == "windows" {
-		opts.UseKvDb = false
+	if db == "rocksdb"{
+		opts.UseKvDb = true
+		if runtime.GOOS == "windows" {
+			fmt.Println("windows not support rocksdb")
+			return nil
+		}
 	}
+
+	//if runtime.GOOS == "windows" {
+	//	opts.UseKvDb = false
+	//}
 
 	return opts
 }
@@ -181,6 +202,10 @@ func NewConfig() *Config {
 }
 
 func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
+	if opts == nil{
+		fmt.Println("[error] opts is nil")
+		return nil
+	}
 	cfg := new(Config)
 	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
 	cfg.APIListen = ":9002"
