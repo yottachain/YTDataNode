@@ -107,7 +107,7 @@ func main() {
 	//	}
 	//}()
 	initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
-	initCmd.Flags().Uint32VarP(&mc, "m", "m", 14, "m的次方（8-20）的数")
+	initCmd.Flags().Uint32VarP(&mc, "order", "k", 14, "N = (1<<k), 其中k的值（8-20）")
 	initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 

@@ -88,19 +88,21 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	return opts
 }
 
-func InitRowsCols(size uint64, mc uint32, db string)(uint64, uint64, error){
+func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
 	var d uint32 = 1 << 14
-	var m, n uint64
+	var m uint64
 
-	n = uint64(mc)
+	//expendRatioM = 1.2 = 12 / 10
 	m = size / uint64(d) / uint64(n)
 	if db == "rocksdb"{
-		return m, n, nil
+		return m, uint64(n), nil
 	}
 
-	if m < 512 || m > 2048{
-		err := fmt.Errorf("storage size not suitable")
-		fmt.Println("[error]init failed, storage size not suitable!!")
+	fmt.Println("InitRowsCols,M=",m)
+	// IndexTableCols(M) = m * expendRatioM,  expendRatioM = 1.2  (512 <= IndexTableCols(M) <= 2048)
+	if m < 420 || m > 1700{
+		err := fmt.Errorf("IndexTableCols not suitable,M=",m)
+		fmt.Println("[error]init failed, IndexTableCols not suitable,M=",m)
 		return 0, 0, err
 	}
 
@@ -119,7 +121,7 @@ func InitRowsCols(size uint64, mc uint32, db string)(uint64, uint64, error){
 	//	}
 	//	index++
 	//}
-	return m, n, nil
+	return m, uint64(n), nil
 }
 
 // GetYTFSOptionsByParams 通过参数生成YTFS配置

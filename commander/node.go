@@ -57,13 +57,32 @@ func CfgFileExist() bool {
 	return bl
 }
 
-func InitBySignleStorage(size uint64, mc uint32, db string) error {
+func Check2Orders(num uint32) bool{
+	var ret = false
+	var order = uint32(1)
+	for {
+		if num == (1<<order){
+			ret = true
+			break
+		}
+
+		if order > 32 {
+			break
+		}
+
+		order++
+	}
+
+	return ret
+}
+
+func InitBySignleStorage(size uint64, n uint32, db string) error {
 	fmt.Println("[init]node InitBySignleStorage")
 	var cfg *config.Config
 
 	//cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
 	if !CfgFileExist(){
-		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc, db))
+		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, n, db))
 		if cfg == nil{
 			err := fmt.Errorf("cfg is nil")
 			fmt.Println("[error] ",err.Error())
@@ -75,6 +94,20 @@ func InitBySignleStorage(size uint64, mc uint32, db string) error {
 		cfg, err = config.ReadConfig()
 		if err != nil{
 			fmt.Println("[init] InitBySignleStorage error:",err.Error())
+			return err
+		}
+	}
+
+	if !cfg.Options.UseKvDb {
+		if cfg.Options.IndexTableCols > 2048 || cfg.Options.IndexTableCols < 512{
+			err := fmt.Errorf("IndexTableCols(M) not suitable, M=",cfg.Options.IndexTableCols)
+			fmt.Println("[error] ",err.Error())
+			return err
+		}
+
+		if !Check2Orders(cfg.Options.IndexTableRows){
+			err := fmt.Errorf("IndexTableRows(N) not suitable")
+			fmt.Println("[error] ",err.Error())
 			return err
 		}
 	}
@@ -92,8 +125,8 @@ func InitBySignleStorage(size uint64, mc uint32, db string) error {
 			return fmt.Errorf("write ytfs checkData error")
 		}
 	}
-
-	defer yt.Close()
+	//defer yt.Close()
+	fmt.Println("YTFS init success")
 	return nil
 }
 

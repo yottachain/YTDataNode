@@ -25,6 +25,7 @@ var rebuildCmd = &cobra.Command{
 		var GB uint64 = 1 << 30
 		var size uint64 = 4096
 		var mc byte = 14
+		var db = "indexdb"
 		fmt.Println("请输入矿机存储空间大小GB例如4T=4096:")
 		_, err := fmt.Scanf("%d\n", &size)
 		if err != nil {
@@ -41,11 +42,12 @@ var rebuildCmd = &cobra.Command{
 			fmt.Println("请输入范围8～20的数")
 			goto getMC
 		}
+
 		cfg, err := config.ReadConfig()
 		if err != nil {
 			panic(err)
 		}
-		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size*GB, 1<<mc))
+		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size*GB, 1<<mc, db))
 		err = backData(cfg)
 		if err != nil {
 			if err == os.ErrExist {
