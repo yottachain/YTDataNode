@@ -164,7 +164,7 @@ func newCfg() (*config.Config, error) {
 		log.Println(err)
 	}
 getMC:
-	fmt.Println("请输入存储分组数:可能取值8～20间")
+	fmt.Println("请输入存储分组数:可能取值14～20间")
 	_, err = fmt.Scanf("%d\n", &mc)
 	if err != nil {
 		log.Println(err)
