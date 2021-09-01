@@ -83,7 +83,7 @@ func backData(cfg *config.Config) error {
 }
 
 func copyData(oldCfg *config.Config, newCfg *config.Config) error {
-	newYT, err := ytfs.Open(util.GetYTFSPath(), newCfg.Options)
+	newYT, err := ytfs.Open(util.GetYTFSPath(), newCfg.Options, oldCfg.IndexID)
 	if err != nil {
 		return err
 	}

@@ -432,7 +432,6 @@ func ReadConfig() (*Config, error) {
 	}
 	privk, err := ci.UnmarshalSecp256k1PrivateKey(keyBytes)
 	if err != nil {
-
 		return nil, err
 	}
 	cfg.privKey = privk

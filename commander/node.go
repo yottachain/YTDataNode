@@ -43,7 +43,7 @@ func Init() error {
 		}
 	}
 
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 	if err != nil {
 		return err
 	}
