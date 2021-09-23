@@ -6,6 +6,7 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
 	ydcommon "github.com/yottachain/YTFS/common"
 	"github.com/yottachain/YTFS/storage"
 	"log"
@@ -135,6 +136,19 @@ func PathExists(path string) bool {
 	return false
 }
 
+func setDnIdToKv() error {
+	version := ti.GetTableVersion()
+	if string(version[:]) == ytfs.OldDbVersion{
+		return nil
+	}
+
+	dnid := ti.GetDnIdFromTab()
+	Bdn := make([]byte,4)
+	binary.LittleEndian.PutUint32(Bdn, dnid)
+	err := Mdb.Rdb.Put(Mdb.wo, []byte(ytfs.YtfsDnIdKey), Bdn)
+	return err
+}
+
 func setValue(){
 	Pos := ti.Len()
 	err := setKVtoDB(Mdb,ytPosKey,uint32(Pos))
@@ -148,6 +162,12 @@ func setValue(){
 	log.Println("current blksize=",BlkSize)
 	if err != nil {
 		log.Println("set blocksize to DB err:",err)
+		panic(err)
+	}
+
+    err = setDnIdToKv()
+	if err != nil{
+		log.Println("set DnId to kv error:",err)
 		panic(err)
 	}
 }
