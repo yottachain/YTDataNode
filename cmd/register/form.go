@@ -15,7 +15,6 @@ type RegForm struct {
 	DepAmount  uint64   `yaml:"DepAmount"`  //为矿机缴纳的押金数量
 	IsCalc     bool     `yaml:"IsCalc"`     //是否让系统自动计算押金，如果指定为
 	BPList     []string `yaml:"BPList"`     //BP服务器地址列表
-	SNAddrs    []string `yaml:"SNAddrs"`
 }
 
 func GetNewMinerIDUrl(url string) string {

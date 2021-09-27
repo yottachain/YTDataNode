@@ -10,11 +10,8 @@ import (
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/util"
 	"gopkg.in/yaml.v2"
 
 	//"github.com/eoscanada/eos-go/ecc"
@@ -35,6 +32,9 @@ var formPath string
 
 var kb = eos.NewKeyBag()
 var maxSpace uint64 = 268435456
+
+var PoolAdminKey string
+var DepAccKey string
 
 var RegisterCmd = &cobra.Command{
 	Short: "注册账号",
@@ -62,13 +62,40 @@ var RegisterCmd = &cobra.Command{
 		}
 
 		step1(&form)
-
-		fmt.Println("注册完成，请使用daemon启动")
 	},
 }
 
 func init() {
-	RegisterCmd.Flags().StringVar(&formPath, "form", path.Join(util.GetYTFSPath(), "form.yaml"), "注册提交表单的路径")
+	p, _ := os.Executable()
+	RegisterCmd.Flags().StringVar(
+		&formPath, "form",
+		path.Join(p, "form.yaml"),
+		"注册提交表单的路径",
+	)
+	RegisterCmd.Flags().StringVar(
+		&PoolAdminKey, "pk",
+		"",
+		"矿池管理员私钥",
+	)
+	RegisterCmd.Flags().StringVar(
+		&DepAccKey, "dk",
+		"",
+		"抵押账户私钥",
+	)
+	err := kb.ImportPrivateKey(PoolAdminKey)
+	if err != nil {
+		fmt.Println("矿池私钥输入错误:", err.Error())
+	}
+	err = kb.ImportPrivateKey(DepAccKey)
+	if err != nil {
+		fmt.Println("抵押私钥输入错误:", err.Error())
+	}
+
+	api = eos.New(baseNodeUrl)
+	api.SetSigner(kb)
+	api.SetCustomGetRequiredKeys(func(tx *eos.Transaction) ([]ecc.PublicKey, error) {
+		return getPubkey(), nil
+	})
 }
 
 // 获取一个随机BP
@@ -142,19 +169,6 @@ func step1(form *RegForm) {
 		Extra      string          `json:"extra"`
 	}
 	initConfig, err := newCfg(form)
-	if len(form.SNAddrs) > 0 {
-		for _, addr := range form.SNAddrs {
-			mu, err := multiaddr.NewMultiaddr(addr)
-			if err != nil {
-				continue
-			}
-			peer, err := peer.AddrInfoFromP2pAddr(mu)
-			if err != nil {
-				continue
-			}
-			initConfig.BPList = append(initConfig.BPList)
-		}
-	}
 
 	if err != nil {
 		fmt.Println("初始化错误:", err)
@@ -187,10 +201,16 @@ func step1(form *RegForm) {
 
 	txOpts := &eos.TxOptions{}
 	txOpts.FillFromChain(api)
-	tx := eos.NewSignedTransaction(eos.NewTransaction([]*eos.Action{action}, txOpts))
+	tx := eos.NewTransaction([]*eos.Action{action}, txOpts)
 	tx.SetExpiration(time.Minute * 30)
+	sigedTx, packedTx, err := api.SignTransaction(tx, txOpts.ChainID, eos.CompressionZlib)
 
-	err = Register(tx, currBP)
+	if err != nil {
+		fmt.Println("注册失败！", err)
+		return
+	}
+
+	err = Register(sigedTx, packedTx, currBP)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -199,13 +219,7 @@ func step1(form *RegForm) {
 	initConfig.PoolID = form.PoolId
 	initConfig.Save()
 }
-func Register(tx *eos.SignedTransaction, bpUrl string) error {
-	packedtx, err := tx.Pack(eos.CompressionZlib)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl string) error {
 
 	buf, err := json.Marshal(packedtx)
 	if err != nil {
