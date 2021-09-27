@@ -89,10 +89,10 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 }
 
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
-func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
+func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
-	var d uint32 = 1 << 14
-	m := size / uint64(d) / uint64(n)
+	var d uint32 = 16384
+	n := size / uint64(d) / uint64(m)
 	opts := &ytfsOpts.Options{
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{
@@ -102,7 +102,7 @@ func GetYTFSOptionsByParams(size uint64, n uint32) *ytfsOpts.Options {
 				ReadOnly:      false,
 				SyncPeriod:    1,
 				StorageVolume: size,
-				DataBlockSize: 1 << 14,
+				DataBlockSize: 16384,
 			},
 		},
 		ReadOnly:       false,

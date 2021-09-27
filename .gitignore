@@ -6,3 +6,7 @@ recover/*.data
 demo
 test
 vendor
+.env
+.lastUptime
+form.yaml
+cmd/signer/ytfs-signer.exe
