@@ -266,3 +266,23 @@ func getPubkey() []ecc.PublicKey {
 	}
 	return pkeys
 }
+
+func getPoolInfo(poolID string) (PoolInfo, error) {
+	out, err := api.GetTableRows(eos.GetTableRowsRequest{
+		Code:       "hddpool12345",
+		Scope:      "hddpool12345",
+		Table:      "storepool",
+		Index:      "1",
+		Limit:      1,
+		LowerBound: poolID,
+		UpperBound: poolID,
+		JSON:       true,
+		KeyType:    "name",
+	})
+	if err != nil {
+		return nil, err
+	}
+	var res PoolInfo
+	json.Unmarshal(out.Rows, &res)
+	return res, nil
+}
