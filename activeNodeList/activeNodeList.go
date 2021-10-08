@@ -21,9 +21,9 @@ func getUrl() string {
 	if config.IsDev == 2 {
 		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
 	} else if config.IsDev == 1 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
+		url = "http://117.161.159.8:9998/active_nodes"
+		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 	}
-
 	return url
 }
 
