@@ -73,6 +73,7 @@ func GetNodeList() []*Data {
 		nodeList[k].Group = buf[len(buf)-1]
 	}
 
+	log.Println("[activeNodeList] list=",nodeList)
 	return nodeList
 }
 func GetNodeListByGroup(group byte) []*Data {
