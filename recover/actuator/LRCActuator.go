@@ -395,24 +395,28 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	err = L.parseMsgData(msgData)
 	msgID = L.msg.Id
 	if err != nil {
+		log.Println("[recover] exectask error:",err.Error())
 		return
 	}
 
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
 		data, err = L.backupTask()
+		log.Println("[recover] backupTask error:",err)
 		return
 	}
 
 	// @TODO 初始化LRC句柄
 	err = L.initLRCHandler(opts.Stage)
 	if err != nil {
+		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
 	}
 
 	// @TODO 预判
 	if ok := L.preJudge(); !ok {
 		err = fmt.Errorf("预判失败 阶段 %d任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
+		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
 	// 成功预判计数加一
