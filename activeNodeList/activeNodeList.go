@@ -21,7 +21,8 @@ func getUrl() string {
 	if config.IsDev == 2 {
 		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
 	} else if config.IsDev == 1 {
-		url = "http://117.161.159.8:9998/active_nodes"
+		//url = "http://117.161.159.8:9998/active_nodes"
+		url = "http://192.168.1.206:8080/readable_nodes"
 		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 	}
 	return url
@@ -177,11 +178,12 @@ func HasNodeid(id string) bool {
 	}
 
 	for _, v := range nodeList {
-		//log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
-		//log.Println("[recover][hasNodeid] test request dnid:",id)
+		log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
+		log.Println("[recover][hasNodeid] test request dnid:",id)
 		if v.NodeID == id {
 			return true
 		}
+		log.Println("[recover][hasNodeid] error: online dnid=",v.NodeID,"request_dnid=",id,"not equal")
 	}
 	return false
 }
