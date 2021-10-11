@@ -301,7 +301,6 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	default:
 		log.Println("[recover] unknown msgID")
 	}
-
 }
 
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
