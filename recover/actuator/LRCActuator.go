@@ -105,11 +105,11 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
  * @return error
  */
 func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
-	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
-
 	if L.lrcHandler == nil {
 		return nil, fmt.Errorf("lrc handler is nil")
 	}
+
+	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
 
 	indexes := make([]int16, 0)
 
