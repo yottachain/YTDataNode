@@ -45,14 +45,14 @@ func Update() {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList] geturl error:", err.Error())
 		return
 	}
 
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
-		log.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList] Decode error:", err.Error())
 		return
 	}
 
