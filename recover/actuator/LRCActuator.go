@@ -287,7 +287,7 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 		return nil, fmt.Errorf("no backup")
 	}
 	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
-		return nil, fmt.Errorf("backup is offline")
+		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 	}
 
 	for i := 0; i < 5; i++ {
@@ -402,7 +402,11 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
 		data, err = L.backupTask()
-		log.Println("[recover] backupTask error:",err)
+		if err != nil {
+			log.Println("[recover] backupTask error:", err)
+		}else{
+			log.Printf("[recover] backupTask success, shard hash is %s\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]))
+		}
 		return
 	}
 
@@ -448,6 +452,9 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 }
 
 func (L *LRCTaskActuator) Free() {
+	if L.lrcHandler == nil {
+		return
+	}
 	L.lrcHandler.FreeHandle()
 	L.lrcHandler.FreeRecoverData()
 }
