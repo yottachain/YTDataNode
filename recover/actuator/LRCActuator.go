@@ -302,11 +302,11 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 		if err != nil {
 			continue
 		}
-		log.Printf("%s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
+		log.Printf("[recover] %s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
 		return data, nil
 	}
 
-	return nil, fmt.Errorf("download backup fail")
+	return nil, fmt.Errorf("download backup fail, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 }
 
 /**
@@ -389,11 +389,13 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
  * @param opts
  * @return err
  */
-func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, msgID []byte, err error) {
-
+func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
+			msgID []byte, recoverHash []byte, err error) {
 	L.opts = opts
 	err = L.parseMsgData(msgData)
 	msgID = L.msg.Id
+	recoverHash = L.msg.Hashs[L.msg.RecoverId]
+
 	if err != nil {
 		log.Println("[recover] exectask error:",err.Error())
 		return

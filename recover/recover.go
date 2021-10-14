@@ -283,7 +283,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife, ts.SrcNodeID)
 		if res.ErrorMsg != nil {
 			log.Println("[recover]", res.ErrorMsg)
 			res.RES = 1
@@ -510,7 +510,8 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @param tasklife 任务存活周期
  * @return *TaskMsgResult 任务执行结果
  */
-func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
+func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
+			taskLife int32, srcNodeid int32) (res *TaskMsgResult) {
 
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
@@ -520,6 +521,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	defer taskActuator.Free()
 
 	var recoverData []byte
+	var realHash []byte
 	expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
@@ -550,10 +552,11 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
 		}
 
-		data, resID, err := taskActuator.ExecTask(
+		data, resID, srcHash, err := taskActuator.ExecTask(
 			msgData,
 			opts,
 		)
+		realHash = srcHash
 
 		if err != nil{
 			log.Println("[recover] ExecTask error:",err.Error())
@@ -592,6 +595,9 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		res.ErrorMsg = fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 		return
+	}else {
+		log.Printf("[recover] success src node id %d hash key %s, real hash key is %s\n",
+			srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
 	}
 
 	res.RES = 0
