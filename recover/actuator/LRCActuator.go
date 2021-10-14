@@ -405,6 +405,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte, m
 		if err != nil {
 			log.Println("[recover] backupTask error:", err)
 		}else{
+			statistics.DefaultRebuildCount.IncSuccRbd()
 			log.Printf("[recover] backupTask success, shard hash is %s\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]))
 		}
 		return

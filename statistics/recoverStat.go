@@ -19,6 +19,7 @@ type RecoverStat struct {
 	SuccessConn        uint64 `json:"sucessConn"`        //连接成功数
 	SuccessToken       uint64 `json:"successToken"`      //获取token成功
 	ShardforRebuild    uint64 `json:"shardforRebuild"`   //下载总分片数
+	BackupRebuildSucc  uint64 `json:"BackupRebuildSucc"` //lrc2备份重建成功
 	RowRebuildSucc     uint64 `json:"RowRebuildSucc"`    //行方式重建成功
 	ColumnRebuildSucc  uint64 `json:"ColumnRebuildSucc"` //列方式重建成功
 	GlobalRebuildSucc  uint64 `json:"GlobalRebuildSucc"` //全局方式重建成功
