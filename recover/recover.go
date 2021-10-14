@@ -306,6 +306,8 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
+		log.Println("[recover] insert reply queue! queue lenght is %d\n", len(re.replyQueue))
+		return
 	//default:
 	}
 }
@@ -364,6 +366,7 @@ func (re *Engine) MultiReply() error {
 					continue
 				}
 			} else {
+				log.Printf("[recover] reply success src node id %d\n", v.SrcNodeID)
 			}
 			// 如果不报错退出循环
 			break
