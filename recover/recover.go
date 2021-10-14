@@ -357,13 +357,13 @@ func (re *Engine) MultiReply() error {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		data, err := proto.Marshal(v)
 		if err != nil {
-			log.Printf("[recover] [report] marsnal failed %s\n", err.Error())
+			log.Printf("[recover] reply Marshal failed %s\n", err.Error())
 			continue
 		}
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
-				log.Printf("[recover] [report] reply error, err:%s\n", err.Error())
+				log.Printf("[recover] reply error, err:%s\n", err.Error())
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
