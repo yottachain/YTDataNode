@@ -306,7 +306,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
-		log.Println("[recover] insert reply queue! queue lenght is %d\n", len(re.replyQueue))
+		log.Printf("[recover] insert reply queue! queue lenght is %d\n", len(re.replyQueue))
 		return
 	//default:
 	}
@@ -351,16 +351,19 @@ func (re *Engine) MultiReply() error {
 		}
 	}()
 
+	log.Printf("[recover] res msg array length %d\n", len(resmsg))
+
 	for k, v := range resmsg {
 		v.NodeID = int32(re.sn.Config().IndexID)
 		data, err := proto.Marshal(v)
 		if err != nil {
-			log.Printf("[recover][report] marsnal failed %s\n", err.Error())
+			log.Printf("[recover] [report] marsnal failed %s\n", err.Error())
 			continue
 		}
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
+				log.Printf("[recover] [report] reply error, err:%s\n", err.Error())
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
@@ -404,7 +407,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	} else {
 		return true, fmt.Errorf("sn return error %d", res.ErrCode)
 	}
-	return false, nil
+	return true, nil
 }
 
 func (re *Engine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
