@@ -306,7 +306,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
-	default:
+	//default:
 	}
 }
 
@@ -329,6 +329,7 @@ func (re *Engine) MultiReply() error {
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
+			log.Printf("[recover] reply queue length is %d\n", len(re.replyQueue))
 			select {
 			case res := <-re.replyQueue:
 				if resmsg[res.BPID] == nil {
@@ -342,7 +343,6 @@ func (re *Engine) MultiReply() error {
 				_r.SrcNodeID = res.SrcNodeID
 				resmsg[res.BPID] = _r
 				statistics.DefaultRebuildCount.IncReportRbdTask()
-
 			case <-time.After(max_reply_wait_time):
 				return
 			}

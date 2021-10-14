@@ -40,6 +40,6 @@ func (re *Engine) RunPool() {
 	go re.processRequests()
 
 	for {
-		re.MultiReply()
+		_ = re.MultiReply()
 	}
 }

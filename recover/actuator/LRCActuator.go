@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
@@ -408,7 +409,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 			log.Println("[recover] backupTask error:", err)
 		}else{
 			statistics.DefaultRebuildCount.IncSuccRbd()
-			log.Printf("[recover] backupTask success, shard hash is %s\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]))
+			log.Printf("[recover] backupTask success, shard hash is %s\n", base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 		}
 		return
 	}
