@@ -2158,6 +2158,8 @@ func (m *SelfVerifyReq) GetStartItem() string {
 	return ""
 }
 
+// DBhash：数据库中数据分片的hash
+// Datahash ：计算出来的数据分片hash
 type HashToHash struct {
 	DBhash               []byte   `protobuf:"bytes,1,opt,name=DBhash,proto3" json:"DBhash,omitempty"`
 	Datahash             []byte   `protobuf:"bytes,2,opt,name=Datahash,proto3" json:"Datahash,omitempty"`
@@ -2211,6 +2213,8 @@ func (m *HashToHash) GetDatahash() []byte {
 //errNum:校验出错的分片数
 //errCode:错误类型码
 //errShard:错误的分片列表
+//verBatch:自检的批次
+//vrfTime :自检的时间
 //msgid = 0x58b7
 type SelfVerifyResp struct {
 	Id                   string        `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`

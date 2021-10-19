@@ -19,18 +19,23 @@ func (re *Engine) doRequest(task *Task, pkgstart time.Time) {
 }
 
 func (re *Engine) processRequests() {
-	startTsk := time.Now()
+	for{
+		startTsk := time.Now()
 
-	for {
-		requestT := re.waitQueue.GetTask()
-		if requestT == nil {
-			continue
+		for {
+			requestT := re.waitQueue.GetTask()
+			if requestT == nil {
+				time.Sleep(time.Second)
+				break
+				//continue
+			}
+
+			statistics.RunningCount.Add()
+			statistics.DefaultRebuildCount.IncRbdTask()
+			go re.doRequest(requestT, startTsk)
 		}
-
-		statistics.RunningCount.Add()
-		statistics.DefaultRebuildCount.IncRbdTask()
-		go re.doRequest(requestT, startTsk)
 	}
+
 }
 
 func (re *Engine) RunPool() {
