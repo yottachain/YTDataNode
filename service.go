@@ -413,6 +413,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
 	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	log.Printf("data Hash %s\n", msg.Hash)
+	log.Printf("node AvailableSpace %d\n", msg.AvailableSpace)
+	
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
