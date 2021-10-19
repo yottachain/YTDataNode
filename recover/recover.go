@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	//"github.com/yottachain/YTDataNode/activeNodeList"
 	"sync/atomic"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -297,7 +298,9 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 		re.PutReplyQueue(res)
 	case message.MsgIDTaskDescriptCP.Value():
-		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+
+		re.PutReplyQueue(res)
 	default:
 		log.Println("[recover] unknown msgID")
 	}
@@ -630,7 +633,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
-				log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
+				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
 				result.RES = 1
 			} else {
 				result.RES = 0

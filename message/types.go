@@ -31,6 +31,7 @@ const (
 	MsgIDSpotCheckStatus       msgType = 0xa583
 	MsgIDString                msgType = 0x0011
 	MsgIDMultiTaskDescription  msgType = 0x2cb0
+	MsgIDTaskDescriptionCP     msgType = 0xc258
 	MsgIDLRCTaskDescription    msgType = 0x68b3
 	MsgIDMultiTaskOPResult     msgType = 0x1b31
 	MsgIDMultiTaskOPResultRes  msgType = 0x93e4
