@@ -383,34 +383,6 @@ func (L *LRCTaskActuator) parseMsgData(msgData []byte) error {
 	return nil
 }
 
-func (L *LRCTaskActuator) SmallSliceRcv(msg message.TaskDescriptionCP, opts Options) (data []byte, err error){
-
-	L.opts = opts
-	for _, v := range msg.Locations {
-		if !activeNodeList.HasNodeid(v.NodeId) {
-			continue
-			//return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
-		}
-
-		dw, err := L.downloader.AddTask(v.NodeId, v.Addrs, msg.DataHash)
-		if err != nil {
-			continue
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
-
-		data, err = dw.Get(ctx)
-		if err != nil {
-			continue
-		}else{
-			break
-		}
-	}
-
-	return data, err
-}
-
 /**
  * @Description: 执行重建任务
  * @receiver L
