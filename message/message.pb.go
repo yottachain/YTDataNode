@@ -996,6 +996,7 @@ type StatusRepReq struct {
 	Other                string   `protobuf:"bytes,15,opt,name=Other,proto3" json:"Other,omitempty"`
 	Hash                 string   `protobuf:"bytes,16,opt,name=hash,proto3" json:"hash,omitempty"`
 	AllocSpace           uint64   `protobuf:"varint,17,opt,name=allocSpace,proto3" json:"allocSpace,omitempty"`
+	AvailableSpace       uint32   `protobuf:"varint,18,opt,name=availableSpace,proto3" json:"availableSpace,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
