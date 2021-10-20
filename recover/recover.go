@@ -276,10 +276,17 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
  * @param ts 任务
  * @param pkgstart 任务包开始时间
  */
+
+var tskcnt uint64
 func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	var msgID int16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
+
+	tskcnt++
+	if tskcnt % 100 == 0{
+		log.Println("[recover] dispatchTask, msgId:", msgID,"taskdata=", ts.Data)
+	}
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
