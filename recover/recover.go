@@ -279,7 +279,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 
 var tskcnt uint64
 func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
-	var msgID int16
+	var msgID uint16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
 
