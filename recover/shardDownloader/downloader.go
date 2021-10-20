@@ -66,18 +66,18 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	}
 	// 连接成功计数
 	statistics.DefaultRebuildCount.IncSuccConn()
-	statistics.DefaultRebuildCount.IncSendTokReq()
-	tkString, err := d.GetToken(ctx, clt)
-	if err != nil {
-		statistics.DefaultRebuildCount.IncFailToken()
-		return nil, err
-	}
-	// 获取分片token成功计数
-	statistics.DefaultRebuildCount.IncSuccToken()
+	//statistics.DefaultRebuildCount.IncSendTokReq()
+	//tkString, err := d.GetToken(ctx, clt)
+	//if err != nil {
+	//	statistics.DefaultRebuildCount.IncFailToken()
+	//	return nil, err
+	//}
+	//// 获取分片token成功计数
+	//statistics.DefaultRebuildCount.IncSuccToken()
 
 	var msg message.DownloadShardRequest
 	msg.VHF = shardID
-	msg.AllocId = tkString
+	//msg.AllocId = tkString
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		return nil, err
