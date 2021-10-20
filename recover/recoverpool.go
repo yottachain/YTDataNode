@@ -31,10 +31,12 @@ func (re *Engine) processRequests() {
 			k++
 			if requestT == nil {
 				m++
-				log.Println("[recover]k=", k, "m=", m," processRequests is nil")
+				if m % 10000 == 0{
+					log.Println("[recover] k=", k, "m=", m," processRequests is nil")
+				}
 				//time.Sleep(time.Second)
-				break
-				//continue
+				//break
+				continue
 			}
 			n++
 			statistics.RunningCount.Add()
