@@ -284,6 +284,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
+		log.Println("[recover] execLRCTask, msgId:", msgID)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife, ts.SrcNodeID)
 		if res.ErrorMsg != nil {
 			log.Println("[recover]", res.ErrorMsg)
@@ -298,11 +299,12 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 		re.PutReplyQueue(res)
 	case message.MsgIDTaskDescriptCP.Value():
+		log.Println("[recover] execCPTask, msgId:", msgID)
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
 
 		re.PutReplyQueue(res)
 	default:
-		log.Println("[recover] unknown msgID")
+		log.Println("[recover] unknown msgID:",msgID)
 	}
 }
 
@@ -635,6 +637,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
+			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
@@ -645,6 +648,8 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 				result.RES = 0
 			}
 			break
+		}else{
+			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
 		}
 	}
 	return &result
