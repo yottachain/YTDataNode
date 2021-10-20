@@ -41,7 +41,7 @@ func (re *Engine) processRequests() {
 			n++
 			statistics.RunningCount.Add()
 			statistics.DefaultRebuildCount.IncRbdTask()
-			if n % 200 == 0{
+			if n % 100 == 0{
 				log.Println("[recover] k= ",k," n=", n, " processRequests:",requestT)
 			}
 			go re.doRequest(requestT, startTsk)
