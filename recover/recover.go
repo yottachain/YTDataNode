@@ -303,12 +303,13 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 		if res.RES != 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
 		}
-
 		re.PutReplyQueue(res)
+
 	case message.MsgIDTaskDescriptCP.Value():
 		log.Println("[recover] execCPTask, msgId:", msgID)
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
-
+		res.BPID = ts.SnID
+		res.SrcNodeID = ts.SrcNodeID
 		re.PutReplyQueue(res)
 	default:
 		log.Println("[recover] unknown msgID:",msgID)
@@ -335,6 +336,7 @@ func (re *Engine) reply(res *TaskMsgResult) error {
 	return err
 }
 
+var replycnt uint64
 //
 func (re *Engine) MultiReply() error {
 	var resmsg = make(map[int32]*message.MultiTaskOpResult)
@@ -362,6 +364,7 @@ func (re *Engine) MultiReply() error {
 	}()
 
 	for k, v := range resmsg {
+		replycnt++
 		v.NodeID = int32(re.sn.Config().IndexID)
 		data, err := proto.Marshal(v)
 		if err != nil {
@@ -371,6 +374,7 @@ func (re *Engine) MultiReply() error {
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
+				log.Printf("[recover][report] tryReply error: %s\n", err.Error())
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
@@ -379,6 +383,9 @@ func (re *Engine) MultiReply() error {
 			}
 			// 如果不报错退出循环
 			break
+		}
+		if replycnt % 2000 == 0 {
+			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",v.SrcNodeID,"id=",v.Id,"res=",v.RES)
 		}
 	}
 	return nil
@@ -648,8 +655,8 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 			} else {
 				log.Printf("[recover:%s] execCPTask success\n", base58.Encode(msg.DataHash))
 				result.RES = 0
+				break
 			}
-			break
 		}else{
 			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
 		}
