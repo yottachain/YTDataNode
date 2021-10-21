@@ -638,7 +638,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
+			log.Printf("[recover:%s] execCPTask getshard DataHash:\n", base58.Encode(msg.DataHash))
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
@@ -646,6 +646,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
 				result.RES = 1
 			} else {
+				log.Printf("[recover:%s] execCPTask success\n", base58.Encode(msg.DataHash))
 				result.RES = 0
 			}
 			break
