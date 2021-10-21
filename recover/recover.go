@@ -384,8 +384,8 @@ func (re *Engine) MultiReply() error {
 			// 如果不报错退出循环
 			break
 		}
-		if replycnt % 2000 == 0 {
-			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",v.SrcNodeID,"id=",v.Id,"res=",v.RES)
+		if replycnt % 100 == 0 {
+			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt",replycnt)
 		}
 	}
 	return nil
@@ -414,7 +414,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
+	log.Println("[recover][report] tryreply resErrcode=",res.ErrCode,"res.SuccNum",res.SuccNum)
 	if 0 == res.ErrCode {
 		statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
 	} else {
