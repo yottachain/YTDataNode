@@ -296,8 +296,8 @@ github.com/yottachain/YTElkProducer v0.0.7 h1:euNbs3ubaGBQ34j1evmC8s+pAqJVpw/o9n
 github.com/yottachain/YTElkProducer v0.0.7/go.mod h1:iVHdNfhwkGzmfPnImbJ9v+UDGCxEipDUKKWGoKkY4wY=
 github.com/yottachain/YTFS v0.0.0-20211022064625-1ee1e23b645c h1:cqqYL76Cafa+tGahIBekl29ySODf49ax168UclbLTCE=
 github.com/yottachain/YTFS v0.0.0-20211022064625-1ee1e23b645c/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
-github.com/yottachain/YTHost v1.0.2-0.20210309102115-a3b2780e2d96 h1:qns+7qKgC4Isyffw5Rt3bkB9D+q1/K9v0JWFI+McVQo=
-github.com/yottachain/YTHost v1.0.2-0.20210309102115-a3b2780e2d96/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
+github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3 h1:pnIwruE5eLYQxy8kpp0ksJelYoFXKFHfAyZp2ZrGLfo=
+github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20211012082907-9b86d7e503ed h1:U7z9bhtjyGuXjv0yPqT12gu8595+50twrfYlD+3lK08=
 github.com/yottachain/YTLRC v0.0.0-20211012082907-9b86d7e503ed/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
