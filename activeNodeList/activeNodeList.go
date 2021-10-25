@@ -19,7 +19,9 @@ func getUrl() string {
 	//var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 
 	if config.IsDev == 2 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+		url = "http://192.168.1.146:8080/readable_nodes"
+		//url = "http://117.161.159.11:8082/active_nodes"
+		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
 	} else if config.IsDev == 1 {
 		//url = "http://117.161.159.8:9998/active_nodes"
 		url = "http://192.168.1.206:8080/readable_nodes"
