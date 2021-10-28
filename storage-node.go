@@ -56,7 +56,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
-		if ip, ok := os.LookupEnv("local_host_ip"); ok {
+		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
 			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
 			laddr = strings.Replace(laddr, "\n", "", -1)
 			lma, err := multiaddr.NewMultiaddr(laddr)
@@ -68,7 +68,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		}
 		log.Println("get public ip fail")
 	} else {
-		if ip, ok := os.LookupEnv("local_host_ip"); ok {
+		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
 			port, ok := os.LookupEnv("nat_port")
 			if ok == false {
 				port = "9001"
