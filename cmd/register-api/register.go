@@ -13,7 +13,7 @@ import (
 
 // 初始化仓库
 func InitRepo(size uint64, n uint32) error {
-	return commander.InitBySignleStorage(size, n)
+	return commander.InitBySignleStorage(size, n,"rocksdb")
 }
 
 type MinerData struct {

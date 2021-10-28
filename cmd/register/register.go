@@ -14,6 +14,7 @@ import (
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/util"
+	comm "github.com/yottachain/YTFS/common"
 
 	//"github.com/eoscanada/eos-go/ecc"
 	"io/ioutil"
@@ -156,7 +157,9 @@ func newCfg() (*config.Config, error) {
 	var GB uint64 = 1 << 30
 	var size uint64 = 4096
 	var mc byte = 14
-	var db string = "indexdb"
+	var db string = "rocksdb"
+	var stortype uint32 = 0;
+	var devname = "storage"
 
 	fmt.Println("请输入矿机存储空间大小GB例如4T=4096:")
 	_, err := fmt.Scanf("%d\n", &size)
@@ -164,17 +167,6 @@ func newCfg() (*config.Config, error) {
 		log.Println(err)
 	}
 getMC:
-	fmt.Println("请输入存储分组数:可能取值14～20间")
-	_, err = fmt.Scanf("%d\n", &mc)
-	if err != nil {
-		log.Println(err)
-		goto getMC
-	}
-	if mc < 14 || mc > 20 {
-		fmt.Println("请输入范围14～20的数", mc)
-		goto getMC
-	}
-
 	fmt.Println("请输入选择使用的数据库: rocksdb | indexdb")
 	_, err = fmt.Scanf("%s\n", &db)
 	if err != nil {
@@ -187,7 +179,47 @@ getMC:
 		goto getMC
 	}
 
-	err = commander.InitBySignleStorage(size*GB, 1<<mc, db)
+	if "indexdb" == db {
+		fmt.Println("请输入存储分组数:可能取值14～20间")
+		_, err = fmt.Scanf("%d\n", &mc)
+		if err != nil {
+			log.Println(err)
+			goto getMC
+		}
+		if mc < 14 || mc > 20 {
+			fmt.Println("请输入范围14～20的数", mc)
+			goto getMC
+		}
+	}
+
+	fmt.Println("请输入后端存储设备类型: 0(文件)| 1(块设备)")
+	_, err = fmt.Scanf("%d\n", &stortype)
+	if err != nil {
+		log.Println(err)
+		goto getMC
+	}
+
+	if 0 == stortype {
+		fmt.Println("请输入后端文件名称: storage(默认)")
+		_, err = fmt.Scanf("%s\n", &devname)
+		if err != nil {
+			log.Println(err)
+			goto getMC
+		}
+	}else if 1 == stortype {
+		fmt.Println("请输入后端文件名称: storage(默认)")
+		_, err = fmt.Scanf("%s\n", &devname)
+		if err != nil {
+		    log.Println(err)
+		    goto getMC
+	    }
+	} else {
+		fmt.Println("后端存储类型设置错误")
+		goto getMC
+	}
+
+	stype := comm.StorageType(stortype)
+	err = commander.InitBySignleStorage(size*GB, 1<<mc, db, stype, devname)
 	if err != nil{
 		fmt.Println("init storage error!")
 		return nil, err

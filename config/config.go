@@ -5,6 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	//ytfs "github.com/yottachain/YTFS"
+	comm "github.com/yottachain/YTFS/common"
 	"io/ioutil"
 	"log"
 	"os"
@@ -106,26 +108,11 @@ func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
 		return 0, 0, err
 	}
 
-	//index := uint32(1)
-	//for {
-	//	n = 1 << index
-	//	m = size / uint64(d) / uint64(n)
-	//	if m >= 512 && m <= 2048{
-	//		break
-	//	}
-	//
-	//	if index > 32 {
-	//		err := fmt.Errorf("storage size not suitable")
-	//		fmt.Println("[error]init failed, storage size not suitable!!")
-	//		return 0, 0, err
-	//	}
-	//	index++
-	//}
 	return m, uint64(n), nil
 }
 
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
-func GetYTFSOptionsByParams(size uint64, mc uint32, db string) *ytfsOpts.Options {
+func GetYTFSOptionsByParams(size uint64, mc uint32, db string, stortype comm.StorageType,  devname string) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
 
@@ -139,7 +126,7 @@ func GetYTFSOptionsByParams(size uint64, mc uint32, db string) *ytfsOpts.Options
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{
 			{
-				StorageName:   path.Join(yp, "storage"),
+				StorageName:   path.Join(yp, devname),
 				StorageType:   0,
 				ReadOnly:      false,
 				SyncPeriod:    1,
@@ -154,6 +141,11 @@ func GetYTFSOptionsByParams(size uint64, mc uint32, db string) *ytfsOpts.Options
 		DataBlockSize:  d,
 		TotalVolumn:    size,
 		UseKvDb:        false,
+	}
+
+	if comm.BlockStorageType == stortype && len(devname) > 0{
+		opts.Storages[0].StorageType = comm.BlockStorageType
+		opts.Storages[0].StorageName = path.Join("/dev/", devname)
 	}
 
 	if db == "rocksdb"{
