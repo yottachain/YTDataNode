@@ -47,7 +47,7 @@ var rebuildCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size*GB, 1<<mc, db))
+		newCfg := cfg.ResetYTFSOptions(config.GetYTFSOptionsByParams(size*GB, 1<<mc, db, cfg.Storages[0].StorageType, cfg.Storages[0].StorageName))
 		err = backData(cfg)
 		if err != nil {
 			if err == os.ErrExist {
