@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
+	comm "github.com/yottachain/YTFS/common"
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
@@ -76,13 +76,13 @@ func Check2Orders(num uint32) bool{
 	return ret
 }
 
-func InitBySignleStorage(size uint64, n uint32, db string) error {
+func InitBySignleStorage(size uint64, n uint32, db string, stortype comm.StorageType, devname string) error {
 	fmt.Println("[init]node InitBySignleStorage")
 	var cfg *config.Config
 
 	//cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
 	if !CfgFileExist(){
-		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, n, db))
+		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, n, db, stortype, devname))
 		if cfg == nil{
 			err := fmt.Errorf("cfg is nil")
 			fmt.Println("[error] ",err.Error())
