@@ -208,5 +208,8 @@ func init() {
 		if isDev == "2" {
 			IsDev = 2
 		}
+		if isDev == "3"{
+			IsDev = 3
+		}
 	}
 }
