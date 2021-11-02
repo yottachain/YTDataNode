@@ -207,7 +207,7 @@ getMC:
 			goto getMC
 		}
 	}else if 1 == stortype {
-		fmt.Println("请输入后端文件名称: storage(默认)")
+		fmt.Println("请输入后端块设备名称: ")
 		_, err = fmt.Scanf("%s\n", &devname)
 		if err != nil {
 		    log.Println(err)
