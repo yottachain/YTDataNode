@@ -294,7 +294,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 		log.Println("[recover] execLRCTask, msgId:", msgID)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife, ts.SrcNodeID)
 		if res.ErrorMsg != nil {
-			log.Println("[recover]", res.ErrorMsg)
+			log.Println("[recover] error:", res.ErrorMsg,)
 			res.RES = 1
 		}
 		res.BPID = ts.SnID
@@ -350,7 +350,7 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-
+				log.Println("[recover_debugtime]  reply taskid:",string(res.ID[:8]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
@@ -578,10 +578,11 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 		realHash = srcHash
 
 		if err != nil{
-			log.Println("[recover] ExecTask error:",err.Error())
+			log.Println("[recover_debugtime] ExecTask error:",err.Error())
 		}
 
 		res.ID = resID
+		log.Println("[recover_debugtime] ExecTask end, resID:",resID)
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data

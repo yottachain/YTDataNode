@@ -417,9 +417,9 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Println("get vhf:", base58.Encode(msg.VHF))
+	log.Println("[download_debugtime] A start get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
-		log.Println("error: msg.VHF is empty!")
+		log.Println("[download_debugtime] error: msg.VHF is empty!")
 		resData = []byte(strconv.Itoa(200))
 		return nil, fmt.Errorf("msg.VHF is empty!")
 	}
@@ -431,42 +431,45 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		indexKey[k] = v
 	}
 
+	log.Println("[download_debugtime] B get vhf:", base58.Encode(msg.VHF))
 	//res := message.DownloadShardResponse{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
 	defer cancel()
 
+	log.Println("[download_debugtime] C  vhf:", base58.Encode(msg.VHF))
 	time1 := time.Now()
 	resData, err = dh.GetShard(ctx, common.IndexTableKey(indexKey))
 	TokenPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
-		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		log.Println("[download_debugtime] C0 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
 
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
-		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		return nil, fmt.Errorf("[download_debugtime] C1 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
-
+	log.Println("[download_debugtime] D Get data  VHF=", base58.Encode(msg.VHF))
 	if !msg.VerifyVHF(resData) {
-		log.Println("data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
+		log.Println("[download_debugtime] D0 data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
 		return nil, fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
 
-	log.Println("data verify success: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
+	log.Println("[download_debugtime] E data verify success: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
 
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
-		log.Println("Marshar response data fail:", err)
+		log.Println("[download_debugtime] E0 Marshar response data fail:", err,"vhf:",base58.Encode(msg.VHF))
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
+	log.Println("[download_debugtime] F Get success vhf:", base58.Encode(msg.VHF))
 	//atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
@@ -505,7 +508,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		log.Println(err)
 	}
 	log.Println("收到抽查任务：", msg.TaskId, len(msg.TaskList), msg.TaskList)
-	log.Println()
+
 	spotChecker := spotCheck.NewSpotChecker()
 	spotChecker.TaskList = msg.TaskList
 	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {
