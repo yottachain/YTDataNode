@@ -219,26 +219,34 @@ start:
 	}
 	errCount++
 
+	log.Println("[recover_debugtime] E0  taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
+		log.Println("[recover_debugtime] E1 getNeedShardList taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
+
 		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
 		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
+		log.Println("[recover_debugtime] E2 addDownloadTask taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 		if err != nil {
 			return err
 		}
 		downloadTask.Wait()
+		log.Println("[recover_debugtime] E3 Wait taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 
 		if L.shards.Len() < len(needShardIndexes) {
 			goto start
 		}
 		if ok := L.checkNeedShardsExist(); !ok {
+			log.Println("[recover_debugtime] E4 checkNeedShardsExist taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 			// @TODO 如果检查分片不足跳回开头继续下载
 			goto start
 		}
+		log.Println("[recover_debugtime] E5 addDownloadTask taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 	}
+	log.Println("[recover_debugtime] E6 succ taskid:",string(L.msg.Id[:8]),"errcount:",errCount)
 
 	return nil
 }
@@ -287,26 +295,32 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 	if L.msg.BackupLocation == nil {
 		return nil, fmt.Errorf("no backup")
 	}
+
+	log.Println("[recover_debugtime] B0  backupTask taskid:",string(L.msg.Id[:8]))
 	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
 		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 	}
+	log.Println("[recover_debugtime] B1  backupTask taskid:",string(L.msg.Id[:8]))
 
 	for i := 0; i < 5; i++ {
 		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId, L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
 		if err != nil {
 			return nil, err
 		}
-
+		log.Println("[recover_debugtime] B2  addtask taskid:",string(L.msg.Id[:8]),"i=",i)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 		data, err := dw.Get(ctx)
+		log.Println("[recover_debugtime] B3  getdata taskid:",string(L.msg.Id[:8]),"i=",i)
 		if err != nil {
 			continue
 		}
+		log.Println("[recover_debugtime] B4 succ recover taskid:",string(L.msg.Id[:8]),"i=",i)
 		log.Printf("[recover] %s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
 		return data, nil
 	}
 
+	log.Println("[recover_debugtime] B5  getdata fail taskid:",string(L.msg.Id[:8]))
 	return nil, fmt.Errorf("download backup fail, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 }
 
@@ -398,24 +412,26 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	recoverHash = L.msg.Hashs[L.msg.RecoverId]
 
 	if err != nil {
-		log.Println("[recover] exectask error:",err.Error())
+		log.Println("[recover_debugtime] exectask error:",err.Error(),"taskid:",string(msgID[:8]))
 		return
 	}
-
+	log.Println("[recover_debugtime] A taskid:",string(msgID[:8]))
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
 		data, err = L.backupTask()
+		log.Println("[recover_debugtime] B end taskid:",string(msgID[:8]))
 		if err != nil {
-			log.Println("[recover] backupTask error:", err)
+			log.Println("[recover] backupTask error:", err,"taskid:",string(msgID[:8]))
 		}else{
 			statistics.DefaultRebuildCount.IncSuccRbd()
-			log.Printf("[recover] backupTask success, shard hash is %s\n", base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+			log.Printf("[recover] backupTask success, shard hash is %s\n", base58.Encode(L.msg.Hashs[L.msg.RecoverId]),"taskid:",string(msgID[:8]))
 		}
 		return
 	}
 
 	// @TODO 初始化LRC句柄
 	err = L.initLRCHandler(opts.Stage)
+	log.Println("[recover_debugtime] C taskid:",string(msgID[:8]))
 	if err != nil {
 		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
@@ -427,6 +443,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
+	log.Println("[recover_debugtime] D preJudge taskid:",string(msgID[:8]))
 	// 成功预判计数加一
 	statistics.DefaultRebuildCount.IncPassJudge()
 
@@ -434,6 +451,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
 	defer cancel()
 	err = L.downloadLoop(ctx)
+	log.Println("[recover_debugtime] E downloadloop taskid:",string(msgID[:8]))
 	if err != nil {
 		return
 	}
@@ -444,11 +462,13 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 		return
 	}
 
+	log.Println("[recover_debugtime] F end taskid:",string(msgID[:8]))
 	// @TODO 验证数据
 	if err = L.verifyLRCRecoveredData(recoverData); err != nil {
 		return
 	}
 
+	log.Println("[recover_debugtime] G end taskid:",string(msgID[:8]))
 	data = recoverData
 	// 成功重建计数加一
 	statistics.DefaultRebuildCount.IncSuccRbd()
