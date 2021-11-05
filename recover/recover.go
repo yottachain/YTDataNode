@@ -350,7 +350,7 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-				log.Println("[recover_debugtime]  reply taskid:",string(res.ID[:8]))
+				log.Println("[recover_debugtime]  reply taskid=",binary.BigEndian.Uint64(res.ID[:8]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
@@ -582,7 +582,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 		}
 
 		res.ID = resID
-		log.Println("[recover_debugtime] ExecTask end, resID:",resID)
+		log.Println("[recover_debugtime] ExecTask end, taskid=",binary.BigEndian.Uint64(resID))
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
