@@ -24,17 +24,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
-//var baseNodeUrl = "http://124.156.54.96:8888" //测试
+const GB = 1 << 30
 
-var api = eos.New(baseNodeUrl)
+var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
+// var baseNodeUrl = "http://117.161.159.11:8888" //测试
+
+var api *eos.API
 var formPath string
 
 var kb = eos.NewKeyBag()
-var maxSpace uint64 = 268435456
-
-var PoolAdminKey string
-var DepAccKey string
 
 var RegisterCmd = &cobra.Command{
 	Short: "注册账号",
@@ -61,8 +59,35 @@ var RegisterCmd = &cobra.Command{
 			}
 		}
 
+		if form.BaseUrl != "" {
+			baseNodeUrl = form.BaseUrl
+		}
+
+		err = kb.ImportPrivateKey(form.PoolOwnerKey)
+		if err != nil {
+			fmt.Println("矿池私钥输入错误:", err.Error())
+		}
+		if form.PoolOwnerKey != form.DepAccKey {
+			err = kb.ImportPrivateKey(form.DepAccKey)
+			if err != nil {
+				fmt.Println("抵押私钥输入错误:", err.Error())
+			}
+		}
+
+		api = eos.New(baseNodeUrl)
+		api.SetSigner(kb)
+		api.SetCustomGetRequiredKeys(func(tx *eos.Transaction) ([]ecc.PublicKey, error) {
+			return getPubkey(), nil
+		})
+
 		step1(&form)
 	},
+}
+
+type PoolInfo []struct {
+	PoolID    string `json:"pool_id"`
+	PoolOwner string `json:"pool_owner"`
+	MaxSpace  uint64 `json:"max_space"`
 }
 
 func init() {
@@ -72,30 +97,6 @@ func init() {
 		path.Join(p, "form.yaml"),
 		"注册提交表单的路径",
 	)
-	RegisterCmd.Flags().StringVar(
-		&PoolAdminKey, "pk",
-		"",
-		"矿池管理员私钥",
-	)
-	RegisterCmd.Flags().StringVar(
-		&DepAccKey, "dk",
-		"",
-		"抵押账户私钥",
-	)
-	err := kb.ImportPrivateKey(PoolAdminKey)
-	if err != nil {
-		fmt.Println("矿池私钥输入错误:", err.Error())
-	}
-	err = kb.ImportPrivateKey(DepAccKey)
-	if err != nil {
-		fmt.Println("抵押私钥输入错误:", err.Error())
-	}
-
-	api = eos.New(baseNodeUrl)
-	api.SetSigner(kb)
-	api.SetCustomGetRequiredKeys(func(tx *eos.Transaction) ([]ecc.PublicKey, error) {
-		return getPubkey(), nil
-	})
 }
 
 // 获取一个随机BP
@@ -153,18 +154,15 @@ func readCfg() (*config.Config, error) {
 }
 
 func step1(form *RegForm) {
-	if form.BaseUrl != "" {
-		baseNodeUrl = ""
-	}
 
 	type minerData struct {
 		MinerID    uint64          `json:"minerid"`
 		AdminAcc   eos.AccountName `json:"adminacc"`
 		DepAcc     eos.AccountName `json:"dep_acc"`
-		DepAmount  eos.Asset       `json:"dep_amount"`
 		PoolID     eos.AccountName `json:"pool_id"`
 		MinerOwner eos.AccountName `json:"minerowner"`
 		MaxSpace   uint64          `json:"max_space"`
+		DepAmount  eos.Asset       `json:"dep_amount"`
 		IsCalc     bool            `json:"is_calc"`
 		Extra      string          `json:"extra"`
 	}
@@ -179,24 +177,33 @@ func step1(form *RegForm) {
 	minerid := getNewMinerID(GetNewMinerIDUrl(currBP))
 	initConfig.IndexID = uint32(minerid)
 
+	actionData := minerData{
+		MinerID:    minerid,
+		AdminAcc:   eos.AN(form.AdminAcc),
+		DepAcc:     eos.AN(form.DepAcc),
+		DepAmount:  newYTAAssect(int64(form.DepAmount)),
+		IsCalc:     form.IsCalc,
+		PoolID:     eos.AN(form.PoolId),
+		MinerOwner: eos.AN(form.MinerOwner),
+		MaxSpace:   form.MaxSpace * GB / 16384,
+		Extra:      initConfig.PubKey,
+	}
 	action := &eos.Action{
-		Account: eos.AN("hddpool12345"),
-		Name:    eos.ActN("newminer"),
-		Authorization: []eos.PermissionLevel{
-			{Actor: eos.AN(form.DepAcc), Permission: eos.PN("active")},
-			{Actor: eos.AN(form.PoolAdmin), Permission: eos.PN("active")},
-		},
-		ActionData: eos.NewActionData(minerData{
-			MinerID:    minerid,
-			AdminAcc:   eos.AN(form.AdminAcc),
-			DepAcc:     eos.AN(form.DepAcc),
-			DepAmount:  newYTAAssect(int64(form.DepAmount)),
-			IsCalc:     form.IsCalc,
-			PoolID:     eos.AN(form.AdminAcc),
-			MinerOwner: eos.AN(form.MinerOwner),
-			MaxSpace:   form.MaxSpace / 16384,
-			Extra:      initConfig.PubKey,
-		}),
+		Account:       eos.AN("hddpool12345"),
+		Name:          eos.ActN("regminer"),
+		Authorization: []eos.PermissionLevel{},
+		ActionData:    eos.NewActionData(actionData),
+	}
+
+	action.Authorization = append(
+		action.Authorization,
+		eos.PermissionLevel{Actor: eos.AN(form.DepAcc), Permission: eos.PN("active")},
+	)
+	if form.PoolOwnerKey != form.DepAccKey {
+		action.Authorization = append(
+			action.Authorization,
+			eos.PermissionLevel{Actor: eos.AN(form.PoolOwner), Permission: eos.PN("active")},
+		)
 	}
 
 	txOpts := &eos.TxOptions{}
@@ -209,12 +216,15 @@ func step1(form *RegForm) {
 		fmt.Println("注册失败！", err)
 		return
 	}
+	fmt.Println("正在注册")
+	fmt.Println("poolID", actionData.PoolID, "minerID", actionData.MinerID, "depAmount", actionData.DepAmount.Amount, "maxSpace", actionData.MaxSpace)
 
 	err = Register(sigedTx, packedTx, currBP)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	initConfig.Adminacc = form.AdminAcc
 	initConfig.PoolID = form.PoolId
 	initConfig.Save()
@@ -233,6 +243,7 @@ func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl 
 		res, err := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
 	}
+	log.Println("注册完成")
 	return nil
 }
 
