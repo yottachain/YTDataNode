@@ -238,15 +238,16 @@ func RunRX(RxCtl chan struct{}) {
 		<- RxCtl
 		times++
 		if times % 2000 == 0{
-			log.Println("[randDownload] RunRX start nowtime:",time.Now())
+			log.Println("[randUpload] RunRX start nowtime:",time.Now())
 		}
 
 		if stop {
-			//log.Println("[randDownload] RunRX stop nowtime:",time.Now())
+			log.Println("[randUpload] RunRX stop nowtime:",time.Now())
 			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
+			log.Println("[randUpload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
@@ -260,6 +261,7 @@ func RunRX(RxCtl chan struct{}) {
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
+			log.Println("[randUpload] start")
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
