@@ -15,7 +15,7 @@ type Stat struct {
 	RXSuccess            int64         `json:"RXSuccess"` // 保存成功数量，改为上传仅rpc接口成功数量统计
 	YTFSErrorCount       uint64        `json:"ytfs_error_count"`
 	TokenQueueLen        int           `json:"TokenQueueLen"`
-	AvailableTokenNumber int           `json:"AvailableTokenNumber""`
+	AvailableTokenNumber int           `json:"AvailableTokenNumber"`
 	RXToken              int64         `json:"RXToken"` // 发送token数量，改为仅RPC调用成功发送token数量
 	UseKvDb              bool          `json:"UseKvDb"`
 	RXTokenFillRate      time.Duration `json:"RXTokenFillRate"`

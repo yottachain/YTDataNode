@@ -228,7 +228,9 @@ func RunRX(RxCtl chan struct{}) {
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+			log.Printf("[randUpload] test num1 %d test num2 %d\n",
+				TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
 						float64(config.Gconfig.RXTestNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
@@ -280,6 +282,7 @@ func RunRX(RxCtl chan struct{}) {
 func RunTX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
+	var count uint64
 	var execChan *chan struct{}
 	rand.Seed(int64(os.Getpid()) + time.Now().Unix())
 
@@ -287,7 +290,7 @@ func RunTX(TxCtl chan struct{}) {
 		for {
 			<-time.After(time.Minute)
 			log.Println("[randDownload] success", successCount,
-					"error", errorCount, "exec", len(*execChan))
+					"error", errorCount, "exec", len(*execChan), "count", count)
 		}
 	}()
 
@@ -297,6 +300,8 @@ func RunTX(TxCtl chan struct{}) {
 
 	go func() {
 		for {
+			log.Printf("[randDownload] test num1 %d test num2 %d\n",
+				TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
 								float64(config.Gconfig.TXTestNum))))
 			execChan = &c
@@ -330,6 +335,7 @@ func RunTX(TxCtl chan struct{}) {
 								time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
+			atomic.AddUint64(&count, 1)
 			err := DownloadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
