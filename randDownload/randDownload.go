@@ -222,8 +222,6 @@ func RunRX(RxCtl chan struct{}) {
 		}
 	}()
 
-	log.Printf("[randUpload] test num1:%d test num2 %d\n" ,
-		TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
 	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
 				float64(config.Gconfig.RXTestNum))))
 	execChan = &c
@@ -240,9 +238,7 @@ func RunRX(RxCtl chan struct{}) {
 	times := uint64(0)
 	// rx
 	for {
-		log.Println("[randUpload] loop")
 		<- RxCtl
-		log.Println("[randUpload] loop1")
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunRX start nowtime:",time.Now())
 		}
@@ -254,23 +250,20 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		if execChan == nil {
-			log.Println("[randUpload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		log.Println("[randUpload] loop2 eclen:", len(ec))
 		ec <- struct{}{}
-		log.Println("[randUpload] loop3")
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
 			}()
 
-			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			ctx, cancle := context.WithTimeout(context.Background(),
+								time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
-			log.Println("[randUpload] start")
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
@@ -293,16 +286,19 @@ func RunTX(TxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", len(*execChan))
+			log.Println("[randDownload] success", successCount,
+					"error", errorCount, "exec", len(*execChan))
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -330,7 +326,8 @@ func RunTX(TxCtl chan struct{}) {
 				<-ec
 			}()
 
-			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			ctx, cancle := context.WithTimeout(context.Background(),
+								time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
 			err := DownloadFromRandNode(ctx)
