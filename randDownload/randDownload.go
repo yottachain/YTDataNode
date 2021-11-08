@@ -237,6 +237,7 @@ func RunRX(RxCtl chan struct{}) {
 	for {
 		log.Println("[randUpload] loop")
 		<- RxCtl
+		log.Println("[randUpload] loop----")
 		times++
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunRX start nowtime:",time.Now())
