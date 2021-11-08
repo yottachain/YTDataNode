@@ -237,11 +237,11 @@ func RunRX(RxCtl chan struct{}) {
 	for {
 		log.Println("[randUpload] loop")
 		<- RxCtl
-		log.Println("[randUpload] loop----")
-		times++
+		log.Println("[randUpload] loop1")
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunRX start nowtime:",time.Now())
 		}
+		times++
 
 		if stop {
 			log.Println("[randUpload] RunRX stop nowtime:",time.Now())
@@ -253,7 +253,9 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		ec := *execChan
+		log.Println("[randUpload] loop2")
 		ec <- struct{}{}
+		log.Println("[randUpload] loop3")
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
