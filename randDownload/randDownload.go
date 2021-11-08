@@ -217,16 +217,21 @@ func RunRX(RxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randUpload] success", successCount, "error", errorCount, "exec", len(*execChan), "count", count)
+			log.Println("[randUpload] success", successCount, "error",
+				errorCount, "exec", len(*execChan), "count", count)
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
+	log.Printf("[randUpload] test num1:%d test num2 %d\n" ,
+		TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
+				float64(config.Gconfig.RXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+						float64(config.Gconfig.RXTestNum))))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -253,7 +258,7 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		ec := *execChan
-		log.Println("[randUpload] loop2")
+		log.Println("[randUpload] loop2 eclen:", len(ec))
 		ec <- struct{}{}
 		log.Println("[randUpload] loop3")
 		go func(ec chan struct{}) {
