@@ -232,6 +232,7 @@ func RunRX(RxCtl chan struct{}) {
 				TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
 						float64(config.Gconfig.TXTestNum))))
+			log.Println("[randUpload] chan len:",len(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -255,6 +256,7 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		ec := *execChan
+		log.Println("[randUpload] chan--- len:",len(ec))
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
 			defer func() {
@@ -304,6 +306,7 @@ func RunTX(TxCtl chan struct{}) {
 				TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
 								float64(config.Gconfig.RXTestNum))))
+			log.Println("[randDownload] chan len:",len(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -325,6 +328,7 @@ func RunTX(TxCtl chan struct{}) {
 			continue
 		}
 		ec := *execChan
+		log.Println("[randDownload] chan--- len:",len(ec))
 		ec <- struct{}{}
 		go func(ec chan struct{}) {
 			defer func() {
