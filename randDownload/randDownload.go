@@ -365,6 +365,9 @@ func Run() {
 	go RunCtl(&RxCtl,&TxCtl)
 	go RunRX(&RxCtl)
 	go RunTX(&TxCtl)
+	for {
+		<-time.After(time.Hour*24)
+	}
 }
 
 func RunCtl(RxCtl, TxCtl *chan struct{}){
