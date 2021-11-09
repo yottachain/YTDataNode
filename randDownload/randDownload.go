@@ -259,6 +259,7 @@ func RunTX(RxCtl chan struct{}) {
 		ec := *execChan
 		log.Println("[randUpload] chan--- cap:", cap(ec))
 		ec <- struct{}{}
+		log.Printf("[randUpload] times is %d\n", times)
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -279,7 +280,7 @@ func RunTX(RxCtl chan struct{}) {
 			}
 
 		}(ec)
-		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
+		//<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
 	}
 }
 
