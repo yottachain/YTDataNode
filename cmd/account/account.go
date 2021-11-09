@@ -320,7 +320,7 @@ var changeDepositCmd = &cobra.Command{
 
 		ad := &struct {
 			Minerid   uint64    `json:"minerid"`
-			Space     uint64    `json:"space" prompt:"该矿机需要追加的抵押空间(扩容) 单位Block（目前 1Block=16384 bytes）,该参数允许设置为0" required:"true"`
+			Space     uint64    `json:"space" prompt:"该矿机需要追加的抵押空间(扩容),该参数允许设置为0" convert:"Block" required:"true"`
 			DepAmount eos.Asset `json:" dep_amount:" prompt:"追加抵押数量" require:"true"`
 			IsCalc    bool      `json:"is_calc" prompt:"是否自动计算抵押数量"`
 		}{
