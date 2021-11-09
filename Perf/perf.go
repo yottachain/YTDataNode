@@ -146,7 +146,6 @@ func GetBlock(data []byte) (res []byte, err error) {
 		tk := &TokenPool.Token{}
 		err := tk.FillFromString(msg.AllocID)
 		if err == nil && TokenPool.Utp().Check(tk) {
-
 			statistics.DefaultStat.RXTest.AddSuccess()
 		} else {
 			log.Println("[perf]check token", msg.AllocID, err)

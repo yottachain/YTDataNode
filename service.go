@@ -374,7 +374,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.RXTokenFillRate = TokenPool.Utp().GetTFillTKSpeed()
 	if int(statistics.DefaultStat.RXTokenFillRate) > config.Gconfig.MaxToken {
-		statistics.DefaultStat.RXTokenFillRate = 100
+		statistics.DefaultStat.RXTokenFillRate = time.Duration(config.Gconfig.MaxToken)
 	}
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
