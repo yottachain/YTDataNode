@@ -50,11 +50,6 @@ func (rm *RelayManager) ClearRelayAddrs() {
 	rm.addr = ""
 }
 
-// Addr 返回addr
-func (rm *RelayManager) Addr() string {
-	return rm.addr
-}
-
 // Service 启动服务
 func (rm *RelayManager) Service() {
 	go func() {

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/yottachain/YTDataNode/logger"
+	"log"
 	"net/http"
 )
 
@@ -42,11 +42,11 @@ func init() {
 		}
 		const GB = 1024 * 1024 * 1024
 		res := new(Res)
-		res.Total = srv.sn.YTFS().Meta().YtfsSize
-		res.Used = srv.sn.YTFS().Len() * uint64(srv.sn.YTFS().Meta().DataBlockSize)
+		res.Total = srv.sn.Config().AllocSpace
+		res.Used = srv.sn.Config().AllocSpace
 		res.Unused = res.Total - res.Used
-		res.ProductSpace = srv.sn.Owner().BuySpace * uint64(srv.sn.YTFS().Meta().DataBlockSize)
-		log.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
+		res.ProductSpace = srv.sn.Config().AllocSpace
+		log.Println(srv.sn.Config().AllocSpace)
 		rw.WriteJSON(res)
 	})
 }

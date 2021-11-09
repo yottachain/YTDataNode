@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/cmd/update"
-	ytfs "github.com/yottachain/YTFS"
 	"io"
 	"net/http"
 	"os/signal"
@@ -14,10 +12,14 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/cmd/update"
+	ytfs "github.com/yottachain/YTFS"
+
 	"os"
 	"os/exec"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
 
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
@@ -93,7 +95,6 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 			log.Printf("API serve at:%s\n", srv.Addr)
 		}
 	}()
-	defer sn.YTFS().Close()
 
 	<-ctx.Done()
 }

@@ -3,7 +3,6 @@ package storageNodeInterface
 import (
 	"github.com/yottachain/YTDataNode/config"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
-	ytfs "github.com/yottachain/YTFS"
 	. "github.com/yottachain/YTHost/interface"
 )
 
@@ -18,7 +17,6 @@ type Owner struct {
 type StorageNode interface {
 	Addrs() []string
 	Host() Host
-	YTFS() *ytfs.YTFS
 	GetBP() int
 	Service()
 	Config() *config.Config

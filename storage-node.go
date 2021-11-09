@@ -3,14 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/yottachain/YTDataNode/util"
+	log "github.com/yottachain/YTDataNode/logger"
 
 	"github.com/multiformats/go-multiaddr"
 
@@ -18,25 +17,15 @@ import (
 
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTHost"
+	host "github.com/yottachain/YTHost"
 	. "github.com/yottachain/YTHost/interface"
 	"github.com/yottachain/YTHost/option"
-
-	// "github.com/yottachain/P2PHost"
-	ytfs "github.com/yottachain/YTFS"
 )
 
 // Service 服务接口
 type Service interface {
 	Service()
 }
-
-//// Owner 归属信息
-//type Owner struct {
-//	ID       string
-//	BuySpace uint64
-//	HDD      uint64
-//}
 
 // AddrsManager 地址管理器
 type AddrsManager struct {
@@ -109,7 +98,6 @@ func (am *AddrsManager) GetAddStrings() []string {
 
 type storageNode struct {
 	host          Host
-	ytfs          *ytfs.YTFS
 	config        *config.Config
 	addrsmanager  *AddrsManager
 	runtimeStatus RuntimeStatus
@@ -129,10 +117,6 @@ func (sn *storageNode) Host() Host {
 }
 func (sn *storageNode) Config() *config.Config {
 	return sn.config
-}
-
-func (sn *storageNode) YTFS() *ytfs.YTFS {
-	return sn.ytfs
 }
 
 func (sn *storageNode) GetBP() int {
@@ -174,7 +158,6 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 		time.Second * 10,
 		sn,
 	}
-	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
 	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.Version(int32(cfg.Version())))
@@ -183,13 +166,6 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	}
 	sn.host = hst
 
-	yp := util.GetYTFSPath()
-	ys, err := ytfs.Open(yp, cfg.Options)
-	if err != nil {
-		log.Println(err.Error())
-		return nil, fmt.Errorf("YTFS storage init failed")
-	}
-	sn.ytfs = ys
 	if err != nil {
 		return nil, err
 	}
