@@ -207,7 +207,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	return nil
 }
-func RunTX(RxCtl chan struct{}) {
+func RunTX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -241,7 +241,7 @@ func RunTX(RxCtl chan struct{}) {
 	times := uint64(0)
 	// rx
 	for {
-		<- RxCtl
+		<- TxCtl
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
@@ -259,8 +259,6 @@ func RunTX(RxCtl chan struct{}) {
 		}
 		ec := *execChan
 		log.Println("[randUpload] chan--- cap:", cap(ec))
-		ec <- struct{}{}
-		log.Printf("[randUpload] times2 is %d\n", times)
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -279,13 +277,14 @@ func RunTX(RxCtl chan struct{}) {
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
 			}
-
 		}(ec)
-		//<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
+		ec <- struct{}{}
+		log.Printf("[randUpload] times2 is %d\n", times)
+		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
 	}
 }
 
-func RunRX(TxCtl chan struct{}) {
+func RunRX(RxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var count uint64
@@ -319,7 +318,7 @@ func RunRX(TxCtl chan struct{}) {
 	times := uint64(0)
 	// tx
 	for {
-		<- TxCtl
+		<- RxCtl
 		times++
 		if times % 2000 == 0{
 			log.Println("[randDownload] RunRX start nowtime:",time.Now())
@@ -334,7 +333,6 @@ func RunRX(TxCtl chan struct{}) {
 		}
 		ec := *execChan
 		log.Println("[randDownload] chan--- cap:", cap(ec))
-		ec <- struct{}{}
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -355,6 +353,7 @@ func RunRX(TxCtl chan struct{}) {
 			}
 
 		}(ec)
+		ec <- struct{}{}
 		<-time.After(time.Millisecond * time.Duration(config.Gconfig.TXTestSleep))
 	}
 }
