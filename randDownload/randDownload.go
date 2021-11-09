@@ -241,7 +241,7 @@ func RunTX(RxCtl chan struct{}) {
 	times := uint64(0)
 	// rx
 	for {
-		<- RxCtl
+		//<- RxCtl
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
