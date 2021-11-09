@@ -222,16 +222,17 @@ func RunTX(TxCtl chan struct{}) {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
-				float64(config.Gconfig.TXTestNum))))
+	//to local node, upload be equal to use download token
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
+				float64(config.Gconfig.RXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
 			//log.Printf("[randUpload] test num1 %d test num2 %d\n", TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			<-time.After(5 * time.Minute)
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
-						float64(config.Gconfig.TXTestNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
+						float64(config.Gconfig.RXTestNum))))
 			//log.Println("[randUpload] chan cap:", cap(c))
 			execChan = &c
 		}
@@ -298,15 +299,16 @@ func RunRX(RxCtl chan struct{}) {
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
-								float64(config.Gconfig.RXTestNum))))
+	//to local node, download be equal to use upload token
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
 			//log.Printf("[randDownload] test num1 %d test num2 %d\n", TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
-								float64(config.Gconfig.RXTestNum))))
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
 			//log.Println("[randDownload] chan cap:", cap(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
