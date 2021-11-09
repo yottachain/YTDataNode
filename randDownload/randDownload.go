@@ -367,7 +367,7 @@ func Run() {
 	go RunTX(&TxCtl)
 }
 
-func RunCtl( RxCtl, TxCtl *chan struct{}){
+func RunCtl(RxCtl, TxCtl *chan struct{}){
 	for{
 		start := time.Now()
 		for{
