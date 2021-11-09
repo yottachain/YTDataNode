@@ -230,11 +230,11 @@ func RunTX(RxCtl chan struct{}) {
 		for {
 			log.Printf("[randUpload] test num1 %d test num2 %d\n",
 				TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
+			<-time.After(5 * time.Minute)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
 						float64(config.Gconfig.TXTestNum))))
 			log.Println("[randUpload] chan cap:", cap(c))
 			execChan = &c
-			<-time.After(5 * time.Minute)
 		}
 	}()
 
