@@ -228,12 +228,11 @@ func RunTX(TxCtl chan struct{}) {
 
 	go func() {
 		for {
-			log.Printf("[randUpload] test num1 %d test num2 %d\n",
-				TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
+			//log.Printf("[randUpload] test num1 %d test num2 %d\n", TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			<-time.After(5 * time.Minute)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
 						float64(config.Gconfig.TXTestNum))))
-			log.Println("[randUpload] chan cap:", cap(c))
+			//log.Println("[randUpload] chan cap:", cap(c))
 			execChan = &c
 		}
 	}()
@@ -246,7 +245,7 @@ func RunTX(TxCtl chan struct{}) {
 			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
 		times++
-		log.Printf("[randUpload] times1 is %d\n", times)
+		//log.Printf("[randUpload] times1 is %d\n", times)
 
 		if stop {
 			log.Println("[randUpload] RunTX stop nowtime:",time.Now())
@@ -254,11 +253,11 @@ func RunTX(TxCtl chan struct{}) {
 			continue
 		}
 		if execChan == nil {
-			log.Println("[randUpload] execChan is Nil")
+			//log.Println("[randUpload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		log.Println("[randUpload] chan--- cap:", cap(ec))
+		//log.Println("[randUpload] chan--- cap:", cap(ec))
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -269,7 +268,7 @@ func RunTX(TxCtl chan struct{}) {
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
-			log.Println("[randUpload] start")
+			//log.Println("[randUpload] start")
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
@@ -279,7 +278,7 @@ func RunTX(TxCtl chan struct{}) {
 			}
 		}(ec)
 		ec <- struct{}{}
-		log.Printf("[randUpload] times2 is %d\n", times)
+		//log.Printf("[randUpload] times2 is %d\n", times)
 		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
 	}
 }
@@ -305,11 +304,10 @@ func RunRX(RxCtl chan struct{}) {
 
 	go func() {
 		for {
-			log.Printf("[randDownload] test num1 %d test num2 %d\n",
-				TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
+			//log.Printf("[randDownload] test num1 %d test num2 %d\n", TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
 								float64(config.Gconfig.RXTestNum))))
-			log.Println("[randDownload] chan cap:", cap(c))
+			//log.Println("[randDownload] chan cap:", cap(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -328,11 +326,11 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		if execChan == nil {
-			log.Println("[randDownload] execChan is Nil")
+			//log.Println("[randDownload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		log.Println("[randDownload] chan--- cap:", cap(ec))
+		//log.Println("[randDownload] chan--- cap:", cap(ec))
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -343,7 +341,7 @@ func RunRX(RxCtl chan struct{}) {
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
-			log.Println("[randDownload] start")
+			//log.Println("[randDownload] start")
 			err := DownloadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
