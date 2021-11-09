@@ -241,7 +241,7 @@ func RunTX(RxCtl chan struct{}) {
 	times := uint64(0)
 	// rx
 	for {
-		//<- RxCtl
+		<- RxCtl
 		if times % 2000 == 0{
 			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
@@ -374,6 +374,7 @@ func RunCtl( RxCtl, TxCtl chan struct{}){
 			RxCtl <- struct{}{}
 			TxCtl <- struct{}{}
 			if time.Now().Sub(start).Seconds() >= 3600 {
+				log.Println("[randUpDownload] stop")
 				break
 			}
 		}
