@@ -363,7 +363,7 @@ func Run() {
 	RxCtl := make(chan struct{})
 	TxCtl := make(chan struct{})
 	go RunCtl(&RxCtl,&TxCtl)
-	go RunRX(&RxCtl)
+	//go RunRX(&RxCtl)
 	go RunTX(&TxCtl)
 	for {
 		<-time.After(time.Hour*24)
@@ -374,7 +374,7 @@ func RunCtl(RxCtl, TxCtl *chan struct{}){
 	for{
 		start := time.Now()
 		for{
-			*RxCtl <- struct{}{}
+			//*RxCtl <- struct{}{}
 			*TxCtl <- struct{}{}
 			if time.Now().Sub(start).Seconds() >= 3600 {
 				log.Println("[randUpDownload] stop")
