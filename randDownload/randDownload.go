@@ -246,6 +246,7 @@ func RunTX(RxCtl chan struct{}) {
 			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
 		times++
+		log.Printf("[randUpload] times1 is %d\n", times)
 
 		if stop {
 			log.Println("[randUpload] RunTX stop nowtime:",time.Now())
@@ -259,7 +260,7 @@ func RunTX(RxCtl chan struct{}) {
 		ec := *execChan
 		log.Println("[randUpload] chan--- cap:", cap(ec))
 		ec <- struct{}{}
-		log.Printf("[randUpload] times is %d\n", times)
+		log.Printf("[randUpload] times2 is %d\n", times)
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
@@ -372,7 +373,7 @@ func RunCtl( RxCtl, TxCtl chan struct{}){
 		for{
 			RxCtl <- struct{}{}
 			TxCtl <- struct{}{}
-			if time.Now().Sub(start).Seconds() >= 3600{
+			if time.Now().Sub(start).Seconds() >= 3600 {
 				break
 			}
 		}
