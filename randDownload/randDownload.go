@@ -207,7 +207,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	return nil
 }
-func RunRX(RxCtl chan struct{}) {
+func RunTX(RxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -243,16 +243,17 @@ func RunRX(RxCtl chan struct{}) {
 	for {
 		<- RxCtl
 		if times % 2000 == 0{
-			log.Println("[randUpload] RunRX start nowtime:",time.Now())
+			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
 		times++
 
 		if stop {
-			log.Println("[randUpload] RunRX stop nowtime:",time.Now())
+			log.Println("[randUpload] RunTX stop nowtime:",time.Now())
 			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
+			log.Println("[randUpload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
@@ -282,7 +283,7 @@ func RunRX(RxCtl chan struct{}) {
 	}
 }
 
-func RunTX(TxCtl chan struct{}) {
+func RunRX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var count uint64
@@ -319,13 +320,14 @@ func RunTX(TxCtl chan struct{}) {
 		<- TxCtl
 		times++
 		if times % 2000 == 0{
-			log.Println("[randDownload] RunTX start nowtime:",time.Now())
+			log.Println("[randDownload] RunRX start nowtime:",time.Now())
 		}
 		if stop {
 			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
+			log.Println("[randDownload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
