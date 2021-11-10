@@ -94,7 +94,7 @@ func OpenKVDB(dbname string) (*VrDB, error) {
 
 func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
-    var errhash message.HashToHash
+    //var errhash message.HashToHash
     //var hashTab []ytfs.Hashtohash
     //log.Println("[verify] VerifySlicekvdb start")
     startkey,err := slicecompare.GetValueFromFile(VerifyedKvFile)
@@ -112,6 +112,7 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
 
     log.Println("[verify] len_hashTab=",len(hashTab))
     for i:= 0; i < len(hashTab); i++{
+        var errhash message.HashToHash
         errhash.DBhash = hashTab[i].DBhash
         errhash.Datahash = hashTab[i].Datahash
         v, _ := vfs.Hdb.DB.Get(vfs.Hdb.Ro, errhash.DBhash)

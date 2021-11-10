@@ -156,7 +156,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
     reqMsg.StartItem = StartItem
     reqData,err := proto.Marshal(&reqMsg)
     if err != nil{
-        fmt.Println("request msg err!")
+        fmt.Println("request msg error：",err.Error())
         return
     }
     pi := service.PeerInfo{}
@@ -171,29 +171,29 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
 
     err = proto.Unmarshal(res.Data[2:],&respMsg)
     if err != nil{
-        fmt.Println("err:",err,"respMsg:",respMsg)
+        fmt.Println("[verifytool] Unmarsharl err:",err.Error())
         return
     }
     fmt.Println("response nodeid:",respMsg.Id,"table idx:",respMsg.Entryth,"err account:",respMsg.ErrNum,"errCode:",respMsg.ErrCode)
     for i := 0;i < len(respMsg.ErrShard);i++{
         fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),"DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
     }
-    fmt.Println("[verifytool] respMsg:",respMsg)
+    //fmt.Println("[verifytool] respMsg:",respMsg)
 }
 
-func SelfVerifyRPC(StartItem, CntPerBatch string, vTimes uint64){
-    n := uint64(0)
+func SelfVerifyRPC(StartItem, CntPerBatch string){
+    //n := uint64(0)
 
-    for{
-        if n >= vTimes{
-            fmt.Println("verifyed batchs :",n,"BatchCnt=",BatchCnt)
-            break
-        }
+    //for{
+        //if n >= vTimes{
+        //    fmt.Println("verifyed batchs :",n,"BatchCnt=",BatchCnt)
+        //    break
+        //}
 
         SendCompareVerifyOrder2(StartItem, CntPerBatch)
-        <-time.After(time.Second * 2)
-        n++
-    }
+    //    <-time.After(time.Second * 2)
+    //    n++
+    //}
 }
 
 func MissSliceQuery(Key string){
@@ -274,6 +274,7 @@ func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
 
 func main(){
     Online := flag.Bool("online",true,"run verifytool online or offline")
+    Loopm := flag.Bool("loop",true,"verify mode :loop or not")
     flag.StringVar(&StartItem,"s","","start items to verify")
     flag.StringVar(&CntPerBatch,"c","1000","verify items for one batch")
     flag.StringVar(&BatchCnt,"b","1000","batch count for verify")
@@ -293,13 +294,26 @@ func main(){
             MissSliceQuery(VerifyErrKey)
             return
         }
-
+        BchCnt := uint64(0)
         for{
-            SelfVerifyRPC(StartItem,CntPerBatch,vTimes)
-            <- time.After(time.Second * 1)
-            if begin{
-                begin = false
-                StartItem = ""
+            for{
+                BchCnt++
+                SendCompareVerifyOrder2(StartItem, CntPerBatch)
+                //SelfVerifyRPC(StartItem,CntPerBatch,vTimes)
+                <- time.After(time.Second * 1)
+                if begin{
+                    log.Println("verify start!!")
+                    begin = false
+                    StartItem = ""
+                }
+
+                if BchCnt >= vTimes{
+                    break
+                }
+            }
+
+            if !*Loopm {
+                break
             }
         }
     }else{
@@ -313,13 +327,24 @@ func main(){
             return
         }
 
+        bchCnt := uint64(0)
         for{
-            <- time.After(time.Second * 1)
-            vfer.VerifySlice(CntPerBatch, StartItem)
-            if begin{
-                log.Println("verify start!!")
-                begin = false
-                StartItem = ""
+            for{
+                <- time.After(time.Second * 1)
+                vfer.VerifySlice(CntPerBatch, StartItem)
+                if begin{
+                    log.Println("verify start!!")
+                    begin = false
+                    StartItem = ""
+                }
+                bchCnt++
+                if bchCnt >= vTimes{
+                    break
+                }
+            }
+
+            if !*Loopm{
+                break
             }
         }
     }
