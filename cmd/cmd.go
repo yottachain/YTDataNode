@@ -101,7 +101,6 @@ func main() {
 		Version: fmt.Sprintf("%s", "1.0.15k"),
 		Short:   "ytfs storage node",
 	}
-	RootCommand.AddCommand(initCmd)
 	RootCommand.AddCommand(daemonCmd)
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.AddCommand(repoCmd.RepoCmd)
