@@ -218,7 +218,7 @@ func step1(form *RegForm) {
 	}
 	fmt.Println("正在注册")
 	fmt.Println("poolID", actionData.PoolID, "minerID", actionData.MinerID, "depAmount", actionData.DepAmount.Amount, "maxSpace", actionData.MaxSpace)
-
+	fmt.Println("currBP", currBP)
 	err = Register(sigedTx, packedTx, currBP)
 	if err != nil {
 		fmt.Println(err)
