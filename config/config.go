@@ -163,6 +163,7 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 
 	cfg.Relay = true
 	cfg.BPList = getBPList()
+	log.Println("系统", runtime.GOOS)
 	if runtime.GOOS == "windows" {
 		cfg.UseKvDb = false
 	} else {
