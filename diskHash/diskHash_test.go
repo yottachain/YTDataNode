@@ -1,13 +1,15 @@
-package diskHash
+package diskHash_test
 
 import (
 	"fmt"
-	"github.com/yottachain/YTDataNode/instance"
 	"testing"
+
+	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/instance"
 )
 
 var sn = instance.GetStorageNode()
 
 func TestGetHash(t *testing.T) {
-	fmt.Println(GetHash(sn.YTFS()))
+	fmt.Println(diskHash.GetHash(sn.YTFS()))
 }

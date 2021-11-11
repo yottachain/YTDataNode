@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/eoscanada/eos-go"
-	"github.com/eoscanada/eos-go/ecc"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/eoscanada/eos-go"
+	"github.com/eoscanada/eos-go/ecc"
 )
 
 var Api *eos.API
@@ -88,9 +89,9 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 			var value string
 			fmt.Sscanln(text, &value)
 			switch value {
-			case "yes":
+			case "yes", "y", "true":
 				v.Field(i).SetBool(true)
-			case "no":
+			case "no", "n", "false":
 				v.Field(i).SetBool(false)
 			default:
 				fmt.Println("输入错误")

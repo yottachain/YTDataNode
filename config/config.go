@@ -111,7 +111,6 @@ func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
 	return m, uint64(n), nil
 }
 
-// GetYTFSOptionsByParams 通过参数生成YTFS配置
 func GetYTFSOptionsByParams(size uint64, mc uint32, db string, stortype comm.StorageType,  devname string) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 1 << 14
@@ -131,7 +130,7 @@ func GetYTFSOptionsByParams(size uint64, mc uint32, db string, stortype comm.Sto
 				ReadOnly:      false,
 				SyncPeriod:    1,
 				StorageVolume: size,
-				DataBlockSize: 1 << 14,
+				DataBlockSize: 16384,
 			},
 		},
 		ReadOnly:       false,
@@ -162,6 +161,62 @@ func GetYTFSOptionsByParams(size uint64, mc uint32, db string, stortype comm.Sto
 
 	return opts
 }
+
+// GetYTFSOptionsByParams 通过参数生成YTFS配置
+
+//func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
+//	yp := util.GetYTFSPath()
+//	var d uint32 = 16384
+//	n := size / uint64(d) / uint64(m)
+//
+//	for {
+//		if (n & (n - 1)) == 0 {
+//			break
+//		}
+//		n = n + 1
+//		m = uint32(size / uint64(d) / uint64(m))
+//	}
+//
+//	opts := &ytfsOpts.Options{
+//		YTFSTag: "ytfs",
+//		Storages: []ytfsOpts.StorageOptions{
+//			{
+//				StorageName:   path.Join(yp, devname),
+//				StorageType:   0,
+//				ReadOnly:      false,
+//				SyncPeriod:    1,
+//				StorageVolume: size,
+//				DataBlockSize: 16384,
+//			},
+//		},
+//		ReadOnly:       false,
+//		SyncPeriod:     1,
+//		IndexTableCols: uint32(m),
+//		IndexTableRows: uint32(n),
+//		DataBlockSize:  d,
+//		TotalVolumn:    size,
+//		UseKvDb:        false,
+//	}
+//
+//	if comm.BlockStorageType == stortype && len(devname) > 0{
+//		opts.Storages[0].StorageType = comm.BlockStorageType
+//		opts.Storages[0].StorageName = path.Join("/dev/", devname)
+//	}
+//
+//	if db == "rocksdb"{
+//		opts.UseKvDb = true
+//		if runtime.GOOS == "windows" {
+//			fmt.Println("windows not support rocksdb")
+//			return nil
+//		}
+//	}
+//
+//	//if runtime.GOOS == "windows" {
+//	//	opts.UseKvDb = false
+//	//}
+//
+//	return opts
+//}
 
 // GetYTFSOptionsByParams2 通过参数生成YTFS配置, 多storage配置
 func GetYTFSOptionsByParams2(totalSize uint64, storageSize uint64, m uint32) *ytfsOpts.Options {
@@ -209,6 +264,12 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 
 	cfg.Relay = true
 	cfg.BPList = getBPList()
+	log.Println("系统", runtime.GOOS)
+	if runtime.GOOS == "windows" {
+		cfg.UseKvDb = false
+	} else {
+		cfg.UseKvDb = true
+	}
 	return cfg
 }
 

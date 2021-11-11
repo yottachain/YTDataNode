@@ -3,13 +3,14 @@ package account
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/eoscanada/eos-go"
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/transaction"
-	"os"
-	"strconv"
-	"strings"
 )
 
 //var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
@@ -65,9 +66,9 @@ var changeAdminCmd = &cobra.Command{
 			"hddpool12345",
 			"mchgadminacc",
 			[]eos.PermissionLevel{
-				eos.PermissionLevel{
-					eos.AN(cfg.Adminacc),
-					"active",
+				{
+					Actor:      eos.AN(cfg.Adminacc),
+					Permission: "active",
 				},
 			},
 			&opt,
@@ -105,13 +106,13 @@ var changeOwnerCmd = &cobra.Command{
 		}
 
 		p := []eos.PermissionLevel{
-			eos.PermissionLevel{
-				eos.AN(cfg.Adminacc),
-				"active",
+			{
+				Actor:      eos.AN(cfg.Adminacc),
+				Permission: "active",
 			},
-			eos.PermissionLevel{
-				eos.AN(info[0].PoolOwner),
-				"active",
+			{
+				Actor:      eos.AN(info[0].PoolOwner),
+				Permission: "active",
 			},
 		}
 		request, err := transaction.NewSignedTransactionRequest(
@@ -168,21 +169,21 @@ var changePoolIDCmd = &cobra.Command{
 		}
 
 		p := []eos.PermissionLevel{
-			eos.PermissionLevel{
-				eos.AN(cfg.Adminacc),
-				"active",
+			{
+				Actor:      eos.AN(cfg.Adminacc),
+				Permission: "active",
 			},
-			eos.PermissionLevel{
-				eos.AN(info[0].PoolOwner),
-				"active",
+			{
+				Actor:      eos.AN(info[0].PoolOwner),
+				Permission: "active",
 			},
 		}
 
 		action := &eos.Action{
-			eos.AN("hddpool12345"),
-			eos.ActN("mchgstrpool"),
-			p,
-			*actionData,
+			Account:       eos.AN("hddpool12345"),
+			Name:          eos.ActN("mchgstrpool"),
+			Authorization: p,
+			ActionData:    *actionData,
 		}
 		sigedTx, err := transaction.GetSignedTransAction(action, &opt)
 		if err != nil {
@@ -300,8 +301,8 @@ var changeDepAccCmd = &cobra.Command{
 }
 
 var changeDepositCmd = &cobra.Command{
-	Use:   "change-deposit",
-	Short: "更改抵押金额",
+	Use:   "deposit",
+	Short: "追加抵押金额",
 	Run: func(cmd *cobra.Command, args []string) {
 		var valuestring string
 	input:
@@ -311,46 +312,46 @@ var changeDepositCmd = &cobra.Command{
 			goto input
 		}
 
-		ad := &struct {
-			User       eos.AccountName `json:"user" require:"true"`
-			Minerid    uint64          `json:"minerid"`
-			IsIncrease bool            `json:"is_increase" prompt:"是否为追加抵押（yes 追加 或者 no 减少）" required:"true"`
-			Quant      eos.Asset       `json:"quant" prompt:"请输入额度" require:"true"`
-		}{
-			User:    eos.AN(valuestring),
-			Minerid: uint64(cfg.IndexID),
+		pi, err := getPoolInfo(cfg.PoolID)
+		if err != nil {
+			fmt.Println("操作失败：", err)
+			return
 		}
 
-		//info, err := getPoolInfo(cfg.PoolID)
-		//if err != nil {
-		//	fmt.Println("操作失败:", err)
-		//	return
-		//}
+		ad := &struct {
+			Minerid   uint64    `json:"minerid"`
+			Space     uint64    `json:"space" prompt:"该矿机需要追加的抵押空间(扩容),该参数允许设置为0" convert:"Block" required:"true"`
+			DepAmount eos.Asset `json:" dep_amount:" prompt:"追加抵押数量" require:"true"`
+			IsCalc    bool      `json:"is_calc" prompt:"是否自动计算抵押数量"`
+		}{
+			Minerid: uint64(cfg.IndexID),
+			IsCalc:  false,
+		}
 
 		p := []eos.PermissionLevel{
-			eos.PermissionLevel{
-				eos.AN(valuestring),
-				"active",
+			{
+				Actor:      eos.AN(valuestring),
+				Permission: "active",
 			},
-			//eos.PermissionLevel{
-			//	eos.AN(info[0].PoolOwner),
-			//	"owner",
-			//},
+			{
+				Actor:      eos.AN(pi[0].PoolOwner),
+				Permission: "active",
+			},
 		}
 
 		request, err := transaction.NewSignedTransactionRequest(
 			ad,
-			"hdddeposit12",
-			"chgdeposit",
+			"hddpool12345",
+			"mincdeposit",
 			p,
 			&opt,
 		)
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			res, err := request.Send(cfg.GetAPIAddr() + "/ChangeDeposit")
+			res, err := request.Send(cfg.GetAPIAddr() + "/IncreaseDeposit")
 			if err != nil {
-				fmt.Printf("%v\n", ad.Quant)
+				fmt.Printf("%v\n", ad)
 				fmt.Println("操作失败:", err, string(res))
 				return
 			}

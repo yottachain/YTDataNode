@@ -115,13 +115,13 @@ func main() {
 	initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
 	initCmd.Flags().Uint32VarP(&stortype,"type","t",0,"选择存储类型,0-文件(默认),1-块设备")
 	initCmd.Flags().StringVarP(&devname,"name","n","storage","存储设备的名称:storage(默认)")
+
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
 		Version: fmt.Sprintf("%s", "1.0.15n"),
 		Short:   "ytfs storage node",
 	}
-	RootCommand.AddCommand(initCmd)
 	RootCommand.AddCommand(daemonCmd)
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
 	RootCommand.AddCommand(repoCmd.RepoCmd)
