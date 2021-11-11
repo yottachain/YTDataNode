@@ -55,7 +55,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		if ok == false {
 			port = "9001"
 		}
-		if ip, ok := os.LookupEnv("local_host_ip"); ok {
+		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
 			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
 			laddr = strings.Replace(laddr, "\n", "", -1)
 			lma, err := multiaddr.NewMultiaddr(laddr)
@@ -67,22 +67,37 @@ func (am *AddrsManager) UpdateAddrs() {
 		}
 		log.Println("get public ip fail")
 	} else {
-		pubip, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("get public ip fail:", err)
-		}
-		port, ok := os.LookupEnv("nat_port")
-		if ok == false {
-			port = "9001"
-		}
-		addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
-		addr = strings.Replace(addr, "\n", "", -1)
-		pubma, err := multiaddr.NewMultiaddr(addr)
-		if err != nil {
-			log.Println("fomate public ip fail:", err, addr)
+		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
+			port, ok := os.LookupEnv("nat_port")
+			if ok == false {
+				port = "9001"
+			}
+			addr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
+			addr = strings.Replace(addr, "\n", "", -1)
+			pubma, err := multiaddr.NewMultiaddr(addr)
+			if err != nil {
+				log.Println("fomate public ip fail:", err, addr)
+			} else {
+				am.addrs = append(am.addrs, pubma)
+			}
 		} else {
-			am.addrs = append(am.addrs, pubma)
-			am.updateTime = time.Now()
+			pubip, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println("get public ip fail:", err)
+			}
+			port, ok := os.LookupEnv("nat_port")
+			if ok == false {
+				port = "9001"
+			}
+			addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
+			addr = strings.Replace(addr, "\n", "", -1)
+			pubma, err := multiaddr.NewMultiaddr(addr)
+			if err != nil {
+				log.Println("fomate public ip fail:", err, addr)
+			} else {
+				am.addrs = append(am.addrs, pubma)
+				am.updateTime = time.Now()
+			}
 		}
 
 		am.updateTime = time.Now()
