@@ -4,17 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/eoscanada/eos-go"
-	"github.com/yottachain/YTDataNode/commander"
 	"io/ioutil"
 	"math"
 	"net/http"
-)
 
-// 初始化仓库
-func InitRepo(size uint64, n uint32) error {
-	return commander.InitBySignleStorage(size, n)
-}
+	"github.com/eoscanada/eos-go"
+)
 
 type MinerData struct {
 	MinerID   uint64          `json:"minerid"`

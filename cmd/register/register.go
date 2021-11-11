@@ -10,6 +10,7 @@ import (
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
 	"gopkg.in/yaml.v2"
@@ -136,13 +137,25 @@ func getNewMinerID(requestUrl string) uint64 {
 
 func newCfg(form *RegForm) (*config.Config, error) {
 	var GB uint64 = 1 << 30
-	commander.InitBySignleStorage(form.MaxSpace*GB, 2048)
-
-	_cfg, err := config.ReadConfig()
-	if err != nil {
-		return nil, err
+	var M uint32
+	if form.M <= 0 || form.M > 2048 {
+		M = 2048
+	} else {
+		M = form.M
 	}
-	return _cfg, nil
+
+	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M)
+
+	if form.ISBlockDev {
+		cfg.Storages[0].StorageType = 1
+	}
+	if form.StoragePath != "" {
+		cfg.Storages[0].StorageName = form.StoragePath
+	}
+
+	cfg.Save()
+
+	return cfg, nil
 }
 
 func readCfg() (*config.Config, error) {

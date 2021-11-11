@@ -61,15 +61,6 @@ var startCmd = &cobra.Command{
 	},
 }
 
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Init YTFS storage node",
-	Run: func(cmd *cobra.Command, args []string) {
-		commander.InitBySignleStorage(size, 1<<mc)
-		log.Println("YTFS init success")
-	},
-}
-
 //var version = &cobra.Command{
 //	Use:   "version",
 //	Short: "ytfs-node version",
@@ -94,6 +85,14 @@ var logCmd = &cobra.Command{
 	},
 }
 
+var regTemplateCmd = &cobra.Command{
+	Use:   "register-form",
+	Short: "生成注册表单",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(registerCmd.GetFormTemplate())
+	},
+}
+
 func main() {
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
@@ -107,6 +106,7 @@ func main() {
 	RootCommand.AddCommand(update.UpdateCMD)
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
+	RootCommand.AddCommand(regTemplateCmd)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 }

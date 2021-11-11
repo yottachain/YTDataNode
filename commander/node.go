@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/cmd/update"
-	ytfs "github.com/yottachain/YTFS"
 	"io"
 	"net/http"
 	"os/signal"
@@ -14,10 +12,14 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/cmd/update"
+	ytfs "github.com/yottachain/YTFS"
+
 	"os"
 	"os/exec"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
 
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
@@ -39,15 +41,15 @@ func Init() error {
 	return nil
 }
 
-func InitBySignleStorage(size uint64, m uint32) error {
+func InitBySignleStorage(size uint64, m uint32) *config.Config {
 	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
-	cfg.Save()
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
-	if err != nil {
-		return err
-	}
-	defer yt.Close()
-	return nil
+	// cfg.Save()
+	// yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+	// if err != nil {
+	// 	return nil
+	// }
+	// defer yt.Close()
+	return cfg
 }
 
 // NewID 创建新的id
