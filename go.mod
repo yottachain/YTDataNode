@@ -24,15 +24,11 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.7
-<<<<<<< HEAD
+
 	github.com/yottachain/YTFS v0.0.0-20211028101430-ab003dc7216b
 	github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3
 	github.com/yottachain/YTLRC v0.0.0-20211012082907-9b86d7e503ed
-=======
-	github.com/yottachain/YTFS v0.0.0-20210730100731-fafaf67e933a
-	github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3
-	github.com/yottachain/YTLRC v0.0.0-20210205104947-ea10d305f4fd
->>>>>>> new-register
+
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
