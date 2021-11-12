@@ -32,7 +32,7 @@ import (
 func Init() error {
 	cfg := config.NewConfig()
 	cfg.Save()
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options,cfg.IndexID)
 
 	if err != nil {
 		return err
