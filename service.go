@@ -355,6 +355,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
+
+	//这个不要实时计算后续改成定时计算,然后上报的时候取结果
 	msg.AvailableSpace = capProof.GetCapProofSpace(sn.YTFS())
 
 	msg.Relay = sn.config.Relay
