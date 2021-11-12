@@ -3,7 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
-	"log"
+	//"log"
 	"os"
 	"strconv"
 	"strings"
@@ -13,12 +13,18 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
+	//"github.com/tecbot/gorocksdb"
+
+	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
 
-	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/yottachain/YTDataNode/logger"
+
 	"github.com/yottachain/YTDataNode/spotCheck"
 
 	"github.com/yottachain/YTDataNode/message"
@@ -30,33 +36,52 @@ import (
 
 var disableWrite = false
 
+
+
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
 	RequestQueue chan *wRequest
-	db           *leveldb.DB
+	TmpDB        *CompDB
+	seq           uint64
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
+	TDB := sn.GetCompareDb()
+
+	seq, err := slicecompare.GetSeqFromDb(TDB, slicecompare.Seqkey)
+	if err != nil {
+		log.Println("[slicecompare] get seq from compare_db error")
+		return nil
+	}
+
 	return &WriteHandler{
 		sn,
 		make(chan *wRequest, 1000),
-		nil,
+		TDB,
+		seq,
 	}
+}
+
+type YTres struct{
+	seq uint64
+	//hash []byte
 }
 
 type wRequest struct {
 	Key   common.IndexTableKey
 	Data  []byte
-	Error chan error
+	ytres YTres
+	err   chan error
 }
 
-func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) error {
+func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) (YTres, error) {
 	rq := &wRequest{
-		key,
-		data,
-		make(chan error),
+		Key:key,
+		Data:data,
+		err:make(chan error),
 	}
+
 	select {
 	case wh.RequestQueue <- rq:
 		log.Println("[task]push task success")
@@ -64,14 +89,17 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 		//return fmt.Errorf("task busy", len(wh.RequestQueue))
 	}
 	select {
-	case err := <-rq.Error:
-		return err
+	case err := <-rq.err:
+		return rq.ytres, err
 	case <-ctx.Done():
-		return fmt.Errorf("get error time out")
+		var ytres YTres
+		err := fmt.Errorf("get error time out")
+		return ytres, err
 	}
 }
 
 func (wh *WriteHandler) batchWrite(number int) {
+	var err, err2 error
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
@@ -79,18 +107,29 @@ func (wh *WriteHandler) batchWrite(number int) {
 	for i := 0; i < number; i++ {
 		select {
 		case rq := <-wh.RequestQueue:
+			atomic.AddUint64(&wh.seq,1)
+			rq.ytres.seq = wh.seq
+			//rq.ytres.hash = rq.Key[:]
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key[:]
+			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
+			if err != nil{
+				log.Println("[slicecompare] put to compare_db error:",err.Error(),"compare_seq:",wh.seq, "hash:",base58.Encode(hashkey[i]))
+			    goto OUT
+			}
+			//log.Println("[slicecompare] put to compare_db success,compare_seq:",wh.seq, "hash:",base58.Encode(hashkey[i]))
 		default:
 			continue
 		}
 	}
 
 	log.Printf("[ytfs]flush start:%d\n", number)
-	_, err := wh.putShard(rqmap)
+	_, err = wh.putShard(rqmap)
 	if err == nil {
-		log.Printf("[ytfs]flush sucess:%d\n", number)
+		//wh.seq = wh.seq + uint64(number)
+		//err = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
+		log.Printf("[ytfs]flush sucess:%d\n", number,"wh.seq",wh.seq)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
 			log.Printf("[ytfs]flush failure:%s\n", err.Error())
@@ -103,9 +142,15 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 	}
 
+	//wh.seq = wh.seq + uint64(number)
+	err2 = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
+	if err2 != nil{
+		fmt.Println("[slicecompare] PutVSeqToDb error:",err)
+	}
+OUT:
 	for _, rq := range rqs {
 		select {
-		case rq.Error <- err:
+		case rq.err <- err:
 		default:
 			continue
 		}
@@ -215,20 +260,20 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 
 // Handle 获取回调处理函数
 func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
-
+	var ytres YTres
 	startTime := time.Now()
 	var msg message.UploadShardRequest
 	proto.Unmarshal(msgData, &msg)
 
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
+	log.Printf("[uploadslice] BPDID=%s, BPDSIGN=%s, USERSIGN=%s \n",msg.BPDID, base58.Encode(msg.BPDSIGN), base58.Encode(msg.USERSIGN))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()
-
 	var resCode int32
 	// 判断剩余空间
 	if wh.GetMaxSpace() >= (wh.YTFS().Len()) {
-		resCode = wh.saveSlice(ctx, msg)
+		resCode, ytres  = wh.saveSlice(ctx, msg)
 	} else {
 		// 剩余空间不足
 		resCode = 106
@@ -238,10 +283,12 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 		log.Printf("shard [VHF:%s] write failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.RXSuccess, 1)
-		log.Printf("shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+		log.Printf("[slicecompare] origin  shard [VHF:%s] write success [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
+	    //log.Println("[slicecompare] return ytres.seq=",ytres.seq,"ytres.hash=",base58.Encode(ytres.hash))
 	}
 
-	res2client, err := msg.GetResponseToClientByCode(resCode, wh.Config().PrivKeyString())
+	//res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, ytres.hash, wh.Config().PrivKeyString())
+	res2client, err := msg.GetResponseToClientByCode(resCode, ytres.seq, wh.Config().PrivKeyString())
 	if err != nil {
 		log.Println("Get res code 2 client fail:", err)
 		log.Printf("shard [VHF:%s] return client failed [%f]\n", base58.Encode(msg.VHF), time.Now().Sub(startTime).Seconds())
@@ -274,13 +321,13 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 	}
 }
 
-func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) int32 {
-
+func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
+	var ytres YTres
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		// buys
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
-		return 105
+		return 105, ytres
 	}
 	tk, err := TokenPool.NewTokenFromString(msg.AllocId)
 	if err != nil {
@@ -291,12 +338,12 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 		wh.Host().ClientStore().Close(pid)
 		recover()
-		return 105
+		return 105, ytres
 	}
 	if !TokenPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
-		return 105
+		return 105, ytres
 	}
 	atomic.AddInt64(&statistics.DefaultStat.RXRequest, 1)
 	TokenPool.Utp().NetLatency.Add(time.Now().Sub(tk.Tm))
@@ -313,17 +360,17 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	// 2. 验证数据Hash
 	if msg.VerifyVHF(msg.DAT) == false {
 		log.Println(fmt.Errorf("Verify VHF fail"))
-		return 100
+		return 100, ytres
 	}
 	// 3. 将数据写入YTFS-disk
 	var indexKey [16]byte
 	copy(indexKey[:], msg.VHF[0:16])
 	putStartTime := time.Now()
-	err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
+	ytres, err = wh.push(ctx, common.IndexTableKey(indexKey), msg.DAT)
 	//err = wh.YTFS().Put(common.IndexTableKey(indexKey), msg.DAT)
 	if err != nil {
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
-			return 102
+			return 102, ytres
 		}
 		log.Println("数据写入错误error:", err.Error())
 		if strings.Contains(err.Error(), "no space") {
@@ -335,7 +382,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if strings.Contains(err.Error(), "Range is full") {
 			atomic.AddInt64(&statistics.DefaultStat.RangeFullError, 1)
 		}
-		return 101
+		return 101, ytres
 	}
 	log.Println("return msg", 0)
 
@@ -348,7 +395,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 
 	TokenPool.Utp().Delete(tk)
 
-	return 0
+	return 0, ytres
 }
 
 // DownloadHandler 下载处理器
@@ -370,9 +417,9 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Println("get vhf:", base58.Encode(msg.VHF))
+	log.Println("[download_debugtime] A start get vhf:", base58.Encode(msg.VHF))
 	if len(msg.VHF) == 0 {
-		log.Println("error: msg.VHF is empty!")
+		log.Println("[download_debugtime] error: msg.VHF is empty!")
 		resData = []byte(strconv.Itoa(200))
 		return nil, fmt.Errorf("msg.VHF is empty!")
 	}
@@ -384,42 +431,45 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		indexKey[k] = v
 	}
 
+	log.Println("[download_debugtime] B get vhf:", base58.Encode(msg.VHF))
 	//res := message.DownloadShardResponse{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
 	defer cancel()
 
+	log.Println("[download_debugtime] C  vhf:", base58.Encode(msg.VHF))
 	time1 := time.Now()
 	resData, err = dh.GetShard(ctx, common.IndexTableKey(indexKey))
 	TokenPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
-		log.Println("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		log.Println("[download_debugtime] C0 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 		//		resData = []byte(strconv.Itoa(201))
 
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
-		return nil, fmt.Errorf("Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
+		return nil, fmt.Errorf("[download_debugtime] C1 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
-
+	log.Println("[download_debugtime] D Get data  VHF=", base58.Encode(msg.VHF))
 	if !msg.VerifyVHF(resData) {
-		log.Println("data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
+		log.Println("[download_debugtime] D0 data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
 		return nil, fmt.Errorf("Get data Slice fail: slice VerifyVHF fail:", base58.Encode(msg.VHF), pid.Pretty())
 	}
 
-	log.Println("data verify success: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
+	log.Println("[download_debugtime] E data verify success: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
 
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
-		log.Println("Marshar response data fail:", err)
+		log.Println("[download_debugtime] E0 Marshar response data fail:", err,"vhf:",base58.Encode(msg.VHF))
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
 		return nil, fmt.Errorf("Marshar response data fail:", err)
 	}
+	log.Println("[download_debugtime] F Get success vhf:", base58.Encode(msg.VHF))
 	//atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
 	//	log.Println("return msg", 0)
 	return append(message.MsgIDDownloadShardResponse.Bytes(), resp...), err
@@ -458,7 +508,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		log.Println(err)
 	}
 	log.Println("收到抽查任务：", msg.TaskId, len(msg.TaskList), msg.TaskList)
-	log.Println()
+
 	spotChecker := spotCheck.NewSpotChecker()
 	spotChecker.TaskList = msg.TaskList
 	spotChecker.TaskHandler = func(task *message.SpotCheckTask) bool {

@@ -1,6 +1,7 @@
 package storageNodeInterface
 
 import (
+	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	ytfs "github.com/yottachain/YTFS"
@@ -14,6 +15,12 @@ type Owner struct {
 	HDD      uint64
 }
 
+type CompDB struct {
+	Db  *gorocksdb.DB
+	Ro  *gorocksdb.ReadOptions
+	Wo  *gorocksdb.WriteOptions
+}
+
 // StorageNode 存储节点接口
 type StorageNode interface {
 	Addrs() []string
@@ -25,4 +32,5 @@ type StorageNode interface {
 	Runtime() RuntimeStatus
 	Owner() *Owner
 	SendBPMsg(index int, id int32, data []byte) ([]byte, error)
+	GetCompareDb() *CompDB
 }

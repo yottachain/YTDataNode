@@ -1,6 +1,7 @@
 package recover
 
 import (
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/statistics"
 	"time"
 	//"sync"
@@ -19,17 +20,32 @@ func (re *Engine) doRequest(task *Task, pkgstart time.Time) {
 }
 
 func (re *Engine) processRequests() {
-	startTsk := time.Now()
+	var  k  uint64
+	var  n  uint64
+	var  m  uint64
+	for{
+		startTsk := time.Now()
 
-	for {
-		requestT := re.waitQueue.GetTask()
-		if requestT == nil {
-			continue
+		for {
+			requestT := re.waitQueue.GetTask()
+			k++
+			if requestT == nil {
+				m++
+				if m % 10000 == 0{
+					log.Println("[recover] k=", k, "m=", m," processRequests is nil")
+				}
+				//time.Sleep(time.Second)
+				//break
+				continue
+			}
+			n++
+			statistics.RunningCount.Add()
+			statistics.DefaultRebuildCount.IncRbdTask()
+			if n % 100 == 0 {
+				log.Println("[recover] k= ",k," n=", n, " processRequests:",requestT)
+			}
+			go re.doRequest(requestT, startTsk)
 		}
-
-		statistics.RunningCount.Add()
-		statistics.DefaultRebuildCount.IncRbdTask()
-		go re.doRequest(requestT, startTsk)
 	}
 }
 
@@ -40,6 +56,6 @@ func (re *Engine) RunPool() {
 	go re.processRequests()
 
 	for {
-		re.MultiReply()
+		_ = re.MultiReply()
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"math"
@@ -18,12 +19,18 @@ func getUrl() string {
 	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
 	//var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
 
-	if config.IsDev == 2 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
-	} else if config.IsDev == 1 {
-		url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
+	fmt.Println("config_IsDev=",config.IsDev)
+	if config.IsDev == 1 {
+		//url = "http://117.161.159.8:9998/active_nodes"
+		url = "http://192.168.1.206:8080/readable_nodes"
+		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
+	} else if config.IsDev == 2 {
+		url = "http://192.168.1.146:8080/readable_nodes"
+		//url = "http://117.161.159.11:8082/active_nodes"
+		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
+	}else if config.IsDev == 3{
+		url = "http://10.0.27.56:8080/readable_nodes"
 	}
-
 	return url
 }
 
@@ -44,14 +51,14 @@ func Update() {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList] geturl error:", err.Error())
 		return
 	}
 
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
-		log.Println("[activeNodeList]", err.Error())
+		log.Println("[activeNodeList] Decode error:", err.Error())
 		return
 	}
 
@@ -73,6 +80,7 @@ func GetNodeList() []*Data {
 		nodeList[k].Group = buf[len(buf)-1]
 	}
 
+	//log.Println("[activeNodeList] list=",nodeList)
 	return nodeList
 }
 func GetNodeListByGroup(group byte) []*Data {
@@ -179,8 +187,10 @@ func HasNodeid(id string) bool {
 		//log.Println("[recover][hasNodeid] test online dnid:",v.NodeID)
 		//log.Println("[recover][hasNodeid] test request dnid:",id)
 		if v.NodeID == id {
+			log.Println("[recover][hasNodeid] found: online dnid=",v.NodeID,"request_dnid=",id)
 			return true
 		}
+		//log.Println("[recover][hasNodeid] error: online dnid=",v.NodeID,"request_dnid=",id,"not equal")
 	}
 	return false
 }

@@ -349,11 +349,11 @@ func RunCtl( RxCtl, TxCtl chan struct{}){
 		for{
 			RxCtl <- struct{}{}
 			TxCtl <- struct{}{}
-			if time.Now().Sub(start).Seconds() >= 7200{
+			if time.Now().Sub(start).Seconds() >= 3600{
 				break
 			}
 		}
-		<-time.After(time.Hour * 22)
+		<-time.After(time.Hour * 11)
 	}
 }
 

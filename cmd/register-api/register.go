@@ -8,8 +8,15 @@ import (
 	"math"
 	"net/http"
 
+//<<<<<<< HEAD
 	"github.com/eoscanada/eos-go"
 )
+//=======
+//// 初始化仓库
+//func InitRepo(size uint64, n uint32) error {
+//	return commander.InitBySignleStorage(size, n,"rocksdb",0,"storage")
+//}
+//>>>>>>> release_rcvcp
 
 type MinerData struct {
 	MinerID   uint64          `json:"minerid"`

@@ -5,6 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	//ytfs "github.com/yottachain/YTFS"
+	comm "github.com/yottachain/YTFS/common"
 	"io/ioutil"
 	"log"
 	"os"
@@ -88,7 +90,80 @@ func DefaultYTFSOptions() *ytfsOpts.Options {
 	return opts
 }
 
+func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
+	var d uint32 = 1 << 14
+	var m uint64
+
+	//expendRatioM = 1.2 = 12 / 10
+	m = size / uint64(d) / uint64(n)
+	if db == "rocksdb"{
+		return m, uint64(n), nil
+	}
+
+	fmt.Println("InitRowsCols,M=",m)
+	// IndexTableCols(M) = m * expendRatioM,  expendRatioM = 1.2  (512 <= IndexTableCols(M) <= 2048)
+	if m < 420 || m > 1700{
+		err := fmt.Errorf("IndexTableCols not suitable,M=",m)
+		fmt.Println("[error]init failed, IndexTableCols not suitable,M=",m)
+		return 0, 0, err
+	}
+
+	return m, uint64(n), nil
+}
+
+//func GetYTFSOptionsByParams(size uint64, mc uint32, db string, stortype comm.StorageType,  devname string) *ytfsOpts.Options {
+//	yp := util.GetYTFSPath()
+//	var d uint32 = 1 << 14
+//
+//	m, n, err := InitRowsCols(size, mc, db)
+//	if err != nil{
+//		log.Println("[init] InitRowsCols error:",err.Error())
+//		return nil
+//	}
+//
+//	opts := &ytfsOpts.Options{
+//		YTFSTag: "ytfs",
+//		Storages: []ytfsOpts.StorageOptions{
+//			{
+//				StorageName:   path.Join(yp, devname),
+//				StorageType:   0,
+//				ReadOnly:      false,
+//				SyncPeriod:    1,
+//				StorageVolume: size,
+//				DataBlockSize: 16384,
+//			},
+//		},
+//		ReadOnly:       false,
+//		SyncPeriod:     1,
+//		IndexTableCols: uint32(m),
+//		IndexTableRows: uint32(n),
+//		DataBlockSize:  d,
+//		TotalVolumn:    size,
+//		UseKvDb:        false,
+//	}
+//
+//	if comm.BlockStorageType == stortype && len(devname) > 0{
+//		opts.Storages[0].StorageType = comm.BlockStorageType
+//		opts.Storages[0].StorageName = path.Join("/dev/", devname)
+//	}
+//
+//	if db == "rocksdb"{
+//		opts.UseKvDb = true
+//		if runtime.GOOS == "windows" {
+//			fmt.Println("windows not support rocksdb")
+//			return nil
+//		}
+//	}
+//
+//	//if runtime.GOOS == "windows" {
+//	//	opts.UseKvDb = false
+//	//}
+//
+//	return opts
+//}
+
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
+
 func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
 	var d uint32 = 16384
@@ -106,7 +181,7 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
 		YTFSTag: "ytfs",
 		Storages: []ytfsOpts.StorageOptions{
 			{
-				StorageName:   path.Join(yp, "storage"),
+				StorageName:   path.Join(yp, devname),
 				StorageType:   0,
 				ReadOnly:      false,
 				SyncPeriod:    1,
@@ -120,12 +195,25 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
 		IndexTableRows: uint32(n),
 		DataBlockSize:  d,
 		TotalVolumn:    size,
-		UseKvDb:        true,
+		UseKvDb:        false,
 	}
 
-	if runtime.GOOS == "windows" {
-		opts.UseKvDb = false
+	if comm.BlockStorageType == stortype && len(devname) > 0{
+		opts.Storages[0].StorageType = comm.BlockStorageType
+		opts.Storages[0].StorageName = path.Join("/dev/", devname)
 	}
+
+	if db == "rocksdb"{
+		opts.UseKvDb = true
+		if runtime.GOOS == "windows" {
+			fmt.Println("windows not support rocksdb")
+			return nil
+		}
+	}
+
+	//if runtime.GOOS == "windows" {
+	//	opts.UseKvDb = false
+	//}
 
 	return opts
 }
@@ -163,6 +251,10 @@ func NewConfig() *Config {
 }
 
 func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
+	if opts == nil{
+		fmt.Println("[error] opts is nil")
+		return nil
+	}
 	cfg := new(Config)
 	cfg.ListenAddr = "/ip4/0.0.0.0/tcp/9001"
 	cfg.APIListen = ":9002"
@@ -393,7 +485,6 @@ func ReadConfig() (*Config, error) {
 	}
 	privk, err := ci.UnmarshalSecp256k1PrivateKey(keyBytes)
 	if err != nil {
-
 		return nil, err
 	}
 	cfg.privKey = privk
@@ -414,7 +505,7 @@ func (cfg *Config) PrivKeyString() string {
 }
 
 func (cfg *Config) Version() uint32 {
-	return 268
+	return 271
 }
 
 func Version() uint32 {

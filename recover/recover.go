@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	//"github.com/yottachain/YTDataNode/activeNodeList"
 	"sync/atomic"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -275,17 +276,25 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
  * @param ts 任务
  * @param pkgstart 任务包开始时间
  */
+
+var tskcnt uint64
 func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
-	var msgID int16
+	var msgID uint16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
+
+	tskcnt++
+	if tskcnt % 100 == 0{
+		log.Println("[recover] dispatchTask, msgId:", msgID,"taskdata=", ts.Data)
+	}
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife)
+		log.Println("[recover] execLRCTask, msgId:", msgID)
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife, ts.SrcNodeID)
 		if res.ErrorMsg != nil {
-			log.Println("[recover]", res.ErrorMsg)
+			log.Println("[recover] error:", res.ErrorMsg,)
 			res.RES = 1
 		}
 		res.BPID = ts.SnID
@@ -294,20 +303,23 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 		if res.RES != 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
 		}
-
 		re.PutReplyQueue(res)
-	case message.MsgIDTaskDescriptCP.Value():
-		//res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
-	default:
-		log.Println("[recover] unknown msgID")
-	}
 
+	case message.MsgIDTaskDescriptCP.Value():
+		log.Println("[recover] execCPTask, msgId:", msgID)
+		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+		res.BPID = ts.SnID
+		res.SrcNodeID = ts.SrcNodeID
+		re.PutReplyQueue(res)
+	default:
+		log.Println("[recover] unknown msgID:",msgID)
+	}
 }
 
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
 	case re.replyQueue <- res:
-	default:
+	//default:
 	}
 }
 
@@ -324,26 +336,27 @@ func (re *Engine) reply(res *TaskMsgResult) error {
 	return err
 }
 
+var replycnt uint64
 //
 func (re *Engine) MultiReply() error {
 	var resmsg = make(map[int32]*message.MultiTaskOpResult)
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
+			log.Printf("[recover] reply queue length is %d\n", len(re.replyQueue))
 			select {
 			case res := <-re.replyQueue:
 				if resmsg[res.BPID] == nil {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-
+				log.Println("[recover_debugtime]  reply taskid=",binary.BigEndian.Uint64(res.ID[:8]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
 				_r.SrcNodeID = res.SrcNodeID
 				resmsg[res.BPID] = _r
 				statistics.DefaultRebuildCount.IncReportRbdTask()
-
 			case <-time.After(max_reply_wait_time):
 				return
 			}
@@ -351,6 +364,7 @@ func (re *Engine) MultiReply() error {
 	}()
 
 	for k, v := range resmsg {
+		replycnt++
 		v.NodeID = int32(re.sn.Config().IndexID)
 		data, err := proto.Marshal(v)
 		if err != nil {
@@ -360,6 +374,7 @@ func (re *Engine) MultiReply() error {
 
 		for reportTms := 0; reportTms < 5; reportTms++ {
 			if isReturn, err := re.tryReply(int(k), data); err != nil {
+				log.Printf("[recover][report] tryReply error: %s\n", err.Error())
 				if !isReturn {
 					// 如果报错且sn没有返回继续循环
 					continue
@@ -368,6 +383,9 @@ func (re *Engine) MultiReply() error {
 			}
 			// 如果不报错退出循环
 			break
+		}
+		if replycnt % 100 == 0 {
+			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt",replycnt)
 		}
 	}
 	return nil
@@ -396,7 +414,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
+	log.Println("[recover][report] tryreply resErrcode=",res.ErrCode,"res.SuccNum",res.SuccNum)
 	if 0 == res.ErrCode {
 		statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
 	} else {
@@ -511,7 +529,8 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @param tasklife 任务存活周期
  * @return *TaskMsgResult 任务执行结果
  */
-func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time, taskLife int32) (res *TaskMsgResult) {
+func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
+			taskLife int32, srcNodeid int32) (res *TaskMsgResult) {
 
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
@@ -521,9 +540,14 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	defer taskActuator.Free()
 
 	var recoverData []byte
+	var realHash []byte
 	expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
+		actuator.Options{
+			Expired: expiredTime,
+			Stage:   actuator.RECOVER_STAGE_CP,
+		},
 		actuator.Options{
 			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
@@ -547,15 +571,24 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
 		}
 
-		data, resID, err := taskActuator.ExecTask(
+		data, resID, srcHash, err := taskActuator.ExecTask(
 			msgData,
 			opts,
 		)
+		realHash = srcHash
+
+		if err != nil{
+			log.Println("[recover_debugtime] ExecTask error:",err.Error())
+		}
+
 		res.ID = resID
+		log.Println("[recover_debugtime] ExecTask end, taskid=",binary.BigEndian.Uint64(resID))
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
 			switch opts.Stage {
+			case 0:
+				statistics.DefaultRebuildCount.IncBackupRbdSucc()
 			case 1:
 				statistics.DefaultRebuildCount.IncRowRbdSucc()
 			case 2:
@@ -582,6 +615,9 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		res.ErrorMsg = fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 		return
+	}else {
+		log.Printf("[recover] success src node id %d hash key %s, real hash key is %s\n",
+			srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
 	}
 
 	res.RES = 0
@@ -610,16 +646,20 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
+			log.Printf("[recover:%s] execCPTask getshard DataHash:\n", base58.Encode(msg.DataHash))
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
-				log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
+				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
 				result.RES = 1
 			} else {
+				log.Printf("[recover:%s] execCPTask success\n", base58.Encode(msg.DataHash))
 				result.RES = 0
+				break
 			}
-			break
+		}else{
+			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
 		}
 	}
 	return &result

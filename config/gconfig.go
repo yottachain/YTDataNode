@@ -50,7 +50,9 @@ type Gcfg struct {
 	TXTestSleep           int
 	NodeListUpdateTime    int
 	GcOpen                bool
-}
+	SliceCompareOpen      bool
+ }
+
 
 func (g Gcfg) IsEqua(ng Gcfg) bool {
 	return reflect.DeepEqual(&g, &ng)
@@ -185,6 +187,7 @@ func NewGConfig() *GConfig {
 			RXTestSleep:           100,
 			TXTestSleep:           100,
 			GcOpen:                true,
+			SliceCompareOpen:      true,
 		},
 		OnUpdate: nil,
 	}
@@ -204,6 +207,9 @@ func init() {
 		}
 		if isDev == "2" {
 			IsDev = 2
+		}
+		if isDev == "3"{
+			IsDev = 3
 		}
 	}
 }

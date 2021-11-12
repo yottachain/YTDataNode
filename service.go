@@ -5,15 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"math/rand"
-	"os"
-	"path"
-	"regexp"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time"
 
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TokenPool"
@@ -21,9 +12,21 @@ import (
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
-	"github.com/yottachain/YTDataNode/slicecompare/verifySlice"
+	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/util"
+	"github.com/yottachain/YTDataNode/verifySlice"
+
+	"log"
+	"math/rand"
+	"os"
+	"path"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/multiformats/go-multiaddr"
@@ -103,6 +106,10 @@ func (sn *storageNode) Service() {
 	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
 	wh = NewWriteHandler(sn)
+	if wh == nil {
+		log.Println("[error] WriteHandler is nil")
+		return
+	}
 
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -112,14 +119,39 @@ func (sn *storageNode) Service() {
 		}
 		return res, nil
 	})
-	// 如果进程没有被禁止写入注册上传处理器
-	if sn.Config().DisableWrite == false {
-		_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-			statistics.AddCounnectCount(head.RemotePeerID)
-			defer statistics.SubCounnectCount(head.RemotePeerID)
-			return wh.Handle(data, head), nil
-		})
-	}
+
+    // 如果进程没有被禁止写入注册上传处理器
+    if sn.Config().DisableWrite == false {
+        _ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+            statistics.AddCounnectCount(head.RemotePeerID)
+            defer statistics.SubCounnectCount(head.RemotePeerID)
+            return wh.Handle(data, head), nil
+        })
+    }
+
+    var slcLock sync.Mutex
+	slc := &slicecompare.SliceComparer{sn,slcLock}
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve compare request!")
+		res, _ := slc.CompareMsgChkHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve get compare status request!")
+		res,err := slc.CompareMsgStatusChkHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+		log.Println("[slicecompare] recieve delete compare_status request!")
+		res,_ := slc.CompareMsgDelfileHdl(data)
+		resp,err := proto.Marshal(&res)
+		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
+	})
+
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
 		log.Printf("[download] get shard request from %s\n request buf %s\n", head.RemotePeerID.Pretty(), hex.EncodeToString(data))
@@ -156,6 +188,7 @@ func (sn *storageNode) Service() {
 	}
 
 	//go rce.Run()
+
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -171,107 +204,25 @@ func (sn *storageNode) Service() {
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcReq
-		var res message.GcResp
 		var resp []byte
-
 		GcW := gc.GcWorker{sn}
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen {
-			res.ErrCode = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errReq"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.ErrCode = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcResp.Bytes(), resp...), err
-		}
-
-		go GcW.GcHandle(msg)
-
-		res.TaskId = msg.TaskId
-		res.ErrCode = "succ"
-		resp, err = proto.Marshal(&res)
+		res, err := GcW.GcMsgChkHdl(data)
+		resp, _ = proto.Marshal(&res)
 
 		return append(message.MsgIDGcResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcStatusReq
-		var res message.GcStatusResp
-		var resp []byte
-
-		res.Dnid = sn.config.IndexID
-		if !config.Gconfig.GcOpen {
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errstatusreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-		}
-
 		GcW := gc.GcWorker{sn}
-		res = GcW.GetGcStatus(msg)
-		resp, err = proto.Marshal(&res)
+		res, _ := GcW.GetGcStatusHdl(data)
+		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.GcdelStatusfileReq
-		var res message.GcdelStatusfileResp
-		var resp []byte
-		res.Dnid = sn.config.IndexID
-
-		if !config.Gconfig.GcOpen {
-			res.Status = "errNotOpenGc"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errdelreq"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
-		if msg.Dnid != sn.config.IndexID {
-			log.Println("[gcdel] message.GcReq error:", err)
-			res.Status = "errNodeid"
-			res.TaskId = "nil"
-			resp, err := proto.Marshal(&res)
-			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-		}
-
 		GcW := gc.GcWorker{sn}
-		res = GcW.GcDelStatusfile(msg)
-		resp, err = proto.Marshal(&res)
+		res,_ := GcW.GcDelStatusFileHdl(data)
+		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 	})
 
@@ -291,11 +242,11 @@ func (sn *storageNode) Service() {
 		return message.MsgIDVoidResponse.Bytes(), err
 	})
 
+	vfs := verifySlice.NewVerifySler(sn)
 	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		var msg message.SelfVerifyReq
 		var res message.SelfVerifyResp
 		if err := proto.Unmarshal(data, &msg); err != nil {
-
 			log.Println("[verify] message.SelfVerifyReq error:", err)
 			res.ErrCode = "100"
 			resp, err := proto.Marshal(&res)
@@ -303,13 +254,33 @@ func (sn *storageNode) Service() {
 		}
 
 		verifynum := msg.Num
-		vfs := verifySlice.VerifySler{sn}
-		result := vfs.VerifySlice(verifynum)
+		startItem := msg.StartItem
+		//vfs := verifySlice.VerifySler{Sn:sn}
+		result := vfs.VerifySlice(verifynum, startItem)
 		resp, err := proto.Marshal(&result)
 		if err != nil {
 			log.Println("[verify] Marshal resp error:", err)
 		}
 		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
+	})
+
+	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyQueryReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		var msg message.SelfVerifyQueryReq
+		var res message.SelfVerifyQueryResp
+		if err := proto.Unmarshal(data, &msg); err != nil {
+			log.Println("[verify] message.SelfVerifyReq error:", err)
+			res.ErrCode = "ErrUnmarshal"
+			//res.ErrCode = "100"
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
+		}
+
+		result := vfs.MissSliceQuery(msg.Key)
+		resp, err := proto.Marshal(&result)
+		if err != nil {
+			log.Println("[debug]", err)
+		}
+		return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
 	})
 
 	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
@@ -383,11 +354,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.UsedSpace = sn.YTFS().Len()
 	msg.RealSpace = uint32(sn.YTFS().Len())
 	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
-
-	//mi := util.MinerInfo{ID: uint64(msg.Id)}
-	//if mi.IsNoSpace(msg.UsedSpace) {
-	//	TokenPool.Utp().Stop()
-	//}
 
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
@@ -486,7 +452,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 			case -12:
 				log.Printf("采购空间出错\n")
 			}
-
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
 		if resMsg.RelayUrl != "" {

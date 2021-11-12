@@ -4,6 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+    "github.com/yottachain/YTDataNode/diskHash"
+
+    //<<<<<<< HEAD
+//=======
+//	"github.com/yottachain/YTDataNode/cmd/update"
+//	"github.com/yottachain/YTDataNode/diskHash"
+//	ytfs "github.com/yottachain/YTFS"
+//>>>>>>> release_rcvcp
 	"io"
 	"net/http"
 	"os/signal"
@@ -18,9 +26,13 @@ import (
 	"os"
 	"os/exec"
 	"time"
+//<<<<<<< HEAD
 
 	log "github.com/yottachain/YTDataNode/logger"
 
+//=======
+//	comm "github.com/yottachain/YTFS/common"
+//>>>>>>> release_rcvcp
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
@@ -30,10 +42,27 @@ import (
 
 // Init 初始化
 func Init() error {
+//<<<<<<< HEAD
 	cfg := config.NewConfig()
 	cfg.Save()
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options,cfg.IndexID)
+	//yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options,cfg.IndexID)
+//=======
+//	fmt.Println("[init] node Init")
+//	var cfg *config.Config
+//	if  !CfgFileExist(){
+//		cfg = config.NewConfig()
+//		cfg.Save()
+//	}else {
+//		var err error
+//		cfg, err = config.ReadConfig()
+//		if err != nil {
+//			fmt.Println("[init] InitBySignleStorage error:", err.Error())
+//			return err
+//		}
+//	}
+//>>>>>>> release_rcvcp
 
+	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 	if err != nil {
 		return err
 	}
@@ -41,16 +70,114 @@ func Init() error {
 	return nil
 }
 
+//<<<<<<< HEAD
 func InitBySignleStorage(size uint64, m uint32) *config.Config {
-	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
-	// cfg.Save()
-	// yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
-	// if err != nil {
-	// 	return nil
-	// }
-	// defer yt.Close()
-	return cfg
+    cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
+    // cfg.Save()
+    // yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
+    // if err != nil {
+    // 	return nil
+    // }
+    // defer yt.Close()
+    yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+    if err != nil {
+        return nil
+    }
+    l := yt.PosIdx()
+    if l < 5 {
+        log.Println("[diskHash] ytfs_len:",l)
+        err := diskHash.RandWrite(yt, uint(l))
+        if err != nil {
+            log.Println("[diskHash] randWrite to ytfs error:", err)
+            //return fmt.Errorf("write ytfs checkData error")
+            return nil
+        }
+    }
+    //defer yt.Close()
+    fmt.Println("YTFS init success")
+    //return nil
+    return cfg
 }
+//=======
+//func CfgFileExist() bool {
+//	cfgPath := util.GetConfigPath()
+//	bl, _ := util.PathExists(cfgPath)
+//	return bl
+//}
+//
+//func Check2Orders(num uint32) bool{
+//	var ret = false
+//	var order = uint32(1)
+//	for {
+//		if num == (1<<order){
+//			ret = true
+//			break
+//		}
+//
+//		if order > 32 {
+//			break
+//		}
+//
+//		order++
+//	}
+//
+//	return ret
+//}
+//
+//func InitBySignleStorage(size uint64, n uint32, db string, stortype comm.StorageType, devname string) error {
+//	fmt.Println("[init]node InitBySignleStorage")
+//	var cfg *config.Config
+//
+//	//cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, mc))
+//	if !CfgFileExist(){
+//		cfg = config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, n, db, stortype, devname))
+//		if cfg == nil{
+//			err := fmt.Errorf("cfg is nil")
+//			fmt.Println("[error] ",err.Error())
+//			return err
+//		}
+//		cfg.Save()
+//	}else{
+//		var err error
+//		cfg, err = config.ReadConfig()
+//		if err != nil{
+//			fmt.Println("[init] InitBySignleStorage error:",err.Error())
+//			return err
+//		}
+//	}
+//
+//	if !cfg.Options.UseKvDb {
+//		if cfg.Options.IndexTableCols > 2048 || cfg.Options.IndexTableCols < 512{
+//			err := fmt.Errorf("IndexTableCols(M) not suitable, M=",cfg.Options.IndexTableCols)
+//			fmt.Println("[error] ",err.Error())
+//			return err
+//		}
+//
+//		if !Check2Orders(cfg.Options.IndexTableRows){
+//			err := fmt.Errorf("IndexTableRows(N) not suitable")
+//			fmt.Println("[error] ",err.Error())
+//			return err
+//		}
+//	}
+
+//	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+//	if err != nil {
+//		return err
+//	}
+//	l := yt.PosIdx()
+//	if l < 5 {
+//		log.Println("[diskHash] ytfs_len:",l)
+//		err := diskHash.RandWrite(yt, uint(l))
+//		if err != nil {
+//			log.Println("[diskHash] randWrite to ytfs error:", err)
+//			return fmt.Errorf("write ytfs checkData error")
+//		}
+//	}
+//	//defer yt.Close()
+//	fmt.Println("YTFS init success")
+//	return nil
+//>>>>>>> release_rcvcp
+//}
 
 // NewID 创建新的id
 func NewID() (string, int) {
@@ -81,6 +208,11 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
+	if nil == sn {
+		log.Println("[init] GetStorageNode error: sn is nil")
+		return
+	}
+
 	log.Println("YTFS daemon success:", sn.Config().Version())
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())

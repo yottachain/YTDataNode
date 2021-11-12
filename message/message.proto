@@ -38,6 +38,66 @@ message UploadShardResponse  {
 message UploadShard2CResponse {
    int32 RES= 1;
    string DNSIGN =2;
+   uint64 seq =3;
+}
+
+
+//用于sn发送对账列表
+//seq：哈希对应的序列号
+//hash：对账用哈希
+message SeqToHash{
+    uint64 Seq=1;
+    bytes Hash=2;
+}
+
+//msgid = 0x1818   矿机对账请求
+//endseq: 本次对账的结束序列号
+//nodeid：矿机id
+message SliceCompareReq{
+    string  TaskId =1;
+    uint64  StartSeq =2;
+    uint64  EndSeq =3;
+    uint32  NodeId =4;
+    repeated  SeqToHash CpList =5;
+}
+
+//msgid = 0x1819   矿机对账请求
+message SliceCompareResp{
+    string TaskId =1;
+    uint32 NodeId =2;
+    string ErrCode =3;
+}
+
+//msgid = 0x1820
+message SliceCompareStatusReq{
+    string TaskId =1;
+    uint32 NodeId =2;
+}
+
+//msgid = 0x1821
+message SliceCompareStatusResp{
+   string  TaskId =1;
+   uint64  StartSeq =2;
+   uint64  EndSeq =3;
+   uint32  NodeId =4;
+   string  ErrCode =5;
+   uint32  DnMissNum =6;
+   uint32  SnMissNum =7;
+   uint32  CompareNum =8;
+   repeated bytes DnMissList =9;
+}
+
+//MessageID:0x1822
+message CpDelStatusfileReq{
+    string  TaskId=1;
+    uint32  NodeId=2;
+}
+
+//MessageID:0x1823
+message CpDelStatusfileResp{
+    string  TaskId=1;
+    uint32  NodeId=2;
+    string  ErrCode=3;
 }
 
 message DownloadShardRequest {
@@ -56,7 +116,6 @@ message NodeRegReq {
     repeated string addrs=4;     
     bool relay=5;
 }
-
 
 message NodeRegResp {                        
     uint32 id= 1;                                    
@@ -126,6 +185,7 @@ message TaskDescription{
     repeated P2PLocation locations=3;
     int32 parityShardCount=4;
     int32 recoverId=5;
+    P2PLocation backupLocation=6;
 }
 
 //id:任务ID,在上报重建结果(TaskOpResult)时,传入
@@ -203,12 +263,28 @@ message ListDNIResp{
     string nextid= 2;
 }
 
+//msgid=0xd97b
+message SelfVerifyQueryReq{
+    string Key =1;
+}
+
+//msgid=0x58b8
+message SelfVerifyQueryResp{
+    string Key =1;
+    uint32 BatchNum =2;
+    string Date=3;
+    string ErrCode =4;
+}
+
 //  本次需要校验的条数
 //msgid = 0xd97a
 message SelfVerifyReq{
     string  Num =1;
+    string  StartItem =2;
 }
 
+// DBhash：数据库中数据分片的hash
+// Datahash ：计算出来的数据分片hash
 message HashToHash{
     bytes DBhash=1;
     bytes Datahash=2;
@@ -220,6 +296,8 @@ message HashToHash{
 //errNum:校验出错的分片数
 //errCode:错误类型码
 //errShard:错误的分片列表
+//verBatch:自检的批次
+//vrfTime :自检的时间
 //msgid = 0x58b7
 message SelfVerifyResp{
     string  id =1;
@@ -227,7 +305,9 @@ message SelfVerifyResp{
     string  Num =3;
     string  errNum =4;
     string  errCode =5;
-    repeated HashToHash errShard =6;
+    string  vrfBatch =6;
+    string  vrfTime  =7;
+    repeated HashToHash errShard =8;
 }
 
 //MessageID:0xe87a

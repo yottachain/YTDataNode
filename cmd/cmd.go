@@ -17,10 +17,14 @@ import (
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/commander"
 	log "github.com/yottachain/YTDataNode/logger"
+	//comm "github.com/yottachain/YTFS/common"
 )
 
 var size uint64
 var mc uint32
+var db string
+var stortype uint32
+var devname  string
 var isDaemon bool = false
 
 var daemonCmd = &cobra.Command{
@@ -61,6 +65,23 @@ var startCmd = &cobra.Command{
 	},
 }
 
+//<<<<<<< HEAD
+//=======
+//var initCmd = &cobra.Command{
+//	Use:   "init",
+//	Short: "Init YTFS storage node",
+//	Run: func(cmd *cobra.Command, args []string) {
+//		stype := comm.StorageType(stortype)
+//		err := commander.InitBySignleStorage(size, 1<<mc, db, stype, devname)
+//		if err != nil {
+//			log.Println("YTFS init failed")
+//		}else{
+//			log.Println("YTFS init success")
+//		}
+//	},
+//}
+//
+//>>>>>>> release_rcvcp
 //var version = &cobra.Command{
 //	Use:   "version",
 //	Short: "ytfs-node version",
@@ -94,10 +115,23 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
+	//defer func() {
+	//	err := recover()
+	//	if err != nil {
+	//		log.Println("Error:", err)
+	//	}
+	//}()
+
+	//initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
+	//initCmd.Flags().Uint32VarP(&mc, "order", "k", 14, "N = (1<<k), 其中k的值（8-20）")
+	//initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
+	//initCmd.Flags().Uint32VarP(&stortype,"type","t",0,"选择存储类型,0-文件(默认),1-块设备")
+	//initCmd.Flags().StringVarP(&devname,"name","n","storage","存储设备的名称:storage(默认)")
+
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%s", "1.0.15k"),
+		Version: fmt.Sprintf("%s", "1.0.15n"),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(daemonCmd)

@@ -37,5 +37,5 @@ func (twq *TaskWaitQueue) GetTask() *Task {
 }
 
 func NewTaskWaitQueue() *TaskWaitQueue {
-	return &TaskWaitQueue{mq.NewBaseMessageQueue(1), 2000}
+	return &TaskWaitQueue{mq.NewBaseMessageQueue(1), 10000}
 }

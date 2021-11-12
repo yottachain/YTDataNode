@@ -33,6 +33,7 @@ type RebuildCount struct {
 	sucessConn         uint64
 	successToken       uint64
 	shardforRebuild    uint64
+	backupRebuildSucc  uint64
 	rowRebuildSucc     uint64
 	columnRebuildSucc  uint64
 	globalRebuildSucc  uint64
@@ -68,6 +69,10 @@ func (rc *RebuildCount) IncColRbdSucc() {
 
 func (rc *RebuildCount) IncRowRbdSucc() {
 	atomic.AddUint64(&rc.rowRebuildSucc, 1)
+}
+
+func (rc *RebuildCount) IncBackupRbdSucc() {
+	atomic.AddUint64(&rc.backupRebuildSucc, 1)
 }
 
 func (rc *RebuildCount) IncPreRbdSucc() {
@@ -202,8 +207,8 @@ func (rc *RebuildCount) GetStat() *RecoverStat {
 		rc.concurrenGetShard,
 		rc.successRebuild,
 		rc.failRebuild,
-		rc.getShardWkCnt,
 		rc.reportTask,
+		rc.getShardWkCnt,
 		rc.failDecodeTaskID,
 		rc.successShard,
 		rc.failShard,
@@ -215,6 +220,7 @@ func (rc *RebuildCount) GetStat() *RecoverStat {
 		rc.sucessConn,
 		rc.successToken,
 		rc.shardforRebuild,
+		rc.backupRebuildSucc,
 		rc.rowRebuildSucc,
 		rc.columnRebuildSucc,
 		rc.globalRebuildSucc,

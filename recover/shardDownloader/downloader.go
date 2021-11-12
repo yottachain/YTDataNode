@@ -6,9 +6,12 @@ package shardDownloader
 
 import (
 	"context"
+	//"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
+	"github.com/mr-tron/base58"
+	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTHost/client"
@@ -60,30 +63,34 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	defer statistics.DefaultRebuildCount.DecConShard()
 
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
+	log.Println("[recover_debugtime]  E2_2_0_0 requestShard GetByAddrString nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+
 	if err != nil {
 		statistics.DefaultRebuildCount.IncFailConn()
 		return nil, err
 	}
 	// 连接成功计数
 	statistics.DefaultRebuildCount.IncSuccConn()
-	statistics.DefaultRebuildCount.IncSendTokReq()
-	tkString, err := d.GetToken(ctx, clt)
-	if err != nil {
-		statistics.DefaultRebuildCount.IncFailToken()
-		return nil, err
-	}
-	// 获取分片token成功计数
-	statistics.DefaultRebuildCount.IncSuccToken()
+	//statistics.DefaultRebuildCount.IncSendTokReq()
+	//tkString, err := d.GetToken(ctx, clt)
+	//if err != nil {
+	//	statistics.DefaultRebuildCount.IncFailToken()
+	//	return nil, err
+	//}
+	//// 获取分片token成功计数
+	//statistics.DefaultRebuildCount.IncSuccToken()
 
 	var msg message.DownloadShardRequest
 	msg.VHF = shardID
-	msg.AllocId = tkString
+	//msg.AllocId = tkString
 	buf, err := proto.Marshal(&msg)
 	if err != nil {
 		return nil, err
 	}
 
 	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	log.Println("[recover_debugtime]  E2_2_0_1 requestShard SendMsgClose nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "Get data Slice fail") {
 			statistics.DefaultRebuildCount.IncFailShard()
@@ -113,6 +120,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	if err != nil {
 		return nil, err
 	}
+	log.Println("[recover_debugtime]  E2_2_0_1 requestShard Unmarshal nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
 
 	// 获取分片成功计数
 	statistics.DefaultRebuildCount.IncSuccShard()
@@ -169,6 +177,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
+		log.Println("[recover_debugtime]  E2_2_0 requestShard  nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
 			errChan <- err
