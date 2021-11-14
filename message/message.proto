@@ -141,6 +141,7 @@ message StatusRepReq {
     string Other=15;
     string hash=16;
     uint64 allocSpace=17;
+    uint32 AvailableSpace=18;
 }
 
 message StatusRepResp {

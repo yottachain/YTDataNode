@@ -355,6 +355,10 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.RealSpace = uint32(sn.YTFS().Len())
 	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
 
+	//这个不要实时计算后续改成定时计算,然后上报的时候取结果
+	msg.AvailableSpace = capProof.GetCapProofSpace(sn.YTFS())
+	log.Printf("[cap proof] AvailableSpace %d\n", msg.AvailableSpace)
+
 	msg.Relay = sn.config.Relay
 	msg.Version = sn.config.Version()
 	msg.Rx = GetXX("R")
@@ -372,7 +376,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	statistics.DefaultStat.UseKvDb = sn.config.UseKvDb
 	statistics.DefaultStat.RXTokenFillRate = TokenPool.Utp().GetTFillTKSpeed()
 	if int(statistics.DefaultStat.RXTokenFillRate) > config.Gconfig.MaxToken {
-		statistics.DefaultStat.RXTokenFillRate = 100
+		statistics.DefaultStat.RXTokenFillRate = time.Duration(config.Gconfig.MaxToken)
 	}
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
