@@ -207,7 +207,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 	}
 	return nil
 }
-func RunRX(RxCtl chan struct{}) {
+func RunTX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
 	var execChan *chan struct{}
@@ -217,49 +217,59 @@ func RunRX(RxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randUpload] success", successCount, "error", errorCount, "exec", len(*execChan), "count", count)
+			log.Println("[randUpload] success", successCount, "error",
+				errorCount, "exec", len(*execChan), "count", count)
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
+	//to local node, upload be equal to use download token
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
+				float64(config.Gconfig.RXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.RXTestNum))))
-			execChan = &c
+			//log.Printf("[randUpload] test num1 %d test num2 %d\n", TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			<-time.After(5 * time.Minute)
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
+						float64(config.Gconfig.RXTestNum))))
+			//log.Println("[randUpload] chan cap:", cap(c))
+			execChan = &c
 		}
 	}()
 
 	times := uint64(0)
 	// rx
 	for {
-		<- RxCtl
-		times++
+		<- TxCtl
 		if times % 2000 == 0{
-			log.Println("[randDownload] RunRX start nowtime:",time.Now())
+			log.Println("[randUpload] RunTX start nowtime:",time.Now())
 		}
+		times++
+		//log.Printf("[randUpload] times1 is %d\n", times)
 
 		if stop {
-			//log.Println("[randDownload] RunRX stop nowtime:",time.Now())
+			log.Println("[randUpload] RunTX stop nowtime:",time.Now())
 			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
+			//log.Println("[randUpload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		ec <- struct{}{}
+		//log.Println("[randUpload] chan--- cap:", cap(ec))
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
 			}()
 
-			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			ctx, cancle := context.WithTimeout(context.Background(),
+								time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
+			//log.Println("[randUpload] start")
 			err := UploadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
@@ -267,31 +277,39 @@ func RunRX(RxCtl chan struct{}) {
 			} else if err == nil {
 				atomic.AddUint64(&successCount, 1)
 			}
-
 		}(ec)
+		ec <- struct{}{}
+		//log.Printf("[randUpload] times2 is %d\n", times)
 		<-time.After(time.Millisecond * time.Duration(config.Gconfig.RXTestSleep))
 	}
 }
 
-func RunTX(TxCtl chan struct{}) {
+func RunRX(RxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
+	var count uint64
 	var execChan *chan struct{}
 	rand.Seed(int64(os.Getpid()) + time.Now().Unix())
 
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount, "error", errorCount, "exec", len(*execChan))
+			log.Println("[randDownload] success", successCount,
+					"error", errorCount, "exec", len(*execChan), "count", count)
 		}
 	}()
 
-	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
+	//to local node, download be equal to use upload token
+	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
-			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4, float64(config.Gconfig.TXTestNum))))
+			//log.Printf("[randDownload] test num1 %d test num2 %d\n", TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
+			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
+								float64(config.Gconfig.TXTestNum))))
+			//log.Println("[randDownload] chan cap:", cap(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
 		}
@@ -300,28 +318,32 @@ func RunTX(TxCtl chan struct{}) {
 	times := uint64(0)
 	// tx
 	for {
-		<- TxCtl
+		<- RxCtl
 		times++
 		if times % 2000 == 0{
-			log.Println("[randDownload] RunTX start nowtime:",time.Now())
+			log.Println("[randDownload] RunRX start nowtime:",time.Now())
 		}
 		if stop {
 			<-time.After(time.Minute * 60)
 			continue
 		}
 		if execChan == nil {
+			//log.Println("[randDownload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		ec <- struct{}{}
+		//log.Println("[randDownload] chan--- cap:", cap(ec))
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
 			}()
 
-			ctx, cancle := context.WithTimeout(context.Background(), time.Second*time.Duration(config.Gconfig.TTL))
+			ctx, cancle := context.WithTimeout(context.Background(),
+								time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
+			atomic.AddUint64(&count, 1)
+			//log.Println("[randDownload] start")
 			err := DownloadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
@@ -331,6 +353,7 @@ func RunTX(TxCtl chan struct{}) {
 			}
 
 		}(ec)
+		ec <- struct{}{}
 		<-time.After(time.Millisecond * time.Duration(config.Gconfig.TXTestSleep))
 	}
 }
@@ -338,21 +361,33 @@ func RunTX(TxCtl chan struct{}) {
 func Run() {
 	RxCtl := make(chan struct{})
 	TxCtl := make(chan struct{})
-	go RunCtl(RxCtl,TxCtl)
+	go RunCtl(RxCtl, TxCtl)
 	go RunRX(RxCtl)
 	go RunTX(TxCtl)
 }
 
-func RunCtl( RxCtl, TxCtl chan struct{}){
+func RunCtl(RxCtl, TxCtl chan struct{}){
 	for{
 		start := time.Now()
-		for{
-			RxCtl <- struct{}{}
-			TxCtl <- struct{}{}
-			if time.Now().Sub(start).Seconds() >= 3600{
-				break
+		go func() {
+			for{
+				RxCtl <- struct{}{}
+				if time.Now().Sub(start).Seconds() >= 3600 {
+					log.Println("[randUpDownload] stop")
+					break
+				}
 			}
-		}
+		}()
+
+		go func() {
+			for{
+				TxCtl <- struct{}{}
+				if time.Now().Sub(start).Seconds() >= 3600 {
+					log.Println("[randUpDownload] stop")
+					break
+				}
+			}
+		}()
 		<-time.After(time.Hour * 11)
 	}
 }
