@@ -220,7 +220,7 @@ func (L *LRCTaskActuator) downloadLoop(ctx context.Context) error {
 	var errCount uint64
 
 start:
-	if errCount > 30 {
+	if errCount > 2 {
 		return nil
 	}
 	errCount++
