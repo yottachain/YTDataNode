@@ -71,8 +71,14 @@ func Init() error {
 }
 
 //<<<<<<< HEAD
-func InitBySignleStorage(size uint64, m uint32) *config.Config {
+func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string ) *config.Config {
     cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
+	if isBlock {
+		cfg.Storages[0].StorageType = 1
+	}
+	if devPath != "" {
+		cfg.Storages[0].StorageName = devPath
+	}
     // cfg.Save()
     // yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options)
     // if err != nil {
