@@ -440,6 +440,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		if resMsg.ProductiveSpace >= 0 {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 			diskHash.CopyHead()
+			disableReport = false
 		} else {
 			log.Printf("report error %d\n", resMsg.ProductiveSpace)
 			switch resMsg.ProductiveSpace {
