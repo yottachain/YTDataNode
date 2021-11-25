@@ -534,6 +534,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
+
 	res.ExpriedTime = expired
 	res.RES = 1
 	taskActuator := actuator.New(re.DefaultDownloader)
