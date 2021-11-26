@@ -149,7 +149,7 @@ func newCfg(form *RegForm) (*config.Config, error) {
 		M = form.M
 	}
 
-	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M,form.ISBlockDev, form.StoragePath )
+	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M, form.ISBlockDev, form.StoragePath )
 
 	cfg.Save()
 

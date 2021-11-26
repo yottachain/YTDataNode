@@ -65,31 +65,6 @@ var startCmd = &cobra.Command{
 	},
 }
 
-//<<<<<<< HEAD
-//=======
-//var initCmd = &cobra.Command{
-//	Use:   "init",
-//	Short: "Init YTFS storage node",
-//	Run: func(cmd *cobra.Command, args []string) {
-//		stype := comm.StorageType(stortype)
-//		err := commander.InitBySignleStorage(size, 1<<mc, db, stype, devname)
-//		if err != nil {
-//			log.Println("YTFS init failed")
-//		}else{
-//			log.Println("YTFS init success")
-//		}
-//	},
-//}
-//
-//>>>>>>> release_rcvcp
-//var version = &cobra.Command{
-//	Use:   "version",
-//	Short: "ytfs-node version",
-//	Run: func(cmd *cobra.Command, args []string) {
-//		log.Printf("ytfs-node version:%d\n", config.Version())
-//	},
-//}
-
 var logCmd = &cobra.Command{
 	Use:   "log",
 	Short: "log print",
@@ -115,13 +90,6 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
-	//defer func() {
-	//	err := recover()
-	//	if err != nil {
-	//		log.Println("Error:", err)
-	//	}
-	//}()
-
 	//initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	//initCmd.Flags().Uint32VarP(&mc, "order", "k", 14, "N = (1<<k), 其中k的值（8-20）")
 	//initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
