@@ -177,14 +177,6 @@ func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, erro
 
 // NewStorageNode 创建存储节点
 func NewStorageNode(cfg *config.Config) (StorageNode, error) {
-	// pkbytes, err := base58.Decode(pkstring)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Bad private key string")
-	// }
-	// pk, err := ci.UnmarshalSecp256k1PrivateKey(pkbytes[1:33])
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Bad format of private key")
-	// }
 
 	sn := &storageNode{}
 	sn.config = cfg
@@ -195,7 +187,6 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 		time.Second * 10,
 		sn,
 	}
-	// h, err := host.NewHost(host.ListenAddrStrings("/ip4/0.0.0.0/tcp/9001"), pk)
 
 	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
 	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.Version(int32(cfg.Version())))
@@ -205,10 +196,6 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.host = hst
 
 	yp := util.GetYTFSPath()
-//<<<<<<< HEAD
-//=======
-//	log.Println("storage-node  GetYTFSPath:",yp)
-//>>>>>>> release_rcvcp
 	ys, err := ytfs.Open(yp, cfg.Options, cfg.IndexID)
 	if err != nil {
 		log.Println(err.Error())
