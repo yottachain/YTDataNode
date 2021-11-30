@@ -3,16 +3,15 @@ package recover
 import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/statistics"
-	"time"
 	//"sync"
 )
 
 var totalCap int32 = 50
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 
-func (re *Engine) doRequest(task *Task, pkgstart time.Time) {
+func (re *Engine) doRequest(task *Task) {
 	statistics.DefaultRebuildCount.IncConTask()
-	re.dispatchTask(task, pkgstart)
+	re.dispatchTask(task)
 	statistics.DefaultRebuildCount.DecConTask()
 	statistics.RunningCount.Remove()
 }
@@ -22,8 +21,6 @@ func (re *Engine) processRequests() {
 	var  n  uint64
 	var  m  uint64
 	for{
-		startTsk := time.Now()
-
 		for {
 			requestT := re.waitQueue.GetTask()
 			k++
@@ -40,7 +37,7 @@ func (re *Engine) processRequests() {
 			if n % 100 == 0 {
 				log.Println("[recover] k= ",k," n=", n, " processRequests:",requestT)
 			}
-			go re.doRequest(requestT, startTsk)
+			go re.doRequest(requestT)
 		}
 	}
 }

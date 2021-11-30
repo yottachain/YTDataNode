@@ -283,7 +283,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
  */
 
 var tskcnt uint64
-func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
+func (re *Engine) dispatchTask(ts *Task) {
 	var msgID uint16
 	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
 	var res *TaskMsgResult
@@ -297,7 +297,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 	case message.MsgIDLRCTaskDescription.Value():
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
 		log.Println("[recover] execLRCTask, msgId:", msgID)
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, pkgstart, ts.TaskLife, ts.SrcNodeID)
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
 		if res.ErrorMsg != nil {
 			log.Println("[recover] error:", res.ErrorMsg,)
 			res.RES = 1
@@ -534,7 +534,7 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @param tasklife 任务存活周期
  * @return *TaskMsgResult 任务执行结果
  */
-func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
+func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time,
 			taskLife int32, srcNodeid int32) (res *TaskMsgResult) {
 
 	// @TODO 初始化返回
@@ -550,19 +550,19 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 	expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
-		actuator.Options{
+		{
 			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_CP,
 		},
-		actuator.Options{
+		{
 			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
-		actuator.Options{
+		{
 			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_COL,
 		},
-		actuator.Options{
+		{
 			Expired: expiredTime,
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
@@ -575,6 +575,11 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, pkgStart time.Time,
 			atomic.AddUint64(&statistics.DefaultRebuildCount.ColRebuildCount, 1)
 		case 3:
 			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
+		}
+
+		if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
+			res.ErrorMsg = fmt.Errorf("rebuild task time out")
+			return
 		}
 
 		data, resID, srcHash, err := taskActuator.ExecTask(

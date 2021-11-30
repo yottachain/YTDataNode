@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/mq"
 	"log"
+	"time"
 )
 
 type TaskWaitQueue struct {
@@ -18,6 +19,7 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNod
 		ExpriedTime: expried,
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
+		StartTime:   time.Now(),
 	}
 
 	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)
