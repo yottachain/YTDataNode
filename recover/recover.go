@@ -648,11 +648,18 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
 		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
+		hashBytes := md5.Sum(shard)
+		hash := hashBytes[:]
+		var key [common.HashLength]byte
+		copy(key[:], hash)
+
 		// 如果没有发生错误，分片下载成功，就存储分片
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			log.Printf("[recover:%s] execCPTask getshard DataHash:\n", base58.Encode(msg.DataHash))
+			log.Printf("[recover:%s] execCPTask srcHash %s getshard DataHash %s\n",
+				base58.Encode(msg.DataHash), base58.Encode(key[:]))
+
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
