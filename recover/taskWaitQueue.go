@@ -3,6 +3,7 @@ package recover
 import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/mq"
+	"log"
 )
 
 type TaskWaitQueue struct {
@@ -18,6 +19,9 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNod
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
 	}
+
+	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)
+
 	if twq.BaseMessageQueue.Len() > twq.Max {
 		return fmt.Errorf("task queue full")
 	}
