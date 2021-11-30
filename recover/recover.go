@@ -252,16 +252,21 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	if err := proto.Unmarshal(msgData, &mtdMsg); err != nil {
 		return err
 	}
+
+	//要先判断一下队列的剩余长度是否能容纳当前任务不能话不接收，返回错误
+	queueLen := re.waitQueue.Len()
+	if re.waitQueue.Max - queueLen < len(mtdMsg.Tasklist) {
+		log.Printf("[recover] queue space is not enough, max len is %d, " +
+			"current len is %d, tasks is %d\n",
+			re.waitQueue.Max, queueLen, len(mtdMsg.Tasklist))
+		return fmt.Errorf("queue space is not enough\n")
+	}
+
 	for _, task := range mtdMsg.Tasklist {
 		bys := task[12:14]
 		bytebuff := bytes.NewBuffer(bys)
 		var snID uint16
 		binary.Read(bytebuff, binary.BigEndian, &snID)
-
-		// 如果大于过期时间跳过
-		//if time.Now().Unix() > mtdMsg.ExpiredTime {
-		//	continue
-		//}
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
@@ -285,7 +290,7 @@ func (re *Engine) dispatchTask(ts *Task, pkgstart time.Time) {
 
 	tskcnt++
 	if tskcnt % 100 == 0{
-		log.Println("[recover] dispatchTask, msgId:", msgID,"taskdata=", ts.Data)
+		log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
 	}
 
 	switch int32(msgID) {

@@ -188,8 +188,6 @@ func (sn *storageNode) Service() {
 		log.Printf("[recover]init error %s\n", err.Error())
 	}
 
-	//go rce.Run()
-
 	go rcv.RunPool()
 
 	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
