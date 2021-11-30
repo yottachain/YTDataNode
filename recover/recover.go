@@ -657,7 +657,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			log.Printf("[recover:%s] execCPTask srcHash %s getshard DataHash %s\n",
+			log.Printf("[recover:%s] execCPTask, getshard DataHash %s\n",
 				base58.Encode(msg.DataHash), base58.Encode(key[:]))
 
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
