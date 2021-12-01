@@ -125,7 +125,40 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 }
 
 func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
-	return nil, nil //refer to getShard
+
+	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
+	if err != nil {
+		log.Println("[recover][debug] getShardcnn  err=", err)
+		return nil, err
+	}
+
+	var msg message.DownloadShardRequest
+	msg.VHF = hash
+
+	buf, err := proto.Marshal(&msg)
+	if err != nil {
+		return nil, err
+	}
+	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "Get data Slice fail") {
+			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		} else {
+			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n",  base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		}
+		return nil, err
+	}
+
+	if len(shardBuf) < 3 {
+		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n",taskID, base64.StdEncoding.EncodeToString(hash), *n, addrs)
+		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
+	}
+	return shardBuf, err
+
 }
 
 func NewElkClient(tbstr string) *YTElkProducer.Client {
