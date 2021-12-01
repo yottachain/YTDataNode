@@ -12,14 +12,15 @@ type TaskWaitQueue struct {
 	Max int
 }
 
-func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64, srcNodeId int32, tasklife int32) error {
+func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64,
+		srcNodeId int32, tasklife int32, start time.Time) error {
 	t := &Task{
 		SnID:        snid,
 		Data:        task,
 		ExpriedTime: expried,
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
-		StartTime:   time.Now(),
+		StartTime:   start,
 	}
 
 	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)

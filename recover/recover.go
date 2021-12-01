@@ -268,7 +268,8 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		var snID uint16
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 
-		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime, mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap); err != nil {
+		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
+				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now()); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
