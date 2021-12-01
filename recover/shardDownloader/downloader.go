@@ -88,7 +88,8 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 		return nil, err
 	}
 
-	resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	//resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
+	resBuf, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	log.Println("[recover_debugtime]  E2_2_0_1 requestShard SendMsgClose nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
 
 	if err != nil {
@@ -174,7 +175,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 			<-d.q
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)

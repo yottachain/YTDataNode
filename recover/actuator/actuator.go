@@ -1,8 +1,6 @@
 package actuator
 
-import (
-	"time"
-)
+import "time"
 
 /**
  * @Description: 重建恢复类型
@@ -17,7 +15,9 @@ const (
 )
 
 type Options struct {
-	Expired time.Time    // 超时时间
+	//Expired time.Time    // 超时时间
+	Expired int32    // 超时时间
+	STime 	time.Time	//开始时间
 	Stage   RecoverStage // 重建阶段 0. 行 1. 列 2. 全局
 }
 

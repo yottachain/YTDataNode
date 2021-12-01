@@ -19,7 +19,6 @@ import (
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
-	"strings"
 	"sync"
 	"time"
 )
@@ -146,7 +145,6 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
  * @param indexes 下载任务分片索引
  */
 func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int16) (*sync.WaitGroup, error) {
-
 	log.Println("[recover_debugtime] addDownloadTask start taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	wg := &sync.WaitGroup{}
@@ -154,10 +152,10 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 	// @TODO 循环添加下载任务
 	for _, shardIndex := range indexes {
 		// 中断循环开关
-		var brk = false
-		if brk {
-			break
-		}
+		//var brk = false
+		//if brk {
+		//	break
+		//}
 
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
@@ -173,7 +171,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		log.Println("[recover_debugtime]  E2_1  end addDownloadTask_addTask taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
 
 		// @TODO 异步等待下载任务执行完成
-		func(key []byte, d shardDownloader.DownloaderWait, index int16) {
+		go func(key []byte, d shardDownloader.DownloaderWait, index int16) {
 			defer wg.Done()
 			log.Println("[recover_debugtime] start download goroutine in addDownloadTask  taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
@@ -183,8 +181,11 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash),"error:",err)
 
 			// @TODO 如果因为分片不存在导致错误，直接中断
-			if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
-				brk = true
+			//if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
+			//	brk = true
+			//}
+			if err != nil {
+				return
 			}
 
 			L.shards.Set(hex.EncodeToString(key), &Shard{
@@ -221,8 +222,10 @@ func (L *LRCTaskActuator) checkNeedShardsExist() (ok bool) {
  */
 func (L *LRCTaskActuator) downloadLoop(ctx context.Context) error {
 	var errCount uint64
-
 start:
+	if L.isTimeOut() {
+		return fmt.Errorf("lrc task time out")
+	}
 	if errCount > 2 {
 		return nil
 	}
@@ -234,11 +237,13 @@ start:
 		return fmt.Errorf("download loop time out")
 	default:
 		needShardIndexes, err := L.getNeedShardList()
-		log.Println("[recover_debugtime] E1 getNeedShardList taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		log.Println("[recover_debugtime] E1 getNeedShardList taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 
 		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
-		downloadTask, err := L.addDownloadTask(time.Minute*5, needShardIndexes...)
-		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		downloadTask, err := L.addDownloadTask(time.Minute*1, needShardIndexes...)
+		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 		if err != nil {
 			return err
 		}
@@ -266,6 +271,9 @@ start:
  * @return ok
  */
 func (L *LRCTaskActuator) preJudge() (ok bool) {
+	if L.isTimeOut() {
+		return false
+	}
 
 	indexes, err := L.getNeedShardList()
 	if err != nil {
@@ -301,35 +309,48 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 }
 
 func (L *LRCTaskActuator) backupTask() ([]byte, error) {
+	if L.isTimeOut() {
+		return nil, fmt.Errorf("task lrc backup timeout")
+	}
+
 	if L.msg.BackupLocation == nil {
 		return nil, fmt.Errorf("no backup")
 	}
 
-	log.Println("[recover_debugtime] B0  backupTask taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]))
+	log.Println("[recover_debugtime] B0  backupTask taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
 	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
 		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 	}
-	log.Println("[recover_debugtime] B1  HasNodeid taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]))
+	log.Println("[recover_debugtime] B1  HasNodeid taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	for i := 0; i < 5; i++ {
-		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId, L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
+		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId,
+						L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
 		if err != nil {
 			return nil, err
 		}
-		log.Println("[recover_debugtime] B2  addtask taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"i=",i,"hashid=",base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		log.Println("[recover_debugtime] B2  addtask taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"i=",i,"hashid=",
+			base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 		defer cancel()
 		data, err := dw.Get(ctx)
-		log.Println("[recover_debugtime] B3  getdata taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"i=",i,"hashid=",base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+		log.Println("[recover_debugtime] B3  getdata taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"i=", i, "hashid=",
+			base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 		if err != nil {
 			continue
 		}
-		log.Println("[recover_debugtime] B4 succ recover taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"i=",i,"hashid=",base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+		log.Println("[recover_debugtime] B4 succ recover taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"i=",i,"hashid=",
+			base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 		log.Printf("[recover] %s 从备份恢复成功 %d\n", hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]), i)
 		return data, nil
 	}
 
-	log.Println("[recover_debugtime] B5  getdata fail taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"hashid=",base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+	log.Println("[recover_debugtime] B5  getdata fail taskid=",
+		binary.BigEndian.Uint64(L.msg.Id[:8]),"hashid=",
+		base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 	return nil, fmt.Errorf("download backup fail, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 }
 
@@ -340,6 +361,10 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
  * @return error
  */
 func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
+	if L.isTimeOut() {
+		return nil, fmt.Errorf("task lrc recouver shard time out")
+	}
+
 	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
 	for _, v := range L.shards.GetMap() {
 		status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
@@ -421,19 +446,24 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	recoverHash = L.msg.Hashs[L.msg.RecoverId]
 
 	if err != nil {
-		log.Println("[recover_debugtime] exectask error:",err.Error(),"taskid=",binary.BigEndian.Uint64(msgID[:8]))
+		log.Println("[recover_debugtime] exectask error:",err.Error(), "taskid=",
+			binary.BigEndian.Uint64(msgID[:8]))
 		return
 	}
-	log.Println("[recover_debugtime] A  ExecTask start taskid=",binary.BigEndian.Uint64(msgID[:8]),"stage:",opts.Stage)
+	log.Println("[recover_debugtime] A  ExecTask start taskid=",
+		binary.BigEndian.Uint64(msgID[:8]),"stage:", opts.Stage)
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
 		data, err = L.backupTask()
-		log.Println("[recover_debugtime] B end taskid=",binary.BigEndian.Uint64(msgID[:8]))
+		log.Println("[recover_debugtime] B end taskid=",
+			binary.BigEndian.Uint64(msgID[:8]))
 		if err != nil {
-			log.Println("[recover] backupTask error:", err,"taskid=",binary.BigEndian.Uint64(msgID[:8]))
+			log.Println("[recover] backupTask error:", err, "taskid=",
+				binary.BigEndian.Uint64(msgID[:8]))
 		}else{
 			statistics.DefaultRebuildCount.IncSuccRbd()
-			log.Printf("[recover] backupTask success, shard hash is %s\n", base58.Encode(L.msg.Hashs[L.msg.RecoverId]),"taskid:",string(msgID[:8]))
+			log.Printf("[recover] backupTask success, shard hash is %s\n",
+				base58.Encode(L.msg.Hashs[L.msg.RecoverId]),"taskid:",string(msgID[:8]))
 		}
 		return
 	}
@@ -457,23 +487,27 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	statistics.DefaultRebuildCount.IncPassJudge()
 
 	// @TODO 下载分片
-	ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
+	//ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
 	err = L.downloadLoop(ctx)
 	log.Println("[recover_debugtime] E downloadloop taskid=",binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
+		log.Printf("[recover] download loop err:%s\n", err.Error())
 		return
 	}
 
 	// @TODO LRC恢复
 	recoverData, err := L.recoverShard()
 	if err != nil {
+		log.Printf("[recover] recover Shard err:%s\n", err.Error())
 		return
 	}
 
 	log.Println("[recover_debugtime] F end taskid=",binary.BigEndian.Uint64(msgID[:8]))
 	// @TODO 验证数据
 	if err = L.verifyLRCRecoveredData(recoverData); err != nil {
+		log.Printf("[recover] verify Recovered Data err:%s\n", err.Error())
 		return
 	}
 
@@ -490,6 +524,14 @@ func (L *LRCTaskActuator) Free() {
 	}
 	L.lrcHandler.FreeHandle()
 	L.lrcHandler.FreeRecoverData()
+}
+
+func (L *LRCTaskActuator) isTimeOut() bool {
+	if int32(time.Now().Sub(L.opts.STime)) > L.opts.Expired {
+		return  true
+	}
+
+	return false
 }
 
 func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {

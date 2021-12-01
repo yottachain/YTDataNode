@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/mq"
 	"log"
+	"sync"
 	"time"
 )
 
 type TaskWaitQueue struct {
 	*mq.BaseMessageQueue
 	Max int
+	sync.Mutex
 }
 
 func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64,
-		srcNodeId int32, tasklife int32, start time.Time) error {
+		srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
 	t := &Task{
 		SnID:        snid,
 		Data:        task,
@@ -21,6 +23,7 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64,
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
 		StartTime:   start,
+		ExecTimes: 	 execTimes,
 	}
 
 	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)

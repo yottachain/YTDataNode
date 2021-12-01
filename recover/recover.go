@@ -125,7 +125,38 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 }
 
 func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error) {
-	return nil, nil //refer to getShard
+	clt, err := re.sn.Host().ClientStore().GetByAddrString(ctx, id, addrs)
+	if err != nil {
+		log.Println("[recover][debug] getShardcnn  err=", err)
+		return nil, err
+	}
+
+	var msg message.DownloadShardRequest
+	msg.VHF = hash
+
+	buf, err := proto.Marshal(&msg)
+	if err != nil {
+		return nil, err
+	}
+	ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	shardBuf, err := clt.SendMsg(ctx2, message.MsgIDDownloadShardRequest.Value(), buf)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "Get data Slice fail") {
+			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		} else {
+			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n",  base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+		}
+		return nil, err
+	}
+
+	if len(shardBuf) < 3 {
+		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n",taskID, base64.StdEncoding.EncodeToString(hash), *n, addrs)
+		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
+	}
+	return shardBuf, err
 }
 
 func NewElkClient(tbstr string) *YTElkProducer.Client {
@@ -253,7 +284,9 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		return err
 	}
 
-	//要先判断一下队列的剩余长度是否能容纳当前任务不能话不接收，返回错误
+	//要先判断一下队列的剩余长度是否能容纳当前任，务不能的话不接收，返回错误
+	re.waitQueue.Lock()
+	defer re.waitQueue.Unlock()
 	queueLen := re.waitQueue.Len()
 	if re.waitQueue.Max - queueLen < len(mtdMsg.Tasklist) {
 		log.Printf("[recover] queue space is not enough, max len is %d, " +
@@ -269,7 +302,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
-				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now()); err != nil {
+				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
 			log.Printf("[recover]put recover task error: %s\n", err.Error())
 		}
 	}
@@ -297,8 +330,22 @@ func (re *Engine) dispatchTask(ts *Task) {
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
-		log.Println("[recover] execLRCTask, msgId:", msgID)
+		ts.ExecTimes++
+		log.Printf("[recover] execLRCTask, msgId: %d exec times %d\n", msgID, ts.ExecTimes)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
+		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
+			res.RES == 1 &&  ts.ExecTimes < 2 {
+			re.waitQueue.Lock()
+			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpriedTime, ts.SrcNodeID,
+				ts.TaskLife, ts.StartTime, ts.ExecTimes)
+			re.waitQueue.Unlock()
+			if err != nil {
+				goto Reply
+			}else {
+				break
+			}
+		}
+	Reply:
 		if res.ErrorMsg != nil {
 			log.Println("[recover] error:", res.ErrorMsg,)
 			res.RES = 1
@@ -548,26 +595,34 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 	var recoverData []byte
 	var realHash []byte
-	expiredTime := time.Unix(expired, 0)
+	//expiredTime := time.Unix(expired, 0)
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
 		{
-			Expired: expiredTime,
+			Expired: taskLife,
+			STime:   StartTime,
 			Stage:   actuator.RECOVER_STAGE_CP,
 		},
 		{
-			Expired: expiredTime,
+			Expired: taskLife,
+			STime:   StartTime,
 			Stage:   actuator.RECOVER_STAGE_ROW,
 		},
 		{
-			Expired: expiredTime,
+			Expired: taskLife,
+			STime:   StartTime,
 			Stage:   actuator.RECOVER_STAGE_COL,
 		},
 		{
-			Expired: expiredTime,
+			Expired: taskLife,
+			STime:   StartTime,
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
+		if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
+			res.ErrorMsg = fmt.Errorf("rebuild task time out")
+			return
+		}
 
 		switch opts.Stage {
 		case 1:
@@ -576,11 +631,6 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			atomic.AddUint64(&statistics.DefaultRebuildCount.ColRebuildCount, 1)
 		case 3:
 			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
-		}
-
-		if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
-			res.ErrorMsg = fmt.Errorf("rebuild task time out")
-			return
 		}
 
 		data, resID, srcHash, err := taskActuator.ExecTask(
@@ -644,7 +694,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	result.ExpriedTime = expried
 	err := proto.UnmarshalMerge(msgData, &msg)
 	if err != nil {
-		log.Printf("[recover]解析错误%s\n", err.Error())
+		log.Printf("[recover] 解析错误%s\n", err.Error())
 	}
 	result.ID = msg.Id
 	result.RES = 1
