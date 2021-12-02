@@ -3,6 +3,8 @@ package recover
 import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/statistics"
+	"time"
+
 	//"sync"
 )
 
@@ -29,6 +31,7 @@ func (re *Engine) processRequests() {
 				if m % 10000 == 0{
 					log.Println("[recover] k=", k, "m=", m," processRequests is nil")
 				}
+				time.Sleep(time.Millisecond*10)
 				continue
 			}
 			n++

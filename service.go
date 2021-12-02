@@ -434,6 +434,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		log.Println("Send report msg fail:", err)
 	} else {
 		var resMsg message.StatusRepResp
+		log.Printf("report res len is %d\n", len(res))
 		proto.Unmarshal(res[2:], &resMsg)
 		if resMsg.ProductiveSpace >= 0 {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)

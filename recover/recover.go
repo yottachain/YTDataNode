@@ -584,7 +584,6 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  */
 func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time,
 			taskLife int32, srcNodeid int32) (res *TaskMsgResult) {
-
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
 
