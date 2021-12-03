@@ -102,6 +102,10 @@ func (pt *TokenPool) Stop() {
 	pt.stop = true
 }
 
+func (pt *TokenPool) Start() {
+	pt.stop = false
+}
+
 func (pt *TokenPool) Delete(tk *Token) bool {
 	return false
 }

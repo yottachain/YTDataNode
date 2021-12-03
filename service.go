@@ -335,7 +335,6 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		return
 	}
 	bp := sn.Config().BPList[sn.GetBP()]
-	//log.Println("bplist:",sn.Config().BPList,"bpindex:",sn.GetBP(),bp)
 	msg.Addrs = sn.Addrs()
 	if rms.Addr() != "" && first == false {
 		msg.Addrs = append(sn.Addrs(), rms.Addr())
@@ -354,7 +353,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.RealSpace = uint32(sn.YTFS().Len())
 	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
 
-	//这个不要实时计算后续改成定时计算,然后上报的时候取结果
+	//这个不要实时计算, 后续改成定时计算,然后上报的时候取结果
 	msg.AvailableSpace = capProof.GetCapProofSpace(sn.YTFS())
 	log.Printf("[cap proof] AvailableSpace %d\n", msg.AvailableSpace)
 
@@ -417,19 +416,9 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	if err != nil {
 		log.Println("send report msg fail:", err)
 	}
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	//defer cancel()
-
-	//if clt, err := sn.Host().ClientStore().GetByAddrString(ctx, bp.ID, bp.Addrs); err != nil {
-	//	log.Println("Connect bp fail", err)
-	//} else {
-	//
-	//}
 
 	log.Printf("Report to %s:%v\n", bp.ID, bp.Addrs)
-	//res, err := clt.SendMsg(ctx, message.MsgIDStatusRepReq.Value(), resData)
 	res, err := sn.SendBPMsg(sn.GetBP(), message.MsgIDStatusRepReq.Value(), resData)
-	//defer clt.Close()
 	if err != nil {
 		log.Println("Send report msg fail:", err)
 	} else {
@@ -439,14 +428,17 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		if resMsg.ProductiveSpace >= 0 {
 			sn.owner.BuySpace = uint64(resMsg.ProductiveSpace)
 			diskHash.CopyHead()
+
+			//重新上报成功了就应该重新开启？？？？
 			disableReport = false
+			TokenPool.Utp().Start()
+			randDownload.Start()
 		} else {
 			log.Printf("report error %d\n", resMsg.ProductiveSpace)
 			switch resMsg.ProductiveSpace {
 			case -1:
 				disableReport = true
 			case -2:
-				//log.Println("[report] error")
 				return
 			case -7:
 				TokenPool.Utp().Stop()

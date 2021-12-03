@@ -396,6 +396,6 @@ func Stop() {
 	stop = true
 }
 
-//func Start(){
-//	stop = false
-//}
+func Start(){
+	stop = false
+}
