@@ -201,7 +201,7 @@ var Gconfig = NewGConfig()
 func init() {
 	if isDev := os.Getenv("ytfs_dev"); isDev != "" {
 		update_url = "http://dnapi.yottachain.net/config/dnconfig_dev.json"
-		log.Println("dev mode")
+		//log.Println("dev mode")
 		if isDev == "1" {
 			IsDev = 1
 		}

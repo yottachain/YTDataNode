@@ -246,8 +246,8 @@ func (pt *TokenPool) GetParams() (int64, int64) {
 	return 0, 0
 }
 
-var UploadTP *TokenPool = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
-var DownloadTP *TokenPool = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
+var UploadTP  = New(".utp_params.json", 500, time.Second*10, time.Millisecond*10)
+var DownloadTP  = New(".dtp_params.json", 500, time.Second*10, time.Millisecond*10)
 
 // 上行token任务池
 func Utp() *TokenPool {
