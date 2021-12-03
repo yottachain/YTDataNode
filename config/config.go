@@ -172,7 +172,7 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
             break
         }
         n = n + 1
-        m = uint32(size / uint64(d) / uint64(m))
+        m = uint32(size / uint64(d) / n)
     }
 
     opts := &ytfsOpts.Options{
