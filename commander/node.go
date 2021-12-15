@@ -4,14 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-    "github.com/yottachain/YTDataNode/diskHash"
 
-    //<<<<<<< HEAD
-//=======
-//	"github.com/yottachain/YTDataNode/cmd/update"
-//	"github.com/yottachain/YTDataNode/diskHash"
-//	ytfs "github.com/yottachain/YTFS"
-//>>>>>>> release_rcvcp
+	"github.com/yottachain/YTDataNode/diskHash"
+
 	"io"
 	"net/http"
 	"os/signal"
@@ -26,13 +21,9 @@ import (
 	"os"
 	"os/exec"
 	"time"
-//<<<<<<< HEAD
 
 	log "github.com/yottachain/YTDataNode/logger"
 
-//=======
-//	comm "github.com/yottachain/YTFS/common"
-//>>>>>>> release_rcvcp
 	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
@@ -42,6 +33,7 @@ import (
 
 // Init 初始化
 func Init() error {
+
 	cfg := config.NewConfig()
 	cfg.Save()
 
@@ -53,31 +45,32 @@ func Init() error {
 	return nil
 }
 
-func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string ) *config.Config {
-    cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
+func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *config.Config {
+	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
 	if isBlock {
 		cfg.Storages[0].StorageType = 1
 	}
 	if devPath != "" {
 		cfg.Storages[0].StorageName = devPath
 	}
-
-    yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
-    if err != nil {
-        return nil
-    }
-    l := yt.PosIdx()
-    if l < 5 {
-        log.Println("[diskHash] ytfs_len:",l)
-        err := diskHash.RandWrite(yt, uint(l))
-        if err != nil {
-            log.Println("[diskHash] randWrite to ytfs error:", err)
-            return nil
-        }
-    }
-    defer yt.Close()
-    fmt.Println("YTFS init success")
-    return cfg
+	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+	if err != nil {
+		return nil
+	}
+	l := yt.PosIdx()
+	if l < 5 {
+		log.Println("[diskHash] ytfs_len:", l)
+		err := diskHash.RandWrite(yt, uint(l))
+		if err != nil {
+			log.Println("[diskHash] randWrite to ytfs error:", err)
+			//return fmt.Errorf("write ytfs checkData error")
+			return nil
+		}
+	}
+	//defer yt.Close()
+	fmt.Println("YTFS init success")
+	//return nil
+	return cfg
 }
 
 // NewID 创建新的id
