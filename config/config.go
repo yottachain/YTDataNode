@@ -63,7 +63,6 @@ type Config struct {
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
 	UpdateURL string `json:"update_url"`
-	//ShardRbdConcurrent uint16 `json:ShardRbdConcurrent`
 	bpListMd5    []byte
 	DisableWrite bool
 	AllocSpace   uint64
@@ -289,22 +288,6 @@ func getBPList() []peerInfo {
 		return bplist
 	}
 
-	//var bpconfigurl = "http://download.yottachain.io/config/bp-test.json"
-	//if url, ok := os.LookupEnv("bp-config-url"); ok {
-	//	bpconfigurl = url
-	//}
-	//
-	//log.Println("bpconfigurl", bpconfigurl)
-	//resp, err := http.Get(bpconfigurl)
-	//if err != nil {
-	//	log.Println("获取BPLIST失败")
-	//	os.Exit(1)
-	//}
-	//buf, err := ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	//	log.Println("获取BPLIST失败")
-	//	os.Exit(1)
-	//}
 	jsdata := `
     [
     {
