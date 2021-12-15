@@ -16,7 +16,10 @@ import (
 	repoCmd "github.com/yottachain/YTDataNode/cmd/repo"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/commander"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
 	//comm "github.com/yottachain/YTFS/common"
 )
 
@@ -24,7 +27,7 @@ var size uint64
 var mc uint32
 var db string
 var stortype uint32
-var devname  string
+var devname string
 var isDaemon bool = false
 
 var daemonCmd = &cobra.Command{
@@ -67,19 +70,24 @@ var startCmd = &cobra.Command{
 
 //<<<<<<< HEAD
 //=======
-//var initCmd = &cobra.Command{
-//	Use:   "init",
-//	Short: "Init YTFS storage node",
-//	Run: func(cmd *cobra.Command, args []string) {
-//		stype := comm.StorageType(stortype)
-//		err := commander.InitBySignleStorage(size, 1<<mc, db, stype, devname)
-//		if err != nil {
-//			log.Println("YTFS init failed")
-//		}else{
-//			log.Println("YTFS init success")
-//		}
-//	},
-//}
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Init YTFS storage node",
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg, err := config.ReadConfig()
+		if err != nil {
+			log.Println("YTFS init failed")
+			return
+		}
+		_, err = ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+		if err != nil {
+			log.Println("YTFS init failed")
+		} else {
+			log.Println("YTFS init success")
+		}
+	},
+}
+
 //
 //>>>>>>> release_rcvcp
 //var version = &cobra.Command{
@@ -141,6 +149,7 @@ func main() {
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
 	RootCommand.AddCommand(regTemplateCmd)
+	RootCommand.AddCommand(initCmd)
 	//RootCommand.AddCommand(startCmd)
 	RootCommand.Execute()
 }
