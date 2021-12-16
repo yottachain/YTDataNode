@@ -68,8 +68,6 @@ var startCmd = &cobra.Command{
 	},
 }
 
-//<<<<<<< HEAD
-//=======
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init YTFS storage node",
@@ -88,8 +86,6 @@ var initCmd = &cobra.Command{
 	},
 }
 
-//
-//>>>>>>> release_rcvcp
 //var version = &cobra.Command{
 //	Use:   "version",
 //	Short: "ytfs-node version",
@@ -123,13 +119,6 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
-	//defer func() {
-	//	err := recover()
-	//	if err != nil {
-	//		log.Println("Error:", err)
-	//	}
-	//}()
-
 	//initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
 	//initCmd.Flags().Uint32VarP(&mc, "order", "k", 14, "N = (1<<k), 其中k的值（8-20）")
 	//initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
