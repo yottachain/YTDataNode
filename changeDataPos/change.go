@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
@@ -18,8 +19,11 @@ var bplist = `
 		}
 	]`
 
+var formPath = ""
 //主网改成一个sn后 修改矿机的snlist和清空矿机的数据
 func main() {
+	flag.StringVar(&formPath, "f", "", "sn列表")
+
 	cfg, err := config.ReadConfig()
 	if err != nil {
 		log.Println("change read config fail")
