@@ -41,6 +41,7 @@ func main() {
 		fs.Close()
 	}else {
 		log.Printf("change open ytfs nil\n")
+		return
 	}
 
 	log.Println("change success")
