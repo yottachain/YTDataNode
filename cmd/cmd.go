@@ -40,14 +40,8 @@ var daemonCmd = &cobra.Command{
 		} else {
 			commander.Daemon()
 		}
-		//defer func() {
-		//	if err := recover(); err != nil {
-		//		log.Println(err)
-		//	}
-		//}()
 	},
 }
-
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "以守护进程启动并且自动调起掉线程序",
