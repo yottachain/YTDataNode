@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/yottachain/YTDataNode/diskHash"
 
 	"net"
 	"os"
@@ -71,12 +72,23 @@ var initCmd = &cobra.Command{
 			log.Println("YTFS init failed")
 			return
 		}
-		_, err = ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
 		if err != nil {
 			log.Println("YTFS init failed")
-		} else {
-			log.Println("YTFS init success")
+			return
 		}
+		defer yt.Close()
+
+		l := yt.PosIdx()
+		if l < 5 {
+			log.Println("[diskHash] ytfs_len:", l)
+			err := diskHash.RandWrite(yt, uint(l))
+			if err != nil {
+				log.Println("[diskHash] randWrite to ytfs error:", err)
+				return
+			}
+		}
+		fmt.Println("YTFS init success")
 	},
 }
 
@@ -122,7 +134,7 @@ func main() {
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%s", "1.0.15n"),
+		Version: fmt.Sprintf("%s", "1.0.15o"),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(daemonCmd)
