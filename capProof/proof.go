@@ -2,9 +2,19 @@ package capProof
 
 import (
 	Ytfs "github.com/yottachain/YTFS"
+	"time"
 )
 
-func GetCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
+var AvailableShards uint32
+
+func TimerRun(ytfs *Ytfs.YTFS){
+	for {
+		AvailableShards = getCapProofSpace(ytfs)
+		time.After(time.Minute*10)
+	}
+}
+
+func getCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
 	availableShards := ytfs.GetCapProofSpace()
 	if (availableShards % 65536) != 0 {
 		realCap = (availableShards / 65536 + 1) * 65536
@@ -12,4 +22,8 @@ func GetCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
 		realCap = availableShards
 	}
 	return
+}
+
+func GetCapProofSpace() (realCap uint32) {
+	return  AvailableShards
 }
