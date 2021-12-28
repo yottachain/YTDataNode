@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/yottachain/YTDataNode/capProof"
-
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/config"
@@ -54,7 +52,7 @@ func (sn *storageNode) Service() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 	go randDownload.Run()
-	go capProof.TimerRun(sn.ytfs)
+	//go capProof.TimerRun(sn.ytfs)
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -355,7 +353,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.AllocSpace = sn.config.AllocSpace / uint64(sn.YTFS().Meta().DataBlockSize)
 
 	//这个不要实时计算, 后续改成定时计算,然后上报的时候取结果
-	msg.AvailableSpace = capProof.GetCapProofSpace(sn.YTFS())
+	//msg.AvailableSpace = capProof.GetCapProofSpace(sn.YTFS())
 	log.Printf("[cap proof] AvailableSpace %d\n", msg.AvailableSpace)
 
 	msg.Relay = sn.config.Relay
