@@ -40,26 +40,6 @@ func RandWrite(ytfs *ytfs.YTFS, l uint) error {
 }
 
 func GetHash(ytfs *ytfs.YTFS) (string, error) {
-	//cfg := config.DefaultConfig
-	//
-	//s1 := cfg.Storages[0]
-	//fl, err := os.OpenFile(s1.StorageName, os.O_RDONLY, 0644)
-	//if err != nil {
-	//	log.Println("[diskHash] open store file error:", err)
-	//	return "", err
-	//}
-	//defer fl.Close()
-	//
-	//buf := make([]byte, CheckBlockSize)
-	//n, err := fl.Read(buf)
-	//if err != nil {
-	//	log.Println("[diskHash] read file to buf error:", err)
-	//	return "", err
-	//}
-	//if n < CheckBlockSize {
-	//	return "", fmt.Errorf("n < checkBlockSize %d\\%d", n, CheckBlockSize)
-	//}
-
 	buf, err := ytfs.GetData(0)
 	if err != nil || len(buf) != 16384{
 		err = fmt.Errorf("GetDiskHashError")

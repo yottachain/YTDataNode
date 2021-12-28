@@ -38,7 +38,7 @@ func init() {
 	cfg, err := config.ReadConfig()
 	if err != nil {
 		c = nil
-		fmt.Println("config read error")
+		fmt.Println("config read error:", err)
 	}
 
 	c = cfg
