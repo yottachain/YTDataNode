@@ -284,7 +284,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		return err
 	}
 
-	//要先判断一下队列的剩余长度是否能容纳当前任，务不能的话不接收，返回错误
+	//要先判断一下队列的剩余长度是否能容纳当前任务不能的话不接收，返回错误
 	re.waitQueue.Lock()
 	defer re.waitQueue.Unlock()
 	queueLen := re.waitQueue.Len()
