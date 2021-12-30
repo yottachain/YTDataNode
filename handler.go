@@ -417,7 +417,8 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Println("[download_debugtime] A start get vhf:", base58.Encode(msg.VHF))
+	log.Println("[download_debugtime] A start get vhf:",
+			base58.Encode(msg.VHF), "peer id:", pid.Pretty())
 	if len(msg.VHF) == 0 {
 		log.Println("[download_debugtime] error: msg.VHF is empty!")
 		resData = []byte(strconv.Itoa(200))
