@@ -323,7 +323,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 	var res *TaskMsgResult
 
 	tskcnt++
-	if tskcnt % 100 == 0{
+	if tskcnt % 100 == 0 {
 		log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
 	}
 
@@ -712,8 +712,8 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 		if err == nil {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			log.Printf("[recover:%s] execCPTask, getshard DataHash %s\n",
-				base58.Encode(msg.DataHash), base58.Encode(key[:]))
+			log.Printf("[recover:%s] execCPTask--, getshard DataHash %s hash len %d, remote miner NodeId:%s Addr:%s\n",
+				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
 
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})

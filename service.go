@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TokenPool"
+	"github.com/yottachain/YTDataNode/capProof"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
 	"github.com/yottachain/YTDataNode/randDownload"
@@ -52,7 +53,7 @@ func (sn *storageNode) Service() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
 	go randDownload.Run()
-	//go capProof.TimerRun(sn.ytfs)
+	go capProof.TimerRun(sn.ytfs)
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -60,12 +61,6 @@ func (sn *storageNode) Service() {
 	InitTokenPool(&statistics.DefaultStat)
 
 	rms = service.NewRelayManage(sn.Host())
-
-	//gc := config.NewGConfig(sn.config)
-	//if err := gc.Get(); err != nil {
-	//	log.Printf("[gconfig] update error:%s\n", err.Error())
-	//}
-	//go gc.UpdateService(context.Background(), time.Minute)
 
 	config.Gconfig.OnUpdate = func(gc config.Gcfg) {
 		log.Printf("[gconfig]配置更新重启矿机 %v\n", gc)
@@ -82,8 +77,8 @@ func (sn *storageNode) Service() {
 		time.Sleep(time.Duration(rand.Int63n(10)) * time.Second)
 		os.Exit(0)
 	}
-	var utp *TokenPool.TokenPool = TokenPool.Utp()
-	var dtp *TokenPool.TokenPool = TokenPool.Dtp()
+	var utp = TokenPool.Utp()
+	var dtp = TokenPool.Dtp()
 	// 统计归零
 	utp.OnChange(func(pt *TokenPool.TokenPool) {
 		//atomic.StoreInt64(&statistics.DefaultStat.RXRequest, 0)
@@ -103,7 +98,6 @@ func (sn *storageNode) Service() {
 	//	//wh.Run()
 	//	os.Exit(0)
 	//}
-	//fmt.Printf("[task pool]pool number %d\n", maxConn)
 
 	wh = NewWriteHandler(sn)
 	if wh == nil {
@@ -253,7 +247,6 @@ func (sn *storageNode) Service() {
 
 		verifynum := msg.Num
 		startItem := msg.StartItem
-		//vfs := verifySlice.VerifySler{Sn:sn}
 		result := vfs.VerifySlice(verifynum, startItem)
 		resp, err := proto.Marshal(&result)
 		if err != nil {
