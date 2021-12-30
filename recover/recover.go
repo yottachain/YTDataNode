@@ -716,7 +716,7 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 				base58.Encode(msg.DataHash), base58.Encode(key[:]))
 
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
-			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
+			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
