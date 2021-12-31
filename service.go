@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/capProof"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/magrate"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare"
@@ -56,11 +57,11 @@ func (sn *storageNode) Service() {
 	go capProof.TimerRun(sn.ytfs)
 
 	//消息注册前 启动gc clean and magrate data
-	//gc.GcWorker{sn}.CleanGc()
-	//err := magrate.NewMr().Run(sn.ytfs)
-	//if err != nil {
-	//	log.Printf("%s\n", err.Error())
-	//}
+	gc.GcWorker{sn}.CleanGc()
+	err := magrate.NewMr().Run(sn.ytfs)
+	if err != nil {
+		log.Printf("%s\n", err.Error())
+	}
 
 	// 初始化统计
 	statistics.InitDefaultStat()
