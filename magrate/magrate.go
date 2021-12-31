@@ -82,9 +82,11 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		dataPos := binary.LittleEndian.Uint32(value)
 		curPos := ytfs.PosIdx()
 		Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(key))
-
+		base58Key := base58.Encode(key)
 		//in sn database? yes magrate, else del
-		if _, ok := snShardMap[base58.Encode(key)]; ok {
+		if _, ok := snShardMap[base58Key]; ok {
+			log.Printf("[magrate] match keys is %s\n", base58Key)
+
 			if uint64(dataPos) > curPos {
 				shard, err := ytfs.Get(Hkey)
 				if err != nil {
@@ -108,6 +110,7 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 			}
 		}else {
 			//del if not exist
+			log.Printf("[magrate] del key %s\n", base58Key)
 			_ = ytfs.YtfsDB().Delete(Hkey)
 		}
 		return nil
