@@ -58,15 +58,15 @@ func (sn *storageNode) Service() {
 	go capProof.TimerRun(sn.ytfs)
 
 	//消息注册前 启动gc clean and magrate data
-	//go func() {
-	//	stopUp = true
-	//	(&gc.GcWorker{sn}).CleanGc()
-	//	err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
-	//	if err != nil {
-	//		log.Printf("%s\n", err.Error())
-	//	}
-	//	stopUp = false
-	//}()
+	go func() {
+		stopUp = true
+		(&gc.GcWorker{sn}).CleanGc()
+		//err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
+		//if err != nil {
+		//	log.Printf("%s\n", err.Error())
+		//}
+		stopUp = false
+	}()
 
 
 	// 初始化统计
