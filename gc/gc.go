@@ -337,6 +337,8 @@ func (gc *GcWorker) CleanGc() (succs, fails uint32){
             times, succs, fails)
     }
 
+    _ = gc.Sn.YTFS().PutGcNums(fails)
+
     err = gc.Sn.YTFS().YtfsDB().PutDb([]byte(GcCleanKey), []byte("gc_first"))
     if err != nil {
         log.Println("[gcclean] put key fail")

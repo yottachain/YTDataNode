@@ -58,7 +58,7 @@ func (sn *storageNode) Service() {
 
 	//消息注册前 启动gc clean and magrate data
 	(&gc.GcWorker{sn}).CleanGc()
-	err := magrate.NewMr().Run(sn.ytfs)
+	err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
 	if err != nil {
 		log.Printf("%s\n", err.Error())
 	}
