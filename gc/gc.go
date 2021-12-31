@@ -29,6 +29,7 @@ type GcWorker struct{
 }
 
 const GcDir  = "/gcstatus/"
+const GcCleanKey = "gc_clean_key_"
 
 func init(){
     filePath := util.GetYTFSPath() + GcDir
@@ -84,7 +85,7 @@ func (gc *GcWorker)GcMsgChkHdl(data []byte) (message.GcResp, error) {
         return res, err
     }
 
-    if msg.Dnid != gc.Sn.Config().IndexID{
+    if msg.Dnid != gc.Sn.Config().IndexID {
         log.Println("[gcdel] message.GcReq error")
         res.ErrCode = "errNodeid"
         res.TaskId = "nil"
@@ -99,10 +100,6 @@ func (gc *GcWorker)GcMsgChkHdl(data []byte) (message.GcResp, error) {
     return res, nil
 }
 
-//func (gc *GcWorker)GcStatusMsgChk(msg message.GcReq, data []byte) (message.GcResp, error){
-//
-//}
-
 func (gc *GcWorker)GcHandle(msg message.GcReq) {
     var err error
     var res message.GcStatusResp
@@ -110,26 +107,25 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
 
-    log.Println("[gcdel] start, taskid:",msg.TaskId)
+    log.Println("[gcdel] start, taskid:", msg.TaskId)
     config := gc.Sn.Config()
-    if ! config.UseKvDb {
+    if !config.UseKvDb {
         err = fmt.Errorf("not support indexdb for gc")
-        log.Println("[gcdel] error:",err,"taskid:",msg.TaskId)
+        log.Println("[gcdel] error:", err, "taskid:",msg.TaskId)
         res.Status = "DBcfgerr"
         value,err := proto.Marshal(&res)
         if err != nil{
-            fmt.Println("[gcdel] Marshal gcstatusresp error:",err,"taskid:",msg.TaskId)
+            fmt.Println("[gcdel] Marshal gcstatusresp error:", err, "taskid:",msg.TaskId)
             return
         }
-        err = SavetoFile(filePath,value)
+        err = SavetoFile(filePath, value)
         if err != nil{
-            fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
+            fmt.Println("[gcdel] save gcstatusresp to file error:", err, "taskid:", msg.TaskId)
         }
         return
     }
 
-    //res.Total = int32(len(msg.Gclist))
-    fmt.Println("[gcdel][gclist] len_Gclist=",len(msg.Gclist))
+    fmt.Println("[gcdel][gclist] len_Gclist=", len(msg.Gclist))
 
     for _, ent := range msg.Gclist {
         fmt.Println("[gcdel][gclist] base58=",base58.Encode(ent), "string=",string(ent))
@@ -152,7 +148,7 @@ func (gc *GcWorker)GcHandle(msg message.GcReq) {
         fmt.Println("[gcdel] Marshal gcstatusresp error:",err,"taskid:",msg.TaskId)
         return
     }
-    err = SavetoFile(filePath,value)
+    err = SavetoFile(filePath, value)
     if err != nil{
         fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
     }
@@ -165,15 +161,15 @@ func (gc *GcWorker) GcTestSysSpace(msg message.GcReq) error {
     res.Status = "succ"
     res.TaskId = msg.TaskId
     filePath := util.GetYTFSPath() + GcDir + msg.TaskId
-    value,err := proto.Marshal(&res)
+    value, err := proto.Marshal(&res)
     if err != nil{
-        fmt.Println("[gcdel] Marshal gcstatusresp error:",err,"taskid:",msg.TaskId)
+        fmt.Println("[gcdel] Marshal gcstatusresp error:", err, "taskid:", msg.TaskId)
         return err
     }
 
-    err = SavetoFile(filePath,value)
+    err = SavetoFile(filePath, value)
     if err != nil{
-        fmt.Println("[gcdel] save gcstatusresp to file error:",err,"taskid:",msg.TaskId)
+        fmt.Println("[gcdel] save gcstatusresp to file error:", err, "taskid:", msg.TaskId)
     }
     return err
 }
@@ -274,7 +270,7 @@ func (gc *GcWorker)GcDelStatusFileHdl(data []byte)(message.GcdelStatusfileResp, 
         return res, err
     }
 
-    if msg.Dnid != gc.Sn.Config().IndexID{
+    if msg.Dnid != gc.Sn.Config().IndexID {
         res.Status = "errNodeid"
         res.TaskId = "nil"
         err = fmt.Errorf("errNodeid")
@@ -308,4 +304,45 @@ func (gc *GcWorker)GcDelStatusfile(msg message.GcdelStatusfileReq) (message.Gcde
     }
 
     return res
+}
+
+func (gc *GcWorker) CleanGc() (succs, fails uint32){
+    if !gc.Sn.Config().UseKvDb {
+        return
+    }
+
+    keyData, err := gc.Sn.YTFS().YtfsDB().GetDb([]byte(GcCleanKey))
+    if err != nil {
+        _ = fmt.Errorf("[gcclean] get gc clean key err %s\n", err.Error())
+        return
+    }
+    if keyData != nil {
+        fmt.Println("[gcclean] get gc clean key have existed")
+        return
+    }else {
+        log.Println("[gcclean] start")
+    }
+
+    var times uint32
+    for {
+        bm, _ := gc.Sn.YTFS().YtfsDB().GetBitMapTab(1000)
+        if len(bm) <= 0 {
+            break
+        }
+        suc, fail := gc.Sn.YTFS().GcDelBitMap(bm)
+        succs += suc
+        fails += fail
+        times ++
+        fmt.Printf("[gcclean] clean gc times: %d succs: %d fails: %d\n",
+            times, succs, fails)
+    }
+
+    err = gc.Sn.YTFS().YtfsDB().PutDb([]byte(GcCleanKey), []byte("gc_first"))
+    if err != nil {
+        log.Println("[gcclean] put key fail")
+    }else {
+        log.Println("[gcclean] put key succs")
+    }
+
+    return
 }

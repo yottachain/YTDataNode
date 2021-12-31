@@ -111,7 +111,7 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())
 	}
-	srv := api.NewHTTPServer()
+	srv := api.NewHTTPServer(sn)
 	log.Println("Wait request")
 	sn.Service()
 	go func() {

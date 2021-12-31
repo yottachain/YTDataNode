@@ -3,6 +3,7 @@ module github.com/yottachain/YTDataNode
 go 1.13
 
 require (
+	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20201104130540-2e1f801663c6
 	github.com/eoscanada/eos-go v0.9.0
 	github.com/gogo/protobuf v1.3.2
@@ -24,7 +25,7 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.7
-	github.com/yottachain/YTFS v0.0.0-20211230064119-34baaf4ddf57
+	github.com/yottachain/YTFS v0.0.0-20211231074444-138104519bd9
 	github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3
 	github.com/yottachain/YTLRC v0.0.0-20211012082907-9b86d7e503ed
 

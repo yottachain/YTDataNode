@@ -32,6 +32,7 @@ github.com/btcsuite/btcd v0.20.1-beta h1:Ik4hyJqN8Jfyv3S4AGBOmyouMsYE3EdYODkMbQj
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
+github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d h1:yJzD/yFppdVCf6ApMkVy8cUxV0XrxdP9rVf6D87/Mng=
 github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
 github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd/go.mod h1:HHNXQzUsZCxOoE+CPiyCTO6x34Zs86zZUiwtpXoGdtg=
 github.com/btcsuite/goleveldb v0.0.0-20160330041536-7834afc9e8cd/go.mod h1:F+uVaaLLH7j4eDXPRvw78tMflu7Ie2bzYOH4Y8rRKBY=
@@ -294,8 +295,8 @@ github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812 h1:XG9TtLosanL
 github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812/go.mod h1:jDJUVGeQ1clW7k9OTRBAFtCMwGs9B9fGQ9QY64SKqlk=
 github.com/yottachain/YTElkProducer v0.0.7 h1:euNbs3ubaGBQ34j1evmC8s+pAqJVpw/o9nYb8/e14XA=
 github.com/yottachain/YTElkProducer v0.0.7/go.mod h1:iVHdNfhwkGzmfPnImbJ9v+UDGCxEipDUKKWGoKkY4wY=
-github.com/yottachain/YTFS v0.0.0-20211230064119-34baaf4ddf57 h1:ypoa43l04qTcKTJeDUmbu9HGTDpCJn6s8QN+mjMpyRI=
-github.com/yottachain/YTFS v0.0.0-20211230064119-34baaf4ddf57/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
+github.com/yottachain/YTFS v0.0.0-20211231074444-138104519bd9 h1:KFrXYSw4P68wPNWZ9hvvimMTnN3u6RUeAXP7yb/el+o=
+github.com/yottachain/YTFS v0.0.0-20211231074444-138104519bd9/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
 github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3 h1:pnIwruE5eLYQxy8kpp0ksJelYoFXKFHfAyZp2ZrGLfo=
 github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
 github.com/yottachain/YTLRC v0.0.0-20211012082907-9b86d7e503ed h1:U7z9bhtjyGuXjv0yPqT12gu8595+50twrfYlD+3lK08=

@@ -49,4 +49,9 @@ func init() {
 		log.Println(srv.sn.YTFS().Meta().DataBlockSize, "data size")
 		rw.WriteJSON(res)
 	})
+
+	// gcs
+	handler.HandleAPI("ytfs/gcs", func(rw *ResponseWriter, rq *http.Request) {
+		rw.WriteJSON(srv.sn.YTFS().GetGcNums())
+	})
 }

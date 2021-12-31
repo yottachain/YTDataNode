@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/yottachain/YTDataNode/instance"
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 )
 
@@ -14,10 +13,11 @@ type Server struct {
 }
 
 // NewHTTPServer 创建http api服务器
-func NewHTTPServer() *Server {
+func NewHTTPServer(sn node.StorageNode) *Server {
 	var srv Server
 	srv.Server = new(http.Server)
-	srv.sn = instance.GetStorageNode()
+	//srv.sn = instance.GetStorageNode()
+	srv.sn = sn
 	return &srv
 }
 
