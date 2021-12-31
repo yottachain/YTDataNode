@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/capProof"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/magrate"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare"
@@ -61,10 +62,10 @@ func (sn *storageNode) Service() {
 	go func() {
 		stopUp = true
 		(&gc.GcWorker{sn}).CleanGc()
-		//err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
-		//if err != nil {
-		//	log.Printf("%s\n", err.Error())
-		//}
+		err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
+		if err != nil {
+			log.Printf("%s\n", err.Error())
+		}
 		stopUp = false
 	}()
 
