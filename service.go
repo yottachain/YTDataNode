@@ -46,6 +46,8 @@ type ytfsDisk *ytfs.YTFS
 var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 var disableReport = false
+var stopUp = false
+
 
 func (sn *storageNode) Service() {
 	setRLimit.SetRLimit()
@@ -57,11 +59,16 @@ func (sn *storageNode) Service() {
 	go capProof.TimerRun(sn.ytfs)
 
 	//消息注册前 启动gc clean and magrate data
-	(&gc.GcWorker{sn}).CleanGc()
-	err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
-	if err != nil {
-		log.Printf("%s\n", err.Error())
-	}
+	go func() {
+		stopUp = true
+		(&gc.GcWorker{sn}).CleanGc()
+		err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
+		if err != nil {
+			log.Printf("%s\n", err.Error())
+		}
+		stopUp = false
+	}()
+
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -116,7 +123,7 @@ func (sn *storageNode) Service() {
 	wh.Run()
 	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
-		if res == nil || len(res) < 3 || disableReport {
+		if res == nil || len(res) < 3 || disableReport || stopUp {
 			return nil, fmt.Errorf("no token")
 		}
 		return res, nil
@@ -125,7 +132,12 @@ func (sn *storageNode) Service() {
     // 如果进程没有被禁止写入注册上传处理器
     if sn.Config().DisableWrite == false {
         _ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-            statistics.AddCounnectCount(head.RemotePeerID)
+            if stopUp {
+            	log.Println("miner stop upload")
+            	return nil, fmt.Errorf("miner stop upload")
+			}
+			log.Println("miner start upload")
+        	statistics.AddCounnectCount(head.RemotePeerID)
             defer statistics.SubCounnectCount(head.RemotePeerID)
             return wh.Handle(data, head), nil
         })
