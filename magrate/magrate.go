@@ -79,6 +79,39 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		snShardMap[v] = struct{}{}
 	}
 
+	//for skey := range snShardMap {
+	//	key := base58.Decode(skey)
+	//	Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(key))
+	//	dataPos, err := ytfs.YtfsDB().Get(Hkey)
+	//	if err != nil {
+	//		log.Printf("[magrate] get key: %s err:\n", skey, err.Error())
+	//		continue
+	//	}
+	//
+	//	curPos := ytfs.PosIdx()
+	//	if uint64(dataPos) > curPos {
+	//		shard, err := ytfs.Get(Hkey)
+	//		if err != nil {
+	//			log.Printf("[magrate] get hash err:%s, key:%s\n",
+	//				err.Error(), base58.Encode(key))
+	//			return err
+	//		}
+	//
+	//		kvMap :=  map[ydcommon.IndexTableKey][]byte{Hkey:shard}
+	//		_, err = ytfs.BatchPutNormal(kvMap)
+	//		//err = ytfs.Put(Hkey, shard)
+	//		hash := md5.Sum(shard)
+	//		if err != nil {
+	//			log.Printf("[magrate] put hash err:%s, key:%s, shard:%s\n",
+	//				err.Error(), base58.Encode(key), base58.Encode(hash[:]))
+	//			return err
+	//		}
+	//
+	//		log.Printf("[magrate] succs key:%s, shard:%s, before pos %d, after pod %d\n",
+	//			base58.Encode(key), base58.Encode(hash[:]), dataPos, curPos)
+	//	}
+	//}
+
 	var delTimes uint32
 	startTime := time.Now()
 
@@ -115,7 +148,7 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		}else {
 			delTimes++
 			//del if not exist
-			if delTimes % 100 == 0 {
+			if delTimes % 10000 == 0 {
 				if time.Now().Sub(startTime).Seconds() != 0 {
 					speeds := float64(delTimes) / time.Now().Sub(startTime).Seconds()
 					log.Printf("[magrate] del speed %.2f/s\n", speeds)
