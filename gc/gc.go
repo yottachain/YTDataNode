@@ -313,11 +313,11 @@ func (gc *GcWorker) CleanGc() (succs, fails uint32){
 
     keyData, err := gc.Sn.YTFS().YtfsDB().GetDb([]byte(GcCleanKey))
     if err != nil {
-        _ = fmt.Errorf("[gcclean] get gc clean key err %s\n", err.Error())
+        log.Printf("[gcclean] get gc clean key err %s\n", err.Error())
         return
     }
     if keyData != nil {
-        fmt.Println("[gcclean] get gc clean key have existed")
+        log.Println("[gcclean] get gc clean key have existed")
         return
     }else {
         log.Println("[gcclean] start")
@@ -333,7 +333,7 @@ func (gc *GcWorker) CleanGc() (succs, fails uint32){
         succs += suc
         fails += fail
         times ++
-        fmt.Printf("[gcclean] clean gc times: %d succs: %d fails: %d\n",
+        log.Printf("[gcclean] clean gc times: %d succs: %d fails: %d\n",
             times, succs, fails)
     }
 

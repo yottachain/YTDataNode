@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Mr struct {
@@ -37,11 +38,11 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 
 	keyMr, err := ytfs.YtfsDB().GetDb([]byte(MrDataKey))
 	if err != nil {
-		_ = fmt.Errorf("[magrate] get magrate key err %s\n", err.Error())
+		log.Printf("[magrate] get magrate key err %s\n", err.Error())
 		return err
 	}
 	if keyMr != nil {
-		fmt.Println("[magrate] get magrate key have existed")
+		log.Println("[magrate] get magrate key have existed")
 		return fmt.Errorf("magrate key have existed")
 	}else {
 		log.Println("[magrate] start")
@@ -78,6 +79,9 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		snShardMap[v] = struct{}{}
 	}
 
+	var delTimes uint32
+	startTime := time.Now()
+
 	ytfs.YtfsDB().TravelDB(func(key, value []byte) error {
 		dataPos := binary.LittleEndian.Uint32(value)
 		curPos := ytfs.PosIdx()
@@ -109,8 +113,14 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 					base58.Encode(key), base58.Encode(hash[:]), dataPos, curPos)
 			}
 		}else {
+			delTimes++
 			//del if not exist
-			log.Printf("[magrate] del key %s\n", base58Key)
+			if delTimes % 10000 == 0 {
+				speeds := float64(delTimes) / time.Now().Sub(startTime).Seconds()
+				log.Printf("[magrate] del speed %.2f/s\n", speeds)
+				log.Printf("[magrate] del key %s\n", base58Key)
+			}
+			//log.Printf("[magrate] del key %s\n", base58Key)
 			_ = ytfs.YtfsDB().Delete(Hkey)
 		}
 		return nil
