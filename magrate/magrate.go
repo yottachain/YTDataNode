@@ -115,9 +115,11 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		}else {
 			delTimes++
 			//del if not exist
-			if delTimes % 10000 == 0 {
-				speeds := float64(delTimes) / time.Now().Sub(startTime).Seconds()
-				log.Printf("[magrate] del speed %.2f/s\n", speeds)
+			if delTimes % 100 == 0 {
+				if time.Now().Sub(startTime).Seconds() != 0 {
+					speeds := float64(delTimes) / time.Now().Sub(startTime).Seconds()
+					log.Printf("[magrate] del speed %.2f/s\n", speeds)
+				}
 				log.Printf("[magrate] del key %s\n", base58Key)
 			}
 			//log.Printf("[magrate] del key %s\n", base58Key)
