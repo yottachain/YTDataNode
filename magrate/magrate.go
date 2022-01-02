@@ -122,7 +122,8 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		base58Key := base58.Encode(key)
 		//in sn database? yes magrate, else del
 		if _, ok := snShardMap[base58Key]; ok {
-			log.Printf("[magrate] match keys is %s\n", base58Key)
+			log.Printf("[magrate] match keys is %s, data pos %d, cur pos %d\n",
+				base58Key, dataPos, curPos)
 
 			if uint64(dataPos) > curPos {
 				shard, err := ytfs.Get(Hkey)
