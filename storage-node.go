@@ -50,7 +50,8 @@ type AddrsManager struct {
 // UpdateAddrs 更新地址列表
 func (am *AddrsManager) UpdateAddrs() {
 	am.addrs = am.sn.Host().Addrs()
-	resp, err := http.Get("http://123.57.81.177/self-ip")
+	//resp, err := http.Get("http://123.57.81.177/self-ip")
+	resp, err := http.Get("https://dnapi.yottachain.net/self-ip")
 	if err != nil {
 		port, ok := os.LookupEnv("nat_port")
 		if ok == false {

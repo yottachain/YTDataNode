@@ -69,7 +69,7 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.ReadConfig()
 		if err != nil {
-			log.Println("YTFS init failed")
+			log.Println("YTFS init failed err:", err)
 			return
 		}
 		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
