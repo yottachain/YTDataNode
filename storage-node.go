@@ -68,6 +68,8 @@ func (am *AddrsManager) UpdateAddrs() {
 		}
 		log.Println("get public ip fail")
 	} else {
+		defer resp.Body.Close()
+
 		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
 			port, ok := os.LookupEnv("nat_port")
 			if ok == false {
