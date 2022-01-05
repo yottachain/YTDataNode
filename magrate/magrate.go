@@ -32,6 +32,9 @@ func NewMr() *Mr{
 
 //while magrate don't write data
 func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
+	mr.Lock()
+	defer mr.Unlock()
+
 	if !isRocks {
 		return nil
 	}
@@ -168,6 +171,95 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 		return fmt.Errorf("[magrate] put key fail")
 	}else {
 		log.Println("[magrate] put key succs")
+	}
+
+	return nil
+}
+
+
+func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
+	mr.Lock()
+	defer mr.Unlock()
+
+	//err := ytfs.ModifyPos(5)
+	//if err != nil {
+	//log.Printf("[magrate] index db modify pos err %s\n", err.Error())
+	//return err
+	//}
+
+	url := fmt.Sprintf("http://150.138.84.46:22222/node_shards?minerid=%d", minerId)
+	log.Println("[magrate] url:", url)
+
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("%s", err.Error())
+	}
+
+	resBuf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var minerShardKeys minerKeys
+
+	err = json.Unmarshal(resBuf, &minerShardKeys.shardKeys)
+	if err != nil {
+		return err
+	}
+
+	snShardMap := make(map[string]struct{}, 0)
+	for _, v := range minerShardKeys.shardKeys {
+		log.Printf("[magrate] shard key: %s\n", v)
+		snShardMap[v] = struct{}{}
+	}
+
+	var curWritePos = uint32(5)
+	batchIndexes := make([]ydcommon.IndexItem, len(snShardMap))
+	i := 0
+	for key := range snShardMap {
+		Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(base58.Decode(key)))
+		shard, err := ytfs.Get(Hkey)
+		if err != nil {
+			log.Printf("[magrtae] get shard %s fail\n", key)
+			continue
+		}
+
+		if ytfs.PutDataAt(shard, curWritePos) != nil {
+			continue
+		}
+
+		batchIndexes[i] = ydcommon.IndexItem{
+			Hash:      Hkey,
+			OffsetIdx: ydcommon.IndexTableValue(curWritePos)}
+		i++
+		curWritePos++
+	}
+
+	//clean all range count
+	ytfs.YtfsDB().Reset()
+
+	//write new indexes to db
+	_, err = ytfs.YtfsDB().BatchPut(batchIndexes)
+	if err != nil {
+		log.Printf("[magrtae] put indexes err:%s\n", err.Error())
+	}
+
+	//now magreat finished
+	err = ytfs.ModifyPos(uint64(curWritePos))
+	if err != nil {
+		log.Printf("[magrate] index db modify pos err %s\n", err.Error())
+		return err
+	}
+
+	err = ytfs.SetStoragePointer(curWritePos)
+	if err != nil {
+		log.Printf("[magrate] Set Storage Pointer err %s\n", err.Error())
+		return err
 	}
 
 	return nil

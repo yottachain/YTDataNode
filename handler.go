@@ -439,11 +439,10 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 
 	log.Println("[download_debugtime] C  vhf:", base58.Encode(msg.VHF))
 	time1 := time.Now()
-	resData, err = dh.GetShard(ctx, common.IndexTableKey(indexKey))
+	resData, err = dh.GetShard(ctx, indexKey)
 	TokenPool.Dtp().DiskLatency.Add(time.Now().Sub(time1))
 	if err != nil {
 		log.Println("[download_debugtime] C0 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
-		//		resData = []byte(strconv.Itoa(201))
 
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
