@@ -1,7 +1,6 @@
 package storageNodeInterface
 
 import (
-	"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	ytfs "github.com/yottachain/YTFS"
@@ -16,9 +15,6 @@ type Owner struct {
 }
 
 type CompDB struct {
-	Db  *gorocksdb.DB
-	Ro  *gorocksdb.ReadOptions
-	Wo  *gorocksdb.WriteOptions
 }
 
 // StorageNode 存储节点接口
