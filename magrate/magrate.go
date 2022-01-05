@@ -176,7 +176,13 @@ func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	mr.Lock()
 	defer mr.Unlock()
-	
+
+	flag := ytfs.YtfsDB().GetReserved()
+	//have magrated
+	if flag == 0x00000001 {
+		return nil
+	}
+
 	url := fmt.Sprintf("http://150.138.84.46:22222/node_shards?minerid=%d", minerId)
 	log.Println("[magrate] url:", url)
 
@@ -208,7 +214,10 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		snShardMap[v] = struct{}{}
 	}
 
+	//jump hash position
 	var curWritePos = uint32(5)
+
+	//recode key and pos pairs
 	batchIndexes := make([]ydcommon.IndexItem, len(snShardMap))
 	i := 0
 	for key := range snShardMap {
@@ -228,6 +237,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 			OffsetIdx: ydcommon.IndexTableValue(curWritePos)}
 		i++
 		curWritePos++
+		log.Printf("[magrtae] shard %s write succees\n", key)
 	}
 
 	//clean all range count
@@ -244,11 +254,23 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	if err != nil {
 		log.Printf("[magrate] index db modify pos err %s\n", err.Error())
 		return err
+	}else {
+		log.Printf("[magrete] modify db pos success position is %d\n", curWritePos)
 	}
 
 	err = ytfs.SetStoragePointer(curWritePos)
 	if err != nil {
 		log.Printf("[magrate] Set Storage Pointer err %s\n", err.Error())
+		return err
+	} else {
+		log.Printf("[magrete] set storage pointer success position is %d\n", curWritePos)
+	}
+
+	log.Printf("[magrete] cur write position is %d\n", curWritePos)
+
+	err = ytfs.YtfsDB().SetReserved(0x00000001)
+	if err != nil {
+		log.Printf("[magrate] Set reserved err %s\n", err.Error())
 		return err
 	}
 
