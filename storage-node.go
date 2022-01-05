@@ -187,7 +187,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.addrsmanager = &AddrsManager{
 		nil,
 		time.Now(),
-		time.Second * 10,
+		time.Minute * 60,
 		sn,
 	}
 
