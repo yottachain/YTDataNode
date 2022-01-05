@@ -62,7 +62,12 @@ func (sn *storageNode) Service() {
 	go func() {
 		stopUp = true
 		(&gc.GcWorker{sn}).CleanGc()
-		err := magrate.NewMr().Run(sn.ytfs, sn.config.UseKvDb, sn.config.IndexID)
+		var err error
+		if sn.config.UseKvDb {
+			err = magrate.NewMr().RunRocksdb(sn.ytfs, sn.config.IndexID)
+		}else {
+			err = magrate.NewMr().RunIndexdb(sn.ytfs, sn.config.IndexID)
+		}
 		if err != nil {
 			log.Printf("%s\n", err.Error())
 		}

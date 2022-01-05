@@ -31,13 +31,9 @@ func NewMr() *Mr{
 
 
 //while magrate don't write data
-func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
+func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	mr.Lock()
 	defer mr.Unlock()
-
-	if !isRocks {
-		return nil
-	}
 
 	keyMr, err := ytfs.YtfsDB().GetDb([]byte(MrDataKey))
 	if err != nil {
@@ -180,13 +176,7 @@ func (mr *Mr)Run(ytfs *ytfs.YTFS, isRocks bool, minerId uint32) error {
 func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	mr.Lock()
 	defer mr.Unlock()
-
-	//err := ytfs.ModifyPos(5)
-	//if err != nil {
-	//log.Printf("[magrate] index db modify pos err %s\n", err.Error())
-	//return err
-	//}
-
+	
 	url := fmt.Sprintf("http://150.138.84.46:22222/node_shards?minerid=%d", minerId)
 	log.Println("[magrate] url:", url)
 
