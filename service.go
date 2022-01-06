@@ -60,7 +60,7 @@ func (sn *storageNode) Service() {
 	//消息注册前 启动gc clean and magrate data
 	go func() {
 		stopUp = true
-		(&gc.GcWorker{sn}).CleanGc()
+		//(&gc.GcWorker{sn}).CleanGc()
 		//var err error
 		//if sn.config.UseKvDb {
 		//	err = magrate.NewMr().RunRocksdb(sn.ytfs, sn.config.IndexID)
