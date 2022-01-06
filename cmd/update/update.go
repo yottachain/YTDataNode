@@ -23,7 +23,7 @@ type UpdateConfig struct {
 
 func getUpdateConfig() (*UpdateConfig, error) {
 	var cfg UpdateConfig
-	var updateURL = "https://dnapi.yottachain.net/update-config/update.yaml"
+	var updateURL = "http://dnapi.yottachain.net/update-config/update.yaml"
 	if url, ok := os.LookupEnv("update_url"); ok {
 		updateURL = url
 	}

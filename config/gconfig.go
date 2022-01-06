@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var update_url = "https://dnapi.yottachain.net/config/dnconfig.json"
+var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
 var IsDev = 0
 
 type UpdateHandler func(gc Gcfg)
