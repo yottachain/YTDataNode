@@ -215,6 +215,8 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		snShardMap[v] = struct{}{}
 	}
 
+	log.Println("[magrate] start")
+
 	//jump hash position
 	var curWritePos = uint32(5)
 
@@ -225,7 +227,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(base58.Decode(key)))
 		shard, err := ytfs.Get(Hkey)
 		if err != nil {
-			log.Printf("[magrtae] get shard %s fail\n", key)
+			log.Printf("[magrate] get shard %s fail\n", key)
 			continue
 		}
 
@@ -238,17 +240,30 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 			OffsetIdx: ydcommon.IndexTableValue(curWritePos)}
 		i++
 		curWritePos++
-		log.Printf("[magrtae] shard %s write succees\n", key)
+		log.Printf("[magrate] shard %s write succees\n", key)
 	}
 
 	//clean all range count
 	ytfs.YtfsDB().Reset()
+	log.Println("[magrate] indexdb reset success")
+	
+	ytfs.YtfsDB().TravelDB(func(key, value []byte) error {
+		pos := binary.LittleEndian.Uint32(value)
+		log.Printf("[magrate] TravelDB step 1 key %s pos %d\n", base58.Encode(key), pos)
+		return nil
+	})
 
 	//write new indexes to db
 	_, err = ytfs.YtfsDB().BatchPut(batchIndexes)
 	if err != nil {
-		log.Printf("[magrtae] put indexes err:%s\n", err.Error())
+		log.Printf("[magrate] put indexes err:%s\n", err.Error())
 	}
+
+	ytfs.YtfsDB().TravelDB(func(key, value []byte) error {
+		pos := binary.LittleEndian.Uint32(value)
+		log.Printf("[magrate] TravelDB step 2 key %s pos %d\n", base58.Encode(key), pos)
+		return nil
+	})
 
 	//now magreat finished
 	err = ytfs.ModifyPos(uint64(curWritePos))
@@ -256,7 +271,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		log.Printf("[magrate] index db modify pos err %s\n", err.Error())
 		return err
 	}else {
-		log.Printf("[magrete] modify db pos success position is %d\n", curWritePos)
+		log.Printf("[magrate] modify db pos success position is %d\n", curWritePos)
 	}
 
 	err = ytfs.SetStoragePointer(curWritePos)
@@ -264,10 +279,10 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		log.Printf("[magrate] Set Storage Pointer err %s\n", err.Error())
 		return err
 	} else {
-		log.Printf("[magrete] set storage pointer success position is %d\n", curWritePos)
+		log.Printf("[magrate] set storage pointer success position is %d\n", curWritePos)
 	}
 
-	log.Printf("[magrete] cur write position is %d\n", curWritePos)
+	log.Printf("[magrate] cur write position is %d\n", curWritePos)
 
 	err = ytfs.YtfsDB().SetReserved(0x00000001)
 	if err != nil {
