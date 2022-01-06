@@ -328,11 +328,9 @@ func RunRX(RxCtl chan struct{}) {
 			continue
 		}
 		if execChan == nil {
-			//log.Println("[randDownload] execChan is Nil")
 			continue
 		}
 		ec := *execChan
-		//log.Println("[randDownload] chan--- cap:", cap(ec))
 		go func(ec chan struct{}) {
 			defer func() {
 				<-ec
