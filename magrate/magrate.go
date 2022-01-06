@@ -254,7 +254,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	})
 
 	//write new indexes to db
-	_, err = ytfs.YtfsDB().BatchPut(batchIndexes)
+	_, err = ytfs.YtfsDB().BatchPut(batchIndexes[:i])
 	if err != nil {
 		log.Printf("[magrate] put indexes err:%s\n", err.Error())
 	}
