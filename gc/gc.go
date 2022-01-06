@@ -29,7 +29,7 @@ type GcWorker struct{
 }
 
 const GcDir  = "/gcstatus/"
-const GcCleanKey = "gc_clean_key_"
+const GcCleanKey = "_gc_clean_key_"
 
 func init(){
     filePath := util.GetYTFSPath() + GcDir
