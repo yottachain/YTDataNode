@@ -51,7 +51,8 @@ type AddrsManager struct {
 func (am *AddrsManager) UpdateAddrs() {
 	am.addrs = am.sn.Host().Addrs()
 	//resp, err := http.Get("http://123.57.81.177/self-ip")
-	resp, err := http.Get("http://dnapi.yottachain.net/self-ip")
+	url := "http://dnapi.yottachain.net/self-ip"
+	resp, err := http.Get(url)
 	if err != nil {
 		port, ok := os.LookupEnv("nat_port")
 		if ok == false {
@@ -65,9 +66,10 @@ func (am *AddrsManager) UpdateAddrs() {
 				log.Println("fomate local ip fail:", err, laddr)
 			} else {
 				am.addrs = append(am.addrs, lma)
+				return
 			}
 		}
-		log.Println("get public ip fail")
+		log.Printf("get public ip fail, url:%s\n", url)
 	} else {
 		defer resp.Body.Close()
 
