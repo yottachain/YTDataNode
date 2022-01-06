@@ -142,7 +142,7 @@ func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 					return err
 				}
 
-				log.Printf("[magrate] succs key:%s, shard:%s, before pos %d, after pod %d\n",
+				log.Printf("[magrate] succs key:%s, shard:%s, before pos %d, after pos %d\n",
 					base58.Encode(key), base58.Encode(hash[:]), dataPos, curPos)
 			}
 		}else {
@@ -180,6 +180,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	flag := ytfs.YtfsDB().GetReserved()
 	//have magrated
 	if flag == 0x00000001 {
+		log.Printf("[magrate] indexdb have magrated")
 		return nil
 	}
 
