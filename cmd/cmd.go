@@ -92,14 +92,6 @@ var initCmd = &cobra.Command{
 	},
 }
 
-//var version = &cobra.Command{
-//	Use:   "version",
-//	Short: "ytfs-node version",
-//	Run: func(cmd *cobra.Command, args []string) {
-//		log.Printf("ytfs-node version:%d\n", config.Version())
-//	},
-//}
-
 var logCmd = &cobra.Command{
 	Use:   "log",
 	Short: "log print",
@@ -145,6 +137,6 @@ func main() {
 	RootCommand.AddCommand(account.AccountCmd)
 	RootCommand.AddCommand(regTemplateCmd)
 	RootCommand.AddCommand(initCmd)
-	//RootCommand.AddCommand(startCmd)
+
 	RootCommand.Execute()
 }
