@@ -182,7 +182,6 @@ func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, erro
 
 // NewStorageNode 创建存储节点
 func NewStorageNode(cfg *config.Config) (StorageNode, error) {
-
 	sn := &storageNode{}
 	sn.config = cfg
 	sn.owner = new(Owner)
