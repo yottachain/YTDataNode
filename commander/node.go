@@ -24,7 +24,6 @@ import (
 
 	log "github.com/yottachain/YTDataNode/logger"
 
-	// node "github.com/yottachain/YTDataNode"
 	"github.com/yottachain/YTDataNode/api"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/instance"
@@ -63,13 +62,10 @@ func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *c
 		err := diskHash.RandWrite(yt, uint(l))
 		if err != nil {
 			log.Println("[diskHash] randWrite to ytfs error:", err)
-			//return fmt.Errorf("write ytfs checkData error")
 			return nil
 		}
 	}
-	//defer yt.Close()
 	fmt.Println("YTFS init success")
-	//return nil
 	return cfg
 }
 
@@ -84,8 +80,7 @@ func NewID() (string, int) {
 	return cfg.ID, cfg.GetBPIndex()
 }
 
-// Daemon 启动守护进程
-func Daemon() {
+func setLimits() {
 	if runtime.GOOS == "linux" {
 		cmd := exec.Command("bash", "-c", "ulimit -n 60000")
 		stdin, _ := cmd.StdinPipe()
@@ -99,7 +94,11 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 `)
 		cmd.Output()
 	}
+}
 
+// Daemon 启动守护进程
+func Daemon() {
+	setLimits()
 	ctx := context.Background()
 	sn := instance.GetStorageNode()
 	if nil == sn {
@@ -112,7 +111,6 @@ echo "* hard core unlimited" >> /etc/security/limits.conf
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())
 	}
 	srv := api.NewHTTPServer(sn)
-	log.Println("Wait request")
 	sn.Service()
 	go func() {
 		if err := srv.Daemon(); err != nil {
