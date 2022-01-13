@@ -156,7 +156,14 @@ func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs
 		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n",taskID, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
 	}
-	return shardBuf, err
+
+	var resMsg message.DownloadShardResponse
+	err = proto.Unmarshal(shardBuf[2:], &resMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return resMsg.Data, err
 }
 
 func NewElkClient(tbstr string) *YTElkProducer.Client {
