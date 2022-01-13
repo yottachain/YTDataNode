@@ -156,7 +156,14 @@ func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs
 		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n",taskID, base64.StdEncoding.EncodeToString(hash), *n, addrs)
 		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
 	}
-	return shardBuf, err
+
+	var resMsg message.DownloadShardResponse
+	err = proto.Unmarshal(shardBuf[2:], &resMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return resMsg.Data, err
 }
 
 func NewElkClient(tbstr string) *YTElkProducer.Client {
@@ -284,7 +291,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		return err
 	}
 
-	//要先判断一下队列的剩余长度是否能容纳当前任，务不能的话不接收，返回错误
+	//要先判断一下队列的剩余长度是否能容纳当前任务不能的话不接收，返回错误
 	re.waitQueue.Lock()
 	defer re.waitQueue.Unlock()
 	queueLen := re.waitQueue.Len()
@@ -323,7 +330,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 	var res *TaskMsgResult
 
 	tskcnt++
-	if tskcnt % 100 == 0{
+	if tskcnt % 100 == 0 {
 		log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
 	}
 
@@ -703,20 +710,20 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
 		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
-		hashBytes := md5.Sum(shard)
-		hash := hashBytes[:]
-		var key [common.HashLength]byte
-		copy(key[:], hash)
 
 		// 如果没有发生错误，分片下载成功，就存储分片
 		if err == nil {
+			hashBytes := md5.Sum(shard)
+			var key [common.HashLength]byte
+			copy(key[:], hashBytes[:])
+
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
-			log.Printf("[recover:%s] execCPTask, getshard DataHash %s\n",
-				base58.Encode(msg.DataHash), base58.Encode(key[:]))
+			log.Printf("[recover:%s] execCPTask, get shard DataHash %s shard len %d, remote miner NodeId:%s Addr:%s\n",
+				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
 
 			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
-			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shard})
+			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
