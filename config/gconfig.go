@@ -51,6 +51,7 @@ type Gcfg struct {
 	NodeListUpdateTime    int
 	GcOpen                bool
 	SliceCompareOpen      bool
+	ActiveNodeUrl		  string `json:"ActiveNodeUrl"`
  }
 
 
