@@ -129,7 +129,7 @@ func DaemonWithBackground() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	log.SetFileLog()
 	var daemonC *exec.Cmd
-	go updateService(&daemonC)
+	//go updateService(&daemonC)
 	go func() {
 		var yOrN byte
 		<-sigs
@@ -173,7 +173,7 @@ func updateService(c **exec.Cmd) {
 			log.Println("更新完成尝试重启")
 			reboot(dcmd.Process.Pid)
 		} else {
-			log.Println(err)
+			log.Println("自动更新 fail:", err)
 		}
 	}
 }
