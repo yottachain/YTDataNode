@@ -10,6 +10,7 @@ import (
 	"github.com/yottachain/YTDataNode/capProof"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/magrate"
 	"github.com/yottachain/YTDataNode/randDownload"
 	"github.com/yottachain/YTDataNode/setRLimit"
 	"github.com/yottachain/YTDataNode/slicecompare"
@@ -58,20 +59,20 @@ func (sn *storageNode) Service() {
 	go capProof.TimerRun(sn.ytfs)
 
 	//消息注册前 启动gc clean and magrate data
-	//go func() {
-	//	stopUp = true
-	//	(&gc.GcWorker{sn}).CleanGc()
-	//	var err error
-	//	if sn.config.UseKvDb {
-	//		err = magrate.NewMr().RunRocksdb(sn.ytfs, sn.config.IndexID)
-	//	}else {
-	//		err = magrate.NewMr().RunIndexdb(sn.ytfs, sn.config.IndexID)
-	//	}
-	//	if err != nil {
-	//		log.Printf("%s\n", err.Error())
-	//	}
-	//	stopUp = false
-	//}()
+	go func() {
+		stopUp = true
+		(&gc.GcWorker{sn}).CleanGc()
+		var err error
+		if sn.config.UseKvDb {
+			err = magrate.NewMr().RunRocksdb(sn.ytfs, sn.config.IndexID)
+		}else {
+			err = magrate.NewMr().RunIndexdb(sn.ytfs, sn.config.IndexID)
+		}
+		if err != nil {
+			log.Printf("%s\n", err.Error())
+		}
+		stopUp = false
+	}()
 
 
 	// 初始化统计
