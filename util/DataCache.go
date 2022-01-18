@@ -14,8 +14,8 @@ type DataCache struct {
 	sync.Mutex
 }
 
-func NewDataCache(ttl time.Duration, getDataFunc func() interface{}) *DataCache {
-	return &DataCache{ttl: ttl, getData: getDataFunc, data: nil}
+func NewDataCache(ttl time.Duration, getDataFunc func() interface{}, update func(dc *DataCache)) *DataCache {
+	return &DataCache{ttl: ttl, getData: getDataFunc, data: nil, OnUpdate:update}
 }
 
 func (dc *DataCache) Get() interface{} {
@@ -29,4 +29,8 @@ func (dc *DataCache) Get() interface{} {
 		}
 	}
 	return dc.data
+}
+
+func (dc *DataCache) SetTTL(ttl time.Duration) {
+	dc.ttl = ttl
 }

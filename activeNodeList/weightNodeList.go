@@ -1,6 +1,7 @@
 package activeNodeList
 
 import (
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/util"
 	"time"
 )
@@ -16,6 +17,10 @@ func NewWeightNodeList(ttl time.Duration, updateTime time.Duration, groupSize in
 		nodeList = GetWeightNodeList(nodeList)
 		nodeList = GetNoIPNodeList(nodeList, noIP)
 		return nodeList
+	}, func(dc *util.DataCache) {
+		if config.Gconfig.ActiveNodeTTL > 0 {
+			dc.SetTTL(time.Second*time.Duration(config.Gconfig.ActiveNodeTTL))
+		}
 	})
 	return wl
 }
