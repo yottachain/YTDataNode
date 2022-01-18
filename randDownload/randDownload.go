@@ -217,8 +217,9 @@ func RunTX(TxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randUpload] success", successCount, "error",
-				errorCount, "exec", len(*execChan), "count", count)
+			log.Println("[randUpload] success", successCount,
+				"error", errorCount, "exec", len(*execChan),
+				"execCap", cap(*execChan), "count", count)
 		}
 	}()
 
@@ -295,7 +296,8 @@ func RunRX(RxCtl chan struct{}) {
 		for {
 			<-time.After(time.Minute)
 			log.Println("[randDownload] success", successCount,
-					"error", errorCount, "exec", len(*execChan), "count", count)
+					"error", errorCount, "exec", len(*execChan),
+					"execCap", cap(*execChan), "count", count)
 		}
 	}()
 
@@ -365,19 +367,21 @@ func Run() {
 
 func RunCtl(RxCtl, TxCtl chan struct{}){
 	for{
-		if config.Gconfig.TestInterval <= 0 {
-			config.Gconfig.TestInterval = 720
+		var interval = 720
+		if config.Gconfig.TestInterval > 0 {
+			interval = config.Gconfig.TestInterval
 		}
-		log.Printf("[randUpDownload] test interval %d mintue\n", config.Gconfig.TestInterval)
+		log.Printf("[randUpDownload] test interval %d mintue\n", interval)
 		start := time.Now()
 		go func() {
-			if config.Gconfig.RXTestDuration <= 0 {
-				config.Gconfig.RXTestDuration = 3600
+			var Duration = 3600
+			if config.Gconfig.RXTestDuration > 0 {
+				Duration = config.Gconfig.RXTestDuration
 			}
-			log.Printf("[randUpDownload] Rx test duration %d seconds\n", config.Gconfig.RXTestDuration)
+			log.Printf("[randUpDownload] Rx test duration %d seconds\n", Duration)
 			for{
 				RxCtl <- struct{}{}
-				if time.Now().Sub(start) >= time.Duration(config.Gconfig.RXTestDuration)*time.Second {
+				if time.Now().Sub(start) >= time.Duration(Duration)*time.Second {
 					log.Println("[randUpDownload] Download stop")
 					break
 				}
@@ -385,19 +389,20 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 		}()
 
 		go func() {
-			if config.Gconfig.TXTestDuration <= 0 {
-				config.Gconfig.TXTestDuration = 3600
+			var Duration = 3600
+			if config.Gconfig.TXTestDuration > 0 {
+				Duration = config.Gconfig.TXTestDuration
 			}
-			log.Printf("[randUpDownload] Tx test duration %d seconds\n", config.Gconfig.TXTestDuration)
+			log.Printf("[randUpDownload] Tx test duration %d seconds\n", Duration)
 			for{
 				TxCtl <- struct{}{}
-				if time.Now().Sub(start) >= time.Duration(config.Gconfig.TXTestDuration)*time.Second {
+				if time.Now().Sub(start) >= time.Duration(Duration)*time.Second {
 					log.Println("[randUpDownload] Upload stop")
 					break
 				}
 			}
 		}()
-		<-time.After(time.Minute * time.Duration(config.Gconfig.TestInterval))
+		<-time.After(time.Minute * time.Duration(interval))
 	}
 }
 
