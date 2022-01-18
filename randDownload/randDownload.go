@@ -218,7 +218,7 @@ func RunTX(TxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randDownload] success", successCount,
+			log.Println("[randUpload] success", successCount,
 				"error", errorCount, "noToken", notokenErrorCount, "exec", len(*execChan),
 				"execCap", cap(*execChan), "count", count)
 		}
