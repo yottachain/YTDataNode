@@ -210,6 +210,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 func RunTX(TxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
+	var notokenErrorCount uint64
 	var execChan *chan struct{}
 	var count uint64
 	rand.Seed(int64(os.Getpid()))
@@ -217,8 +218,8 @@ func RunTX(TxCtl chan struct{}) {
 	go func() {
 		for {
 			<-time.After(time.Minute)
-			log.Println("[randUpload] success", successCount,
-				"error", errorCount, "exec", len(*execChan),
+			log.Println("[randDownload] success", successCount,
+				"error", errorCount, "noToken", notokenErrorCount, "exec", len(*execChan),
 				"execCap", cap(*execChan), "count", count)
 		}
 	}()
@@ -272,10 +273,14 @@ func RunTX(TxCtl chan struct{}) {
 			atomic.AddUint64(&count, 1)
 			//log.Println("[randUpload] start")
 			err := UploadFromRandNode(ctx)
-			if err != nil && err.Error() != errNoTK.Error() {
-				logBuffer.ErrorLogger.Println(err.Error())
-				atomic.AddUint64(&errorCount, 1)
-			} else if err == nil {
+			if err != nil {
+				logBuffer.ErrorLogger.Println("[randUpload]", err.Error())
+				if err.Error() == errNoTK.Error() {
+					atomic.AddUint64(&notokenErrorCount, 1)
+				}else {
+					atomic.AddUint64(&errorCount, 1)
+				}
+			} else {
 				atomic.AddUint64(&successCount, 1)
 			}
 		}(ec)
@@ -288,6 +293,7 @@ func RunTX(TxCtl chan struct{}) {
 func RunRX(RxCtl chan struct{}) {
 	var successCount uint64
 	var errorCount uint64
+	var notokenErrorCount uint64
 	var count uint64
 	var execChan *chan struct{}
 	rand.Seed(int64(os.Getpid()) + time.Now().Unix())
@@ -296,7 +302,7 @@ func RunRX(RxCtl chan struct{}) {
 		for {
 			<-time.After(time.Minute)
 			log.Println("[randDownload] success", successCount,
-					"error", errorCount, "exec", len(*execChan),
+					"error", errorCount, "noToken", notokenErrorCount, "exec", len(*execChan),
 					"execCap", cap(*execChan), "count", count)
 		}
 	}()
@@ -344,10 +350,14 @@ func RunRX(RxCtl chan struct{}) {
 
 			atomic.AddUint64(&count, 1)
 			err := DownloadFromRandNode(ctx)
-			if err != nil && err.Error() != errNoTK.Error() {
-				logBuffer.ErrorLogger.Println(err.Error())
-				atomic.AddUint64(&errorCount, 1)
-			} else if err == nil {
+			if err != nil  {
+				logBuffer.ErrorLogger.Println("[randDownload]", err.Error())
+				if err.Error() == errNoTK.Error() {
+					atomic.AddUint64(&notokenErrorCount, 1)
+				}else {
+					atomic.AddUint64(&errorCount, 1)
+				}
+			} else {
 				atomic.AddUint64(&successCount, 1)
 			}
 
