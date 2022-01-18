@@ -368,12 +368,14 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 		if config.Gconfig.TestInterval <= 0 {
 			config.Gconfig.TestInterval = 720
 		}
+		log.Printf("[randUpDownload] test interval %d mintue\n", config.Gconfig.TestInterval)
 		start := time.Now()
 		go func() {
+			if config.Gconfig.RXTestDuration <= 0 {
+				config.Gconfig.RXTestDuration = 3600
+			}
+			log.Printf("[randUpDownload] Rx test duration %d seconds\n", config.Gconfig.RXTestDuration)
 			for{
-				if config.Gconfig.RXTestDuration <= 0 {
-					config.Gconfig.RXTestDuration = 3600
-				}
 				RxCtl <- struct{}{}
 				if time.Now().Sub(start) >= time.Duration(config.Gconfig.RXTestDuration)*time.Second {
 					log.Println("[randUpDownload] Download stop")
@@ -383,10 +385,11 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 		}()
 
 		go func() {
+			if config.Gconfig.TXTestDuration <= 0 {
+				config.Gconfig.TXTestDuration = 3600
+			}
+			log.Printf("[randUpDownload] Tx test duration %d seconds\n", config.Gconfig.TXTestDuration)
 			for{
-				if config.Gconfig.TXTestDuration <= 0 {
-					config.Gconfig.TXTestDuration = 3600
-				}
 				TxCtl <- struct{}{}
 				if time.Now().Sub(start) >= time.Duration(config.Gconfig.TXTestDuration)*time.Second {
 					log.Println("[randUpDownload] Upload stop")
