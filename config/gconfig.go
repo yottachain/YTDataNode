@@ -48,10 +48,14 @@ type Gcfg struct {
 	RandDownloadGroupSize int
 	RXTestSleep           int
 	TXTestSleep           int
+	TestInterval		  int	//minute
+	RXTestDuration		  int	//second
+	TXTestDuration		  int	//second
 	NodeListUpdateTime    int
 	GcOpen                bool
 	SliceCompareOpen      bool
 	ActiveNodeUrl		  string `json:"ActiveNodeUrl"`
+	ActiveNodeTTL		  int		`json:"ActiveNodeTTL"`	//second
  }
 
 

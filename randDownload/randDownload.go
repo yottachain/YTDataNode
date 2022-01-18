@@ -341,7 +341,6 @@ func RunRX(RxCtl chan struct{}) {
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
-			//log.Println("[randDownload] start")
 			err := DownloadFromRandNode(ctx)
 			if err != nil && err.Error() != errNoTK.Error() {
 				logBuffer.ErrorLogger.Println(err.Error())
@@ -366,12 +365,18 @@ func Run() {
 
 func RunCtl(RxCtl, TxCtl chan struct{}){
 	for{
+		if config.Gconfig.TestInterval <= 0 {
+			config.Gconfig.TestInterval = 720
+		}
 		start := time.Now()
 		go func() {
 			for{
+				if config.Gconfig.RXTestDuration <= 0 {
+					config.Gconfig.RXTestDuration = 3600
+				}
 				RxCtl <- struct{}{}
-				if time.Now().Sub(start).Seconds() >= 3600 {
-					log.Println("[randUpDownload] stop")
+				if time.Now().Sub(start) >= time.Duration(config.Gconfig.RXTestDuration)*time.Second {
+					log.Println("[randUpDownload] Download stop")
 					break
 				}
 			}
@@ -379,14 +384,17 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 
 		go func() {
 			for{
+				if config.Gconfig.TXTestDuration <= 0 {
+					config.Gconfig.TXTestDuration = 3600
+				}
 				TxCtl <- struct{}{}
-				if time.Now().Sub(start).Seconds() >= 3600 {
-					log.Println("[randUpDownload] stop")
+				if time.Now().Sub(start) >= time.Duration(config.Gconfig.TXTestDuration)*time.Second {
+					log.Println("[randUpDownload] Upload stop")
 					break
 				}
 			}
 		}()
-		<-time.After(time.Hour * 11)
+		<-time.After(time.Minute * time.Duration(config.Gconfig.TestInterval))
 	}
 }
 

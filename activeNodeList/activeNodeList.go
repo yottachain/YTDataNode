@@ -60,6 +60,8 @@ func Update() {
 		return
 	}
 
+	defer res.Body.Close()
+
 	dc := json.NewDecoder(res.Body)
 	err = dc.Decode(&nodeList)
 	if err != nil {
@@ -74,9 +76,14 @@ func Update() {
 }
 
 func GetNodeList() []*Data {
+	ttl := 300
+	if config.Gconfig.ActiveNodeTTL > 0 {
+		ttl = config.Gconfig.ActiveNodeTTL
+	}
 	locker.Lock()
-	if time.Now().Sub(updateTime) > time.Second {
+	if time.Now().Sub(updateTime) > time.Duration(ttl)*time.Second {
 		Update()
+		log.Printf("[activeNodeList] update interval is %d\n", ttl)
 	}
 	locker.Unlock()
 
@@ -164,7 +171,7 @@ func GetNodeListByTimeAndGroupSize(duration time.Duration, size int) []*Data {
 
 // 获取经过权重处理的NodeList
 func GetWeightNodeList(nodeList []*Data) []*Data {
-	var res []*Data = make([]*Data, 0)
+	var res = make([]*Data, 0)
 	for k, v := range nodeList {
 		nodeList[k].WInt = int(math.Log(float64(v.WInt))) + int(math.Pow(float64(v.WInt/100), 2))
 		for i := 0; i <= nodeList[k].WInt; i++ {
