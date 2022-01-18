@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -382,8 +383,13 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 			interval = config.Gconfig.TestInterval
 		}
 		log.Printf("[randUpDownload] test interval %d mintue\n", interval)
+		wg := sync.WaitGroup{}
+
 		start := time.Now()
 		go func() {
+			wg.Add(1)
+			defer wg.Done()
+
 			var Duration = 3600
 			if config.Gconfig.RXTestDuration > 0 {
 				Duration = config.Gconfig.RXTestDuration
@@ -399,6 +405,9 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 		}()
 
 		go func() {
+			wg.Add(1)
+			defer wg.Done()
+
 			var Duration = 3600
 			if config.Gconfig.TXTestDuration > 0 {
 				Duration = config.Gconfig.TXTestDuration
@@ -412,6 +421,8 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 				}
 			}
 		}()
+
+		wg.Wait()
 		<-time.After(time.Minute * time.Duration(interval))
 	}
 }

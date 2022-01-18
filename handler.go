@@ -176,7 +176,7 @@ func (wh *WriteHandler) GetMaxSpace() uint64 {
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
 	var GTMsg message.NodeCapacityRequest
-	var xtp *TokenPool.TokenPool = TokenPool.Utp()
+	var xtp = TokenPool.Utp()
 	var tokenType = "upload"
 	// 目前全都为0
 	var level int32 = 0

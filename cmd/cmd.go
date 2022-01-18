@@ -21,7 +21,6 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
 	ytfs "github.com/yottachain/YTFS"
-	//comm "github.com/yottachain/YTFS/common"
 )
 
 var size uint64
