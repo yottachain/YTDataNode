@@ -37,11 +37,8 @@ import (
 	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-	ytfs "github.com/yottachain/YTFS"
 	yhservice "github.com/yottachain/YTHost/service"
 )
-
-type ytfsDisk *ytfs.YTFS
 
 var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()

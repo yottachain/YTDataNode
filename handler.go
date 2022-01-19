@@ -211,9 +211,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 	defer cancel()
 
 	tk, err := xtp.Get(ctx, id, level)
-	//if err != nil {
-	//	fmt.Println("[get token] error:", err.Error())
-	//}
 
 	// 如果 剩余空间不足10个分片停止发放token
 	if wh.GetMaxSpace() <= (wh.YTFS().Len()) {
@@ -248,9 +245,6 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 		}
 	}
 	resbuf, _ := proto.Marshal(&res)
-	//if tk != nil {
-	//	log.Printf("[task pool]get token return %s pid %s ip %v type %o\n", tk.String(), id.Pretty(), ip, tokenType)
-	//}
 
 	return append(message.MsgIDNodeCapacityResponse.Bytes(), resbuf...)
 }

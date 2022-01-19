@@ -139,11 +139,13 @@ func (pt *TokenPool) AutoChangeTokenInterval(IncreaseThreshold, Increase, Decrea
 			<-time.After(decreaseTd)
 			// 如果 发送的token 未消耗的 > 总量的 15% 减少token发放 百分之10
 			rate := pt.GetRate()
+			log.Printf("[token reduce] %s rate %d\n", pt.name, rate)
 			if rate == -1 {
 				continue
 			}
 			if rate < DecreaseThreshold {
-				log.Printf("[token] 触发token减少 [%d][%d,%d] \n", rate, DecreaseThreshold, IncreaseThreshold)
+				log.Printf("[token pool] %s 触发token减少 [%d][%d,%d] \n",
+						pt.name, rate, DecreaseThreshold, IncreaseThreshold)
 				// 衰减量 是失败百分比
 				decrement := pt.FillTokenInterval * (time.Duration(DecreaseThreshold) - time.Duration(rate)) / 100
 				pt.ChangeTKFillInterval(pt.FillTokenInterval + decrement)
@@ -157,10 +159,12 @@ func (pt *TokenPool) AutoChangeTokenInterval(IncreaseThreshold, Increase, Decrea
 			// 小时增加一次token
 			<-time.After(increaseTd)
 			rate := pt.GetRate()
+			log.Printf("[token add] %s rate %d\n", pt.name, rate)
 			if rate == -1 {
 				continue
 			}
-			log.Printf("[token pool] rate [%d][%d,%d] \n", rate, DecreaseThreshold, IncreaseThreshold)
+			log.Printf("[token pool] %s 触发token增加 [%d][%d,%d] \n",
+					pt.name, rate, DecreaseThreshold, IncreaseThreshold)
 			// 如果 发送的token 未消耗的 < 总量的 5% 增加token发放 百分之20
 			if rate > IncreaseThreshold {
 				decrement := pt.FillTokenInterval * (time.Duration(rate) - time.Duration(IncreaseThreshold)) / 100
