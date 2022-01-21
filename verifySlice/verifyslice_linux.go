@@ -73,9 +73,9 @@ func Date() string{
 	return date
 }
 
-func SavetoFile( dir, file string,value []byte) error{
+func SavetoFile(dir, file string, value []byte) error{
 	var err error
-	status_exist,_ := util.PathExists(dir)
+	status_exist, _ := util.PathExists(dir)
 	if !status_exist {
 		os.MkdirAll(dir, 0666)
 	}
@@ -99,7 +99,7 @@ func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
 	binary.LittleEndian.PutUint64(Bbch, UIbch)
 	_ = vfs.Hdb.DB.Put(vfs.Hdb.Wo, []byte(VerifyBchKey), Bbch)
 
-	if len(resp.ErrShard) <= 0{
+	if len(resp.ErrShard) <= 0 {
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func (vfs *VerifySler)VerifySliceReal(verifyNum string, startItem string) (messa
 		return resp
 	}
 
-	resp = vfs.VerifySliceIdxdb(num,startItem)
+	resp = vfs.VerifySliceIdxdb(num, startItem)
 	return resp
 }
 
@@ -193,25 +193,25 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 		return resp
 	}
 
-	if nil == vfs.Hdb{
+	if nil == vfs.Hdb {
 		resp.ErrCode = "ErrOpenHashdb"
 		return resp
 	}
 
-	if nil == vfs.Bdb{
+	if nil == vfs.Bdb {
 		resp.ErrCode = "ErrOpenBatchdb"
 		return resp
 	}
 
 	resp = vfs.VerifySliceReal(verifyNum, startItem)
-	if resp.ErrCode == "101"{
+	if resp.ErrCode == "101" {
 		return resp
 	}
 
 	//save result to file and verify db
 	var UIbtch uint32
 	Bbtch, _ := vfs.Hdb.DB.Get(vfs.Hdb.Ro, []byte(VerifyBchKey))
-	if ! Bbtch.Exists(){
+	if ! Bbtch.Exists() {
 		UIbtch = 1
 	}else{
 		UIbtch = binary.LittleEndian.Uint32(Bbtch.Data()) + 1
@@ -223,8 +223,8 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 	resp.VrfTime = Date
 	resp.Num = verifyNum
 	_ = vfs.SaveVerifyToDb(resp)
-	rstfile := "rst"+Date +"_"+ Sbtch
+	rstfile := "rst" + Date + "_"+ Sbtch
 	res, _ := proto.Marshal(&resp)
-	_ = SavetoFile(rstdir,rstfile,res)
+	_ = SavetoFile(rstdir, rstfile, res)
 	return resp
 }

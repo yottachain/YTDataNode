@@ -137,8 +137,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
 
     n := 0
     d := &mnet.Dialer{}
-    //conn := mnet.Conn{}
-    ctx,cancel := context.WithTimeout(context.Background(), time.Second * 30)
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30)
     defer cancel()
     maAddr,_ := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/9001")
     conn, err := d.DialContext(ctx, maAddr)
@@ -154,7 +153,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
 
     reqMsg.Num = CntPerBatch
     reqMsg.StartItem = StartItem
-    reqData,err := proto.Marshal(&reqMsg)
+    reqData, err := proto.Marshal(&reqMsg)
     if err != nil{
         fmt.Println("request msg error：",err.Error())
         return
@@ -163,22 +162,24 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
     var res service.Response
     req := service.Request{message.MsgIDSelfVerifyReq.Value(),reqData,pi}
     clt := rpc.NewClient(conn)
+    defer clt.Close()
     err = clt.Call("ms.HandleMsg", req, &res)
-    if err != nil{
+    if err != nil {
         fmt.Println("[verifytool] err:",err)
         return
     }
 
-    err = proto.Unmarshal(res.Data[2:],&respMsg)
+    err = proto.Unmarshal(res.Data[2:], &respMsg)
     if err != nil{
         fmt.Println("[verifytool] Unmarsharl err:",err.Error())
         return
     }
-    fmt.Println("response nodeid:",respMsg.Id,"table idx:",respMsg.Entryth,"err account:",respMsg.ErrNum,"errCode:",respMsg.ErrCode)
-    for i := 0;i < len(respMsg.ErrShard);i++{
-        fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),"DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
+    fmt.Println("response nodeid:", respMsg.Id, "table idx:", respMsg.Entryth,
+        "err account:", respMsg.ErrNum, "errCode:", respMsg.ErrCode)
+    for i := 0; i < len(respMsg.ErrShard); i++ {
+        fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),
+            "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
     }
-    //fmt.Println("[verifytool] respMsg:",respMsg)
 }
 
 func SelfVerifyRPC(StartItem, CntPerBatch string){
@@ -289,7 +290,7 @@ func main(){
 
     begin := true
     if *Online {
-        if VerifyErrKey !=""{
+        if VerifyErrKey != ""{
             fmt.Println("check Key:",VerifyErrKey)
             MissSliceQuery(VerifyErrKey)
             return
@@ -301,7 +302,7 @@ func main(){
                 SendCompareVerifyOrder2(StartItem, CntPerBatch)
                 //SelfVerifyRPC(StartItem,CntPerBatch,vTimes)
                 <- time.After(time.Second * 1)
-                if begin{
+                if begin {
                     log.Println("verify start!!")
                     begin = false
                     StartItem = ""
@@ -316,12 +317,12 @@ func main(){
                 break
             }
         }
-    }else{
+    }else {
         sn := instance.GetStorageNode()
         gcw = gc.GcWorker{sn}
         vfer := verifySlice.NewVerifySler(sn)
 
-        if VerifyErrKey !=""{
+        if VerifyErrKey != ""{
             ReInit(vfer)
             GetKeyStatus(vfer, VerifyErrKey)
             return

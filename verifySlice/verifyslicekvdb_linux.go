@@ -29,7 +29,7 @@ func (vfs *VerifySler) Scankvdb(){
 }
 
 func ChkRsvSpace(dir string, size int64) error {
-    status_exist,_ := util.PathExists(dir)
+    status_exist, _ := util.PathExists(dir)
     if !status_exist {
         os.MkdirAll(dir, 0666)
     }
@@ -39,12 +39,12 @@ func ChkRsvSpace(dir string, size int64) error {
         return err
     }
 
-    _,err = fil.Seek(size,0)
+    _, err = fil.Seek(size,0)
     if err != nil{
         return err
     }
 
-    _,err = fil.Write([]byte("end"))
+    _, err = fil.Write([]byte("end"))
     if err != nil{
         return err
     }
@@ -94,15 +94,13 @@ func OpenKVDB(dbname string) (*VrDB, error) {
 
 func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
-    //var errhash message.HashToHash
-    //var hashTab []ytfs.Hashtohash
-    //log.Println("[verify] VerifySlicekvdb start")
-    startkey,err := slicecompare.GetValueFromFile(VerifyedKvFile)
+
+    startkey, err := slicecompare.GetValueFromFile(VerifyedKvFile)
     if len(startItem) > 0 {
         startkey = startItem
     }
 
-    hashTab,beginKey,err := vfs.Sn.YTFS().VerifySlice(startkey,traveEntries)
+    hashTab, beginKey, err := vfs.Sn.YTFS().VerifySlice(startkey, traveEntries)
     slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
     if err != nil {
         resp.ErrCode = "200"
@@ -111,7 +109,7 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
     }
 
     log.Println("[verify] len_hashTab=",len(hashTab))
-    for i:= 0; i < len(hashTab); i++{
+    for i:= 0; i < len(hashTab); i++ {
         var errhash message.HashToHash
         errhash.DBhash = hashTab[i].DBhash
         errhash.Datahash = hashTab[i].Datahash
@@ -120,8 +118,9 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
             continue
         }
 
-        resp.ErrShard = append(resp.ErrShard,&errhash)
-        log.Println("[verify] errhash.DBhash=",base58.Encode(hashTab[i].DBhash),"Datahash=",base58.Encode(hashTab[i].Datahash))
+        resp.ErrShard = append(resp.ErrShard, &errhash)
+        log.Println("[verify] errhash.DBhash=",base58.Encode(hashTab[i].DBhash),
+            "Datahash=",base58.Encode(hashTab[i].Datahash))
     }
 
     resp.Id = strconv.FormatUint(uint64(vfs.Sn.Config().IndexID),10)
