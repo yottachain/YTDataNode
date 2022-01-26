@@ -6,49 +6,27 @@ import (
     "flag"
     "fmt"
     "github.com/golang/protobuf/proto"
+    "github.com/libp2p/go-libp2p-core/peer"
     "github.com/mr-tron/base58"
+    "github.com/multiformats/go-multiaddr"
+    mnet "github.com/multiformats/go-multiaddr-net"
     "github.com/spf13/cobra"
+    "github.com/tecbot/gorocksdb"
+    "github.com/yottachain/YTDataNode/gc"
+    "github.com/yottachain/YTDataNode/instance"
     log "github.com/yottachain/YTDataNode/logger"
-    "github.com/yottachain/YTHost/clientStore"
+    "github.com/yottachain/YTDataNode/message"
+    "github.com/yottachain/YTDataNode/verifySlice"
+    ydcommon "github.com/yottachain/YTFS/common"
+    "github.com/yottachain/YTHost/service"
+    "net/rpc"
     "os"
     "os/exec"
     "os/signal"
     "strconv"
-    "syscall"
-
-    //"github.com/yottachain/YTHost/option"
-    "github.com/yottachain/YTHost/service"
-    "github.com/yottachain/YTHost/stat"
-    "net/http"
-    "net/rpc"
-
-    //"github.com/graydream/YTHost/hostInterface"
-    "github.com/yottachain/YTDataNode/config"
-    "github.com/yottachain/YTDataNode/message"
-
-    //host "github.com/yottachain/YTHost"
-    //hostInterface "github.com/yottachain/YTHost/interface"
-
-    "github.com/libp2p/go-libp2p-core/peer"
-    "github.com/multiformats/go-multiaddr"
-    //"fmt"
-    //"github.com/mr-tron/base58"
-    "github.com/yottachain/YTDataNode/verifySlice"
-
-    //"github.com/yottachain/YTDataNode/config"
-    "github.com/yottachain/YTDataNode/gc"
-    "github.com/yottachain/YTDataNode/instance"
-    //"github.com/yottachain/YTHost/clientStore"
-    mnet "github.com/multiformats/go-multiaddr-net"
-
     "sync"
-
-    "github.com/tecbot/gorocksdb"
-    ydcommon "github.com/yottachain/YTFS/common"
-    //"path"
+    "syscall"
     "time"
-    //"github.com/mr-tron/base58/base58"
-    //sni "github.com/yottachain/YTDataNode/storageNodeInterface"
 )
 
 var Mdb *KvDB
@@ -57,16 +35,6 @@ var StartItem string
 var BatchCnt string
 var VerifyErrKey  string
 var Loop *bool
-
-type Host2 struct {
-    cfg      *config.Config
-    listener mnet.Listener
-    srv      *rpc.Server
-    service.HandlerMap
-    clientStore *clientStore.ClientStore
-    httpClient  *http.Client
-    Cs *stat.ConnStat
-}
 
 type KvDB struct {
     Rdb *gorocksdb.DB
