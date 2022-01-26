@@ -517,7 +517,7 @@ func GetValueFromFile(fileName string) (string ,error){
 	if err != nil {
 		log.Printf("read file err=%v\r\n", err)
 	}
-	return string(content),err
+	return string(content), err
 }
 
 func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB string, comparetimes uint8) error {

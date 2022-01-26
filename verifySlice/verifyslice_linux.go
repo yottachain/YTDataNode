@@ -145,7 +145,7 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 		return resp
 	}
 
-	VrfBch,err := vfs.Hdb.DB.Get(vfs.Hdb.Ro, HKey)
+	VrfBch, err := vfs.Hdb.DB.Get(vfs.Hdb.Ro, HKey)
 	if err != nil {
 		resp.ErrCode = "ErrGetBatchNum"
 		fmt.Println("Get BatchNum of ",Skey," error",err.Error())
@@ -164,7 +164,7 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 	VrfTm, err := vfs.Bdb.DB.Get(vfs.Bdb.Ro, Bbch)
 	if err != nil {
 		resp.ErrCode = "ErrGetBatchTm"
-		fmt.Println("Get Verify-time of ",UIBch," error",err.Error())
+		fmt.Println("Get Verify-time of ", UIBch, " error", err.Error())
 		return resp
 	}
 
@@ -176,7 +176,7 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 
 	STime := string(VrfTm.Data())
 	resp.Date = STime
-	fmt.Println("[query result] Hash:",Skey, "BatchNum:",UIBch, "Time:",STime)
+	fmt.Println("[query result] Hash:", Skey, "BatchNum:", UIBch, "Time:", STime)
 
 	return resp
 }

@@ -305,7 +305,8 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	for _, task := range mtdMsg.Tasklist {
 		bys := task[12:14]
 		bytebuff := bytes.NewBuffer(bys)
-		var snID uint16
+		//var snID uint16
+		var snID int16
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,

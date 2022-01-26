@@ -7,9 +7,14 @@ import (
     "fmt"
     "github.com/golang/protobuf/proto"
     "github.com/mr-tron/base58"
+    "github.com/spf13/cobra"
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTHost/clientStore"
+    "os"
+    "os/exec"
+    "os/signal"
     "strconv"
+    "syscall"
 
     //"github.com/yottachain/YTHost/option"
     "github.com/yottachain/YTHost/service"
@@ -51,6 +56,7 @@ var CntPerBatch string
 var StartItem string
 var BatchCnt string
 var VerifyErrKey  string
+var Loop *bool
 
 type Host2 struct {
     cfg      *config.Config
@@ -109,7 +115,7 @@ func RPCRequestCommon( MsgId int32, ReqData []byte)(service.Response, error){
     maAddr,_ := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/9001")
     conn, err := d.DialContext(ctx, maAddr)
     if err != nil{
-        fmt.Println("DialContext error:",err,"retry n=",n)
+        fmt.Println("DialContext error:", err, "retry n=", n)
         conn,err = ConnRetry(ctx, maAddr,d)
     }
 
@@ -165,7 +171,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
     defer clt.Close()
     err = clt.Call("ms.HandleMsg", req, &res)
     if err != nil {
-        fmt.Println("[verifytool] err:",err)
+        fmt.Println("[verifytool] err:", err)
         return
     }
 
@@ -183,42 +189,34 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
 }
 
 func SelfVerifyRPC(StartItem, CntPerBatch string){
-    //n := uint64(0)
-
-    //for{
-        //if n >= vTimes{
-        //    fmt.Println("verifyed batchs :",n,"BatchCnt=",BatchCnt)
-        //    break
-        //}
-
         SendCompareVerifyOrder2(StartItem, CntPerBatch)
-    //    <-time.After(time.Second * 2)
-    //    n++
-    //}
 }
 
-func MissSliceQuery(Key string){
+func MissSliceQuery(Key string) error{
    var req message.SelfVerifyQueryReq
    var res message.SelfVerifyQueryResp
    req.Key = Key
    reqdata, err := proto.Marshal(&req)
    if err != nil{
        fmt.Println("Marshal request error:", err)
-       return
+       return err
    }
-   resdata, err := RPCRequestCommon(message.MsgIDSelfVerifyQueryReq.Value(),reqdata)
+   resdata, err := RPCRequestCommon(message.MsgIDSelfVerifyQueryReq.Value(), reqdata)
     if err != nil{
         fmt.Println("[verifytool] err:",err)
-        return
+        return err
     }
 
     err = proto.Unmarshal(resdata.Data[2:],&res)
     if err != nil{
         fmt.Println("Unmarshal resdata error:",err)
-        return
+        return err
     }
     fmt.Println(" ")
-    fmt.Println("Key:",res.Key, "BatchNum:",res.BatchNum, "Date:",res.Date, "ErrCode:",res.ErrCode)
+    fmt.Println("Key:", res.Key, "BatchNum:", res.BatchNum,
+        "Date:", res.Date, "ErrCode:", res.ErrCode)
+
+    return nil
 }
 
 func ReInit(vfer *verifySlice.VerifySler){
@@ -239,18 +237,18 @@ func ReInit(vfer *verifySlice.VerifySler){
 func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
     HKey, err := base58.Decode(SKey)
     if err != nil {
-        fmt.Println("Decode key error:",err)
+        fmt.Println("Decode key error:", err)
         return
     }
 
-    VrfBch,err := vfer.Hdb.DB.Get(vfer.Hdb.Ro, HKey)
+    VrfBch, err := vfer.Hdb.DB.Get(vfer.Hdb.Ro, HKey)
     if err != nil {
-        fmt.Println("Get BatchNum of ",SKey," error",err.Error())
+        fmt.Println("Get BatchNum of ", SKey, " error", err.Error())
         return
     }
 
     if !VrfBch.Exists(){
-        fmt.Println("error, hash not exist, key:",SKey,"vrfbch",VrfBch)
+        fmt.Println("error, hash not exist, key:", SKey, "vrfbch", VrfBch)
         return
     }
     Bbch := VrfBch.Data()
@@ -270,10 +268,110 @@ func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
     STime := string(VrfTm.Data())
 
     fmt.Println("")
-    fmt.Println("[query result] Hash:",SKey, "BatchNum:",UIBch, "Time:",STime)
+    fmt.Println("[query result] Hash:", SKey, "BatchNum:", UIBch, "Time:", STime)
 }
 
-func main(){
+var daemonCmd = &cobra.Command{
+    Use:   "daemom",
+    Short: "以守护进程启动程序",
+    Run: func(cmd *cobra.Command, args []string) {
+        sigs := make(chan os.Signal, 1)
+        signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+        c := exec.Command(os.Args[0], "start")
+        c.Env = os.Environ()
+        c.Stdout = os.Stdout
+        c.Stderr = os.Stderr
+        err := c.Start()
+        if err != nil {
+            log.Println("进程启动失败:", err)
+        } else {
+            log.Println("守护进程已启动")
+        }
+    },
+}
+
+var startCmd = &cobra.Command{
+    Use:   "start",
+    Short: "前台运行程序",
+    Run: func(cmd *cobra.Command, args []string) {
+        start()
+    },
+}
+
+var checkCmd = &cobra.Command{
+    Use:   "check",
+    Short: "查询校验的状态",
+    Run: func(cmd *cobra.Command, args []string) {
+        verifyStatus()
+    },
+}
+
+func start() {
+    vTimes, err := strconv.ParseUint(BatchCnt, 10, 64)
+    if err != nil{
+        fmt.Println("[verify tool] error:", err)
+        return
+    }
+
+    begin := true
+    sn := instance.GetStorageNode()
+    vfer := verifySlice.NewVerifySler(sn)
+
+    bchCnt := uint64(0)
+    for{
+        for{
+            <- time.After(time.Second * 1)
+            vfer.VerifySlice(CntPerBatch, StartItem)
+            if begin {
+                log.Println("verify start!!")
+                begin = false
+                StartItem = ""
+            }
+            bchCnt++
+            if bchCnt >= vTimes{
+                break
+            }
+        }
+
+        if !*Loop{
+            break
+        }
+    }
+}
+
+func verifyStatus() {
+    if VerifyErrKey != "" {
+        fmt.Println("check Key:",VerifyErrKey)
+        err := MissSliceQuery(VerifyErrKey)
+        if err != nil {
+            sn := instance.GetStorageNode()
+            vfer := verifySlice.NewVerifySler(sn)
+            GetKeyStatus(vfer, VerifyErrKey)
+        }
+    }else {
+        log.Printf("key shouldn't nil")
+    }
+}
+
+func main () {
+    Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
+    startCmd.Flags().StringVar(&StartItem,"s","","start items to verify")
+    startCmd.Flags().StringVar(&CntPerBatch,"c","1000","verify items for one batch")
+    startCmd.Flags().StringVar(&BatchCnt,"b","1000","batch count for verify")
+
+    checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
+
+    RootCommand := &cobra.Command{
+        Short:   "ytfs verify",
+    }
+    RootCommand.AddCommand(startCmd)
+    RootCommand.AddCommand(checkCmd)
+    RootCommand.AddCommand(daemonCmd)
+
+    RootCommand.Execute()
+}
+
+func main_(){
     Online := flag.Bool("online",true,"run verifytool online or offline")
     Loopm := flag.Bool("loop",true,"verify mode :loop or not")
     flag.StringVar(&StartItem,"s","","start items to verify")
