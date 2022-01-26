@@ -329,6 +329,8 @@ func main () {
 
     checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
 
+    log.SetFileLog()
+
     RootCommand := &cobra.Command{
         Short:   "ytfs verify",
     }
