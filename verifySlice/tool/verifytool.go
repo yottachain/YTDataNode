@@ -10,7 +10,6 @@ import (
     "github.com/mr-tron/base58"
     "github.com/multiformats/go-multiaddr"
     mnet "github.com/multiformats/go-multiaddr-net"
-    "github.com/spf13/cobra"
     "github.com/tecbot/gorocksdb"
     "github.com/yottachain/YTDataNode/gc"
     "github.com/yottachain/YTDataNode/instance"
@@ -20,12 +19,8 @@ import (
     ydcommon "github.com/yottachain/YTFS/common"
     "github.com/yottachain/YTHost/service"
     "net/rpc"
-    "os"
-    "os/exec"
-    "os/signal"
     "strconv"
     "sync"
-    "syscall"
     "time"
 )
 
@@ -239,41 +234,6 @@ func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
     fmt.Println("[query result] Hash:", SKey, "BatchNum:", UIBch, "Time:", STime)
 }
 
-var daemonCmd = &cobra.Command{
-    Use:   "daemom",
-    Short: "以守护进程启动程序",
-    Run: func(cmd *cobra.Command, args []string) {
-        sigs := make(chan os.Signal, 1)
-        signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
-        c := exec.Command(os.Args[0], "start")
-        c.Env = os.Environ()
-        c.Stdout = os.Stdout
-        c.Stderr = os.Stderr
-        err := c.Start()
-        if err != nil {
-            log.Println("进程启动失败:", err)
-        } else {
-            log.Println("守护进程已启动")
-        }
-    },
-}
-
-var startCmd = &cobra.Command{
-    Use:   "start",
-    Short: "前台运行程序",
-    Run: func(cmd *cobra.Command, args []string) {
-        start()
-    },
-}
-
-var checkCmd = &cobra.Command{
-    Use:   "check",
-    Short: "查询校验的状态",
-    Run: func(cmd *cobra.Command, args []string) {
-        verifyStatus()
-    },
-}
-
 func start() {
     vTimes, err := strconv.ParseUint(BatchCnt, 10, 64)
     if err != nil{
@@ -319,26 +279,6 @@ func verifyStatus() {
     }else {
         log.Printf("key shouldn't nil")
     }
-}
-
-func main () {
-    Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
-    startCmd.Flags().StringVar(&StartItem,"s","","start items to verify")
-    startCmd.Flags().StringVar(&CntPerBatch,"c","1000","verify items for one batch")
-    startCmd.Flags().StringVar(&BatchCnt,"b","1000","batch count for verify")
-
-    checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
-
-    log.SetFileLog()
-
-    RootCommand := &cobra.Command{
-        Short:   "ytfs verify",
-    }
-    RootCommand.AddCommand(startCmd)
-    RootCommand.AddCommand(checkCmd)
-    RootCommand.AddCommand(daemonCmd)
-
-    RootCommand.Execute()
 }
 
 func main_(){
