@@ -17,6 +17,7 @@ import (
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
     "github.com/yottachain/YTDataNode/verifySlice"
+    Ytfs "github.com/yottachain/YTFS"
     ydcommon "github.com/yottachain/YTFS/common"
     "github.com/yottachain/YTHost/service"
     "net/rpc"
@@ -35,6 +36,7 @@ var StartItem string
 var BatchCnt string
 var VerifyErrKey  string
 var Loop *bool
+var truncat *bool
 
 type KvDB struct {
     Rdb *gorocksdb.DB
@@ -239,6 +241,35 @@ func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
     fmt.Println("[query result] Hash:", SKey, "BatchNum:", UIBch, "Time:", STime)
 }
 
+func SendToElk(resp *message.SelfVerifyResp, wg *sync.WaitGroup) {
+    wg.Add(1)
+
+    defer func() {
+        wg.Done()
+    }()
+
+    var elkData VerifyErrShards
+    id , _ := strconv.ParseInt(resp.Id, 10, 64)
+    ErrNums, _ := strconv.ParseInt(resp.ErrNum, 10, 32)
+    elkData.MinerId = id
+    elkData.ErrNums = int32(ErrNums)
+    for _, v := range resp.ErrShard {
+        var errShard ErrShard
+        errShard.RebuildStatus = 0
+        errShard.Shard = v.DBhash
+        elkData.ErrShards = append(elkData.ErrShards, errShard)
+    }
+
+    err := PutVerifyErrData(&elkData)
+    if err != nil {
+        log.Printf("verify put error shards fail %s\n", err.Error())
+    }
+}
+
+func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
+    ytfs.TruncatStorageFile()
+}
+
 func Start() {
     vTimes, err := strconv.ParseUint(BatchCnt, 10, 64)
     if err != nil{
@@ -246,30 +277,40 @@ func Start() {
         return
     }
 
+    wg := &sync.WaitGroup{}
     begin := true
     sn := instance.GetStorageNode()
+    if *truncat {
+        verifyAndTruncatYtfsStorage(sn.YTFS())
+    }
+
     vfer := verifySlice.NewVerifySler(sn)
 
     bchCnt := uint64(0)
-    for{
-        for{
+    for {
+        for {
             <- time.After(time.Second * 1)
-            vfer.VerifySlice(CntPerBatch, StartItem)
+            resp := vfer.VerifySlice(CntPerBatch, StartItem)
+            if len(resp.ErrShard) > 0 {
+                go SendToElk(resp, wg)
+            }
             if begin {
                 log.Println("verify start!!")
                 begin = false
                 StartItem = ""
             }
             bchCnt++
-            if bchCnt >= vTimes{
+            if bchCnt >= vTimes {
                 break
             }
         }
 
-        if !*Loop{
+        if !*Loop {
             break
         }
     }
+
+    wg.Wait()
 }
 
 func VerifyStatus() {
@@ -287,7 +328,7 @@ func VerifyStatus() {
 }
 
 var daemonCmd = &cobra.Command{
-    Use:   "daemom",
+    Use:   "daemon",
     Short: "以守护进程启动程序",
     Run: func(cmd *cobra.Command, args []string) {
         sigs := make(chan os.Signal, 1)
@@ -326,6 +367,8 @@ func main () {
     startCmd.Flags().StringVar(&StartItem,"s","","start items to verify")
     startCmd.Flags().StringVar(&CntPerBatch,"c","1000","verify items for one batch")
     startCmd.Flags().StringVar(&BatchCnt,"b","1000","batch count for verify")
+    truncat = startCmd.Flags().Bool("t", false,
+        "ytfs file stroage, Check whether the file size exceeds the configured size and truncat file")
 
     checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
 

@@ -181,8 +181,8 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 	return resp
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.SelfVerifyResp) {
-	var resp message.SelfVerifyResp
+func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (*message.SelfVerifyResp) {
+	resp := new(message.SelfVerifyResp)
 	var err error
 
 	rstdir := util.GetYTFSPath() + Verifyrstdir
@@ -203,7 +203,7 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 		return resp
 	}
 
-	resp = vfs.VerifySliceReal(verifyNum, startItem)
+	*resp = vfs.VerifySliceReal(verifyNum, startItem)
 	if resp.ErrCode == "101" {
 		return resp
 	}
@@ -222,9 +222,9 @@ func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (message.S
 	resp.VrfBatch = Sbtch
 	resp.VrfTime = Date
 	resp.Num = verifyNum
-	_ = vfs.SaveVerifyToDb(resp)
+	_ = vfs.SaveVerifyToDb(*resp)
 	rstfile := "rst" + Date + "_"+ Sbtch
-	res, _ := proto.Marshal(&resp)
+	res, _ := proto.Marshal(resp)
 	_ = SavetoFile(rstdir, rstfile, res)
 	return resp
 }

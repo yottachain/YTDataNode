@@ -259,6 +259,7 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	log.Printf("shard [VHF:%s] need save \n", base58.Encode(msg.VHF))
 	log.Printf("[uploadslice] BPDID=%s, BPDSIGN=%s, USERSIGN=%s \n",
 		msg.BPDID, base58.Encode(msg.BPDSIGN), base58.Encode(msg.USERSIGN))
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	ctx = context.WithValue(ctx, "pid", head.RemotePeerID)
 	defer cancel()

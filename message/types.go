@@ -55,6 +55,7 @@ const (
 	MsgIDGcStatusResp          msgType = 0xe87f
 	MsgIDGcdelStatusfileReq    msgType = 0xe88e
 	MsgIDGcdelStatusfileResp   msgType = 0xe88f
+	MsgIDLocalRebuildResp      msgType = 0xe5f5
 
 )
 

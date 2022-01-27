@@ -104,7 +104,8 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
     return verifyTab, nil
 }
 
-func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64, fl_IdxDB *os.File) (uint64,[]*message.HashToHash,error) {
+func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
+        fl_IdxDB *os.File) (uint64,[]*message.HashToHash,error) {
     var verifyedItem = start_Item
     var hashTab []*message.HashToHash
 
@@ -140,19 +141,21 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
 
 func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
-    cfg,err := config.ReadConfig()
+    cfg, err := config.ReadConfig()
+    resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
+
     dir := util.GetYTFSPath()
     fileName := path.Join(dir, "index.db")
     fl_IdxDB, err := os.Open(fileName)
     defer fl_IdxDB.Close()
     if err != nil {
         log.Println("[verifyslice] error:", err.Error())
-        resp.ErrCode="102"
+        resp.ErrCode = "102"
         return resp
     }
 
     header := ydcommon.Header{}
-    fl_IdxDB.Seek(0, io.SeekStart)
+    _, _ = fl_IdxDB.Seek(0, io.SeekStart)
 
     buf := make([]byte, unsafe.Sizeof(ydcommon.Header{}), unsafe.Sizeof(ydcommon.Header{}))
     k, err := fl_IdxDB.Read(buf)
@@ -164,7 +167,7 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (
     bufReader := bytes.NewBuffer(buf)
     err = binary.Read(bufReader, binary.LittleEndian, &header)
     if err != nil {
-        log.Println("[confirmslice] error:",err)
+        log.Println("[verifyslice] error:",err)
         resp.ErrCode = "103"
         return resp
     }
@@ -179,11 +182,15 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (
         start_pos,_ = strconv.ParseUint(startItem,10,64)
     }
 
-    varyfiedNum,hashTab,_ := vfs.SliceHashVarify(n, m, h, start_pos, travelEntries, fl_IdxDB)
+    varyfiedNum, hashTab, err := vfs.SliceHashVarify(n, m, h, start_pos, travelEntries, fl_IdxDB)
+    if err != nil {
+        resp.ErrCode = "200"
+        resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
+        return resp
+    }
     resp.Entryth = strconv.FormatUint(varyfiedNum,10)
     resp.ErrShard = hashTab
     resp.ErrNum = strconv.FormatUint(uint64(len(hashTab)),10)
-    resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
     resp.ErrCode = "000"
     return resp
 }
