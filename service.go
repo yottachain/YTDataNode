@@ -259,9 +259,9 @@ func (sn *storageNode) Service() {
 			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
 		}
 
-		verifynum := msg.Num
+		verifynum, _ := strconv.ParseUint(msg.Num, 10, 32)
 		startItem := msg.StartItem
-		result := vfs.VerifySlice(verifynum, startItem)
+		result := vfs.VerifySlice(uint32(verifynum), startItem)
 		resp, err := proto.Marshal(result)
 		if err != nil {
 			log.Println("[verify] Marshal resp error:", err)
