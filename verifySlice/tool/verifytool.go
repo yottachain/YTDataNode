@@ -56,41 +56,41 @@ var DelLock sync.Mutex
 var delshardhash [][]byte
 var gcw gc.GcWorker
 
-func ConnRetry(ctx context.Context, maAddr multiaddr.Multiaddr, d *mnet.Dialer) (mnet.Conn, error){
+func ConnRetry(maAddr multiaddr.Multiaddr, times int) (mnet.Conn, error){
     n := 0
+    d := &mnet.Dialer{}
+
     for{
+        ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
         conn, err := d.DialContext(ctx, maAddr)
-        if err != nil{
-            fmt.Println("DialContext error:",err,"retry n=",n)
+        if err != nil {
+            fmt.Println("[verifytool] DialContext error:", err, "retry n=", n)
         }else {
-            fmt.Println("Connect success")
+            fmt.Println("[verifytool] Connect success")
             return conn, err
         }
 
         n++
-        if n >= 10{
+        if n >= times {
             fmt.Println("[verifytool] retry to max")
             return nil, err
         }
+
+        cancel()
     }
 }
 
 func RPCRequestCommon( MsgId int32, ReqData []byte)(service.Response, error){
     var res service.Response
-    n := 0
-    d := &mnet.Dialer{}
-    //conn := mnet.Conn{}
-    ctx,cancel := context.WithTimeout(context.Background(), time.Second * 30)
-    defer cancel()
+
     maAddr,_ := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/9001")
-    conn, err := d.DialContext(ctx, maAddr)
+    conn, err := ConnRetry(maAddr, 10)
     if err != nil{
-        fmt.Println("DialContext error:", err, "retry n=", n)
-        conn,err = ConnRetry(ctx, maAddr,d)
+        fmt.Println("[verfiytool] DialContext error:", err)
     }
 
     if nil == conn {
-        fmt.Println("[verfiytool] DialContext error:",err,"retry n=",n)
+        fmt.Println("[verfiytool] DialContext error:", err)
         err = fmt.Errorf("connect failed")
         return res, err
     }
@@ -107,32 +107,23 @@ func RPCRequestCommon( MsgId int32, ReqData []byte)(service.Response, error){
     return res, nil
 }
 
-func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
+func SendCompareVerifyOrder2(StartItem, CntPerBatch string) error{
     var respMsg message.SelfVerifyResp
     var reqMsg  message.SelfVerifyReq
 
-    n := 0
-    d := &mnet.Dialer{}
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30)
-    defer cancel()
     maAddr,_ := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/9001")
-    conn, err := d.DialContext(ctx, maAddr)
-    if err != nil{
-        fmt.Println("DialContext error:",err,"retry n=",n)
-        conn,err = ConnRetry(ctx, maAddr,d)
-    }
-
-    if nil == conn {
-       fmt.Println("[verfiytool] DialContext error:",err,"retry n=",n)
-       return
+    conn, err := ConnRetry(maAddr, 10)
+    if nil == err {
+       fmt.Println("[verfiytool] DialContext error:", err)
+       return err
     }
 
     reqMsg.Num = CntPerBatch
     reqMsg.StartItem = StartItem
     reqData, err := proto.Marshal(&reqMsg)
-    if err != nil{
-        fmt.Println("request msg error：",err.Error())
-        return
+    if err != nil {
+        fmt.Println("request msg error：", err.Error())
+        return err
     }
     pi := service.PeerInfo{}
     var res service.Response
@@ -142,13 +133,13 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
     err = clt.Call("ms.HandleMsg", req, &res)
     if err != nil {
         fmt.Println("[verifytool] err:", err)
-        return
+        return err
     }
 
     err = proto.Unmarshal(res.Data[2:], &respMsg)
     if err != nil{
-        fmt.Println("[verifytool] Unmarsharl err:",err.Error())
-        return
+        fmt.Println("[verifytool] Unmarsharl err:", err.Error())
+        return err
     }
     fmt.Println("response nodeid:", respMsg.Id, "table idx:", respMsg.Entryth,
         "err account:", respMsg.ErrNum, "errCode:", respMsg.ErrCode)
@@ -156,6 +147,8 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string){
         fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),
             "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
     }
+
+    return nil
 }
 
 func SelfVerifyRPC(StartItem, CntPerBatch string){
@@ -292,6 +285,7 @@ func Start() {
             <- time.After(time.Second * 1)
             resp := vfer.VerifySlice(CntPerBatch, StartItem)
             if len(resp.ErrShard) > 0 {
+                log.Printf("verify report err shards %d\n", len(resp.ErrShard))
                 go SendToElk(resp, wg)
             }
             if begin {
@@ -315,7 +309,7 @@ func Start() {
 
 func VerifyStatus() {
     if VerifyErrKey != "" {
-        fmt.Println("check Key:",VerifyErrKey)
+        fmt.Println("verify check Key:", VerifyErrKey)
         err := MissSliceQuery(VerifyErrKey)
         if err != nil {
             sn := instance.GetStorageNode()
@@ -323,7 +317,7 @@ func VerifyStatus() {
             GetKeyStatus(vfer, VerifyErrKey)
         }
     }else {
-        log.Printf("key shouldn't nil")
+        log.Printf("verify check key shouldn't nil")
     }
 }
 
@@ -362,6 +356,20 @@ var checkCmd = &cobra.Command{
     },
 }
 
+var truncatCmd = &cobra.Command{
+    Use:   "truncat",
+    Short: "检查存储文件的尺寸是否大于配置并截断",
+    Long: "ytfs file stroage, Check whether the file size exceeds the configured size and truncat file",
+    Run: func(cmd *cobra.Command, args []string) {
+        sn := instance.GetStorageNode()
+        if sn == nil {
+            log.Println("truncat sn open fail")
+            return
+        }
+        verifyAndTruncatYtfsStorage(sn.YTFS())
+    },
+}
+
 func main () {
     Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
     startCmd.Flags().StringVar(&StartItem,"s","","start items to verify")
@@ -380,6 +388,7 @@ func main () {
     RootCommand.AddCommand(startCmd)
     RootCommand.AddCommand(checkCmd)
     RootCommand.AddCommand(daemonCmd)
+    RootCommand.AddCommand(truncatCmd)
 
     RootCommand.Execute()
 }
@@ -408,16 +417,26 @@ func main_(){
         }
         BchCnt := uint64(0)
         for{
+            errs := 0
             for{
+                err := SendCompareVerifyOrder2(StartItem, CntPerBatch)
+                if err != nil {
+                    errs++
+                    if errs > 10 {
+                        log.Printf("batch %d errs too much exit\n", BchCnt)
+                        return
+                    }
+                    continue
+                }
                 BchCnt++
-                SendCompareVerifyOrder2(StartItem, CntPerBatch)
-                //SelfVerifyRPC(StartItem,CntPerBatch,vTimes)
                 <- time.After(time.Second * 1)
                 if begin {
                     log.Println("verify start!!")
                     begin = false
                     StartItem = ""
                 }
+
+                errs = 0
 
                 if BchCnt >= vTimes{
                     break

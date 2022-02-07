@@ -25,11 +25,11 @@ var client *elasticsearch.Client
 
 func GetElasticClinet() *elasticsearch.Client {
 	if client == nil {
-		addresses := []string{"127.0.0.1:8888"}
+		addresses := []string{"http://10.0.26.141:9200"}
 		config := elasticsearch.Config{
 			Addresses: addresses,
 			Username:  "elastic",
-			Password:  "111111",
+			Password:  "7uji9olp-",
 			CACert: nil,
 		}
 		cli, err := elasticsearch.NewClient(config)
