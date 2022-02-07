@@ -31,9 +31,9 @@ import (
 )
 
 var Mdb *KvDB
-var CntPerBatch string
+var CntPerBatch *uint32
 var StartItem string
-var BatchCnt string
+var BatchCnt *uint32
 var VerifyErrKey  string
 var Loop *bool
 var truncat *bool
@@ -107,7 +107,7 @@ func RPCRequestCommon( MsgId int32, ReqData []byte)(service.Response, error){
     return res, nil
 }
 
-func SendCompareVerifyOrder2(StartItem, CntPerBatch string) error{
+func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
     var respMsg message.SelfVerifyResp
     var reqMsg  message.SelfVerifyReq
 
@@ -118,7 +118,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string) error{
        return err
     }
 
-    reqMsg.Num = CntPerBatch
+    reqMsg.Num = strconv.FormatUint(uint64(CntPerBatch), 10)
     reqMsg.StartItem = StartItem
     reqData, err := proto.Marshal(&reqMsg)
     if err != nil {
@@ -151,7 +151,7 @@ func SendCompareVerifyOrder2(StartItem, CntPerBatch string) error{
     return nil
 }
 
-func SelfVerifyRPC(StartItem, CntPerBatch string){
+func SelfVerifyRPC(StartItem string, CntPerBatch uint32){
         SendCompareVerifyOrder2(StartItem, CntPerBatch)
 }
 
@@ -264,12 +264,6 @@ func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
 }
 
 func Start() {
-    vTimes, err := strconv.ParseUint(BatchCnt, 10, 64)
-    if err != nil{
-        fmt.Println("[verify tool] error:", err)
-        return
-    }
-
     wg := &sync.WaitGroup{}
     begin := true
     sn := instance.GetStorageNode()
@@ -279,11 +273,11 @@ func Start() {
 
     vfer := verifySlice.NewVerifySler(sn)
 
-    bchCnt := uint64(0)
+    bchCnt := uint32(0)
     for {
         for {
             <- time.After(time.Second * 1)
-            resp := vfer.VerifySlice(CntPerBatch, StartItem)
+            resp := vfer.VerifySlice(*CntPerBatch, StartItem)
             if len(resp.ErrShard) > 0 {
                 log.Printf("verify report err shards %d\n", len(resp.ErrShard))
                 go SendToElk(resp, wg)
@@ -294,7 +288,7 @@ func Start() {
                 StartItem = ""
             }
             bchCnt++
-            if bchCnt >= vTimes {
+            if bchCnt >= *BatchCnt {
                 break
             }
         }
@@ -371,12 +365,12 @@ var truncatCmd = &cobra.Command{
 }
 
 func main () {
-    Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
     startCmd.Flags().StringVar(&StartItem,"s","","start items to verify")
-    startCmd.Flags().StringVar(&CntPerBatch,"c","1000","verify items for one batch")
-    startCmd.Flags().StringVar(&BatchCnt,"b","1000","batch count for verify")
-    truncat = startCmd.Flags().Bool("t", false,
-        "ytfs file stroage, Check whether the file size exceeds the configured size and truncat file")
+    CntPerBatch = startCmd.Flags().Uint32("c",1000,"verify items for one batch")
+    BatchCnt = startCmd.Flags().Uint32("b",1000,"batch count for verify")
+    Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
+    truncat = startCmd.Flags().Bool("t", false, "ytfs file stroage," +
+        "Check whether the file size exceeds the configured size and truncat file")
 
     checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
 
@@ -397,16 +391,16 @@ func main_(){
     Online := flag.Bool("online",true,"run verifytool online or offline")
     Loopm := flag.Bool("loop",true,"verify mode :loop or not")
     flag.StringVar(&StartItem,"s","","start items to verify")
-    flag.StringVar(&CntPerBatch,"c","1000","verify items for one batch")
-    flag.StringVar(&BatchCnt,"b","1000","batch count for verify")
+    CntPerBatch = startCmd.Flags().Uint32("c",1000,"verify items for one batch")
+    BatchCnt = startCmd.Flags().Uint32("b",1000,"batch count for verify")
     flag.StringVar(&VerifyErrKey,"chk","","Get verify status for verified-error key")
     flag.Parse()
 
-    vTimes,err := strconv.ParseUint(BatchCnt,10,64)
-    if err != nil{
-        fmt.Println("[verifytool] error:",err)
-        return
-    }
+    //vTimes,err := strconv.ParseUint(BatchCnt,10,64)
+    //if err != nil{
+    //    fmt.Println("[verifytool] error:",err)
+    //    return
+    //}
 
     begin := true
     if *Online {
@@ -415,11 +409,11 @@ func main_(){
             MissSliceQuery(VerifyErrKey)
             return
         }
-        BchCnt := uint64(0)
+        BchCnt := uint32(0)
         for{
             errs := 0
             for{
-                err := SendCompareVerifyOrder2(StartItem, CntPerBatch)
+                err := SendCompareVerifyOrder2(StartItem, *CntPerBatch)
                 if err != nil {
                     errs++
                     if errs > 10 {
@@ -438,7 +432,7 @@ func main_(){
 
                 errs = 0
 
-                if BchCnt >= vTimes{
+                if BchCnt >= *BatchCnt{
                     break
                 }
             }
@@ -458,18 +452,18 @@ func main_(){
             return
         }
 
-        bchCnt := uint64(0)
+        bchCnt := uint32(0)
         for{
             for{
                 <- time.After(time.Second * 1)
-                vfer.VerifySlice(CntPerBatch, StartItem)
+                vfer.VerifySlice(*CntPerBatch, StartItem)
                 if begin{
                     log.Println("verify start!!")
                     begin = false
                     StartItem = ""
                 }
                 bchCnt++
-                if bchCnt >= vTimes{
+                if bchCnt >= *BatchCnt {
                     break
                 }
             }

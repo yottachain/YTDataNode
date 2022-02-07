@@ -112,7 +112,7 @@ func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
 	return nil
 }
 
-func (vfs *VerifySler)VerifySliceReal(verifyNum string, startItem string) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySliceReal(verifyNum uint32, startItem string) (message.SelfVerifyResp){
 	var resp message.SelfVerifyResp
 
 	config, err := config.ReadConfig()
@@ -121,16 +121,15 @@ func (vfs *VerifySler)VerifySliceReal(verifyNum string, startItem string) (messa
 		resp.ErrCode = "101"
 		return resp
 	}
-	num,_ := strconv.ParseUint(verifyNum,10,64)
 
 	startItem = compressStr(startItem)
 
 	if config.UseKvDb {
-		resp = vfs.VerifySlicekvdb(num, startItem)
+		resp = vfs.VerifySlicekvdb(verifyNum, startItem)
 		return resp
 	}
 
-	resp = vfs.VerifySliceIdxdb(num, startItem)
+	resp = vfs.VerifySliceIdxdb(verifyNum, startItem)
 	return resp
 }
 
@@ -181,7 +180,8 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 	return resp
 }
 
-func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (*message.SelfVerifyResp) {
+//func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (*message.SelfVerifyResp) {
+func (vfs *VerifySler)VerifySlice(verifyNum uint32, startItem string) (*message.SelfVerifyResp) {
 	resp := new(message.SelfVerifyResp)
 	var err error
 

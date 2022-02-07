@@ -92,7 +92,7 @@ func OpenKVDB(dbname string) (*VrDB, error) {
 }
 
 
-func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint32, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     resp.Id = strconv.FormatUint(uint64(vfs.Sn.Config().IndexID),10)
 
@@ -101,7 +101,7 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint64, startItem string) (me
         startkey = startItem
     }
 
-    hashTab, beginKey, err := vfs.Sn.YTFS().VerifySlice(startkey, traveEntries)
+    hashTab, beginKey, err := vfs.Sn.YTFS().VerifySlice(startkey, uint64(traveEntries))
     slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
     if err != nil {
         resp.ErrCode = "200"

@@ -139,7 +139,7 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
     return verifyedItem, hashTab, nil
 }
 
-func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (message.SelfVerifyResp){
+func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint32, startItem string) (message.SelfVerifyResp){
     var resp message.SelfVerifyResp
     cfg, err := config.ReadConfig()
     resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
@@ -182,7 +182,7 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint64, startItem string) (
         start_pos,_ = strconv.ParseUint(startItem,10,64)
     }
 
-    varyfiedNum, hashTab, err := vfs.SliceHashVarify(n, m, h, start_pos, travelEntries, fl_IdxDB)
+    varyfiedNum, hashTab, err := vfs.SliceHashVarify(n, m, h, start_pos, uint64(travelEntries), fl_IdxDB)
     if err != nil {
         resp.ErrCode = "200"
         resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)

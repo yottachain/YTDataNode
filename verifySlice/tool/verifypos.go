@@ -24,7 +24,7 @@ func main(){
 
     sn := instance.GetStorageNode()
 
-    if HashKey !=""{
+    if HashKey != ""{
        BKey, err := base58.Decode(HashKey)
        if err != nil{
            fmt.Println("Decode error:",err.Error(),"key:",HashKey)
