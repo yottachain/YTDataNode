@@ -105,7 +105,15 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint32, startItem string) (me
     slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
     if err != nil {
         resp.ErrCode = "200"
+        resp.Entryth = startkey
         log.Println("[verify] error:", err)
+        return resp
+    }
+
+    if beginKey == "0" {
+        resp.ErrCode = "404"
+        resp.Entryth = startkey
+        log.Println("[verify] maybe it's over")
         return resp
     }
 

@@ -42,13 +42,15 @@ type VerifySler struct {
 
 func NewVerifySler(sn sni.StorageNode) (*VerifySler){
 	Hdb, err := OpenKVDB(Verifyhashdb)
-	if err != nil{
+	if err != nil {
 		fmt.Println("[verify] Open hashdb error:",err)
+		return nil
 	}
 
 	Bdb, err := OpenKVDB(Batchdb)
 	if err != nil{
 		fmt.Println("[verify] Open Batchdb error:",err)
+		return nil
 	}
 
 	return &VerifySler{sn,Hdb,Bdb,}
@@ -204,7 +206,7 @@ func (vfs *VerifySler)VerifySlice(verifyNum uint32, startItem string) (*message.
 	}
 
 	*resp = vfs.VerifySliceReal(verifyNum, startItem)
-	if resp.ErrCode == "101" {
+	if resp.ErrCode != "000" {
 		return resp
 	}
 

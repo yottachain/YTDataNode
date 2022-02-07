@@ -37,6 +37,7 @@ var StartItem string
 var BatchCnt *uint32
 var VerifyErrKey  string
 var Loop *bool
+var Online *bool
 var truncat *bool
 
 type KvDB struct {
@@ -108,7 +109,7 @@ func RPCRequestCommon( MsgId int32, ReqData []byte)(service.Response, error){
     return res, nil
 }
 
-func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
+func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) (*message.SelfVerifyResp, error){
     var respMsg message.SelfVerifyResp
     var reqMsg  message.SelfVerifyReq
 
@@ -116,7 +117,7 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
     conn, err := ConnRetry(maAddr, 10)
     if nil == err {
        fmt.Println("[verfiytool] DialContext error:", err)
-       return err
+       return nil, err
     }
 
     reqMsg.Num = strconv.FormatUint(uint64(CntPerBatch), 10)
@@ -124,7 +125,7 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
     reqData, err := proto.Marshal(&reqMsg)
     if err != nil {
         fmt.Println("request msg error：", err.Error())
-        return err
+        return nil, err
     }
     pi := service.PeerInfo{}
     var res service.Response
@@ -134,13 +135,13 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
     err = clt.Call("ms.HandleMsg", req, &res)
     if err != nil {
         fmt.Println("[verifytool] err:", err)
-        return err
+        return nil, err
     }
 
     err = proto.Unmarshal(res.Data[2:], &respMsg)
     if err != nil{
         fmt.Println("[verifytool] Unmarsharl err:", err.Error())
-        return err
+        return nil, err
     }
     fmt.Println("response nodeid:", respMsg.Id, "table idx:", respMsg.Entryth,
         "err account:", respMsg.ErrNum, "errCode:", respMsg.ErrCode)
@@ -149,7 +150,7 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) error{
             "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
     }
 
-    return nil
+    return &respMsg, nil
 }
 
 func SelfVerifyRPC(StartItem string, CntPerBatch uint32){
@@ -274,19 +275,51 @@ func Start() {
 
     go config.Gconfig.UpdateService(context.Background(), time.Minute*10)
 
-    vfer := verifySlice.NewVerifySler(sn)
-
-    totalErrShards := uint64(100000)
-    if config.Gconfig.VerifyReportMaxNum != 0 {
-        totalErrShards = config.Gconfig.VerifyReportMaxNum
+    var vfer *verifySlice.VerifySler
+    if !*Online {
+        vfer = verifySlice.NewVerifySler(sn)
     }
+
+
+
     reportTotalErrs := uint64(0)
 
     bchCnt := uint32(0)
     for {
+        totalErrShards := uint64(100000)
+        if config.Gconfig.VerifyReportMaxNum != 0 {
+            totalErrShards = config.Gconfig.VerifyReportMaxNum
+        }
+
+        errs := 0
         for {
             <- time.After(time.Second * 1)
-            resp := vfer.VerifySlice(*CntPerBatch, StartItem)
+            var resp *message.SelfVerifyResp
+            var err error
+            if *Online {
+                resp, err = SendCompareVerifyOrder2(StartItem, *CntPerBatch)
+                if err != nil {
+                    errs++
+                    if errs > 10 {
+                        log.Printf("batch %d errs too much exit\n", bchCnt)
+                        return
+                    }
+                    continue
+                }
+            }else {
+                if vfer == nil {
+                    log.Println("verify error verifySlice is nil")
+                    return
+                }else {
+                    resp = vfer.VerifySlice(*CntPerBatch, StartItem)
+                }
+            }
+
+            if resp.ErrCode == "404" {
+                log.Printf("verify not found, start %s\n", resp.Entryth)
+                return
+            }
+
             errNum := len(resp.ErrShard)
             if errNum > 0 {
                 log.Printf("verify report err shards %d\n", errNum)
@@ -380,6 +413,7 @@ func main () {
     CntPerBatch = startCmd.Flags().Uint32("c",1000,"verify items for one batch")
     BatchCnt = startCmd.Flags().Uint32("b",1000,"batch count for verify")
     Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
+    Online = startCmd.Flags().Bool("on",true,"run verifytool while dn online or offline")
     truncat = startCmd.Flags().Bool("t", false, "ytfs file stroage," +
         "Check whether the file size exceeds the configured size and truncat file")
 
@@ -424,7 +458,7 @@ func main_(){
         for{
             errs := 0
             for{
-                err := SendCompareVerifyOrder2(StartItem, *CntPerBatch)
+                _, err := SendCompareVerifyOrder2(StartItem, *CntPerBatch)
                 if err != nil {
                     errs++
                     if errs > 10 {

@@ -16,12 +16,12 @@ func GetStorageNode() StorageNode {
 	if sn == nil {
 		cfg, err := config.ReadConfig()
 		if err != nil {
-			log.Println("[init] GetStorageNode ReadConfig error:",err.Error())
+			log.Println("[init] GetStorageNode ReadConfig error:", err.Error())
 			return nil
 		}
 		sn, err = node.NewStorageNode(cfg)
 		if err != nil {
-			log.Println("[init] GetStorageNode NewStorageNode error:",err.Error())
+			log.Println("[init] GetStorageNode NewStorageNode error:", err.Error())
 			return nil
 		}
 	}

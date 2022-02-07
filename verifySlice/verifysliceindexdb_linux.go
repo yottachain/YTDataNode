@@ -30,7 +30,7 @@ func init(){
 
 func (vfs *VerifySler) GetUsedEntOfRange(n, m, h, n_Rangeth uint64,  fl_IdxDB *os.File)(uint64, error){
     buf := make([]byte, 4)
-    pos := n_Rangeth*(4+m*20) + h
+    pos := n_Rangeth*(4 + m*20) + h
     fl_IdxDB.Seek(int64(pos), io.SeekStart)
     k, err := fl_IdxDB.Read(buf)
     if (err != nil) || (k != 4) {
@@ -49,7 +49,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
 
     n_Rangeth := start_Item/m                 //range zoom index
     m_Itermth := start_Item%m
-    buf := make([]byte,20,20)
+    buf := make([]byte, 20, 20)
     begin := true
     for {
         //log.Printf("[confirmslice] verify_parameter: n=%v,m=%v,n_Rangeth=%v", n, m, n_Rangeth)
@@ -62,7 +62,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
         usedSize, err := vfs.GetUsedEntOfRange(n, m, h, n_Rangeth, fl_IdxDB)
         //fmt.Println("[debug][verify] n=",n, "n_Ranges=",n_Rangeth,"m=",m,"usedSize=",usedSize)
 
-        if err != nil || usedSize > m{
+        if err != nil || usedSize > m {
             n_Rangeth++
             continue
         }
@@ -76,7 +76,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
             }
 
             if verifyedItem >= traverEntries {
-                log.Println("[confirmslice] Has verified 2000 item, will to return!")
+                log.Printf("[confirmslice] Has verified %d item, will to return!", traverEntries)
                 slicecompare.SaveValueToFile(strconv.FormatUint(totalverify, 10), VerifyedNumFile)
                 return  verifyTab, nil
             }
@@ -86,7 +86,7 @@ func (vfs *VerifySler)TraveIndexDbForVerify(n, m, h, start_Item, traverEntries u
             _, _ = fl_IdxDB.Seek(int64(pos), io.SeekStart)
             k, err := fl_IdxDB.Read(buf)
             if (err != nil) || (k != 20) {
-                fmt.Println("[confirmslice][verify]get index error:", err)
+                fmt.Println("[confirmslice][verify] get index error:", err)
                 continue
             }
 
@@ -110,8 +110,12 @@ func (vfs *VerifySler)SliceHashVarify(n, m, h, start_Item, traverEntries uint64,
     var hashTab []*message.HashToHash
 
     verifyTab, err := vfs.TraveIndexDbForVerify(n, m, h, start_Item, traverEntries, fl_IdxDB)
-    if err != nil || len(verifyTab) == 0 {
-        err := fmt.Errorf("verifyTab is nil")
+    if err != nil  {
+        return 0, nil, err
+    }
+
+    if len(verifyTab) == 0 {
+        err = fmt.Errorf("404")
         return 0, nil, err
     }
 
@@ -175,8 +179,8 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint32, startItem string) (
     h := uint64(header.HashOffset)
     n := uint64(header.RangeCapacity)
     m := uint64(header.RangeCoverage)
-    str_pos,_ := slicecompare.GetValueFromFile(VerifyedNumFile)
-    start_pos,_ := strconv.ParseUint(str_pos,10,32)
+    str_pos, _ := slicecompare.GetValueFromFile(VerifyedNumFile)
+    start_pos, _ := strconv.ParseUint(str_pos,10,32)
 
     if len(startItem) > 0 {
         start_pos,_ = strconv.ParseUint(startItem,10,64)
@@ -185,7 +189,11 @@ func (vfs *VerifySler)VerifySliceIdxdb(travelEntries uint32, startItem string) (
     varyfiedNum, hashTab, err := vfs.SliceHashVarify(n, m, h, start_pos, uint64(travelEntries), fl_IdxDB)
     if err != nil {
         resp.ErrCode = "200"
+        if err.Error() == "404" {
+            resp.ErrCode = "404"
+        }
         resp.Id = strconv.FormatUint(uint64(cfg.IndexID),10)
+        resp.Entryth = strconv.FormatUint(varyfiedNum,10)
         return resp
     }
     resp.Entryth = strconv.FormatUint(varyfiedNum,10)
