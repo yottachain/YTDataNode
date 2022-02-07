@@ -12,6 +12,7 @@ import (
     mnet "github.com/multiformats/go-multiaddr-net"
     "github.com/spf13/cobra"
     "github.com/tecbot/gorocksdb"
+    "github.com/yottachain/YTDataNode/config"
     "github.com/yottachain/YTDataNode/gc"
     "github.com/yottachain/YTDataNode/instance"
     log "github.com/yottachain/YTDataNode/logger"
@@ -271,16 +272,26 @@ func Start() {
         verifyAndTruncatYtfsStorage(sn.YTFS())
     }
 
+    go config.Gconfig.UpdateService(context.Background(), time.Minute*10)
+
     vfer := verifySlice.NewVerifySler(sn)
+
+    totalErrShards := uint64(100000)
+    if config.Gconfig.VerifyReportMaxNum != 0 {
+        totalErrShards = config.Gconfig.VerifyReportMaxNum
+    }
+    reportTotalErrs := uint64(0)
 
     bchCnt := uint32(0)
     for {
         for {
             <- time.After(time.Second * 1)
             resp := vfer.VerifySlice(*CntPerBatch, StartItem)
-            if len(resp.ErrShard) > 0 {
-                log.Printf("verify report err shards %d\n", len(resp.ErrShard))
+            errNum := len(resp.ErrShard)
+            if errNum > 0 {
+                log.Printf("verify report err shards %d\n", errNum)
                 go SendToElk(resp, wg)
+                reportTotalErrs += uint64(errNum)
             }
             if begin {
                 log.Println("verify start!!")
@@ -288,12 +299,12 @@ func Start() {
                 StartItem = ""
             }
             bchCnt++
-            if bchCnt >= *BatchCnt {
+            if bchCnt >= *BatchCnt ||  reportTotalErrs >= totalErrShards {
                 break
             }
         }
 
-        if !*Loop {
+        if !*Loop ||  reportTotalErrs >= totalErrShards {
             break
         }
     }
