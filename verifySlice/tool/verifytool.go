@@ -17,6 +17,7 @@ import (
     "github.com/yottachain/YTDataNode/instance"
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
+    storage "github.com/yottachain/YTDataNode/storageNodeInterface"
     "github.com/yottachain/YTDataNode/verifySlice"
     Ytfs "github.com/yottachain/YTFS"
     ydcommon "github.com/yottachain/YTFS/common"
@@ -268,19 +269,18 @@ func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
 func Start() {
     wg := &sync.WaitGroup{}
     begin := true
-    sn := instance.GetStorageNode()
-    if *truncat {
-        verifyAndTruncatYtfsStorage(sn.YTFS())
-    }
+    var sn storage.StorageNode
 
     go config.Gconfig.UpdateService(context.Background(), time.Minute*10)
 
     var vfer *verifySlice.VerifySler
     if !*Online {
+        sn = instance.GetStorageNode()
+        if *truncat {
+            verifyAndTruncatYtfsStorage(sn.YTFS())
+        }
         vfer = verifySlice.NewVerifySler(sn)
     }
-
-
 
     reportTotalErrs := uint64(0)
 
@@ -413,9 +413,11 @@ func main () {
     CntPerBatch = startCmd.Flags().Uint32("c",1000,"verify items for one batch")
     BatchCnt = startCmd.Flags().Uint32("b",1000,"batch count for verify")
     Loop = startCmd.Flags().Bool("l",true,"verify mode :loop or not")
-    Online = startCmd.Flags().Bool("on",true,"run verifytool while dn online or offline")
+    Online = startCmd.Flags().Bool("on",true,"run verifytool while dn online or offline, " +
+        "set false will panic while dn is online")
     truncat = startCmd.Flags().Bool("t", false, "ytfs file stroage," +
-        "Check whether the file size exceeds the configured size and truncat file")
+        "Check whether the file size exceeds the configured size and truncat file,  " +
+        "available while the dn is offline")
 
     checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
 
