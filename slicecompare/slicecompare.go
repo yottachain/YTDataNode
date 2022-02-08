@@ -561,9 +561,22 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB stri
 
 func SaveValueToFile(Value string, FileName string) error {
     filePath := util.GetYTFSPath() + FileName
-	err := ioutil.WriteFile(filePath,[]byte(Value),0666)
-	if err != nil{
-		fmt.Println(err)
+    absPath := util.GetAbsPath(filePath)
+    if absPath == "" {
+    	return fmt.Errorf("filePath %s is error\n", filePath)
+	}
+
+	isExist, _ := util.PathExists(absPath)
+	if !isExist {
+		err := os.MkdirAll(absPath, 0666)
+		if err != nil {
+			return fmt.Errorf("path %s, mkdir all err %s\n", absPath, err.Error())
+		}
+	}
+
+	err := ioutil.WriteFile(filePath, []byte(Value),0666)
+	if err != nil {
+		fmt.Printf("save %s to %s err %s\n", Value, filePath, err.Error())
 	}
 	return err
 }

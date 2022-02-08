@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 )
 
 // GetCurrentUserHome 获取当前用户主目录
@@ -73,3 +74,13 @@ func IsPublicIP(IP net.IP) bool {
 	}
 	return false
 }
+
+func GetAbsPath(filename string) string {
+	if filename != "" {
+		path, _ := filepath.Abs(filename)
+		return path
+	}
+
+	return ""
+}
+

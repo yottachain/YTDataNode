@@ -17,7 +17,7 @@ import (
 )
 
 var mdbFileName = "/maindb"
-var VerifyedKvFile string = "/gc/rock_verify"
+var VerifyedKvFile = "/gc/rock_verify"
 
 const Verifyhashdb  = "/verifydir/hashdb"
 const Batchdb = "/verifydir/batchdb"
@@ -97,12 +97,15 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint32, startItem string) (me
     resp.Id = strconv.FormatUint(uint64(vfs.Sn.Config().IndexID),10)
 
     startkey, err := slicecompare.GetValueFromFile(VerifyedKvFile)
+    if err != nil {
+        startkey = ""
+    }
     if len(startItem) > 0 {
         startkey = startItem
     }
 
     hashTab, beginKey, err := vfs.Sn.YTFS().VerifySlice(startkey, uint64(traveEntries))
-    slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
+    _ = slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
     if err != nil {
         resp.ErrCode = "200"
         resp.Entryth = startkey
