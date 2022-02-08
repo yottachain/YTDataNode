@@ -299,6 +299,7 @@ func Start() {
                 resp, err = SendCompareVerifyOrder2(StartItem, *CntPerBatch)
                 if err != nil {
                     log.Printf("verify batch %d errs %s\n", bchCnt, err.Error())
+                    continue
                 }
             }else {
                 if vfer == nil {
