@@ -286,13 +286,16 @@ func Start() {
 
     reportTotalErrs := uint64(0)
 
-    bchCnt := uint32(0)
+    log.Printf("loop is %x, bchCnt is %d\n", Loop, BatchCnt)
+
+
     for {
         totalErrShards := uint64(100000)
         if config.Gconfig.VerifyReportMaxNum != 0 {
             totalErrShards = config.Gconfig.VerifyReportMaxNum
         }
 
+        bchCnt := uint32(0)
         for {
             <- time.After(time.Second * 1)
             var resp *message.SelfVerifyResp
@@ -409,7 +412,7 @@ func main () {
     startCmd.Flags().StringVarP(&StartItem,"start", "s", "","start items to verify")
     startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,"verify items for one batch")
     startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b",1000,"batch count for verify")
-    startCmd.Flags().BoolVarP(&Loop, "l", "l", true,"verify mode :loop or not")
+    startCmd.Flags().BoolVarP(&Loop, "loop", "l", true,"verify mode :loop or not")
     startCmd.Flags().BoolVarP(&Online, "online","o", true,"run verifytool while dn online or offline, " +
         "set false will panic while dn is online")
     startCmd.Flags().BoolVarP(&truncat, "truncat", "t", false, "ytfs file stroage," +
