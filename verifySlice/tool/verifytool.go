@@ -116,7 +116,7 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) (*message.Sel
 
     maAddr,_ := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/9001")
     conn, err := ConnRetry(maAddr, 10)
-    if nil == err {
+    if nil != err {
        fmt.Println("[verfiytool] DialContext error:", err)
        return nil, err
     }
@@ -291,7 +291,6 @@ func Start() {
             totalErrShards = config.Gconfig.VerifyReportMaxNum
         }
 
-        errs := 0
         for {
             <- time.After(time.Second * 1)
             var resp *message.SelfVerifyResp
@@ -299,12 +298,7 @@ func Start() {
             if *Online {
                 resp, err = SendCompareVerifyOrder2(StartItem, *CntPerBatch)
                 if err != nil {
-                    errs++
-                    if errs > 10 {
-                        log.Printf("batch %d errs too much exit\n", bchCnt)
-                        return
-                    }
-                    continue
+                    log.Printf("verify batch %d errs %s\n", bchCnt, err.Error())
                 }
             }else {
                 if vfer == nil {
