@@ -144,8 +144,10 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) (*message.Sel
         fmt.Println("[verifytool] Unmarsharl err:", err.Error())
         return nil, err
     }
+
     fmt.Println("response nodeid:", respMsg.Id, "table idx:", respMsg.Entryth,
         "err account:", respMsg.ErrNum, "errCode:", respMsg.ErrCode)
+
     for i := 0; i < len(respMsg.ErrShard); i++ {
         fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),
             "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
@@ -416,7 +418,7 @@ func main () {
 
     checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
 
-    log.SetFileLog()
+    //log.SetFileLog()
 
     RootCommand := &cobra.Command{
         Short:   "ytfs verify",
