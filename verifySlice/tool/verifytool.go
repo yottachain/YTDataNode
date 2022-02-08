@@ -410,7 +410,7 @@ func main () {
     startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,"verify items for one batch")
     startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b",1000,"batch count for verify")
     startCmd.Flags().BoolVarP(&Loop, "l", "l", true,"verify mode :loop or not")
-    startCmd.Flags().BoolVarP(&Online, "on","on", true,"run verifytool while dn online or offline, " +
+    startCmd.Flags().BoolVarP(&Online, "online","o", true,"run verifytool while dn online or offline, " +
         "set false will panic while dn is online")
     startCmd.Flags().BoolVarP(&truncat, "truncat", "t", false, "ytfs file stroage," +
         "Check whether the file size exceeds the configured size and truncat file,  " +
