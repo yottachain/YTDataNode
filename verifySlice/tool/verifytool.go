@@ -10,6 +10,7 @@ import (
     "github.com/mr-tron/base58"
     "github.com/multiformats/go-multiaddr"
     mnet "github.com/multiformats/go-multiaddr-net"
+    "github.com/natefinch/lumberjack"
     "github.com/spf13/cobra"
     "github.com/tecbot/gorocksdb"
     "github.com/yottachain/YTDataNode/config"
@@ -18,6 +19,7 @@ import (
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
     storage "github.com/yottachain/YTDataNode/storageNodeInterface"
+    "github.com/yottachain/YTDataNode/util"
     "github.com/yottachain/YTDataNode/verifySlice"
     Ytfs "github.com/yottachain/YTFS"
     ydcommon "github.com/yottachain/YTFS/common"
@@ -26,6 +28,7 @@ import (
     "os"
     "os/exec"
     "os/signal"
+    "path"
     "strconv"
     "sync"
     "syscall"
@@ -180,7 +183,7 @@ func MissSliceQuery(Key string) error{
         fmt.Println("Unmarshal resdata error:",err)
         return err
     }
-    fmt.Println(" ")
+
     fmt.Println("Key:", res.Key, "BatchNum:", res.BatchNum,
         "Date:", res.Date, "ErrCode:", res.ErrCode)
 
@@ -297,7 +300,7 @@ func Start() {
 
         bchCnt := uint32(0)
         for {
-            <- time.After(time.Second * 1)
+            //<- time.After(time.Second * 1)
             var resp *message.SelfVerifyResp
             var err error
             if Online {
@@ -365,10 +368,17 @@ var daemonCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {
         sigs := make(chan os.Signal, 1)
         signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+        logfile := log.NewSyncWriter(&lumberjack.Logger{
+            Filename:   path.Join(util.GetYTFSPath(), "verify.log"),
+            MaxSize:    128,
+            Compress:   false,
+            MaxAge:     7,
+            MaxBackups: 1,
+        })
         c := exec.Command(os.Args[0], "start")
         c.Env = os.Environ()
-        c.Stdout = os.Stdout
-        c.Stderr = os.Stderr
+        c.Stdout = logfile
+        c.Stderr = logfile
         err := c.Start()
         if err != nil {
             log.Println("进程启动失败:", err)
@@ -409,17 +419,24 @@ var truncatCmd = &cobra.Command{
 }
 
 func main () {
-    startCmd.Flags().StringVarP(&StartItem,"start", "s", "","start items to verify")
-    startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,"verify items for one batch")
-    startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b",1000,"batch count for verify")
-    startCmd.Flags().BoolVarP(&Loop, "loop", "l", true,"verify mode :loop or not")
-    startCmd.Flags().BoolVarP(&Online, "online","o", true,"run verifytool while dn online or offline, " +
+    startCmd.Flags().StringVarP(&StartItem,"start", "s", "",
+        "start items to verify")
+    startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,
+        "verify items for one batch")
+    startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b",1000,
+        "batch count for verify")
+    startCmd.Flags().BoolVarP(&Loop, "loop", "l", true,
+        "verify mode :loop or not")
+    startCmd.Flags().BoolVarP(&Online, "online","o", true,
+        "run verifytool while dn online or offline, " +
         "set false will panic while dn is online")
-    startCmd.Flags().BoolVarP(&truncat, "truncat", "t", false, "ytfs file stroage," +
-        "Check whether the file size exceeds the configured size and truncat file,  " +
+    startCmd.Flags().BoolVarP(&truncat, "truncat", "t", false,
+        "ytfs file stroage," +
+        "Check whether the file size exceeds the configured size and truncat file," +
         "available while the dn is offline")
 
-    checkCmd.Flags().StringVar(&VerifyErrKey,"key","","Get verify status for verified-error key")
+    checkCmd.Flags().StringVarP(&VerifyErrKey,"key", "k", "",
+        "Get verify status for verified-error key")
 
     //log.SetFileLog()
 

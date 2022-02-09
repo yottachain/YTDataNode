@@ -527,8 +527,8 @@ func (L *LRCTaskActuator) Free() {
 }
 
 func (L *LRCTaskActuator) isTimeOut() bool {
-	if int32(time.Now().Sub(L.opts.STime)) > L.opts.Expired {
-		return  true
+	if int32(time.Now().Sub(L.opts.STime).Seconds()) > L.opts.Expired {
+		return true
 	}
 
 	return false

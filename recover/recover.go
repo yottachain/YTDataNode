@@ -305,7 +305,6 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	for _, task := range mtdMsg.Tasklist {
 		bys := task[12:14]
 		bytebuff := bytes.NewBuffer(bys)
-		//var snID uint16
 		var snID int16
 		binary.Read(bytebuff, binary.BigEndian, &snID)
 
@@ -341,6 +340,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		ts.ExecTimes++
 		log.Printf("[recover] execLRCTask, msgId: %d exec times %d\n", msgID, ts.ExecTimes)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
+
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
 			re.waitQueue.Lock()
@@ -647,7 +647,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		realHash = srcHash
 
 		if err != nil{
-			log.Println("[recover_debugtime] ExecTask error:",err.Error())
+			log.Println("[recover_debugtime] ExecTask error:", err.Error())
 		}
 
 		res.ID = resID

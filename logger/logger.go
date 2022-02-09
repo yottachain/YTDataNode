@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var FileLogger = newSyncWriter(&lumberjack.Logger{
+var FileLogger = NewSyncWriter(&lumberjack.Logger{
 	Filename:   path.Join(util.GetYTFSPath(), "output.log"),
 	MaxSize:    128,
 	Compress:   false,
@@ -61,7 +61,7 @@ func (s syncWriter) Write(p []byte) (n int, err error) {
 		return 0, fmt.Errorf("time out")
 	}
 }
-func newSyncWriter(dist io.Writer) *syncWriter {
+func NewSyncWriter(dist io.Writer) *syncWriter {
 	return &syncWriter{
 		dist,
 		make(chan struct{}, 1),
