@@ -52,6 +52,8 @@ func PutVerifyErrData(src *VerifyErrShards) error{
 
 	body, _ := json.Marshal(src)
 
+	log.Printf("body:[%s]\n", string(body))
+
 	resp, err := client.Index("verifyErr", strings.NewReader(string(body)),
 		client.Index.WithContext(context.Background()),
 		client.Index.WithRefresh("true"))
@@ -63,9 +65,9 @@ func PutVerifyErrData(src *VerifyErrShards) error{
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
-		log.Println("verify write data  response status %d\n", resp.StatusCode)
+		log.Printf("verify write data  response status %d\n", resp.StatusCode)
 	}else {
-		log.Println("verify write data  response status %d\n", resp.StatusCode)
+		log.Printf("verify write data  response status %d\n", resp.StatusCode)
 		return fmt.Errorf("resp status not 200+ OK")
 	}
 
