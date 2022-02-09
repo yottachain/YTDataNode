@@ -94,20 +94,27 @@ func SavetoFile(dir, file string, value []byte) error{
 
 func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
 	Bbch := make([]byte, 8)
-	UIbch, err := strconv.ParseUint(resp.VrfBatch,10,8)
+	UIbch, err := strconv.ParseUint(resp.VrfBatch,10,64)
 	if err != nil {
 		return  err
 	}
 	binary.LittleEndian.PutUint64(Bbch, UIbch)
-	_ = vfs.Hdb.DB.Put(vfs.Hdb.Wo, []byte(VerifyBchKey), Bbch)
+	err = vfs.Hdb.DB.Put(vfs.Hdb.Wo, []byte(VerifyBchKey), Bbch)
+	if err != nil {
+		log.Printf("verify hdb put VerifyBchKey fail butch is %d\n", UIbch)
+	}
 
 	if len(resp.ErrShard) <= 0 {
 		return nil
 	}
 
-	for _,v := range resp.ErrShard{
+	for _,v := range resp.ErrShard {
 		DBhash := v.DBhash
-		_ = vfs.Hdb.DB.Put(vfs.Hdb.Wo, DBhash, Bbch)
+		log.Printf("verify hdb put shard:%s\n", base58.Encode(DBhash))
+		err = vfs.Hdb.DB.Put(vfs.Hdb.Wo, DBhash, Bbch)
+		if err != nil {
+			log.Printf("verify hdb put fail shard:%s\n", base58.Encode(DBhash))
+		}
 	}
 
 	_ = vfs.Bdb.DB.Put(vfs.Bdb.Wo, Bbch, []byte(resp.VrfTime))
