@@ -11,7 +11,7 @@ import (
 )
 
 type ErrShard struct {
-	Shard []byte	`json:"err_shard"`
+	Shard string	`json:"err_shard"`
 	RebuildStatus int32	`json:"rebuild_status"`
 }
 

@@ -261,7 +261,7 @@ func SendToElk(resp *message.SelfVerifyResp, wg *sync.WaitGroup) {
     for _, v := range resp.ErrShard {
         var errShard ErrShard
         errShard.RebuildStatus = 0
-        errShard.Shard = v.DBhash
+        errShard.Shard = base58.Encode(v.DBhash)
         elkData.ErrShards = append(elkData.ErrShards, errShard)
     }
 
