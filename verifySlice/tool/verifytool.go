@@ -372,6 +372,7 @@ var daemonCmd = &cobra.Command{
     Run: func(cmd *cobra.Command, args []string) {
         sigs := make(chan os.Signal, 1)
         signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
+
         logfile := log.NewSyncWriter(&lumberjack.Logger{
             Filename:   path.Join(util.GetYTFSPath(), "verify.log"),
             MaxSize:    128,
@@ -385,7 +386,7 @@ var daemonCmd = &cobra.Command{
         c.Env = os.Environ()
         c.Stdout = logfile
         c.Stderr = logfile
-        err := c.Start()
+        err := c.Run()
         if err != nil {
             log.Println("进程启动失败:", err)
         } else {
