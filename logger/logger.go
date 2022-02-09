@@ -28,6 +28,10 @@ func SetFileLog() {
 	go LogService()
 }
 
+func SetOutput(w io.Writer) {
+	log.SetOutput(w)
+}
+
 func LogService() {
 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:9003")
 	tcpService, _ := net.ListenTCP("tcp", addr)

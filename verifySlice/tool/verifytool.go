@@ -379,6 +379,8 @@ var daemonCmd = &cobra.Command{
             MaxAge:     7,
             MaxBackups: 1,
         })
+        log.SetOutput(logfile)
+
         c := exec.Command(os.Args[0], "start")
         c.Env = os.Environ()
         c.Stdout = logfile
