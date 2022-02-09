@@ -149,13 +149,13 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 	VrfBch, err := vfs.Hdb.DB.Get(vfs.Hdb.Ro, HKey)
 	if err != nil {
 		resp.ErrCode = "ErrGetBatchNum"
-		fmt.Println("Get BatchNum of ",Skey," error",err.Error())
+		fmt.Println("Get BatchNum of ", Skey," error",err.Error())
 		return resp
 	}
 
 	if !VrfBch.Exists(){
 		resp.ErrCode = "ErrNoHashKey"
-		fmt.Println("error, hash not exist, key:",Skey,"vrfbch",VrfBch)
+		fmt.Println("error, hash not exist, key:", Skey, "vrfbch", VrfBch)
 		return resp
 	}
 	Bbch := VrfBch.Data()

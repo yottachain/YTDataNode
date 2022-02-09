@@ -173,7 +173,7 @@ func MissSliceQuery(Key string) error{
        return err
    }
    resdata, err := RPCRequestCommon(message.MsgIDSelfVerifyQueryReq.Value(), reqdata)
-    if err != nil{
+    if err != nil {
         fmt.Println("[verifytool] err:",err)
         return err
     }
@@ -184,8 +184,12 @@ func MissSliceQuery(Key string) error{
         return err
     }
 
-    fmt.Println("Key:", res.Key, "BatchNum:", res.BatchNum,
-        "Date:", res.Date, "ErrCode:", res.ErrCode)
+    if res.ErrCode == "ErrNoHashKey" {
+        fmt.Printf("key:%s not verify error record!\n", res.Key)
+    }else {
+        fmt.Println("Key:", res.Key, "BatchNum:", res.BatchNum,
+            "Date:", res.Date, "ErrCode:", res.ErrCode)
+    }
 
     return nil
 }
