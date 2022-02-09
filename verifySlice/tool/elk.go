@@ -54,7 +54,7 @@ func PutVerifyErrData(src *VerifyErrShards) error{
 
 	log.Printf("body:[%s]\n", string(body))
 
-	resp, err := client.Index("verifyErr", strings.NewReader(string(body)),
+	resp, err := client.Index("verifyerr", strings.NewReader(string(body)),
 		client.Index.WithContext(context.Background()),
 		client.Index.WithRefresh("true"))
 	if err != nil {
