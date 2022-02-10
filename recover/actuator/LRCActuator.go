@@ -395,6 +395,18 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		return nil, fmt.Errorf("task lrc recouver shard time out")
 	}
 
+	//test -------------
+	for _, v := range L.shards.GetMap() {
+		dhash := md5.Sum(v.Data)
+		if !bytes.Equal(dhash[:], L.msg.Hashs[v.Index]) {
+			fmt.Printf("recover, task=%d, hash inconsistent source hash %s, download hash %s\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
+		}else{
+			fmt.Printf("recover, task=%d, source hash %s, download hash %s\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
+		}
+	}
+
 	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
 
 	sIndexes := make([]int16, 0)
@@ -414,11 +426,12 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			if data == nil {
 				return nil, fmt.Errorf("recover data fail, status: %d", status)
 			}
-			fmt.Printf("recover, need indexes %x, used indexes %x\n", L.needIndexes, sIndexes)
+			fmt.Printf("recover, task=%d, need indexes %x, used indexes %x\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.needIndexes, sIndexes)
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
-			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash",
+			fmt.Println(binary.BigEndian.Uint64(L.msg.Id[:8]), " 添加分片失败", status, " 分片数据hash",
 				hex.EncodeToString(hash[:]))
 		}
 	}
@@ -434,7 +447,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 					v.Index,
 					hex.EncodeToString(hash[:]),
 					hex.EncodeToString(L.msg.Hashs[v.Index]),
-					hex.EncodeToString(L.msg.Id),
+					binary.BigEndian.Uint64(L.msg.Id[:8]),
 				))
 		}
 	}
@@ -454,8 +467,8 @@ func (L *LRCTaskActuator) verifyLRCRecoveredData(recoverData []byte) error {
 
 	if !bytes.Equal(hash, L.msg.Hashs[L.msg.RecoverId]) {
 		fmt.Printf("verify recovered data len is %d\n", len(recoverData))
-		return fmt.Errorf("recovered data hash verify fail recover hash:%s source hash:%s",
-			base58.Encode(hash), base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
+		return fmt.Errorf("recovered data hash verify fail task=%d recover hash:%s source hash:%s",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode(hash), base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 	}
 	return nil
 }
