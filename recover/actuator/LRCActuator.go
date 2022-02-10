@@ -77,6 +77,7 @@ type LRCTaskActuator struct {
 	msg        message.TaskDescription         // 重建消息
 	shards     *shardsMap                      // 重建所需分片
 	opts       Options
+	needIndexes []int16
 }
 
 /**
@@ -136,6 +137,10 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
+	L.needIndexes = indexes
+	fmt.Printf("任务%s 需要的分片数%d indexes:%x\n",
+		hex.EncodeToString(L.msg.Id), len(indexes), indexes)
+
 	return indexes, nil
 }
 
@@ -188,6 +193,9 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			//}
 
 			if err != nil && strings.Contains(err.Error(), "Get data Slice fail"){
+				log.Printf("[recover_debugtime] download error in addDownloadTask " +
+					"taskid=%d addrinfo=%s source hash=%s err=%s\n",
+					binary.BigEndian.Uint64(L.msg.Id[:8]), addrInfo, base58.Encode(key), err.Error())
 				return
 			}
 
@@ -199,11 +207,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			dhash := md5.Sum(shard)
 			if shard != nil {
 				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
-					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
-					"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]))
+					binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
+					"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]),
+					"hashEqual=", bytes.Equal(key, dhash[:]))
 			}else {
 				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
-					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+					binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
 					"source hash=", base58.Encode(key))
 			}
 		}(hash, d, shardIndex, addrInfo)
@@ -242,12 +251,13 @@ start:
 	if L.isTimeOut() {
 		return fmt.Errorf("lrc task time out")
 	}
-	if errCount > 3 {
+	if errCount > 5 {
 		return fmt.Errorf("download times too many, try times %d", errCount)
 	}
 	errCount++
 
-	log.Println("[recover_debugtime] E0  taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+	log.Println("[recover_debugtime] E0  taskid=",
+		binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
@@ -271,13 +281,16 @@ start:
 			goto start
 		}
 		if ok := L.checkNeedShardsExist(); !ok {
-			log.Println("[recover_debugtime] E4 checkNeedShardsExist taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+			log.Println("[recover_debugtime] E4 checkNeedShardsExist taskid=",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), "errcount:", errCount)
 			// @TODO 如果检查分片不足跳回开头继续下载
 			goto start
 		}
-		log.Println("[recover_debugtime] E5 addDownloadTask taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		log.Println("[recover_debugtime] E5 addDownloadTask taskid=",
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 	}
-	log.Println("[recover_debugtime] E6 succ taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+	log.Println("[recover_debugtime] E6 succ taskid=",
+		binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:", errCount)
 
 	return nil
 }
@@ -383,7 +396,10 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	}
 
 	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
+
+	sIndexes := make([]int16, 0)
 	for _, v := range L.shards.GetMap() {
+		sIndexes = append(sIndexes, v.Index)
 		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
 		if err != nil {
 			fmt.Printf("recover add shard data error %s\n", err.Error())
@@ -398,26 +414,29 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			if data == nil {
 				return nil, fmt.Errorf("recover data fail, status: %d", status)
 			}
+			fmt.Printf("recover, need indexes %x, used indexes %x\n", L.needIndexes, sIndexes)
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
 			fmt.Println(hex.EncodeToString(L.msg.Id), "添加分片失败", status, "分片数据hash",
-				hex.EncodeToString(hash[:]), v.Data)
+				hex.EncodeToString(hash[:]))
 		}
 	}
 
 	buf := bytes.NewBuffer([]byte{})
 	for _, v := range L.shards.GetMap() {
-		hash := md5.Sum(v.Data)
-		_, _ = fmt.Fprintln(
-			buf,
-			"恢复失败 已添加",
-			fmt.Sprintf(" %d 分片hash %s 原 hash %s 任务 %s",
-				v.Index,
-				hex.EncodeToString(hash[:]),
-				hex.EncodeToString(L.msg.Hashs[v.Index]),
-				hex.EncodeToString(L.msg.Id),
-			))
+		if v.Data != nil {
+			hash := md5.Sum(v.Data)
+			_, _ = fmt.Fprintln(
+				buf,
+				"恢复失败 已添加",
+				fmt.Sprintf(" %d 分片hash %s 原hash %s 任务 %s",
+					v.Index,
+					hex.EncodeToString(hash[:]),
+					hex.EncodeToString(L.msg.Hashs[v.Index]),
+					hex.EncodeToString(L.msg.Id),
+				))
+		}
 	}
 	log.Println(buf.String())
 	return nil, fmt.Errorf("缺少分片")
@@ -506,7 +525,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// @TODO 预判
 	if ok := L.preJudge(); !ok {
-		err = fmt.Errorf("预判失败 阶段 %d任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
+		err = fmt.Errorf("预判失败 阶段 %d 任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
