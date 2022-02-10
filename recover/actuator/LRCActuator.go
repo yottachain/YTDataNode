@@ -243,7 +243,7 @@ start:
 		return fmt.Errorf("lrc task time out")
 	}
 	if errCount > 3 {
-		return nil
+		return fmt.Errorf("download times too many, try times %d", errCount)
 	}
 	errCount++
 
@@ -264,7 +264,8 @@ start:
 			return err
 		}
 		downloadTask.Wait()
-		log.Println("[recover_debugtime] E3 Wait taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		log.Println("[recover_debugtime] E3 Wait taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),
+			"errcount:",errCount)
 
 		if L.shards.Len() < len(needShardIndexes) {
 			goto start
