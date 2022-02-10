@@ -231,7 +231,7 @@ func GetKeyStatus(vfer *verifySlice.VerifySler, SKey string){
 
     VrfTm, err := vfer.Bdb.DB.Get(vfer.Bdb.Ro, Bbch)
     if err != nil {
-        fmt.Println("Get Verify-time of ",UIBch," error",err.Error())
+        fmt.Println("Get Verify-time of ", UIBch, " error", err.Error())
         return
     }
 

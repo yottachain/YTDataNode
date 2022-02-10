@@ -367,8 +367,14 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 
 	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
 	for _, v := range L.shards.GetMap() {
-		status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
-		_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
+		if err != nil {
+			fmt.Printf("recover add shard data error %s\n", err.Error())
+		}
+		_, stage, err := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+		if err != nil {
+			fmt.Printf("recover Get Handle Param error %s\n", err.Error())
+		}
 		fmt.Println("add shard", stage, v.Index, "status", status, "任务", hex.EncodeToString(L.msg.Id))
 		if status > 0 {
 			data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
@@ -385,7 +391,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 	for _, v := range L.shards.GetMap() {
 		hash := md5.Sum(v.Data)
-		fmt.Fprintln(
+		_, _ = fmt.Fprintln(
 			buf,
 			"恢复失败 已添加",
 			fmt.Sprintf(" %d 分片hash %s 原 hash %s 任务 %s",
@@ -410,7 +416,9 @@ func (L *LRCTaskActuator) verifyLRCRecoveredData(recoverData []byte) error {
 	hash := hashBytes[:]
 
 	if !bytes.Equal(hash, L.msg.Hashs[L.msg.RecoverId]) {
-		return fmt.Errorf("recovered data hash verify fail %s %s", hex.EncodeToString(hash), hex.EncodeToString(L.msg.Hashs[L.msg.RecoverId]))
+		fmt.Printf("verify recovered data len is %d\n", len(recoverData))
+		return fmt.Errorf("recovered data hash verify fail %s %s",
+			base58.Encode(hash), base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 	}
 	return nil
 }
