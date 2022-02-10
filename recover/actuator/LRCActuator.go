@@ -197,9 +197,15 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			})
 
 			dhash := md5.Sum(shard)
-			log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
-				"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]))
+			if shard != nil {
+				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
+					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+					"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]))
+			}else {
+				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
+					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+					"source hash=", base58.Encode(key))
+			}
 		}(hash, d, shardIndex, addrInfo)
 	}
 
