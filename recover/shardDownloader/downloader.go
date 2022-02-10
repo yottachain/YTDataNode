@@ -90,22 +90,12 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 
 	//resBuf, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
 	resBuf, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), buf)
-	log.Println("[recover_debugtime]  E2_2_0_1 requestShard SendMsgClose nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+	log.Println("[recover_debugtime]  E2_2_0_1 requestShard SendMsgClose nodeid=",
+		nodeId,"addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "Get data Slice fail") {
 			statistics.DefaultRebuildCount.IncFailShard()
-
-			//elkClt.AddLogAsync(struct {
-			//	ID       string
-			//	Form     string
-			//	ErrorMsg string
-			//}{
-			//	base58.Encode(msg.VHF),
-			//	nodeId,
-			//	err.Error(),
-			//})
-
 		} else {
 			statistics.DefaultRebuildCount.IncFailSendShard()
 		}
@@ -113,7 +103,7 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 		return nil, err
 	}
 	if len(resBuf) < 3 {
-		return nil, fmt.Errorf("shard len <3")
+		return nil, fmt.Errorf("shard len < 3")
 	}
 
 	var resMsg message.DownloadShardResponse
@@ -121,7 +111,8 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	if err != nil {
 		return nil, err
 	}
-	log.Println("[recover_debugtime]  E2_2_0_1 requestShard Unmarshal nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+	log.Println("[recover_debugtime]  E2_2_0_1 requestShard Unmarshal nodeid=",
+		nodeId, "addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
 
 	// 获取分片成功计数
 	statistics.DefaultRebuildCount.IncSuccShard()
@@ -167,7 +158,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 	// @TODO 异步执行下载
 	d.q <- struct{}{}
 	go func() {
-		log.Println("[recover_debugtime]  E2_2_0 goroutine start nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID))
+		log.Println("[recover_debugtime]  E2_2_0 goroutine start nodeid=", nodeId,
+			"addr=", addr, "hash=", base58.Encode(shardID))
 		atomic.AddInt32(&d.stat.Downloading, 1)
 		atomic.AddInt32(&d.stat.Total, 1)
 		defer func() {
@@ -179,7 +171,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
-		log.Println("[recover_debugtime]  E2_2_0 requestShard  nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+		log.Println("[recover_debugtime]  E2_2_0 requestShard  nodeid=",
+			nodeId, "addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
 
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
