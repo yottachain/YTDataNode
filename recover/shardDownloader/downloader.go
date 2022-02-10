@@ -63,7 +63,8 @@ func (d *downloader) requestShard(ctx context.Context, nodeId string, addr []str
 	defer statistics.DefaultRebuildCount.DecConShard()
 
 	clt, err := d.cs.GetByAddrString(ctx, nodeId, addr)
-	log.Println("[recover_debugtime]  E2_2_0_0 requestShard GetByAddrString nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
+	log.Println("[recover_debugtime]  E2_2_0_0 requestShard GetByAddrString nodeid=",
+		nodeId,"addr=",addr,"hash=",base58.Encode(shardID),"error:",err)
 
 	if err != nil {
 		statistics.DefaultRebuildCount.IncFailConn()

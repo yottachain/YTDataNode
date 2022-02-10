@@ -19,6 +19,7 @@ import (
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
 	"github.com/yottachain/YTDataNode/statistics"
 	lrc "github.com/yottachain/YTLRC"
+	"strings"
 	"sync"
 	"time"
 )
@@ -149,15 +150,9 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	wg := &sync.WaitGroup{}
-	wg.Add(len(indexes))
+
 	// @TODO 循环添加下载任务
 	for _, shardIndex := range indexes {
-		// 中断循环开关
-		//var brk = false
-		//if brk {
-		//	break
-		//}
-
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
 
@@ -174,23 +169,25 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
 
 		// @TODO 异步等待下载任务执行完成
-		go func(key []byte, d shardDownloader.DownloaderWait, index int16) {
+		go func(key []byte, d shardDownloader.DownloaderWait, index int16, addrInfo *message.P2PLocation) {
+			wg.Add(1)
 			defer wg.Done()
 			log.Println("[recover_debugtime] start download goroutine in addDownloadTask  taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
 			log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			shard, err := d.Get(ctx)
 			log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash),"error:",err)
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key),"error:",err)
 
 			// @TODO 如果因为分片不存在导致错误，直接中断
 			//if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
 			//	brk = true
 			//}
-			if err != nil {
+
+			if err != nil && strings.Contains(err.Error(), "Get data Slice fail"){
 				return
 			}
 
@@ -198,12 +195,17 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 				Index: index,
 				Data:  shard,
 			})
+
+			dhash := md5.Sum(shard)
 			log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
-		}(hash, d, shardIndex)
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+				"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]))
+		}(hash, d, shardIndex, addrInfo)
 	}
+
 	log.Println("[recover_debugtime] addDownloadTask end taskid=",
 		binary.BigEndian.Uint64(L.msg.Id[:8]))
+
 	return wg, nil
 }
 
@@ -387,7 +389,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		if status > 0 {
 			data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
 			if data == nil {
-				return nil, fmt.Errorf("recover data fail,status: %d", status)
+				return nil, fmt.Errorf("recover data fail, status: %d", status)
 			}
 			return data, nil
 		} else if status < 0 {
@@ -426,7 +428,7 @@ func (L *LRCTaskActuator) verifyLRCRecoveredData(recoverData []byte) error {
 
 	if !bytes.Equal(hash, L.msg.Hashs[L.msg.RecoverId]) {
 		fmt.Printf("verify recovered data len is %d\n", len(recoverData))
-		return fmt.Errorf("recovered data hash verify fail %s %s",
+		return fmt.Errorf("recovered data hash verify fail recover hash:%s source hash:%s",
 			base58.Encode(hash), base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 	}
 	return nil
@@ -489,7 +491,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// @TODO 初始化LRC句柄
 	err = L.initLRCHandler(opts.Stage)
-	log.Println("[recover_debugtime] C taskid=",binary.BigEndian.Uint64(msgID[:8]))
+	log.Println("[recover_debugtime] C taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
 		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
