@@ -184,7 +184,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 
 		d.taskRes.Store(IDString, &shardChan)
 		shardChan <- resBuf
-		log.Println("[recover_debugtime]  E2_2_0 goroutine end nodeid=",nodeId,"addr=",addr,"hash=",base58.Encode(shardID))
+		log.Println("[recover_debugtime]  E2_2_0 goroutine end nodeid=",nodeId,
+			"addr=",addr,"hash=", base58.Encode(shardID))
 	}()
 
 	return &downloadWait{shardChan: &shardChan, errChan: &errChan}, nil

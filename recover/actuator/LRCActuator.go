@@ -131,8 +131,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	fmt.Printf("任务%s 需要的分片数%d indexes:%x\n",
-		hex.EncodeToString(L.msg.Id), len(L.needIndexes), L.needIndexes)
+	fmt.Printf("任务%d 阶段%d 需要的分片数%d indexes:%x\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needIndexes), L.needIndexes)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
@@ -150,6 +150,9 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	for key := range indexMap {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
 	}
+
+	fmt.Printf("任务%d 阶段%d 需要下载的分片数%d indexes:%x\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needDownloadIndexes), L.needDownloadIndexes)
 
 	return L.needDownloadIndexes, nil
 }
@@ -280,7 +283,8 @@ start:
 			}
 		}
 
-		log.Println("需要下载的分片", L.needDownloadIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
+		log.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "需要下载的分片数", len(L.needDownloadIndexes),
+			"需要下载的分片", L.needDownloadIndexes, "尝试", errCount)
 		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
 		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
 			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
@@ -288,7 +292,7 @@ start:
 			return err
 		}
 		downloadTask.Wait()
-		log.Println("[recover_debugtime] E3 Wait taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),
+		log.Println("[recover_debugtime] E3 Wait taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]),
 			"errcount:",errCount)
 
 		if L.shards.Len() < len(L.needIndexes) {
@@ -421,7 +425,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		}
 	}
 
-	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(1))
+	_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage))
 
 	sIndexes := make([]int16, 0)
 	for _, v := range L.shards.GetMap() {
@@ -560,7 +564,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
-	log.Println("[recover_debugtime] D preJudge taskid=",binary.BigEndian.Uint64(msgID[:8]))
+	log.Println("[recover_debugtime] D preJudge taskid=", binary.BigEndian.Uint64(msgID[:8]))
+
 	// 成功预判计数加一
 	statistics.DefaultRebuildCount.IncPassJudge()
 
@@ -569,7 +574,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
 	err = L.downloadLoop(ctx)
-	log.Println("[recover_debugtime] E downloadloop taskid=",binary.BigEndian.Uint64(msgID[:8]))
+	log.Println("[recover_debugtime] E downloadloop taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
 		log.Printf("[recover] download loop err:%s\n", err.Error())
 		return
