@@ -250,7 +250,12 @@ func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	cfg.APIListen = ":9002"
 	cfg.Options = opts
 	cfg.AllocSpace = opts.TotalVolumn
-	cfg.privKey, cfg.PubKey, _ = util.RandomIdentity2()
+	var err error
+	cfg.privKey, cfg.PubKey, err = util.RandomIdentity2()
+	if err != nil {
+		fmt.Printf("config create privkey err:%s\n", err.Error())
+		return nil
+	}
 
 	cfg.Relay = true
 	cfg.BPList = getBPList()

@@ -116,14 +116,13 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
 
-	indexMap := make(map[int16]struct{})
-
 	//@TODO 当没有已经缓存的分片时从LRC获取需要分片列表
 	needList, _ := L.lrcHandler.GetNeededShardList(L.lrcHandler.Handle)
 
 	//重置一下
 	L.needIndexes = nil
 	L.indexMap = nil
+	indexMap := make(map[int16]struct{})
 
 	for curr := needList.Front(); curr != nil; curr = curr.Next() {
 		if index, ok := curr.Value.(int16); ok {

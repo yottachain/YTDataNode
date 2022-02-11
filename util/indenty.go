@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"log"
 
@@ -36,11 +37,12 @@ func Libp2pPkey2eosPkey(privkey string) (string, error) {
 // RandomIdentity2 generates a random identity (default behaviour)
 func RandomIdentity2() (crypto.PrivKey, string, error) {
 	privstr, pubstr := ci.CreateKey()
-	pr, _ := base58.Decode(privstr)
+	pr, err := base58.Decode(privstr)
+	if err != nil {
+		return nil, "", fmt.Errorf("decode privkey err:%s", err.Error())
+	}
 	log.Println(pr[1:33])
 	priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[1:33])
-	// log.Println(privstr)
-	// priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
 	if err != nil {
 		return nil, "", err
 	}
