@@ -241,7 +241,7 @@ func NewConfig() *Config {
 }
 
 func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
-	if opts == nil{
+	if opts == nil {
 		fmt.Println("[error] opts is nil")
 		return nil
 	}

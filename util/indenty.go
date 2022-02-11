@@ -37,6 +37,9 @@ func Libp2pPkey2eosPkey(privkey string) (string, error) {
 // RandomIdentity2 generates a random identity (default behaviour)
 func RandomIdentity2() (crypto.PrivKey, string, error) {
 	privstr, pubstr := ci.CreateKey()
+	fmt.Printf("privkey:%s\n", privstr)
+	fmt.Printf("pubstr:%s\n", pubstr)
+
 	pr, err := base58.Decode(privstr)
 	if err != nil {
 		return nil, "", fmt.Errorf("decode privkey err:%s", err.Error())

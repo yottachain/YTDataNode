@@ -168,7 +168,6 @@ func readCfg() (*config.Config, error) {
 }
 
 func step1(form *RegForm) {
-
 	type minerData struct {
 		MinerID    uint64          `json:"minerid"`
 		AdminAcc   eos.AccountName `json:"adminacc"`

@@ -47,7 +47,7 @@ func Init() error {
 func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *config.Config {
 	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
 	if cfg == nil {
-		log.Println("init config is nil")
+		fmt.Println("init config is nil")
 		return cfg
 	}
 
@@ -59,6 +59,7 @@ func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *c
 	}
 	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
 	if err != nil {
+		fmt.Printf("ytfs open init err %s\n", err.Error())
 		return nil
 	}
 	l := yt.PosIdx()
@@ -66,7 +67,7 @@ func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *c
 		log.Println("[diskHash] ytfs_len:", l)
 		err := diskHash.RandWrite(yt, uint(l))
 		if err != nil {
-			log.Println("[diskHash] randWrite to ytfs error:", err)
+			fmt.Println("[diskHash] randWrite to ytfs error:", err)
 			return nil
 		}
 	}
