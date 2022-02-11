@@ -78,6 +78,7 @@ type LRCTaskActuator struct {
 	shards     *shardsMap                      // 重建所需分片
 	opts       Options
 	needIndexes []int16
+	needDownloadIndexes []int16
 }
 
 /**
@@ -112,36 +113,45 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		return nil, fmt.Errorf("lrc handler is nil")
 	}
 
-	L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
+	_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage-1))
 
-	indexes := make([]int16, 0)
+	indexMap := make(map[int16]struct{})
 
-	//// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
-	if L.shards.Len() > 0 {
-		for _, shard := range L.shards.GetMap() {
-			if shard.Data == nil {
-				indexes = append(indexes, shard.Index)
-			}
-		}
-		return indexes, nil
-	}
-
-	// @TODO 当没有已经缓存的分片时从LRC获取需要分片列表
+	//@TODO 当没有已经缓存的分片时从LRC获取需要分片列表
 	needList, _ := L.lrcHandler.GetNeededShardList(L.lrcHandler.Handle)
 
+	//重置一下
+	L.needIndexes = nil
 	for curr := needList.Front(); curr != nil; curr = curr.Next() {
 		if index, ok := curr.Value.(int16); ok {
-			indexes = append(indexes, index)
+			indexMap[index] = struct{}{}
+			L.needIndexes = append(L.needIndexes, index)
 		} else {
 			return nil, fmt.Errorf("get need shard list fail")
 		}
 	}
 
-	L.needIndexes = indexes
 	fmt.Printf("任务%s 需要的分片数%d indexes:%x\n",
-		hex.EncodeToString(L.msg.Id), len(indexes), indexes)
+		hex.EncodeToString(L.msg.Id), len(L.needIndexes), L.needIndexes)
 
-	return indexes, nil
+	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
+	if L.shards.Len() > 0 {
+		for _, shard := range L.shards.GetMap() {
+			if _, ok := indexMap[shard.Index]; ok {
+				//有数据就不需要下载了
+				if shard.Data != nil {
+					delete(indexMap, shard.Index)
+				}
+			}
+		}
+	}
+
+	L.needDownloadIndexes = nil
+	for key := range indexMap {
+		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
+	}
+
+	return L.needDownloadIndexes, nil
 }
 
 /**
@@ -262,12 +272,16 @@ start:
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
 	default:
-		needShardIndexes, err := L.getNeedShardList()
-		log.Println("[recover_debugtime] E1 getNeedShardList taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		if L.needDownloadIndexes == nil {
+			_, err := L.getNeedShardList()
+			if err != nil {
+				log.Println("[recover_debugtime] E1 getNeedShardList  taskid=",
+					binary.BigEndian.Uint64(L.msg.Id[:8]), "err:", err.Error(), "errcount:",errCount)
+			}
+		}
 
-		log.Println("需要分片", needShardIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
-		downloadTask, err := L.addDownloadTask(time.Minute*1, needShardIndexes...)
+		log.Println("需要下载的分片", L.needDownloadIndexes, "任务", hex.EncodeToString(L.msg.Id), "尝试", errCount)
+		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
 		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
 			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 		if err != nil {
@@ -277,7 +291,7 @@ start:
 		log.Println("[recover_debugtime] E3 Wait taskid=",binary.BigEndian.Uint64(L.msg.Id[:8]),
 			"errcount:",errCount)
 
-		if L.shards.Len() < len(needShardIndexes) {
+		if L.shards.Len() < len(L.needIndexes) {
 			goto start
 		}
 		if ok := L.checkNeedShardsExist(); !ok {
@@ -503,6 +517,10 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	msgID = L.msg.Id
 	recoverHash = L.msg.Hashs[L.msg.RecoverId]
 
+	//每次重置一下这两个值
+	L.needIndexes = nil
+	L.needDownloadIndexes = nil
+
 	if err != nil {
 		log.Println("[recover_debugtime] exectask error:", err.Error(), "taskid=",
 			binary.BigEndian.Uint64(msgID[:8]))
@@ -510,7 +528,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	}
 
 	log.Println("[recover_debugtime] A  ExecTask start taskid=",
-		binary.BigEndian.Uint64(msgID[:8]),"stage:", opts.Stage)
+		binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
 
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
