@@ -150,8 +150,11 @@ func newCfg(form *RegForm) (*config.Config, error) {
 	}
 
 	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M, form.ISBlockDev, form.StoragePath )
+	if cfg == nil {
+		return nil, fmt.Errorf("new config error cfg is nil")
+	}
 
-	cfg.Save()
+	_ = cfg.Save()
 
 	return cfg, nil
 }
