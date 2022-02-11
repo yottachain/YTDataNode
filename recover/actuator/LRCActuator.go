@@ -79,6 +79,7 @@ type LRCTaskActuator struct {
 	opts       Options
 	needIndexes []int16
 	needDownloadIndexes []int16
+	indexMap  map[int16] struct{}
 }
 
 /**
@@ -122,6 +123,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	//重置一下
 	L.needIndexes = nil
+	L.indexMap = nil
+
 	for curr := needList.Front(); curr != nil; curr = curr.Next() {
 		if index, ok := curr.Value.(int16); ok {
 			indexMap[index] = struct{}{}
@@ -131,7 +134,9 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	fmt.Printf("任务%d 阶段%d 需要的分片数%d indexes:%x\n",
+	L.indexMap = indexMap
+
+	fmt.Printf("任务 %d 阶段 %d 需要的分片数%d indexes:%x\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needIndexes), L.needIndexes)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
@@ -269,8 +274,8 @@ start:
 	}
 	errCount++
 
-	log.Println("[recover_debugtime] E0  taskid=",
-		binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+	//log.Println("[recover_debugtime] E0  taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("download loop time out")
@@ -283,8 +288,10 @@ start:
 			}
 		}
 
-		log.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "需要下载的分片数", len(L.needDownloadIndexes),
+		log.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "stage:", L.opts.Stage,
+			"需要下载的分片数", len(L.needDownloadIndexes),
 			"需要下载的分片", L.needDownloadIndexes, "尝试", errCount)
+
 		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
 		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
 			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
@@ -414,21 +421,24 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	}
 
 	//test -------------
-	for _, v := range L.shards.GetMap() {
-		dhash := md5.Sum(v.Data)
-		if !bytes.Equal(dhash[:], L.msg.Hashs[v.Index]) {
-			fmt.Printf("recover, task=%d, hash inconsistent source hash %s, download hash %s\n",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
-		}else{
-			fmt.Printf("recover, task=%d, source hash %s, download hash %s\n",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
-		}
-	}
+	//for _, v := range L.shards.GetMap() {
+	//	dhash := md5.Sum(v.Data)
+	//	if !bytes.Equal(dhash[:], L.msg.Hashs[v.Index]) {
+	//		fmt.Printf("recover, task=%d, hash inconsistent source hash %s, download hash %s\n",
+	//			binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
+	//	}else{
+	//		fmt.Printf("recover, task=%d, source hash %s, download hash %s\n",
+	//			binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
+	//	}
+	//}
 
-	_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage))
+	//_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage))
 
 	sIndexes := make([]int16, 0)
 	for _, v := range L.shards.GetMap() {
+		if _, ok := L.indexMap[v.Index]; !ok {
+			continue
+		}
 		sIndexes = append(sIndexes, v.Index)
 		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
 		if err != nil {
@@ -438,19 +448,20 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		if err != nil {
 			fmt.Printf("recover Get Handle Param error %s\n", err.Error())
 		}
-		fmt.Println("add shard", stage, v.Index, "status", status, "任务", hex.EncodeToString(L.msg.Id))
+		fmt.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "add shard ", "stage=", stage,
+			"index", v.Index, "status", status, )
 		if status > 0 {
 			data, status := L.lrcHandler.GetRebuildData(L.lrcHandler)
 			if data == nil {
 				return nil, fmt.Errorf("recover data fail, status: %d", status)
 			}
-			fmt.Printf("recover, task=%d, need indexes %x, used indexes %x\n",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), L.needIndexes, sIndexes)
+			fmt.Printf("recover, task=%d, stage=%d [need indexes] %x, used indexes %x\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.needIndexes, sIndexes)
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
-			fmt.Println(binary.BigEndian.Uint64(L.msg.Id[:8]), " 添加分片失败", status, " 分片数据hash",
-				hex.EncodeToString(hash[:]))
+			fmt.Println("task=", binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage,
+				"添加分片失败", status, " 分片数据hash", base58.Encode(hash[:]))
 		}
 	}
 
@@ -524,6 +535,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	//每次重置一下这两个值
 	L.needIndexes = nil
 	L.needDownloadIndexes = nil
+	L.indexMap = nil
 
 	if err != nil {
 		log.Println("[recover_debugtime] exectask error:", err.Error(), "taskid=",
