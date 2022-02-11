@@ -168,8 +168,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
  * @param indexes 下载任务分片索引
  */
 func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int16) (*sync.WaitGroup, error) {
-	log.Println("[recover_debugtime] addDownloadTask start taskid=",
-		binary.BigEndian.Uint64(L.msg.Id[:8]))
+	//log.Println("[recover_debugtime] addDownloadTask start taskid=",
+	//	binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	wg := &sync.WaitGroup{}
 
@@ -180,29 +180,31 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 		//  下载分片计数加一
 		statistics.DefaultRebuildCount.IncShardForRbd()
-		log.Println("[recover_debugtime] addDownloadTask_addtask start taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]))
+		//log.Println("[recover_debugtime] addDownloadTask_addtask start taskid=",
+		//	binary.BigEndian.Uint64(L.msg.Id[:8]))
 		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash)
 		if err != nil {
 			return nil, fmt.Errorf("add download task fail %s", err.Error())
 		}
 
-		log.Println("[recover_debugtime]  E2_1  end addDownloadTask_addTask taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
+		//log.Println("[recover_debugtime]  E2_1  end addDownloadTask_addTask taskid=",
+		//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
 
 		// @TODO 异步等待下载任务执行完成
 		go func(key []byte, d shardDownloader.DownloaderWait, index int16, addrInfo *message.P2PLocation) {
 			wg.Add(1)
 			defer wg.Done()
-			log.Println("[recover_debugtime] start download goroutine in addDownloadTask  taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
+			//log.Println("[recover_debugtime] start download goroutine in addDownloadTask  taskid=",
+			//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
-			log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
+			//log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
+			//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			shard, err := d.Get(ctx)
-			log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key),"error:",err)
+			if err != nil {
+				log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
+					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key),"error:",err)
+			}
 
 			// @TODO 如果因为分片不存在导致错误，直接中断
 			//if err != nil && strings.Contains(err.Error(), "Get data Slice fail") {
@@ -221,12 +223,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 				Data:  shard,
 			})
 
-			dhash := md5.Sum(shard)
+			//dhash := md5.Sum(shard)
 			if shard != nil {
-				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
-					binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
-					"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]),
-					"hashEqual=", bytes.Equal(key, dhash[:]))
+				//log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
+				//	binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
+				//	"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]),
+				//	"hashEqual=", bytes.Equal(key, dhash[:]))
 			}else {
 				log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
 					binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
@@ -235,8 +237,8 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		}(hash, d, shardIndex, addrInfo)
 	}
 
-	log.Println("[recover_debugtime] addDownloadTask end taskid=",
-		binary.BigEndian.Uint64(L.msg.Id[:8]))
+	//log.Println("[recover_debugtime] addDownloadTask end taskid=",
+	//	binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	return wg, nil
 }
@@ -287,19 +289,19 @@ start:
 			}
 		}
 
-		log.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "stage:", L.opts.Stage,
-			"需要下载的分片数", len(L.needDownloadIndexes),
-			"需要下载的分片", L.needDownloadIndexes, "尝试", errCount)
+		fmt.Printf("任务:%d 阶段:%d 需要下载的分片数:%d indexes:%x 尝试:%d\n",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
+			len(L.needDownloadIndexes), L.needDownloadIndexes, errCount)
 
 		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
-		log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		//log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
+		//	binary.BigEndian.Uint64(L.msg.Id[:8]), "errcount:",errCount)
 		if err != nil {
 			return err
 		}
 		downloadTask.Wait()
-		log.Println("[recover_debugtime] E3 Wait taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]),
-			"errcount:",errCount)
+		//log.Println("[recover_debugtime] E3 Wait taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]),
+		//	"errcount:",errCount)
 
 		if L.shards.Len() < len(L.needIndexes) {
 			goto start
@@ -310,8 +312,8 @@ start:
 			// @TODO 如果检查分片不足跳回开头继续下载
 			goto start
 		}
-		log.Println("[recover_debugtime] E5 addDownloadTask taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
+		//log.Println("[recover_debugtime] E5 addDownloadTask taskid=",
+		//	binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 	}
 	log.Println("[recover_debugtime] E6 succ taskid=",
 		binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:", errCount)
@@ -563,7 +565,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// @TODO 初始化LRC句柄
 	err = L.initLRCHandler(opts.Stage)
-	log.Println("[recover_debugtime] C taskid=", binary.BigEndian.Uint64(msgID[:8]))
+	//log.Println("[recover_debugtime] C taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
 		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
@@ -571,11 +573,11 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// @TODO 预判
 	if ok := L.preJudge(); !ok {
-		err = fmt.Errorf("预判失败 阶段 %d 任务 %s", L.opts.Stage, hex.EncodeToString(L.msg.Id))
+		err = fmt.Errorf("预判失败 阶段 %d 任务 %d", L.opts.Stage, binary.BigEndian.Uint64(msgID[:8]))
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
-	log.Println("[recover_debugtime] D preJudge taskid=", binary.BigEndian.Uint64(msgID[:8]))
+	//log.Println("[recover_debugtime] D preJudge taskid=", binary.BigEndian.Uint64(msgID[:8]))
 
 	// 成功预判计数加一
 	statistics.DefaultRebuildCount.IncPassJudge()
@@ -585,27 +587,30 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
 	err = L.downloadLoop(ctx)
-	log.Println("[recover_debugtime] E downloadloop taskid=", binary.BigEndian.Uint64(msgID[:8]))
+	//log.Println("[recover_debugtime] E downloadloop taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
-		log.Printf("[recover] download loop err:%s\n", err.Error())
+		log.Printf("[recover] task=%d stage=%d download loop err:%s\n",
+			binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, err.Error())
 		return
 	}
 
 	// @TODO LRC恢复
 	recoverData, err := L.recoverShard()
 	if err != nil {
-		log.Printf("[recover] recover Shard err:%s\n", err.Error())
+		log.Printf("[recover] task=%d stage=%d recover Shard err:%s\n",
+			binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, err.Error())
 		return
 	}
 
-	log.Println("[recover_debugtime] F end taskid=",binary.BigEndian.Uint64(msgID[:8]))
+	//log.Println("[recover_debugtime] F end taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	// @TODO 验证数据
 	if err = L.verifyLRCRecoveredData(recoverData); err != nil {
-		log.Printf("[recover] verify Recovered Data err:%s\n", err.Error())
+		log.Printf("[recover] task=%d stage=%d verify Recovered Data err:%s\n",
+			binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, err.Error())
 		return
 	}
 
-	log.Println("[recover_debugtime] G end taskid=",binary.BigEndian.Uint64(msgID[:8]))
+	log.Println("[recover_debugtime] G end taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	data = recoverData
 	// 成功重建计数加一
 	statistics.DefaultRebuildCount.IncSuccRbd()
