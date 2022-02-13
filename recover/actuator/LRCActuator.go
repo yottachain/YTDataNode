@@ -27,6 +27,7 @@ import (
 type Shard struct {
 	Index int16
 	Data  []byte
+	Check bool
 }
 
 type shardsMap struct {
@@ -80,6 +81,7 @@ type LRCTaskActuator struct {
 	needIndexes []int16
 	needDownloadIndexes []int16
 	indexMap  map[int16] struct{}
+	isInitHand	bool
 }
 
 /**
@@ -88,6 +90,12 @@ type LRCTaskActuator struct {
  * @return error
  */
 func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
+	if !L.isInitHand {
+		L.isInitHand = true
+	}else {
+		return nil
+	}
+
 	l := &lrc.Shardsinfo{}
 
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
@@ -135,7 +143,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	L.indexMap = indexMap
 
-	fmt.Printf("任务 %d 阶段 %d 需要的分片数%d indexes:%x\n",
+	fmt.Printf("任务 %d 阶段 %d 需要的分片数%d indexes:%v\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needIndexes), L.needIndexes)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
@@ -155,7 +163,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
 	}
 
-	fmt.Printf("任务%d 阶段%d 需要下载的分片数%d indexes:%x\n",
+	fmt.Printf("任务%d 阶段%d 需要下载的分片数%d indexes:%v\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needDownloadIndexes), L.needDownloadIndexes)
 
 	return L.needDownloadIndexes, nil
@@ -218,12 +226,14 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 				return
 			}
 
+			dhash := md5.Sum(shard)
 			L.shards.Set(hex.EncodeToString(key), &Shard{
 				Index: index,
 				Data:  shard,
+				Check: bytes.Equal(key, dhash[:]),
 			})
 
-			//dhash := md5.Sum(shard)
+
 			if shard != nil {
 				//log.Println("[recover_debugtime] end download goroutine in addDownloadTask  taskid=",
 				//	binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
@@ -436,11 +446,14 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	//_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage))
 
 	sIndexes := make([]int16, 0)
+	Checks := make([]bool, 0)
 	for _, v := range L.shards.GetMap() {
 		if _, ok := L.indexMap[v.Index]; !ok {
 			continue
 		}
 		sIndexes = append(sIndexes, v.Index)
+		Checks = append(Checks, v.Check)
+
 		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
 		if err != nil {
 			fmt.Printf("recover add shard data error %s\n", err.Error())
@@ -456,8 +469,8 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			if data == nil {
 				return nil, fmt.Errorf("recover data fail, status: %d", status)
 			}
-			fmt.Printf("recover, task=%d, stage=%d [need indexes] %x, used indexes %x\n",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.needIndexes, sIndexes)
+			fmt.Printf("recover, task=%d, stage=%d need indexes %v, used indexes %v, used checks %v\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.needIndexes, sIndexes, Checks)
 			return data, nil
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
