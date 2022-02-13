@@ -370,17 +370,17 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 	}
 
 	// 如果是全局校验填充假数据，尝试校验
-	if L.opts.Stage >= 3 {
-		for _, index := range onLineShardIndexes {
-			// 填充假数据
-			L.lrcHandler.ShardExist[index] = 1
-
-			if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, TestData[index][:]); status > 0 {
-				return true
-			}
-		}
-		return false
-	}
+	//if L.opts.Stage >= 3 {
+	//	for _, index := range onLineShardIndexes {
+	//		// 填充假数据
+	//		L.lrcHandler.ShardExist[index] = 1
+	//
+	//		if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, TestData[index][:]); status > 0 {
+	//			return true
+	//		}
+	//	}
+	//	return false
+	//}
 
 	return true
 }
