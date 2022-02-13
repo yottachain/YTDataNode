@@ -128,6 +128,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	//@TODO 当没有已经缓存的分片时从LRC获取需要分片列表
 	needList, _ := L.lrcHandler.GetNeededShardList(L.lrcHandler.Handle)
 
+	_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+
 	//重置一下
 	L.needIndexes = nil
 	L.needIndexMap = nil
@@ -144,8 +146,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	L.needIndexMap = indexMap
 
-	fmt.Printf("任务 %d 阶段 %d 需要的分片数%d indexes:%v\n",
-		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needIndexes), L.needIndexes)
+	fmt.Printf("任务 %d 阶段 %d real stage %d 需要的分片数%d  indexes:%v\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, len(L.needIndexes), L.needIndexes)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
 	if L.shards.Len() > 0 {
@@ -164,8 +166,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
 	}
 
-	fmt.Printf("任务%d 阶段%d 需要下载的分片数%d indexes:%v\n",
-		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needDownloadIndexes), L.needDownloadIndexes)
+	fmt.Printf("任务%d 阶段%d real stage %d 需要下载的分片数%d indexes:%v\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, len(L.needDownloadIndexes), L.needDownloadIndexes)
 
 	return L.needDownloadIndexes, nil
 }
