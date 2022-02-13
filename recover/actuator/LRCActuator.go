@@ -352,24 +352,29 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		return false
 	}
 
+	_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+
 	var onLineShardIndexes = make([]int16, 0)
-	var offLineShardIndexes = make([]int16, 0)
+	//var offLineShardIndexes = make([]int16, 0)
 	for _, index := range indexes {
 		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); ok {
 			onLineShardIndexes = append(onLineShardIndexes, index)
 		} else {
-			offLineShardIndexes = append(offLineShardIndexes, index)
+			//offLineShardIndexes = append(offLineShardIndexes, index)
 			// 如果是行列校验，所需分片必须都在线
-			if L.opts.Stage < 3 {
+			//if L.opts.Stage < 3 {
+			if stage < 3 {
+				fmt.Printf("任务 %d 阶段 %d real stage %d 离线节点%v\n",
+						binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, L.msg.Locations[index].Addrs)
 				return false
 			}
 		}
 	}
 
-	if len(offLineShardIndexes) != 0 {
-		fmt.Printf("任务 %d 阶段 %d 离线节点数%d offLine Indexes:%v\n",
-			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(offLineShardIndexes), offLineShardIndexes)
-	}
+	//if len(offLineShardIndexes) != 0 {
+	//	fmt.Printf("任务 %d 阶段 %d 离线节点数%d offLine Indexes:%v\n",
+	//		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(offLineShardIndexes), offLineShardIndexes)
+	//}
 
 	//// 如果是全局校验填充假数据，尝试校验
 	//if L.opts.Stage >= 3 {
