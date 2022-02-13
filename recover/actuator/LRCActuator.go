@@ -340,6 +340,8 @@ start:
  */
 func (L *LRCTaskActuator) preJudge() (ok bool) {
 	if L.isTimeOut() {
+		fmt.Printf("任务 %d 阶段 %d task timeout\n",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage)
 		return false
 	}
 
@@ -369,7 +371,7 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(offLineShardIndexes), offLineShardIndexes)
 	}
 
-	// 如果是全局校验填充假数据，尝试校验
+	//// 如果是全局校验填充假数据，尝试校验
 	//if L.opts.Stage >= 3 {
 	//	for _, index := range onLineShardIndexes {
 	//		// 填充假数据
