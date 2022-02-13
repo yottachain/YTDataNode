@@ -80,7 +80,7 @@ type LRCTaskActuator struct {
 	opts       Options
 	needIndexes []int16
 	needDownloadIndexes []int16
-	indexMap  map[int16] struct{}
+	needIndexMap  map[int16] struct{}
 	isInitHand	bool
 }
 
@@ -104,7 +104,8 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.GetRCHandle(l)
 	L.lrcHandler = l
 
-	log.Println("[recover]", "执行阶段", stage)
+	log.Printf("[recover] task=%d stage=%d lost index %d\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+		stage, L.msg.RecoverId)
 
 	L.shards = shardsMap{}.Init()
 
@@ -129,7 +130,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	//重置一下
 	L.needIndexes = nil
-	L.indexMap = nil
+	L.needIndexMap = nil
 	indexMap := make(map[int16]struct{})
 
 	for curr := needList.Front(); curr != nil; curr = curr.Next() {
@@ -141,7 +142,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	L.indexMap = indexMap
+	L.needIndexMap = indexMap
 
 	fmt.Printf("任务 %d 阶段 %d 需要的分片数%d indexes:%v\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, len(L.needIndexes), L.needIndexes)
@@ -299,7 +300,7 @@ start:
 			}
 		}
 
-		fmt.Printf("任务:%d 阶段:%d 需要下载的分片数:%d indexes:%x 尝试:%d\n",
+		fmt.Printf("任务:%d 阶段:%d 需要下载的分片数:%d indexes:%v 尝试:%d\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
 			len(L.needDownloadIndexes), L.needDownloadIndexes, errCount)
 
@@ -344,6 +345,8 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 
 	indexes, err := L.getNeedShardList()
 	if err != nil {
+		fmt.Printf("任务 %d 阶段 %d getNeedShardList err %s\n",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, err.Error())
 		return false
 	}
 
@@ -458,7 +461,7 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	useIndexMap := make(map[int16]struct{})
 
 	for _, v := range L.shards.GetMap() {
-		if _, ok := L.indexMap[v.Index]; !ok {
+		if _, ok := L.needIndexMap[v.Index]; !ok {
 			continue
 		}
 		sIndexes = append(sIndexes, v.Index)
@@ -466,14 +469,16 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 
 		Checks = append(Checks, v.Check)
 
-		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
-		if err != nil {
-			fmt.Printf("recover add shard data error %s\n", err.Error())
-		}
 		_, stage, err := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 		if err != nil {
 			fmt.Printf("recover Get Handle Param error %s\n", err.Error())
 		}
+
+		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
+		if err != nil {
+			fmt.Printf("recover add shard data error %s\n", err.Error())
+		}
+
 		fmt.Println("任务", binary.BigEndian.Uint64(L.msg.Id[:8]), "add shard ", "task stage=", L.opts.Stage,
 			"lrc stage=", stage, "index", v.Index, "status", status, )
 
@@ -488,7 +493,8 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
 			fmt.Println("task=", binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage,
-				"添加分片失败", status, " 分片数据hash", base58.Encode(hash[:]))
+				"添加分片失败", "index",v.Index, "status", status,
+				" 分片数据hash", base58.Encode(hash[:]), "err:", err)
 		}
 	}
 
@@ -569,7 +575,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	//每次重置一下这两个值
 	L.needIndexes = nil
 	L.needDownloadIndexes = nil
-	L.indexMap = nil
+	L.needIndexMap = nil
 
 	if err != nil {
 		log.Println("[recover_debugtime] exectask error:", err.Error(), "taskid=",
