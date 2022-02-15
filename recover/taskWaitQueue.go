@@ -14,8 +14,11 @@ type TaskWaitQueue struct {
 	sync.Mutex
 }
 
-func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64,
-		srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
+func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
+	expried int64, srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
+	twq.Lock()
+	defer twq.Unlock()
+
 	t := &Task{
 		SnID:        snid,
 		Data:        task,
@@ -28,13 +31,16 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32, expried int64,
 
 	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)
 
-	if twq.BaseMessageQueue.Len() > twq.Max {
+	if twq.BaseMessageQueue.Len() >= twq.Max {
 		return fmt.Errorf("task queue full")
 	}
 	return twq.Push("new_rebuild_task", t)
 }
 
 func (twq *TaskWaitQueue) GetTask() *Task {
+	twq.Lock()
+	defer twq.Unlock()
+
 	// 之后替换成硬盘队列
 	if tsk := twq.Pop().Payload; tsk != nil {
 		res, ok := tsk.(*Task)
@@ -44,6 +50,13 @@ func (twq *TaskWaitQueue) GetTask() *Task {
 		return res
 	}
 	return nil
+}
+
+func (twq *TaskWaitQueue) Len() int {
+	twq.Lock()
+	defer twq.Unlock()
+
+	return twq.BaseMessageQueue.Len()
 }
 
 func NewTaskWaitQueue() *TaskWaitQueue {

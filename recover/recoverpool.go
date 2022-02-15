@@ -28,7 +28,7 @@ func (re *Engine) processRequests() {
 			k++
 			if requestT == nil {
 				m++
-				if m % 10000 == 0{
+				if m % 10000 == 0 {
 					log.Println("[recover] k=", k, "m=", m," processRequests is nil")
 				}
 				time.Sleep(time.Millisecond*10)

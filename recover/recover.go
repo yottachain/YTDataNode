@@ -292,8 +292,8 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	}
 
 	//要先判断一下队列的剩余长度是否能容纳当前任务不能的话不接收，返回错误
-	re.waitQueue.Lock()
-	defer re.waitQueue.Unlock()
+	//re.waitQueue.Lock()
+	//defer re.waitQueue.Unlock()
 	queueLen := re.waitQueue.Len()
 	if re.waitQueue.Max - queueLen < len(mtdMsg.Tasklist) {
 		log.Printf("[recover] queue space is not enough, max len is %d, " +
@@ -723,7 +723,6 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 			log.Printf("[recover:%s] execCPTask--, get shard DataHash %s shard len %d, remote miner NodeId:%s Addr:%s\n",
 				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
 
-			// err := re.sn.YTFS().Put(common.IndexTableKey(vhf), shard)
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {

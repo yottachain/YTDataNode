@@ -11,7 +11,7 @@ type BaseMessageQueue struct {
 }
 
 func (bmq *BaseMessageQueue) Pop() *Msg {
-	var msg *Msg = <-bmq.curr
+	var msg = <-bmq.curr
 
 	if m := bmq.waitQueue.Pop(); m != nil {
 		select {
