@@ -409,7 +409,8 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-				log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
+				//log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
+				log.Println("[recover_debugtime]  reply taskid=", base58.Encode(res.ID[:]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
@@ -444,7 +445,8 @@ func (re *Engine) MultiReply() error {
 			break
 		}
 		if replycnt % 100 == 0 {
-			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt",replycnt)
+			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",
+				v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt",replycnt)
 		}
 	}
 	return nil
@@ -649,7 +651,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		}
 
 		res.ID = resID
-		log.Println("[recover_debugtime] ExecTask end, taskid=",binary.BigEndian.Uint64(resID))
+		log.Println("[recover_debugtime] ExecTask end, taskid=", base58.Encode(resID))
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
@@ -679,7 +681,8 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	hash := hashBytes[:]
 	var key [common.HashLength]byte
 	copy(key[:], hash)
-	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData});
+	err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		res.ErrorMsg = fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 		return
 	}else {
