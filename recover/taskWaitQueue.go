@@ -11,13 +11,13 @@ import (
 type TaskWaitQueue struct {
 	*mq.BaseMessageQueue
 	Max int
-	sync.Mutex
+	Lck sync.Mutex
 }
 
 func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
 	expried int64, srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
-	twq.Lock()
-	defer twq.Unlock()
+	twq.Lck.Lock()
+	defer twq.Lck.Unlock()
 
 	t := &Task{
 		SnID:        snid,
@@ -38,8 +38,8 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
 }
 
 func (twq *TaskWaitQueue) GetTask() *Task {
-	twq.Lock()
-	defer twq.Unlock()
+	twq.Lck.Lock()
+	defer twq.Lck.Unlock()
 
 	// 之后替换成硬盘队列
 	if tsk := twq.Pop().Payload; tsk != nil {
@@ -53,8 +53,8 @@ func (twq *TaskWaitQueue) GetTask() *Task {
 }
 
 func (twq *TaskWaitQueue) Len() int {
-	twq.Lock()
-	defer twq.Unlock()
+	twq.Lck.Lock()
+	defer twq.Lck.Unlock()
 
 	return twq.BaseMessageQueue.Len()
 }

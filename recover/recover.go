@@ -343,10 +343,8 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
-			//re.waitQueue.Lock()
 			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpriedTime, ts.SrcNodeID,
 				ts.TaskLife, ts.StartTime, ts.ExecTimes)
-			//re.waitQueue.Unlock()
 			if err != nil {
 				goto Reply
 			}else {
@@ -411,7 +409,7 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-				log.Println("[recover_debugtime]  reply taskid=",binary.BigEndian.Uint64(res.ID[:8]))
+				log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
