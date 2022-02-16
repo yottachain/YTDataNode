@@ -709,8 +709,10 @@ func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
 	result.ExpriedTime = expried
 	err := proto.UnmarshalMerge(msgData, &msg)
 	if err != nil {
-		log.Printf("[recover] 解析错误%s\n", err.Error())
+		log.Printf("[recover] execCPTask 解析错误%s\n", err.Error())
+		return nil
 	}
+
 	result.ID = msg.Id
 	result.RES = 1
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

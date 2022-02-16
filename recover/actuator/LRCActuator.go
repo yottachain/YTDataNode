@@ -214,7 +214,8 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			shard, err := d.Get(ctx)
 			if err != nil {
 				log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
-					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key),"error:",err)
+					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+					"hash=",base58.Encode(key),"error:",err)
 			}
 
 			// @TODO 如果因为分片不存在导致错误，直接中断
@@ -284,7 +285,10 @@ start:
 		return fmt.Errorf("lrc task time out")
 	}
 	if errCount > 5 {
-		return fmt.Errorf("download times too many, try times %d", errCount)
+		//return fmt.Errorf("download times too many, try times %d", errCount)
+
+		//download shards no enough, into rebuild process
+		return nil
 	}
 	errCount++
 

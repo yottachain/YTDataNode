@@ -340,6 +340,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 		log.Println("no bp")
 		return
 	}
+
 	bp := sn.Config().BPList[sn.GetBP()]
 	msg.Addrs = sn.Addrs()
 	if rms.Addr() != "" && first == false {
