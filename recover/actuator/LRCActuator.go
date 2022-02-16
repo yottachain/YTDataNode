@@ -577,6 +577,11 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 			msgID []byte, recoverHash []byte, err error) {
 	L.opts = opts
 	err = L.parseMsgData(msgData)
+	if err != nil {
+		log.Println("[recover_debugtime] exectask parseMsgData error:", err.Error())
+		return
+	}
+
 	msgID = L.msg.Id
 	recoverHash = L.msg.Hashs[L.msg.RecoverId]
 
