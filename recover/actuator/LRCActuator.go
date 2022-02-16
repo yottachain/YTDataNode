@@ -104,7 +104,7 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.GetRCHandle(l)
 	L.lrcHandler = l
 
-	log.Printf("[recover] task=%d stage=%d lost index %d\n", base58.Encode(L.msg.Id[:]),
+	log.Printf("[recover] task=%d stage=%d lost index %d\n",  binary.BigEndian.Uint64(L.msg.Id[:8]),
 		stage, L.msg.RecoverId)
 
 	L.shards = shardsMap{}.Init()
@@ -284,17 +284,17 @@ start:
 	if L.isTimeOut() {
 		return fmt.Errorf("lrc task time out")
 	}
-	if errCount > 5 {
-		_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
-
-		if stage < 3 {
-			return fmt.Errorf("task %d, stage %d, download times too many, try times %d",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
-		}
-
-		//stage > 3 , Although download shards no enough, also into rebuild process
-		fmt.Printf("[recover] task %d, stage %d, download times too many, try times %d",
-			binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
+	if errCount > 3 {
+		//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+		//
+		//if stage < 3 {
+		//	return fmt.Errorf("task %d, stage %d, download times too many, try times %d",
+		//		binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
+		//}
+		//
+		////stage > 3 , Although download shards no enough, also into rebuild process
+		//fmt.Printf("[recover] task %d, stage %d, download times too many, try times %d",
+		//	binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
 
 		return nil
 	}
@@ -366,7 +366,7 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		return false
 	}
 
-	_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
+	//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 
 	var onLineShardIndexes = make([]int16, 0)
 	//var offLineShardIndexes = make([]int16, 0)
@@ -377,11 +377,13 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 			//offLineShardIndexes = append(offLineShardIndexes, index)
 			// 如果是行列校验，所需分片必须都在线
 			//if L.opts.Stage < 3 {
-			if stage < 3 {
-				fmt.Printf("任务 %d 阶段 %d real stage %d 离线节点%v\n",
-					binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, L.msg.Locations[index].Addrs)
-				return false
-			}
+
+			//无论如何都进入下一轮
+			//if stage < 3 {
+			//	fmt.Printf("任务 %d 阶段 %d real stage %d 离线节点%v\n",
+			//		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, L.msg.Locations[index].Addrs)
+			//	return false
+			//}
 		}
 	}
 
@@ -604,7 +606,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	L.needIndexMap = nil
 
 	log.Println("[recover_debugtime] A  ExecTask start taskid=",
-		binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
+			binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
 
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
