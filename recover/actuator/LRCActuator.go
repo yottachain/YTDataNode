@@ -285,9 +285,17 @@ start:
 		return fmt.Errorf("lrc task time out")
 	}
 	if errCount > 5 {
-		//return fmt.Errorf("download times too many, try times %d", errCount)
+		_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 
-		//download shards no enough, into rebuild process
+		if stage < 3 {
+			return fmt.Errorf("task %d, stage %d, download times too many, try times %d",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
+		}
+
+		//stage > 3 , Although download shards no enough, also into rebuild process
+		fmt.Printf("[recover] task %d, stage %d, download times too many, try times %d",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
+
 		return nil
 	}
 	errCount++
