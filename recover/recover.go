@@ -326,7 +326,11 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 var tskcnt uint64
 func (re *Engine) dispatchTask(ts *Task) {
 	var msgID uint16
-	binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
+	err := binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
+	if err != nil {
+		log.Println("[recover] dispatchTask get msgId err:", err.Error())
+		return
+	}
 	var res *TaskMsgResult
 
 	tskcnt++
@@ -339,6 +343,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
 		ts.ExecTimes++
 		log.Printf("[recover] execLRCTask, msgId: %d exec times %d\n", msgID, ts.ExecTimes)
+
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
@@ -366,12 +371,14 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 	case message.MsgIDTaskDescriptCP.Value():
 		log.Println("[recover] execCPTask, msgId:", msgID)
+
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+
 		res.BPID = ts.SnID
 		res.SrcNodeID = ts.SrcNodeID
 		re.PutReplyQueue(res)
 	default:
-		log.Println("[recover] unknown msgID:",msgID)
+		log.Println("[recover] unknown msgID:", msgID)
 	}
 }
 
@@ -646,7 +653,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		)
 		realHash = srcHash
 
-		if err != nil{
+		if err != nil {
 			log.Println("[recover_debugtime] ExecTask error:", err.Error())
 		}
 
