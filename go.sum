@@ -299,8 +299,8 @@ github.com/yottachain/YTFS v0.0.0-20220215064315-3d41d7ee67be h1:c4gcgIFGDrgt2oW
 github.com/yottachain/YTFS v0.0.0-20220215064315-3d41d7ee67be/go.mod h1:1SOBbLZ9c3H9dt7gpVU+iiXM1AEnZOMPwVxKFc7Ja4k=
 github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3 h1:pnIwruE5eLYQxy8kpp0ksJelYoFXKFHfAyZp2ZrGLfo=
 github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3/go.mod h1:PMIX6FcFzZ5xaexcI1ivumzoo9nblL2wZc5it/R3SeU=
-github.com/yottachain/YTLRC v0.0.0-20220211093546-fa7fbe380188 h1:8OdFB3i1PUkTtphlzpX7NAOrHq2ziLOb81kYSktzTIo=
-github.com/yottachain/YTLRC v0.0.0-20220211093546-fa7fbe380188/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
+github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756 h1:So1LTaWMdyn0NPG7UOxjicdspXHTSEQAHz0bjiJFR4A=
+github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756/go.mod h1:ZeQbupNqcSqZmN7Jk3a05+Da8ycSkAMC8g+m9AHrNGs=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=

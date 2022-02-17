@@ -475,6 +475,9 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		//if _, ok := L.needIndexMap[v.Index]; !ok {
 		//	continue
 		//}
+		if v.Data == nil {
+			continue
+		}
 		sIndexes = append(sIndexes, v.Index)
 		useIndexMap[v.Index] = struct{}{}
 
