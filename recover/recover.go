@@ -292,8 +292,6 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 	}
 
 	//要先判断一下队列的剩余长度是否能容纳当前任务不能的话不接收，返回错误
-	//re.waitQueue.Lock()
-	//defer re.waitQueue.Unlock()
 	queueLen := re.waitQueue.Len()
 	if re.waitQueue.Max - queueLen < len(mtdMsg.Tasklist) {
 		log.Printf("[recover] queue space is not enough, max len is %d, " +
@@ -677,6 +675,9 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	}
 
 	if recoverData == nil {
+		log.Printf("[recover] all rebuild stage fail task=%d src node id %d source hash key is %s\n",
+			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(realHash))
+
 		res.ErrorMsg = fmt.Errorf("all rebuild stage fail")
 		res.RES = 1
 		statistics.DefaultRebuildCount.IncFailLessShard()
@@ -688,13 +689,19 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	hash := hashBytes[:]
 	var key [common.HashLength]byte
 	copy(key[:], hash)
-	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData});
-	err != nil && err.Error() != "YTFS: hash key conflict happens" {
-		res.ErrorMsg = fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
+	_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{key : recoverData})
+	if err != nil {
+		log.Printf("[recover] fail task=%d src node id %d recover hash key %s, source hash key is %s\n",
+			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
+
+		if err.Error() != "YTFS: hash key conflict happens" {
+			res.ErrorMsg = fmt.Errorf("[recover] LRC recover shard saved failed %s", err.Error())
+		}
+
 		return
 	}else {
-		log.Printf("[recover] success src node id %d hash key %s, real hash key is %s\n",
-			srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
+		log.Printf("[recover] success task=%d src node id %d recover hash key %s, source hash key is %s\n",
+			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
 	}
 
 	res.RES = 0

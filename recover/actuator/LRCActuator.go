@@ -484,9 +484,9 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	useIndexMap := make(map[int16]struct{})
 
 	for _, v := range L.shards.GetMap() {
-		if _, ok := L.needIndexMap[v.Index]; !ok {
-			continue
-		}
+		//if _, ok := L.needIndexMap[v.Index]; !ok {
+		//	continue
+		//}
 		sIndexes = append(sIndexes, v.Index)
 		useIndexMap[v.Index] = struct{}{}
 
@@ -516,8 +516,8 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 		} else if status < 0 {
 			hash := md5.Sum(v.Data)
 			fmt.Println("task=", binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage,
-				"添加分片失败", "index",v.Index, "status", status,
-				" 分片数据hash", base58.Encode(hash[:]), "err:", err)
+				"添加分片失败", "index", v.Index, "status", status,
+				"分片数据hash", base58.Encode(hash[:]), "err:", err)
 		}
 	}
 
