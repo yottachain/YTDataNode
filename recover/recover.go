@@ -307,7 +307,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		bys := task[12:14]
 		bytebuff := bytes.NewBuffer(bys)
 		var snID int16
-		binary.Read(bytebuff, binary.BigEndian, &snID)
+		_ = binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
 				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
@@ -344,6 +344,9 @@ func (re *Engine) dispatchTask(ts *Task) {
 		atomic.AddUint64(&statistics.DefaultStatusCount.Total, 1)
 		ts.ExecTimes++
 		log.Printf("[recover] execLRCTask, msgId: %d exec times %d\n", msgID, ts.ExecTimes)
+		if ts.ExecTimes == 1 {
+			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", tskcnt, msgID)
+		}
 
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
 
@@ -372,6 +375,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 	case message.MsgIDTaskDescriptCP.Value():
 		log.Println("[recover] execCPTask, msgId:", msgID)
+		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", tskcnt, msgID)
 
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
 
@@ -417,8 +421,8 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-				//log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
-				log.Println("[recover_debugtime]  reply taskid=", base58.Encode(res.ID[:]))
+				log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
+				//log.Println("[recover_debugtime]  reply taskid=", base58.Encode(res.ID[:]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpriedTime
@@ -454,9 +458,12 @@ func (re *Engine) MultiReply() error {
 		}
 		if replycnt % 100 == 0 {
 			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",
-				v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt",replycnt)
+				v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt", replycnt)
 		}
 	}
+
+	log.Printf("[recover] [report] reply count %d\n", replycnt)
+
 	return nil
 }
 
