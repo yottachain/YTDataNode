@@ -370,7 +370,11 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 		if res.RES != 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
+			log.Printf("[recover] execLRCTask success %d, msgId: %d\n", tskcnt, msgID)
+		}else {
+			log.Printf("[recover] execLRCTask fail %d, msgId: %d\n", tskcnt, msgID)
 		}
+
 		re.PutReplyQueue(res)
 
 	case message.MsgIDTaskDescriptCP.Value():
@@ -378,6 +382,12 @@ func (re *Engine) dispatchTask(ts *Task) {
 		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", tskcnt, msgID)
 
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+
+		if res.RES == 0 {
+			log.Printf("[recover] execCPTask success %d, msgId: %d\n", tskcnt, msgID)
+		}else {
+			log.Printf("[recover] execCPTask fail %d, msgId: %d\n", tskcnt, msgID)
+		}
 
 		res.BPID = ts.SnID
 		res.SrcNodeID = ts.SrcNodeID
