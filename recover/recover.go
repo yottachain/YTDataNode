@@ -631,10 +631,10 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
-		if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
-			res.ErrorMsg = fmt.Errorf("rebuild task time out")
-			return
-		}
+		//if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
+		//	res.ErrorMsg = fmt.Errorf("rebuild task time out")
+		//	return
+		//}
 
 		switch opts.Stage {
 		case 1:

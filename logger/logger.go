@@ -16,7 +16,7 @@ var FileLogger = NewSyncWriter(&lumberjack.Logger{
 	MaxSize:    128,
 	Compress:   false,
 	MaxAge:     7,
-	MaxBackups: 1,
+	MaxBackups: 7,
 })
 
 func init() {
