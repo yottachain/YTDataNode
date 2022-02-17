@@ -300,6 +300,9 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		return fmt.Errorf("queue space is not enough\n")
 	}
 
+	log.Printf("[recover] queue max len is %d, current len is %d, tasks is %d\n",
+		re.waitQueue.Max, queueLen, len(mtdMsg.Tasklist))
+
 	for _, task := range mtdMsg.Tasklist {
 		bys := task[12:14]
 		bytebuff := bytes.NewBuffer(bys)
@@ -308,7 +311,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
 				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
-			log.Printf("[recover]put recover task error: %s\n", err.Error())
+			log.Printf("[recover] put recover task error: %s\n", err.Error())
 		}
 	}
 	return nil
