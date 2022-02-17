@@ -354,7 +354,7 @@ start:
  */
 func (L *LRCTaskActuator) preJudge() (ok bool) {
 	if L.isTimeOut() {
-		fmt.Printf("任务 %d 阶段 %d task timeout\n",
+		fmt.Printf("任务 %d 阶段 %d lrc task timeout\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage)
 		return false
 	}
@@ -464,18 +464,6 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	if L.isTimeOut() {
 		return nil, fmt.Errorf("task lrc recouver shard time out")
 	}
-
-	//test -------------
-	//for _, v := range L.shards.GetMap() {
-	//	dhash := md5.Sum(v.Data)
-	//	if !bytes.Equal(dhash[:], L.msg.Hashs[v.Index]) {
-	//		fmt.Printf("recover, task=%d, hash inconsistent source hash %s, download hash %s\n",
-	//			binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
-	//	}else{
-	//		fmt.Printf("recover, task=%d, source hash %s, download hash %s\n",
-	//			binary.BigEndian.Uint64(L.msg.Id[:8]), base58.Encode( L.msg.Hashs[v.Index]), base58.Encode(dhash[:]))
-	//	}
-	//}
 
 	//_ = L.lrcHandler.SetHandleParam(L.lrcHandler.Handle, uint8(L.msg.RecoverId), uint8(L.opts.Stage))
 

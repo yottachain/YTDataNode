@@ -335,9 +335,9 @@ func (re *Engine) dispatchTask(ts *Task) {
 	var res *TaskMsgResult
 
 	tskcnt++
-	if tskcnt % 100 == 0 {
-		log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
-	}
+	//if tskcnt % 100 == 0 {
+	//	log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
+	//}
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
@@ -368,7 +368,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		res.BPID = ts.SnID
 		res.SrcNodeID = ts.SrcNodeID
 
-		if res.RES != 0 {
+		if res.RES == 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
 			log.Printf("[recover] execLRCTask success %d, msgId: %d\n", tskcnt, msgID)
 		}else {
@@ -376,7 +376,6 @@ func (re *Engine) dispatchTask(ts *Task) {
 		}
 
 		re.PutReplyQueue(res)
-
 	case message.MsgIDTaskDescriptCP.Value():
 		log.Println("[recover] execCPTask, msgId:", msgID)
 		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", tskcnt, msgID)
@@ -651,11 +650,6 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			Stage:   actuator.RECOVER_STAGE_FULL,
 		},
 	} {
-		//if int32(time.Now().Sub(StartTime).Seconds()) > taskLife {
-		//	res.ErrorMsg = fmt.Errorf("rebuild task time out")
-		//	return
-		//}
-
 		switch opts.Stage {
 		case 1:
 			atomic.AddUint64(&statistics.DefaultRebuildCount.RowRebuildCount, 1)
