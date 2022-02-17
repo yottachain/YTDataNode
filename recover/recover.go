@@ -334,7 +334,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 	}
 	var res *TaskMsgResult
 
-	tskcnt++
+	taskC := atomic.AddUint64(&tskcnt, 1)
 	//if tskcnt % 100 == 0 {
 	//	log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
 	//}
@@ -345,7 +345,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		ts.ExecTimes++
 		log.Printf("[recover] execLRCTask, msgId: %d exec times %d\n", msgID, ts.ExecTimes)
 		if ts.ExecTimes == 1 {
-			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", tskcnt, msgID)
+			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", taskC, msgID)
 		}
 
 		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
@@ -370,22 +370,22 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 		if res.RES == 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
-			log.Printf("[recover] execLRCTask success %d, msgId: %d\n", tskcnt, msgID)
+			log.Printf("[recover] execLRCTask success %d, msgId: %d\n", taskC, msgID)
 		}else {
-			log.Printf("[recover] execLRCTask fail %d, msgId: %d\n", tskcnt, msgID)
+			log.Printf("[recover] execLRCTask fail %d, msgId: %d\n", taskC, msgID)
 		}
 
 		re.PutReplyQueue(res)
 	case message.MsgIDTaskDescriptCP.Value():
 		log.Println("[recover] execCPTask, msgId:", msgID)
-		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", tskcnt, msgID)
+		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", taskC, msgID)
 
 		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
 
 		if res.RES == 0 {
-			log.Printf("[recover] execCPTask success %d, msgId: %d\n", tskcnt, msgID)
+			log.Printf("[recover] execCPTask success %d, msgId: %d\n", taskC, msgID)
 		}else {
-			log.Printf("[recover] execCPTask fail %d, msgId: %d\n", tskcnt, msgID)
+			log.Printf("[recover] execCPTask fail %d, msgId: %d\n", taskC, msgID)
 		}
 
 		res.BPID = ts.SnID
