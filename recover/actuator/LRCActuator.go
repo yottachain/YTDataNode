@@ -82,6 +82,7 @@ type LRCTaskActuator struct {
 	needDownloadIndexes []int16
 	needIndexMap  map[int16] struct{}
 	isInitHand	bool
+	lck *sync.Mutex		//来自引擎的全局锁
 }
 
 /**
@@ -497,7 +498,10 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 			fmt.Printf("recover Get Handle Param error %s\n", err.Error())
 		}
 
+		L.lck.Lock()
 		status, err := L.lrcHandler.AddShardData(L.lrcHandler.Handle, v.Data)
+		L.lck.Unlock()
+
 		if err != nil {
 			fmt.Printf("recover add shard data error %s\n", err.Error())
 		}
@@ -703,10 +707,11 @@ func (L *LRCTaskActuator) GetdownloadShards() *shardsMap {
 	return L.shards
 }
 
-func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {
+func New(downloader shardDownloader.ShardDownloader, l *sync.Mutex) *LRCTaskActuator {
 	return &LRCTaskActuator{
 		downloader: downloader,
 		lrcHandler: nil,
 		msg:        message.TaskDescription{},
+		lck: 		l,
 	}
 }

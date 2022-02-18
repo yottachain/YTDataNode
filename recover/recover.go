@@ -59,6 +59,7 @@ type Engine struct {
 	Upt               *TokenPool.TokenPool
 	startTskTmCtl     uint8
 	DefaultDownloader shardDownloader.ShardDownloader
+	lck 	*sync.Mutex		//引擎的全局锁  cgo调用的时候使用
 }
 
 func New(sn node.StorageNode) (*Engine, error) {
@@ -70,6 +71,7 @@ func New(sn node.StorageNode) (*Engine, error) {
 	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 20)
 	re.le = NewLRCEngine(statistics.DefaultRebuildCount.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
+	re.lck = &sync.Mutex{}
 
 	return re, nil
 }
@@ -618,7 +620,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 	res.ExpriedTime = expired
 	res.RES = 1
-	taskActuator := actuator.New(re.DefaultDownloader)
+	taskActuator := actuator.New(re.DefaultDownloader, re.lck)
 	defer taskActuator.Free()
 
 	var recoverData []byte
