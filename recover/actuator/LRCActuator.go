@@ -90,9 +90,7 @@ type LRCTaskActuator struct {
  * @return error
  */
 func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
-	if !L.isInitHand {
-		L.isInitHand = true
-	}else {
+	if L.isInitHand {
 		return nil
 	}
 
@@ -101,13 +99,17 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
 	l.RecoverNum = 13
 	l.Lostindex = uint16(L.msg.RecoverId)
-	l.GetRCHandle(l)
+	handle := l.GetRCHandle(l)
+	if handle == nil {
+		return fmt.Errorf("lrc get handle nil")
+	}
 	L.lrcHandler = l
 
 	log.Printf("[recover] task=%d stage=%d lost index %d\n",  binary.BigEndian.Uint64(L.msg.Id[:8]),
 		stage, L.msg.RecoverId)
 
 	L.shards = shardsMap{}.Init()
+	L.isInitHand = true
 
 	return nil
 }
