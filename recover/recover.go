@@ -335,9 +335,6 @@ func (re *Engine) dispatchTask(ts *Task) {
 	var res *TaskMsgResult
 
 	taskC := atomic.AddUint64(&tskcnt, 1)
-	//if tskcnt % 100 == 0 {
-	//	log.Println("[recover] dispatchTask, msgId:", msgID, "taskdata=", ts.Data)
-	//}
 
 	switch int32(msgID) {
 	case message.MsgIDLRCTaskDescription.Value():
@@ -659,10 +656,14 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			atomic.AddUint64(&statistics.DefaultRebuildCount.GlobalRebuildCount, 1)
 		}
 
+		st := time.Now()
 		data, resID, srcHash, err := taskActuator.ExecTask(
 			msgData,
 			opts,
 		)
+		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d\n",
+			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Seconds())
+
 		realHash = srcHash
 
 		if err != nil {
@@ -670,7 +671,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		}
 
 		res.ID = resID
-		log.Println("[recover_debugtime] ExecTask end, taskid=", base58.Encode(resID))
+		//log.Println("[recover_debugtime] ExecTask end, taskid=", base58.Encode(resID))
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
 			recoverData = data
@@ -719,7 +720,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	}
 
 	res.RES = 0
-	log.Println("恢复成功")
+	//log.Println("恢复成功")
 	return
 }
 

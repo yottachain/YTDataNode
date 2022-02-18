@@ -318,6 +318,7 @@ start:
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
 			len(L.needDownloadIndexes), L.needDownloadIndexes, errCount)
 
+		startTime := time.Now()
 		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
 		//log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
 		//	base58.Encode(L.msg.Id[:]), "errcount:",errCount)
@@ -325,6 +326,11 @@ start:
 			return err
 		}
 		downloadTask.Wait()
+		useTime := time.Now().Sub(startTime).Seconds()
+		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download use time %d\n",
+			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
+			len(L.needDownloadIndexes), errCount, useTime)
+
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
 
@@ -602,8 +608,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
 	if L.opts.Stage == 0 {
 		data, err = L.backupTask()
-		log.Println("[recover_debugtime] B end taskid=",
-			binary.BigEndian.Uint64(msgID[:8]))
+		//log.Println("[recover_debugtime] B end taskid=",
+		//	binary.BigEndian.Uint64(msgID[:8]))
 		if err != nil {
 			log.Println("[recover] backupTask error:", err, "taskid=",
 				binary.BigEndian.Uint64(msgID[:8]))
@@ -638,7 +644,12 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	//ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
+
+	startTime := time.Now()
 	err = L.downloadLoop(ctx)
+	log.Printf("[recover] task=%d stage=%d download loop use times %d",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Seconds())
+
 	//log.Println("[recover_debugtime] E downloadloop taskid=", base58.Encode(msgID[:]))
 	if err != nil {
 		log.Printf("[recover] task=%d stage=%d download loop err:%s\n",
