@@ -478,9 +478,10 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	useIndexMap := make(map[int16]struct{})
 
 	for _, v := range L.shards.GetMap() {
-		//if _, ok := L.needIndexMap[v.Index]; !ok {
-		//	continue
-		//}
+		if _, ok := L.needIndexMap[v.Index]; !ok {
+			continue
+		}
+
 		if v.Data == nil {
 			continue
 		}
