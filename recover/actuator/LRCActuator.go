@@ -100,7 +100,11 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
 	l.RecoverNum = 13
 	l.Lostindex = uint16(L.msg.RecoverId)
+
+	L.lck.Lock()
 	handle := l.GetRCHandle(l)
+	L.lck.Unlock()
+
 	if handle == nil {
 		return fmt.Errorf("lrc get handle nil")
 	}
@@ -707,11 +711,11 @@ func (L *LRCTaskActuator) GetdownloadShards() *shardsMap {
 	return L.shards
 }
 
-func New(downloader shardDownloader.ShardDownloader, l *sync.Mutex) *LRCTaskActuator {
+func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {
 	return &LRCTaskActuator{
 		downloader: downloader,
 		lrcHandler: nil,
 		msg:        message.TaskDescription{},
-		lck: 		l,
+		lck: 		&sync.Mutex{},
 	}
 }

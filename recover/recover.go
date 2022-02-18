@@ -620,7 +620,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 	res.ExpriedTime = expired
 	res.RES = 1
-	taskActuator := actuator.New(re.DefaultDownloader, re.lck)
+	taskActuator := actuator.New(re.DefaultDownloader)
 	defer taskActuator.Free()
 
 	var recoverData []byte
