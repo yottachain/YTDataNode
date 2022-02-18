@@ -661,6 +661,9 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			msgData,
 			opts,
 		)
+
+		res.ID = resID
+
 		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d\n",
 			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Seconds())
 
@@ -670,7 +673,6 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			log.Println("[recover_debugtime] ExecTask error:", err.Error())
 		}
 
-		res.ID = resID
 		//log.Println("[recover_debugtime] ExecTask end, taskid=", base58.Encode(resID))
 		// @TODO 如果重建成功退出循环
 		if err == nil && data != nil {
