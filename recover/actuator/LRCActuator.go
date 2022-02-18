@@ -146,7 +146,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	L.needIndexMap = indexMap
 
-	fmt.Printf("任务 %s 阶段 %d real stage %d 需要的分片数%d  indexes:%v\n",
+	log.Printf("任务 %s 阶段 %d real stage %d 需要的分片数%d  indexes:%v\n",
 		base58.Encode(L.msg.Id[:]), L.opts.Stage, stage, len(L.needIndexes), L.needIndexes)
 
 	// @TODO 如果已经有部分分片下载成功了则只检查未下载成功分片
@@ -166,7 +166,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
 	}
 
-	fmt.Printf("任务%s 阶段%d real stage %d 需要下载的分片数%d indexes:%v\n",
+	log.Printf("任务%s 阶段%d real stage %d 需要下载的分片数%d indexes:%v\n",
 		base58.Encode(L.msg.Id[:]), L.opts.Stage, stage, len(L.needDownloadIndexes), L.needDownloadIndexes)
 
 	return L.needDownloadIndexes, nil
@@ -314,7 +314,7 @@ start:
 			}
 		}
 
-		fmt.Printf("任务:%d 阶段:%d 需要下载的分片数:%d indexes:%v 尝试:%d\n",
+		log.Printf("任务:%d 阶段:%d downloadLoop 需要下载的分片数:%d indexes:%v 尝试:%d\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
 			len(L.needDownloadIndexes), L.needDownloadIndexes, errCount)
 
@@ -360,14 +360,14 @@ start:
  */
 func (L *LRCTaskActuator) preJudge() (ok bool) {
 	if L.isTimeOut() {
-		fmt.Printf("任务 %d 阶段 %d lrc task timeout\n",
+		log.Printf("任务 %d 阶段 %d lrc task timeout\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage)
 		return false
 	}
 
 	indexes, err := L.getNeedShardList()
 	if err != nil {
-		fmt.Printf("任务 %d 阶段 %d getNeedShardList err %s\n",
+		log.Printf("任务 %d 阶段 %d getNeedShardList err %s\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, err.Error())
 		return false
 	}
