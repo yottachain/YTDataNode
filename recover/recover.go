@@ -689,6 +689,17 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		}
 	}
 
+	var downloads = 0
+	sMap := taskActuator.GetdownloadShards()
+	for _, v := range sMap.GetMap() {
+		if v.Data != nil {
+			downloads++
+		}
+	}
+
+	log.Printf("[recover] task=%d all stage real downloads %d\n",
+		binary.BigEndian.Uint64(res.ID[:8]), downloads)
+
 	if recoverData == nil {
 		log.Printf("[recover] all rebuild stage fail task=%d src node id %d source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(realHash))

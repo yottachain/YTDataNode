@@ -696,6 +696,10 @@ func (L *LRCTaskActuator) isTimeOut() bool {
 	return false
 }
 
+func (L *LRCTaskActuator) GetdownloadShards() *shardsMap {
+	return L.shards
+}
+
 func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {
 	return &LRCTaskActuator{
 		downloader: downloader,
