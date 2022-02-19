@@ -335,9 +335,16 @@ start:
 			indexs = append(indexs, key)
 		}
 
-		log.Printf("任务:%d 阶段:%d downloadLoop 需要下载的分片数:%d indexes:%v 尝试:%d\n",
-			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
-			len(indexs), indexs, errCount)
+		//test
+		if errCount == 1 {
+			log.Printf("任务:%d 阶段:%d first downloadLoop 需要下载的分片数:%d indexes:%v 尝试:%d\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
+				len(indexs), indexs, errCount)
+		}else {
+			log.Printf("任务:%d 阶段:%d downloadLoop 需要下载的分片数:%d indexes:%v 尝试:%d\n",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
+				len(indexs), indexs, errCount)
+		}
 
 		startTime := time.Now()
 		downloadTask, err := L.addDownloadTask(time.Minute*1, indexs...)
@@ -546,9 +553,9 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 
 	buf := bytes.NewBuffer([]byte{})
 	for _, v := range L.shards.GetMap() {
-		if _, ok := useIndexMap[v.Index]; !ok {
-			continue
-		}
+		//if _, ok := useIndexMap[v.Index]; !ok {
+		//	continue
+		//}
 
 		if v.Data != nil {
 			hash := md5.Sum(v.Data)
