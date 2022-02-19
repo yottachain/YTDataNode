@@ -347,7 +347,8 @@ func (re *Engine) dispatchTask(ts *Task) {
 			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", taskC, msgID)
 		}
 
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime, ts.TaskLife, ts.SrcNodeID)
+		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime,
+				ts.TaskLife, ts.SrcNodeID)
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
@@ -667,7 +668,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		res.ID = resID
 
 		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d\n",
-			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Seconds())
+			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, int64(time.Now().Sub(st).Seconds()))
 
 		realHash = srcHash
 
@@ -693,20 +694,24 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		}
 	}
 
-	var downloads = 0
-	sMap := taskActuator.GetdownloadShards()
-	for _, v := range sMap.GetMap() {
-		if v.Data != nil {
-			downloads++
-		}
-	}
-
-	log.Printf("[recover] task=%d all stage real downloads %d\n",
-		binary.BigEndian.Uint64(res.ID[:8]), downloads)
-
 	if recoverData == nil {
 		log.Printf("[recover] all rebuild stage fail task=%d src node id %d source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(realHash))
+
+		//test
+		var downloads = 0
+		sMap := taskActuator.GetdownloadShards()
+		for _, v := range sMap.GetMap() {
+			if v.Data != nil {
+				downloads++
+			}
+		}
+
+		if downloads != 0 {
+			log.Printf("[recover] task=%d all stage fail real downloads %d\n",
+				binary.BigEndian.Uint64(res.ID[:8]), downloads)
+		}
+		//test------
 
 		res.ErrorMsg = fmt.Errorf("all rebuild stage fail")
 		res.RES = 1
@@ -733,6 +738,21 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		log.Printf("[recover] success task=%d src node id %d recover hash key %s, source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
 	}
+
+	//test
+	var downloads = 0
+	sMap := taskActuator.GetdownloadShards()
+	for _, v := range sMap.GetMap() {
+		if v.Data != nil {
+			downloads++
+		}
+	}
+
+	if downloads != 0 {
+		log.Printf("[recover] task=%d all stage success real downloads %d\n",
+			binary.BigEndian.Uint64(res.ID[:8]), downloads)
+	}
+	//test------
 
 	res.RES = 0
 	//log.Println("恢复成功")

@@ -8,7 +8,7 @@ import (
 	//"sync"
 )
 
-var totalCap int32 = 100
+var totalCap int32 = 50
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 
 func (re *Engine) doRequest(task *Task) {

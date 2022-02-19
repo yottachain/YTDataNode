@@ -114,7 +114,7 @@ func UploadFromRandNode(ctx context.Context) error {
 		return err
 	}
 	statistics.DefaultStat.RXTestConnectRate.AddSuccess()
-	defer clt.Close()
+	//defer clt.Close()
 
 	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value()+1, ctx)
 	if err != nil {
@@ -177,7 +177,7 @@ func DownloadFromRandNode(ctx context.Context) error {
 		return err
 	}
 	statistics.DefaultStat.TXTestConnectRate.AddSuccess()
-	defer clt.Close()
+	//defer clt.Close()
 	tk, err := getTK(clt, message.MsgIDTestGetBlock.Value(), ctx)
 	if err != nil {
 		return err
