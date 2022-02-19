@@ -176,7 +176,7 @@ func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	res, err := clt.SendMsgClose(ctx, id, data)
+	res, err := clt.SendMsg(ctx, id, data)
 	return res, err
 }
 

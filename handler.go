@@ -527,7 +527,7 @@ func (sch *SpotCheckHandler) Handle(msgData []byte) []byte {
 		}
 		log.Printf("[抽查]下载分片消息 msg:%v buf len(%d)\n", task, len(checkData))
 		// 发送下载分片命令
-		if shardData, err := clt.SendMsgClose(ctx, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
+		if shardData, err := clt.SendMsg(ctx, message.MsgIDDownloadShardRequest.Value(), checkData); err != nil {
 			log.Println("error:", err)
 		} else {
 			var share message.DownloadShardResponse
