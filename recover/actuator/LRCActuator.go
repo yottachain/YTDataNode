@@ -139,7 +139,8 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	//重置一下
 	L.needIndexes = nil
-	L.needIndexMap = nil
+	L.needIndexMap = make(map[int16]struct{})
+
 	indexMap := make(map[int16]struct{})
 
 	for curr := needList.Front(); curr != nil; curr = curr.Next() {
