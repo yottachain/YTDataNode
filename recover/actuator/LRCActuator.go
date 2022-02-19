@@ -151,7 +151,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	L.needIndexMap = indexMap
+	//L.needIndexMap = indexMap
 
 	log.Printf("任务 %s 阶段 %d real stage %d 需要的分片数%d  indexes:%v\n",
 		base58.Encode(L.msg.Id[:]), L.opts.Stage, stage, len(L.needIndexes), L.needIndexes)
@@ -171,6 +171,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	L.needDownloadIndexes = nil
 	for key := range indexMap {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
+		L.needIndexMap[key] = struct{}{}
 	}
 
 	log.Printf("任务%s 阶段%d real stage %d 需要下载的分片数%d indexes:%v\n",
@@ -247,7 +248,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			if shard != nil {
 				L.lck.Lock()
 				//删除已经下载成功的 下一轮就下载没有下载成功的
-				L.needDownloadIndexes = append(L.needDownloadIndexes[:index], L.needDownloadIndexes[index+1:]...)
+				delete(L.needIndexMap, index)
 				L.lck.Unlock()
 			}
 
@@ -328,12 +329,17 @@ start:
 			}
 		}
 
+		var indexs []int16
+		for key := range L.needIndexMap {
+			indexs = append(indexs, key)
+		}
+
 		log.Printf("任务:%d 阶段:%d downloadLoop 需要下载的分片数:%d indexes:%v 尝试:%d\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
-			len(L.needDownloadIndexes), L.needDownloadIndexes, errCount)
+			len(indexs), indexs, errCount)
 
 		startTime := time.Now()
-		downloadTask, err := L.addDownloadTask(time.Minute*1, L.needDownloadIndexes...)
+		downloadTask, err := L.addDownloadTask(time.Minute*1, indexs...)
 		//log.Println("[recover_debugtime] E2 addDownloadTask taskid=",
 		//	base58.Encode(L.msg.Id[:]), "errcount:",errCount)
 		if err != nil {
