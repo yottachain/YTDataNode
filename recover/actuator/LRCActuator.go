@@ -300,7 +300,7 @@ start:
 	if L.isTimeOut() {
 		return fmt.Errorf("lrc task time out")
 	}
-	if errCount > 3 {
+	if errCount > 5 {
 		//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 		//
 		//if stage < 3 {
