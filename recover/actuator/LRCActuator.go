@@ -211,8 +211,8 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(hash))
 
 		// @TODO 异步等待下载任务执行完成
+		wg.Add(1)
 		go func(key []byte, dl shardDownloader.DownloaderWait, index int16, addrInfo *message.P2PLocation) {
-			wg.Add(1)
 			defer wg.Done()
 			//log.Println("[recover_debugtime] start download goroutine in addDownloadTask  taskid=",
 			//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
