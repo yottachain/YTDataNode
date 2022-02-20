@@ -80,7 +80,7 @@ type LRCTaskActuator struct {
 	opts       Options
 	needIndexes []int16
 	needDownloadIndexes []int16
-	needIndexMap  map[int16] struct{}
+	needDownloadIndexMap  map[int16] struct{}
 	isInitHand	bool
 	lck *sync.Mutex		//来自引擎的全局锁
 }
@@ -139,7 +139,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 
 	//重置一下
 	L.needIndexes = nil
-	L.needIndexMap = make(map[int16]struct{})
+	L.needDownloadIndexMap = make(map[int16]struct{})
 
 	indexMap := make(map[int16]struct{})
 
@@ -152,7 +152,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	//L.needIndexMap = indexMap
+	//L.needDownloadIndexMap = indexMap
 
 	log.Printf("任务 %s 阶段 %d real stage %d 需要的分片数%d  indexes:%v\n",
 		base58.Encode(L.msg.Id[:]), L.opts.Stage, stage, len(L.needIndexes), L.needIndexes)
@@ -169,10 +169,10 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 		}
 	}
 
-	L.needDownloadIndexes = nil
+	//L.needDownloadIndexes = nil
 	for key := range indexMap {
 		L.needDownloadIndexes = append(L.needDownloadIndexes, key)
-		L.needIndexMap[key] = struct{}{}
+		L.needDownloadIndexMap[key] = struct{}{}
 	}
 
 	log.Printf("任务%s 阶段%d real stage %d 需要下载的分片数%d indexes:%v\n",
@@ -249,7 +249,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			if shard != nil {
 				L.lck.Lock()
 				//删除已经下载成功的 下一轮就下载没有下载成功的
-				delete(L.needIndexMap, index)
+				delete(L.needDownloadIndexMap, index)
 				L.lck.Unlock()
 			}
 
@@ -301,14 +301,7 @@ start:
 		return fmt.Errorf("lrc task time out")
 	}
 	if errCount > 5 {
-		//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
-		//
-		//if stage < 3 {
-		//	return fmt.Errorf("task %d, stage %d, download times too many, try times %d",
-		//		binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
-		//}
-		//
-		////stage > 3 , Although download shards no enough, also into rebuild process
+		////Although download shards no enough, also into rebuild process
 		//fmt.Printf("[recover] task %d, stage %d, download times too many, try times %d",
 		//	binary.BigEndian.Uint64(L.msg.Id[:8]), stage, errCount)
 
@@ -331,7 +324,7 @@ start:
 		}
 
 		var indexs []int16
-		for key := range L.needIndexMap {
+		for key := range L.needDownloadIndexMap {
 			indexs = append(indexs, key)
 		}
 
@@ -507,10 +500,6 @@ func (L *LRCTaskActuator) recoverShard() ([]byte, error) {
 	useIndexMap := make(map[int16]struct{})
 
 	for _, v := range L.shards.GetMap() {
-		//if _, ok := L.needIndexMap[v.Index]; !ok {
-		//	continue
-		//}
-
 		if v.Data == nil {
 			continue
 		}
@@ -633,7 +622,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	//每次重置一下这两个值
 	L.needIndexes = nil
 	L.needDownloadIndexes = nil
-	L.needIndexMap = nil
+	L.needDownloadIndexMap = nil
 
 	log.Println("[recover_debugtime] A  ExecTask start taskid=",
 			binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
