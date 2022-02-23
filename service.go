@@ -162,7 +162,8 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		dh := DownloadHandler{sn}
-		log.Printf("[download] get shard request from %s\n request buf %s\n", head.RemotePeerID.Pretty(), hex.EncodeToString(data))
+		log.Printf("[download] get shard request from %s  adds %v\n request buf %s\n",
+			head.RemotePeerID.Pretty(), head.RemoteAddrs, hex.EncodeToString(data))
 		return dh.Handle(data, head.RemotePeerID)
 	})
 	// 下载回执
