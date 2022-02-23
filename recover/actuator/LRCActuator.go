@@ -66,6 +66,7 @@ func (s *shardsMap) GetMap() map[string]*Shard {
 
 func (s shardsMap) Init() *shardsMap {
 	s.shards = make(map[string]*Shard)
+	s.mutex = sync.Mutex{}
 	return &s
 }
 
@@ -218,8 +219,8 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
-			//log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
-			//	binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
+			log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
 			shard, err := dl.Get(ctx)
 			if err != nil {
 				log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",

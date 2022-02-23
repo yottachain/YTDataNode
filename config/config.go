@@ -19,7 +19,7 @@ import (
     "github.com/multiformats/go-multiaddr"
     "github.com/spf13/viper"
 
-    ci "github.com/libp2p/go-libp2p-crypto"
+    ci "github.com/libp2p/go-libp2p-core/crypto"
     "github.com/yottachain/YTDataNode/util"
     ytfsOpts "github.com/yottachain/YTFS/opt"
 )

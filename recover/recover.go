@@ -701,15 +701,17 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		//test
 		var downloads = 0
 		sMap := taskActuator.GetdownloadShards()
-		for _, v := range sMap.GetMap() {
-			if v.Data != nil {
-				downloads++
+		if sMap != nil {
+			for _, v := range sMap.GetMap() {
+				if v.Data != nil {
+					downloads++
+				}
 			}
-		}
 
-		if downloads != 0 {
-			log.Printf("[recover] task=%d all stage fail real downloads %d\n",
-				binary.BigEndian.Uint64(res.ID[:8]), downloads)
+			if downloads != 0 {
+				log.Printf("[recover] task=%d all stage fail real downloads %d\n",
+					binary.BigEndian.Uint64(res.ID[:8]), downloads)
+			}
 		}
 		//test------
 
