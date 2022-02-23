@@ -744,9 +744,11 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	//test
 	var downloads = 0
 	sMap := taskActuator.GetdownloadShards()
-	for _, v := range sMap.GetMap() {
-		if v.Data != nil {
-			downloads++
+	if sMap != nil {
+		for _, v := range sMap.GetMap() {
+			if v.Data != nil {
+				downloads++
+			}
 		}
 	}
 
