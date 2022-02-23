@@ -111,8 +111,8 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	}
 	L.lrcHandler = l
 
-	log.Printf("[recover] task=%d stage=%d lost index %d\n",  binary.BigEndian.Uint64(L.msg.Id[:8]),
-		stage, L.msg.RecoverId)
+	log.Printf("[recover] task=%d stage=%d lost index %d shard hash:%s\n",  binary.BigEndian.Uint64(L.msg.Id[:8]),
+		stage, L.msg.RecoverId, base58.Encode(L.msg.Hashs[L.msg.RecoverId]))
 
 	L.shards = shardsMap{}.Init()
 	L.isInitHand = true
@@ -220,7 +220,8 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
 			log.Println("[recover_debugtime]  start addDownloadTask get_shard in download goroutine taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,"hash=",base58.Encode(key))
+				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=", addrInfo,
+				"hash=", base58.Encode(key), "index=", index)
 			shard, err := dl.Get(ctx)
 			if err != nil {
 				log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
