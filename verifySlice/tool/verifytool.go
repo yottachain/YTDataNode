@@ -311,6 +311,28 @@ func cfgCheck() (err error) {
     return nil
 }
 
+func deleteHdbKeys() {
+    sn := instance.GetStorageNode()
+    if sn == nil {
+        log.Printf("get storage node fail\n")
+        return
+    }
+    vfer := verifySlice.NewVerifySler(sn)
+
+    if vfer == nil {
+        log.Printf("new VerifySler fail\n")
+        return
+    }
+
+    vfer.TravelHDB(func(key, value []byte) error {
+        Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(key))
+        _ = vfer.Hdb.DB.Delete(vfer.Hdb.Wo, Hkey[:])
+        return nil
+    })
+
+    log.Println("cls hdb success!")
+}
+
 func Start() {
     wg := &sync.WaitGroup{}
     begin := true
@@ -478,6 +500,14 @@ var configCheck = &cobra.Command{
     },
 }
 
+var clsHdbCmd = &cobra.Command{
+    Use:   "clsHdb",
+    Short: "清空hdb的所有可以",
+    Run: func(cmd *cobra.Command, args []string) {
+        deleteHdbKeys()
+    },
+}
+
 
 func main () {
     startCmd.Flags().StringVarP(&StartItem,"start", "s", "",
@@ -509,6 +539,7 @@ func main () {
     RootCommand.AddCommand(daemonCmd)
     RootCommand.AddCommand(truncatCmd)
     RootCommand.AddCommand(configCmd)
+    RootCommand.AddCommand(clsHdbCmd)
     configCmd.AddCommand(configCheck)
 
     RootCommand.Execute()
