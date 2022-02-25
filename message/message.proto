@@ -289,6 +289,7 @@ message SelfVerifyReq{
 message HashToHash{
     bytes DBhash=1;
     bytes Datahash=2;
+    uint32 Pos=3;
 }
 
 //id:矿机id，数字形式（比如：12398）
