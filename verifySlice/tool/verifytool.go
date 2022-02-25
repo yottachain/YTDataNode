@@ -314,13 +314,13 @@ func cfgCheck() (err error) {
 func deleteHdbKeys() {
     sn := instance.GetStorageNode()
     if sn == nil {
-        log.Printf("get storage node fail\n")
+        fmt.Printf("get storage node fail\n")
         return
     }
     vfer := verifySlice.NewVerifySler(sn)
 
     if vfer == nil {
-        log.Printf("new VerifySler fail\n")
+        fmt.Printf("new VerifySler fail\n")
         return
     }
 
@@ -330,7 +330,7 @@ func deleteHdbKeys() {
         return nil
     })
 
-    log.Println("cls hdb success!")
+    fmt.Println("cls hdb success!")
 }
 
 func Start() {
