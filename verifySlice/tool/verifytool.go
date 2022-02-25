@@ -155,7 +155,8 @@ func SendCompareVerifyOrder2(StartItem string, CntPerBatch uint32) (*message.Sel
 
     for i := 0; i < len(respMsg.ErrShard); i++ {
         fmt.Println("DBHash=",base58.Encode(respMsg.ErrShard[i].DBhash),
-            "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),"errshard=",i)
+            "DataHash=",base58.Encode(respMsg.ErrShard[i].Datahash),
+            "dataPos=",respMsg.ErrShard[i].Pos, "errshard=",i)
     }
 
     return &respMsg, nil

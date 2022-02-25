@@ -127,6 +127,7 @@ func (vfs *VerifySler)VerifySlicekvdb(traveEntries uint32, startItem string) (me
         var errhash message.HashToHash
         errhash.DBhash = hashTab[i].DBhash
         errhash.Datahash = hashTab[i].Datahash
+        errhash.Pos = hashTab[i].Pos
         v, _ := vfs.Hdb.DB.Get(vfs.Hdb.Ro, errhash.DBhash)
         if  v.Exists(){
             continue
