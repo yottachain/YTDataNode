@@ -13,6 +13,7 @@ import (
     "github.com/natefinch/lumberjack"
     "github.com/spf13/cobra"
     "github.com/tecbot/gorocksdb"
+    ci "github.com/yottachain/YTCrypto"
     "github.com/yottachain/YTDataNode/config"
     "github.com/yottachain/YTDataNode/gc"
     "github.com/yottachain/YTDataNode/instance"
@@ -22,6 +23,7 @@ import (
     "github.com/yottachain/YTDataNode/util"
     "github.com/yottachain/YTDataNode/verifySlice"
     Ytfs "github.com/yottachain/YTFS"
+    ytfs "github.com/yottachain/YTFS"
     ydcommon "github.com/yottachain/YTFS/common"
     "github.com/yottachain/YTHost/service"
     "net/rpc"
@@ -275,6 +277,39 @@ func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
     ytfs.TruncatStorageFile()
 }
 
+func cfgCheck() (err error) {
+    cfg, err := config.ReadConfig()
+    if err != nil {
+        log.Printf("config err %s, verify that the configuration file is stored or correct!\n",
+            err.Error())
+        return
+    }
+
+    //verify pubkey and prikey
+    pubkey, _ := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
+    if cfg.PubKey != pubkey {
+        log.Printf("the public and private keys do not match!\n")
+        return fmt.Errorf("the public and private keys do not match, pubkey %s, privkey %s\n",
+            pubkey, cfg.PrivKeyString())
+    }
+
+    //Verify that the configuration ID and database ID are consistent
+    ys, err := ytfs.OpenGet(util.GetYTFSPath(), cfg.Options)
+    if err != nil {
+        log.Printf("verify open ytfs err %s\n", err.Error())
+        return fmt.Errorf("verify open ytfs err %s\n", err.Error())
+    }
+
+    _, err = ys.YtfsDB().CheckDbDnId(cfg.IndexID)
+    if err != nil {
+        log.Printf("verify miner id err %s\n", err.Error())
+        return fmt.Errorf("verify miner id err %s\n", err.Error())
+    }
+
+
+    return nil
+}
+
 func Start() {
     wg := &sync.WaitGroup{}
     begin := true
@@ -425,6 +460,24 @@ var truncatCmd = &cobra.Command{
     },
 }
 
+var configCmd = &cobra.Command{
+    Use:   "config",
+    Short: "配置文件相关操作",
+}
+
+var configCheck = &cobra.Command{
+    Use:   "check",
+    Short: "配置文件正确性检查",
+    Long: "check whether the configuration file is correct",
+    Run: func(cmd *cobra.Command, args []string) {
+        err := cfgCheck()
+        if err != nil {
+
+        }
+    },
+}
+
+
 func main () {
     startCmd.Flags().StringVarP(&StartItem,"start", "s", "",
         "start items to verify")
@@ -454,6 +507,8 @@ func main () {
     RootCommand.AddCommand(checkCmd)
     RootCommand.AddCommand(daemonCmd)
     RootCommand.AddCommand(truncatCmd)
+    RootCommand.AddCommand(configCmd)
+    configCmd.AddCommand(configCheck)
 
     RootCommand.Execute()
 }

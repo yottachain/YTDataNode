@@ -212,6 +212,7 @@ func (vfs *VerifySler)VerifySlice(verifyNum uint32, startItem string) (*message.
 		return resp
 	}
 
+	log.Printf("[verify] VerifySlice verify num %d, start key %s\n", verifyNum, startItem)
 	*resp = vfs.VerifySliceReal(verifyNum, startItem)
 	if resp.ErrCode != "000" {
 		return resp
