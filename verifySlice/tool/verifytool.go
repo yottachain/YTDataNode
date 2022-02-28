@@ -23,8 +23,8 @@ import (
     "github.com/yottachain/YTDataNode/util"
     "github.com/yottachain/YTDataNode/verifySlice"
     Ytfs "github.com/yottachain/YTFS"
-    ytfs "github.com/yottachain/YTFS"
     ydcommon "github.com/yottachain/YTFS/common"
+    opt "github.com/yottachain/YTFS/opt"
     "github.com/yottachain/YTHost/service"
     "net/rpc"
     "os"
@@ -295,7 +295,7 @@ func cfgCheck() (err error) {
     }
 
     //Verify that the configuration ID and database ID are consistent
-    ys, err := ytfs.OpenGet(util.GetYTFSPath(), cfg.Options)
+    ys, err := Ytfs.OpenGet(util.GetYTFSPath(), cfg.Options)
     if err != nil {
         log.Printf("verify open ytfs err %s\n", err.Error())
         return fmt.Errorf("verify open ytfs err %s\n", err.Error())
@@ -307,6 +307,11 @@ func cfgCheck() (err error) {
         return fmt.Errorf("verify miner id err %s\n", err.Error())
     }
 
+    _, err = opt.FinalizeConfig(cfg.Options)
+    if err != nil {
+        log.Printf("verify storage options err %s\n", err.Error())
+        return fmt.Errorf("verify storage options err %s", err.Error())
+    }
 
     return nil
 }
@@ -502,7 +507,7 @@ var configCheck = &cobra.Command{
 
 var clsHdbCmd = &cobra.Command{
     Use:   "clsHdb",
-    Short: "清空hdb的所有可以",
+    Short: "清空hdb的所有key",
     Run: func(cmd *cobra.Command, args []string) {
         deleteHdbKeys()
     },
@@ -538,8 +543,8 @@ func main () {
     RootCommand.AddCommand(checkCmd)
     RootCommand.AddCommand(daemonCmd)
     RootCommand.AddCommand(truncatCmd)
+    //RootCommand.AddCommand(clsHdbCmd)
     RootCommand.AddCommand(configCmd)
-    RootCommand.AddCommand(clsHdbCmd)
     configCmd.AddCommand(configCheck)
 
     RootCommand.Execute()
