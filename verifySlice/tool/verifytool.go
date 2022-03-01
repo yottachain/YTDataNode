@@ -283,45 +283,56 @@ func cfgCheck() (err error) {
     if err != nil {
         log.Printf("config err %s, verify that the configuration file is stored or correct!\n",
             err.Error())
+        fmt.Printf("config err %s, verify that the configuration file is stored or correct!\n",
+            err.Error())
         return
     }else {
         log.Println("verify config read success!")
+        fmt.Println("verify config read success!")
     }
 
     //verify pubkey and prikey
     pubkey, _ := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
     if cfg.PubKey != pubkey {
         log.Printf("verify the public and private keys do not match!\n")
+        fmt.Printf("verify the public and private keys do not match!\n")
         return fmt.Errorf("the public and private keys do not match, pubkey %s, privkey %s\n",
             pubkey, cfg.PrivKeyString())
     }else {
         log.Println("verify public/private key pair success!")
+        fmt.Println("verify public/private key pair success!")
     }
 
     //Verify that the configuration ID and database ID are consistent
     ys, err := Ytfs.OpenGet(util.GetYTFSPath(), cfg.Options)
     if err != nil {
         log.Printf("verify open ytfs err %s\n", err.Error())
+        fmt.Printf("verify open ytfs err %s\n", err.Error())
         return fmt.Errorf("verify open ytfs err %s\n", err.Error())
     }
 
     _, err = ys.YtfsDB().CheckDbDnId(cfg.IndexID)
     if err != nil {
         log.Printf("verify miner id err %s\n", err.Error())
+        fmt.Printf("verify miner id err %s\n", err.Error())
         return fmt.Errorf("verify miner id err %s\n", err.Error())
     }else {
         log.Printf("verify config/db  miner id consistent!\n")
+        fmt.Printf("verify config/db  miner id consistent!\n")
     }
 
     _, err = opt.FinalizeConfig(cfg.Options)
     if err != nil {
         log.Printf("verify storage options err %s\n", err.Error())
+        fmt.Printf("verify storage options err %s\n", err.Error())
         return fmt.Errorf("verify storage options err %s", err.Error())
     }else {
         log.Println("verify storage options consistent!")
+        fmt.Println("verify storage options consistent!")
     }
 
     log.Println("verify all success!")
+    fmt.Println("verify all success!")
 
     return nil
 }
@@ -515,6 +526,7 @@ var configCheck = &cobra.Command{
         err := cfgCheck()
         if err != nil {
             log.Printf("config verify error %s\n", err.Error())
+            fmt.Printf("config verify error %s\n", err.Error())
         }
     },
 }
