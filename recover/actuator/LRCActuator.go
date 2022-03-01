@@ -396,6 +396,9 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); !ok {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
 
+			log.Printf("[recover] 任务 %d 阶段 %d offline miner node_id %s adds %v",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.msg.Locations[index].NodeId,
+				L.msg.Locations[index].Addrs)
 			//不在线的矿机就不下载了
 			delete(L.needDownloadIndexMap, index)
 		} else {
