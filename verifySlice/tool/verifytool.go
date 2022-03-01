@@ -501,6 +501,9 @@ var truncatCmd = &cobra.Command{
 var configCmd = &cobra.Command{
     Use:   "config",
     Short: "配置文件相关操作",
+    Run: func(cmd *cobra.Command, args []string) {
+        log.SetOutput(os.Stdout)
+    },
 }
 
 var configCheck = &cobra.Command{
