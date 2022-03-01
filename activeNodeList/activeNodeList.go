@@ -195,7 +195,11 @@ func HasNodeid(id string) bool {
 		Update()
 	}
 
+	log.Printf("[recover][hasNodeid] online nodes %d\n", len(nodeList))
+
 	for _, v := range nodeList {
+		//test
+		log.Println("[recover][hasNodeid] online_dnid=", v.NodeID, "request_dnid=", id)
 		if v.NodeID == id {
 			log.Println("[recover][hasNodeid] found: online dnid=",v.NodeID,"request_dnid=",id)
 			return true
