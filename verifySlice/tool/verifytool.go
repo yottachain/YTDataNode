@@ -292,7 +292,13 @@ func cfgCheck() (err error) {
     }
 
     //verify pubkey and prikey
-    pubkey, _ := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
+    pubkey, err := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
+    if err != nil {
+        log.Printf("get pub key err %s\n", err.Error())
+        fmt.Printf("get pub key err %s\n", err.Error())
+        fmt.Printf("get pub key err %s\n", err.Error())
+    }
+
     if cfg.PubKey != pubkey {
         log.Printf("verify the public and private keys do not match!\n")
         fmt.Printf("verify the public and private keys do not match!\n")
