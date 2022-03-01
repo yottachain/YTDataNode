@@ -157,8 +157,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 	// @TODO 异步执行下载
 	d.q <- struct{}{}
 	go func() {
-		//log.Println("[recover_debugtime]  E2_2_0 goroutine start nodeid=", nodeId,
-		//	"addr=", addr, "hash=", base58.Encode(shardID))
+		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine start ",
+			"node_id=", nodeId, "addr=", addr, "hash=", base58.Encode(shardID))
 		atomic.AddInt32(&d.stat.Downloading, 1)
 		atomic.AddInt32(&d.stat.Total, 1)
 		defer func() {
@@ -170,8 +170,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
-		//log.Println("[recover_debugtime]  E2_2_0 requestShard  nodeid=",
-		//	nodeId, "addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
+		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine request Shard end",
+			" node_id=", nodeId, "addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
 
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
@@ -182,8 +182,9 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 
 		d.taskRes.Store(IDString, &shardChan)
 		shardChan <- resBuf
-		//log.Println("[recover_debugtime]  E2_2_0 goroutine end nodeid=",nodeId,
-		//	"addr=",addr,"hash=", base58.Encode(shardID))
+		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine get shard end ",
+			"node_id=", nodeId, "addr=",addr,"hash=", base58.Encode(shardID))
+
 	}()
 
 	return &downloadWait{shardChan: &shardChan, errChan: &errChan}, nil
