@@ -508,6 +508,7 @@ var configCheck = &cobra.Command{
     Short: "配置文件正确性检查",
     Long: "check whether the configuration file is correct",
     Run: func(cmd *cobra.Command, args []string) {
+        log.SetOutput(os.Stdout)
         err := cfgCheck()
         if err != nil {
 
