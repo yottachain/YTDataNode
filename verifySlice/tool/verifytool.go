@@ -284,6 +284,8 @@ func cfgCheck() (err error) {
         log.Printf("config err %s, verify that the configuration file is stored or correct!\n",
             err.Error())
         return
+    }else {
+        log.Println("verify config read success!")
     }
 
     //verify pubkey and prikey
@@ -292,6 +294,8 @@ func cfgCheck() (err error) {
         log.Printf("the public and private keys do not match!\n")
         return fmt.Errorf("the public and private keys do not match, pubkey %s, privkey %s\n",
             pubkey, cfg.PrivKeyString())
+    }else {
+        log.Println("verify public/private key pair success!")
     }
 
     //Verify that the configuration ID and database ID are consistent
@@ -305,13 +309,19 @@ func cfgCheck() (err error) {
     if err != nil {
         log.Printf("verify miner id err %s\n", err.Error())
         return fmt.Errorf("verify miner id err %s\n", err.Error())
+    }else {
+        log.Printf("verify config/db  miner id consistent!\n")
     }
 
     _, err = opt.FinalizeConfig(cfg.Options)
     if err != nil {
         log.Printf("verify storage options err %s\n", err.Error())
         return fmt.Errorf("verify storage options err %s", err.Error())
+    }else {
+        log.Println("verify storage options consistent!")
     }
+
+    log.Println("verify all success!")
 
     return nil
 }
