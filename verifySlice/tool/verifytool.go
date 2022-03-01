@@ -291,7 +291,7 @@ func cfgCheck() (err error) {
     //verify pubkey and prikey
     pubkey, _ := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
     if cfg.PubKey != pubkey {
-        log.Printf("the public and private keys do not match!\n")
+        log.Printf("verify the public and private keys do not match!\n")
         return fmt.Errorf("the public and private keys do not match, pubkey %s, privkey %s\n",
             pubkey, cfg.PrivKeyString())
     }else {
@@ -511,7 +511,7 @@ var configCheck = &cobra.Command{
         log.SetOutput(os.Stdout)
         err := cfgCheck()
         if err != nil {
-
+            log.Printf("config verify error %s\n", err.Error())
         }
     },
 }
