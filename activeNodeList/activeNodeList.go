@@ -100,7 +100,8 @@ func GetNodeList() []*Data {
 		nodeList[k].Group = buf[len(buf)-1]
 	}
 
-	//log.Println("[activeNodeList] list=",nodeList)
+	log.Println("[activeNodeList] list len=",len(nodeList))
+
 	return nodeList
 }
 func GetNodeListByGroup(group byte) []*Data {
@@ -199,7 +200,11 @@ func GetNoIPNodeList(data []*Data, ip string) []*Data {
 func HasNodeid(id string) bool {
 	locker.Lock()
 	defer locker.Unlock()
-	if time.Now().Sub(updateTime) > time.Minute*5 {
+	ttl := 300
+	if config.Gconfig.ActiveNodeTTL > 0 {
+		ttl = config.Gconfig.ActiveNodeTTL
+	}
+	if time.Now().Sub(updateTime).Seconds() > time.Duration(ttl).Seconds() {
 		Update()
 	}
 
