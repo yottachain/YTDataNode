@@ -16,24 +16,32 @@ import (
 var locker = sync.RWMutex{}
 
 func getUrl() string {
-	var url string = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
 
-	if config.Gconfig.ActiveNodeUrl != "" {
-		url = config.Gconfig.ActiveNodeUrl
+	if config.Gconfig.ActiveNodeUrl != nil && len(config.Gconfig.ActiveNodeUrl) > 0 {
+		if config.Gconfig.ActiveNodeUrl[0] != "" {
+			url = config.Gconfig.ActiveNodeUrl[0]
+		}
 	}
 
-	fmt.Printf("main net active node url is %s\n", url)
-
-	fmt.Println("config_IsDev=", config.IsDev)
-	if config.IsDev == 1 {
-		url = "http://192.168.1.206:8080/readable_nodes"
-		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev1"
-	} else if config.IsDev == 2 {
-		url = "http://192.168.1.146:8080/readable_nodes"
-		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
-	}else if config.IsDev == 3 {
-		url = "https://yottachain-sn-dy-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	if config.IsDev > 0 {
+		if config.Gconfig.ActiveNodeUrl != nil && len(config.Gconfig.ActiveNodeUrl) >= config.IsDev {
+			if config.Gconfig.ActiveNodeUrl[config.IsDev-1] != "" {
+				url = config.Gconfig.ActiveNodeUrl[config.IsDev-1]
+			}
+		}
 	}
+
+	fmt.Printf("config_IsDev=%d, current active node url is %s\n", config.IsDev, url)
+
+	//if config.IsDev == 1 {
+	//	url = "http://192.168.1.206:8080/readable_nodes"
+	//} else if config.IsDev == 2 {
+	//	url = "http://192.168.1.146:8080/readable_nodes"
+	//}else if config.IsDev == 3 {
+	//	//url = "https://yottachain-sn-dy-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	//	url = "https://yottachain-sn-dy-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+	//}
 	return url
 }
 

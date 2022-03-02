@@ -54,7 +54,7 @@ type Gcfg struct {
 	NodeListUpdateTime    int
 	GcOpen                bool
 	SliceCompareOpen      bool
-	ActiveNodeUrl		  string `json:"ActiveNodeUrl"`
+	ActiveNodeUrl		  [] string `json:"ActiveNodeUrl"`
 	ActiveNodeTTL		  int		`json:"ActiveNodeTTL"`	//second
 	VerifyReportMaxNum	  uint64	`json:"VerifyReportMaxNum"`
  }
