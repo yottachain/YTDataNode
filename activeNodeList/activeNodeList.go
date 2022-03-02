@@ -79,7 +79,8 @@ func Update() {
 
 	buf, _ := json.Marshal(nodeList)
 	md5Buf := md5.Sum(buf)
-	log.Println("[activeNodeList] update success", hex.EncodeToString(md5Buf[:]))
+	log.Println("[activeNodeList] update success ",
+		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
 	updateTime = time.Now()
 }
 
@@ -206,6 +207,7 @@ func HasNodeid(id string) bool {
 	}
 	if time.Now().Sub(updateTime).Seconds() > time.Duration(ttl).Seconds() {
 		Update()
+		log.Printf("[recover][hasNodeid] activeNodeList update time %v\n", updateTime)
 	}
 
 	log.Printf("[recover][hasNodeid] online nodes %d\n", len(nodeList))
