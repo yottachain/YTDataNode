@@ -149,7 +149,7 @@ func (d *downloader) GetToken(ctx context.Context, clt *client.YTHostClient) (st
  * @return DownloaderWait
  * @return error
  */
-func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (DownloaderWait, error) {
+func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte, taskid uint64, stage int) (DownloaderWait, error) {
 	IDString := hex.EncodeToString(shardID)
 	shardChan := make(chan []byte, 1)
 	errChan := make(chan error, 1)
@@ -158,7 +158,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 	d.q <- struct{}{}
 	go func() {
 		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine start ",
-			"node_id=", nodeId, "addr=", addr, "hash=", base58.Encode(shardID))
+			" taskid=", taskid, " stage=", stage, " node_id=", nodeId, " addr=", addr, " hash=", base58.Encode(shardID))
 		atomic.AddInt32(&d.stat.Downloading, 1)
 		atomic.AddInt32(&d.stat.Total, 1)
 		defer func() {
@@ -170,8 +170,8 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		defer cancel()
 
 		resBuf, err := d.requestShard(ctx, nodeId, addr, shardID)
-		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine request Shard end",
-			" node_id=", nodeId, "addr=", addr, "hash=", base58.Encode(shardID), "error:", err)
+		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine request Shard end ",
+			" taskid=", taskid, " stage=", stage, " node_id=", nodeId, " addr=", addr, " hash=", base58.Encode(shardID), "error:", err)
 
 		if err != nil {
 			atomic.AddInt32(&d.stat.Error, 1)
@@ -183,7 +183,7 @@ func (d *downloader) AddTask(nodeId string, addr []string, shardID []byte) (Down
 		d.taskRes.Store(IDString, &shardChan)
 		shardChan <- resBuf
 		log.Println("[recover_debugtime]  E2_2_0 Add download Task goroutine get shard end ",
-			"node_id=", nodeId, "addr=",addr,"hash=", base58.Encode(shardID))
+			" taskid=", taskid, " stage=", stage,  "node_id=", nodeId, "addr=",addr,"hash=", base58.Encode(shardID))
 
 	}()
 

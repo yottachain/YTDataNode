@@ -9,6 +9,6 @@ type DownloaderWait interface {
 }
 
 type ShardDownloader interface {
-	AddTask(nodeId string, addr []string, shardID []byte) (DownloaderWait, error)
+	AddTask(nodeId string, addr []string, shardID []byte ,taskid uint64, stage int) (DownloaderWait, error)
 	GetShards(shardList ...[]byte) [][]byte
 }

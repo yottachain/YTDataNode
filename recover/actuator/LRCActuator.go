@@ -204,15 +204,16 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		statistics.DefaultRebuildCount.IncShardForRbd()
 
 		log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask start taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]), "addrinfo=", addrInfo,
+			binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
 			"hash=", base58.Encode(hash))
-		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash)
+		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+			binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 		if err != nil {
 			return nil, fmt.Errorf("add download task fail %s", err.Error())
 		}
 
 		log.Println("[recover_debugtime]  E2_1 addDownloadTask_addTask end taskid=",
-			binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+			binary.BigEndian.Uint64(L.msg.Id[:8]),"stage=", L.opts.Stage,  "addrinfo=",addrInfo,
 			"hash=",base58.Encode(hash))
 
 		// @TODO 异步等待下载任务执行完成
@@ -222,12 +223,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			ctx, cancel := context.WithTimeout(context.Background(), duration)
 			defer cancel()
 			log.Println("[recover_debugtime]  E2_2 start addDownloadTask get_shard in download goroutine taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=", addrInfo,
+				binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
 				"hash=", base58.Encode(key), "index=", index)
 			shard, err := dl.Get(ctx)
 			if err != nil {
 				log.Println("[recover_debugtime]  E2_2 end addDownloadTask get_shard taskid=",
-					binary.BigEndian.Uint64(L.msg.Id[:8]),"addrinfo=",addrInfo,
+					binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=",addrInfo,
 					"hash=",base58.Encode(key),"error:",err)
 			}
 
@@ -235,7 +236,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			if err != nil && strings.Contains(err.Error(), "Get data Slice fail"){
 				log.Printf("[recover_debugtime] E2_2 download error in addDownloadTask " +
 					"taskid=%d addrinfo=%s source hash=%s err=%s\n",
-					binary.BigEndian.Uint64(L.msg.Id[:8]), addrInfo, base58.Encode(key), err.Error())
+					binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, addrInfo, base58.Encode(key), err.Error())
 				return
 			}
 
@@ -256,12 +257,12 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			////test
 			if shard != nil {
 				log.Println("[recover_debugtime] E2_2 end download goroutine in addDownloadTask  taskid=",
-					base58.Encode(L.msg.Id[:]), "addrinfo=", addrInfo,
+					base58.Encode(L.msg.Id[:]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
 					"source hash=", base58.Encode(key), "download hash=", base58.Encode(dhash[:]),
 					"hashEqual=", bytes.Equal(key, dhash[:]))
 			}else {
 				log.Println("[recover_debugtime] E2_2 end download goroutine in addDownloadTask  taskid=",
-					base58.Encode(L.msg.Id[:]), "addrinfo=", addrInfo,
+					base58.Encode(L.msg.Id[:]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
 					"source hash=", base58.Encode(key), "get shard fail")
 			}
 		}(hash, d, shardIndex, addrInfo)
@@ -447,7 +448,8 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 
 	for i := 0; i < 5; i++ {
 		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId,
-						L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId])
+						L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId],
+						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 		if err != nil {
 			return nil, err
 		}
