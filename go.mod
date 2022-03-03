@@ -3,6 +3,7 @@ module github.com/yottachain/YTDataNode
 go 1.13
 
 require (
+	git.yottachain.net/snteam/yt-api-server v0.0.0-20220303082912-3aaf7ab9b2b9
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20201104130540-2e1f801663c6
 	github.com/eoscanada/eos-go v0.9.0
@@ -24,12 +25,12 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
-	github.com/yottachain/YTElkProducer v0.0.7
+	github.com/yottachain/YTElkProducer v0.0.8
 	github.com/yottachain/YTFS v0.0.0-20220228035248-22fe1505677e
 	github.com/yottachain/YTHost v1.0.2-0.20210520063025-16735e6c41a3
 	github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756
 
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.3
 )

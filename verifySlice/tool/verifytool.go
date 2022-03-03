@@ -26,6 +26,8 @@ import (
     ydcommon "github.com/yottachain/YTFS/common"
     opt "github.com/yottachain/YTFS/opt"
     "github.com/yottachain/YTHost/service"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/grpclog"
     "net/rpc"
     "os"
     "os/exec"
@@ -35,6 +37,7 @@ import (
     "sync"
     "syscall"
     "time"
+    pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
 )
 
 var Mdb *KvDB
@@ -274,6 +277,45 @@ func SendToElk(resp *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }
 }
 
+func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
+    wg.Add(1)
+
+    defer func() {
+        wg.Done()
+    }()
+
+    // 连接
+    conn, err := grpc.Dial("127.0.0.1:9009", grpc.WithInsecure())
+    if err != nil {
+        grpclog.Fatalln(err)
+    }
+    defer conn.Close()
+
+    // 初始化客户端
+    c := pb.NewReBuildApiClient(conn)
+
+    var elkData pb.NodeRebuildRequest
+
+    //var elkData VerifyErrShards
+    id , _ := strconv.ParseInt(data.Id, 10, 64)
+    ErrNums, _ := strconv.ParseInt(data.ErrNum, 10, 32)
+    elkData.MinerId = id
+    elkData.ErrNums = int32(ErrNums)
+    for _, v := range data.ErrShard {
+        var errShard pb.ErrShard
+        errShard.RebuildStatus = 0
+        errShard.Shard = base58.Encode(v.DBhash)
+        elkData.ErrShards = append(elkData.ErrShards, &errShard)
+    }
+
+    res, err := c.SendNodeRebuild(context.Background(), &elkData)
+    if err != nil {
+        log.Printf("send data to sn api err %s\n", err.Error())
+    }
+
+    fmt.Println("SendNodeRebuild:", res.Message)
+}
+
 func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
     ytfs.TruncatStorageFile()
 }
@@ -420,7 +462,8 @@ func Start() {
             errNum := len(resp.ErrShard)
             if errNum > 0 {
                 log.Printf("verify report err shards %d\n", errNum)
-                go SendToElk(resp, wg)
+                //go SendToElk(resp, wg)
+                go SendToSnApi(resp, wg)
                 reportTotalErrs += uint64(errNum)
             }
             if begin {
