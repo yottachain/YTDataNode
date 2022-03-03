@@ -285,11 +285,13 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }()
 
     // 连接
-    conn, err := grpc.Dial("127.0.0.1:9009", grpc.WithInsecure())
+    conn, err := grpc.Dial("10.0.26.177:30909", grpc.WithInsecure())
     if err != nil {
         grpclog.Fatalln(err)
     }
     defer conn.Close()
+
+    log.Printf("SendToSnApi dial success\n")
 
     // 初始化客户端
     c := pb.NewReBuildApiClient(conn)
@@ -313,7 +315,9 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
         log.Printf("send data to sn api err %s\n", err.Error())
     }
 
-    fmt.Println("SendNodeRebuild:", res.Message)
+    if res != nil {
+        fmt.Println("SendNodeRebuild:", res.Message)
+    }
 }
 
 func verifyAndTruncatYtfsStorage (ytfs *Ytfs.YTFS) {
