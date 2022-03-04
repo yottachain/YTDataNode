@@ -667,8 +667,8 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 		res.ID = resID
 
-		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d\n",
-			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, int64(time.Now().Sub(st).Seconds()))
+		log.Printf("[recover]  task=%d stage=%d ExecTask used time %dms\n",
+			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Milliseconds())
 
 		realHash = srcHash
 

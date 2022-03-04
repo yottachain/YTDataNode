@@ -199,20 +199,23 @@ func GetNoIPNodeList(data []*Data, ip string) []*Data {
 }
 
 func HasNodeid(id string) bool {
-	locker.Lock()
-	defer locker.Unlock()
 	ttl := 300
 	if config.Gconfig.ActiveNodeTTL > 0 {
 		ttl = config.Gconfig.ActiveNodeTTL
 	}
 	if time.Now().Sub(updateTime).Seconds() > time.Duration(ttl).Seconds() {
+		//Should be updated regularly
+		locker.Lock()
 		Update()
+		locker.Unlock()
 		log.Printf("[recover][hasNodeid] activeNodeList update time %v\n", updateTime)
 	}
 
 	log.Printf("[recover][hasNodeid] online nodes %d\n", len(nodeList))
 
-	for _, v := range nodeList {
+	temNodeList := nodeList
+
+	for _, v := range temNodeList {
 		//test
 		//log.Println("[recover][hasNodeid] online_dnid=", v.NodeID, "request_dnid=", id)
 		if v.NodeID == id {

@@ -344,10 +344,10 @@ start:
 		}
 		downloadTask.Wait()
 
-		useTime := time.Now().Sub(startTime).Seconds()
-		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download use time %d\n",
+		useTime := time.Now().Sub(startTime).Milliseconds()
+		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download use time %dms\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
-			len(L.needDownloadIndexes), errCount, int64(useTime))
+			len(L.needDownloadIndexes), errCount, useTime)
 
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
@@ -666,8 +666,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	startTime := time.Now()
 	err = L.downloadLoop(ctx)
-	log.Printf("[recover] task=%d stage=%d download loop use times %d",
-		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, int64(time.Now().Sub(startTime).Seconds()))
+	log.Printf("[recover] task=%d stage=%d download loop use times %dms",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//log.Println("[recover_debugtime] E downloadloop taskid=", base58.Encode(msgID[:]))
 	if err != nil {
@@ -679,8 +679,8 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	// @TODO LRC恢复
 	startTime = time.Now()
 	recoverData, err := L.recoverShard()
-	log.Printf("[recover] task=%d stage=%d recover Shard use times %d",
-		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, int64(time.Now().Sub(startTime).Seconds()))
+	log.Printf("[recover] task=%d stage=%d recover Shard use times %dms",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	if err != nil {
 		log.Printf("[recover] task=%d stage=%d recover Shard err:%s\n",

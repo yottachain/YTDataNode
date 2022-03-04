@@ -343,8 +343,13 @@ func cfgCheck() (err error) {
         fmt.Println("verify config read success!")
     }
 
+    eosPri, err := util.Libp2pPkey2eosPkey(cfg.PrivKeyString())
+    if err != nil {
+        log.Printf("pri key transform err %s\n", err.Error())
+        fmt.Printf("pri key transform err %s\n", err.Error())
+    }
     //verify pubkey and prikey
-    pubkey, err := ci.GetPublicKeyByPrivateKey(cfg.PrivKeyString())
+    pubkey, err := ci.GetPublicKeyByPrivateKey(eosPri)
     if err != nil {
         log.Printf("get pub key err %s\n", err.Error())
         fmt.Printf("get pub key err %s\n", err.Error())
