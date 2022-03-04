@@ -3,11 +3,9 @@ package main
 import (
     "context"
     "encoding/binary"
-    "flag"
     "fmt"
     pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
     "github.com/golang/protobuf/proto"
-    "github.com/libp2p/go-libp2p-core/peer"
     "github.com/mr-tron/base58"
     "github.com/multiformats/go-multiaddr"
     mnet "github.com/multiformats/go-multiaddr-net"
@@ -16,7 +14,6 @@ import (
     "github.com/tecbot/gorocksdb"
     ci "github.com/yottachain/YTCrypto"
     "github.com/yottachain/YTDataNode/config"
-    "github.com/yottachain/YTDataNode/gc"
     "github.com/yottachain/YTDataNode/instance"
     log "github.com/yottachain/YTDataNode/logger"
     "github.com/yottachain/YTDataNode/message"
@@ -55,16 +52,6 @@ type KvDB struct {
     PosKey ydcommon.IndexTableKey
     PosIdx ydcommon.IndexTableValue
 }
-
-type addrInfo struct {
-    DnNum	  uint32
-    NodeID    peer.ID
-    Addrs 	  []multiaddr.Multiaddr
-}
-
-var DelLock sync.Mutex
-var delshardhash [][]byte
-var gcw gc.GcWorker
 
 var snApiSerConnFd *grpc.ClientConn
 
@@ -284,6 +271,8 @@ func snApiConnInit() *grpc.ClientConn {
         if config.Gconfig.SnApiServerUrl != "" {
             url = config.Gconfig.SnApiServerUrl
         }
+
+        log.Printf("sn api server url is %s\n", url)
 
         // 连接
         var err error
@@ -644,93 +633,5 @@ func main () {
     configCmd.AddCommand(configCheck)
 
     RootCommand.Execute()
-}
-
-func main_(){
-    Online := flag.Bool("online",true,"run verifytool online or offline")
-    Loopm := flag.Bool("loop",true,"verify mode :loop or not")
-    flag.StringVar(&StartItem,"s","","start items to verify")
-    startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,"verify items for one batch")
-    startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b",1000,"batch count for verify")
-    flag.StringVar(&VerifyErrKey,"chk","","Get verify status for verified-error key")
-    flag.Parse()
-
-    //vTimes,err := strconv.ParseUint(BatchCnt,10,64)
-    //if err != nil{
-    //    fmt.Println("[verifytool] error:",err)
-    //    return
-    //}
-
-    begin := true
-    if *Online {
-        if VerifyErrKey != ""{
-            fmt.Println("check Key:",VerifyErrKey)
-            MissSliceQuery(VerifyErrKey)
-            return
-        }
-        BchCnt := uint32(0)
-        for{
-            errs := 0
-            for{
-                _, err := SendCompareVerifyOrder2(StartItem, CntPerBatch)
-                if err != nil {
-                    errs++
-                    if errs > 10 {
-                        log.Printf("batch %d errs too much exit\n", BchCnt)
-                        return
-                    }
-                    continue
-                }
-                BchCnt++
-                <- time.After(time.Second * 1)
-                if begin {
-                    log.Println("verify start!!")
-                    begin = false
-                    StartItem = ""
-                }
-
-                errs = 0
-
-                if BchCnt >= BatchCnt{
-                    break
-                }
-            }
-
-            if !*Loopm {
-                break
-            }
-        }
-    }else {
-        sn := instance.GetStorageNode()
-        gcw = gc.GcWorker{sn}
-        vfer := verifySlice.NewVerifySler(sn)
-
-        if VerifyErrKey != ""{
-            ReInit(vfer)
-            GetKeyStatus(vfer, VerifyErrKey)
-            return
-        }
-
-        bchCnt := uint32(0)
-        for{
-            for{
-                <- time.After(time.Second * 1)
-                vfer.VerifySlice(CntPerBatch, StartItem)
-                if begin{
-                    log.Println("verify start!!")
-                    begin = false
-                    StartItem = ""
-                }
-                bchCnt++
-                if bchCnt >= BatchCnt {
-                    break
-                }
-            }
-
-            if !*Loopm{
-                break
-            }
-        }
-    }
 }
 

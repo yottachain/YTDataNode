@@ -44,8 +44,10 @@ func RandomIdentity2() (crypto.PrivKey, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("decode privkey err:%s", err.Error())
 	}
-	log.Println(pr[1:33])
-	priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[1:33])
+	//log.Println(pr[1:33])
+	log.Println(pr[:])
+	//priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[1:33])
+	priv, err := crypto.UnmarshalSecp256k1PrivateKey(pr[:])
 	if err != nil {
 		return nil, "", err
 	}
