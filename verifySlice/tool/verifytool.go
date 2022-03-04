@@ -5,6 +5,7 @@ import (
     "encoding/binary"
     "flag"
     "fmt"
+    pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
     "github.com/golang/protobuf/proto"
     "github.com/libp2p/go-libp2p-core/peer"
     "github.com/mr-tron/base58"
@@ -27,7 +28,6 @@ import (
     opt "github.com/yottachain/YTFS/opt"
     "github.com/yottachain/YTHost/service"
     "google.golang.org/grpc"
-    "google.golang.org/grpc/grpclog"
     "net/rpc"
     "os"
     "os/exec"
@@ -37,7 +37,6 @@ import (
     "sync"
     "syscall"
     "time"
-    pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
 )
 
 var Mdb *KvDB
@@ -66,6 +65,8 @@ type addrInfo struct {
 var DelLock sync.Mutex
 var delshardhash [][]byte
 var gcw gc.GcWorker
+
+var snApiSerConnFd *grpc.ClientConn
 
 func ConnRetry(maAddr multiaddr.Multiaddr, times int) (mnet.Conn, error){
     n := 0
@@ -277,6 +278,23 @@ func SendToElk(resp *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }
 }
 
+func snApiConnInit() *grpc.ClientConn {
+    if snApiSerConnFd == nil {
+        var url = "10.0.26.177:30909"
+        if config.Gconfig.SnApiServerUrl != "" {
+            url = config.Gconfig.SnApiServerUrl
+        }
+
+        // 连接
+        var err error
+        snApiSerConnFd, err = grpc.Dial(url, grpc.WithInsecure())
+        if err != nil {
+            log.Printf("sn api server dial error %s\n", err.Error())
+        }
+    }
+    return snApiSerConnFd
+}
+
 func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     wg.Add(1)
 
@@ -285,16 +303,15 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }()
 
     // 连接
-    conn, err := grpc.Dial("10.0.26.177:30909", grpc.WithInsecure())
-    if err != nil {
-        grpclog.Fatalln(err)
+    if nil == snApiConnInit() {
+        log.Printf("sn api server dial fail!\n")
+        return
     }
-    defer conn.Close()
 
     log.Printf("SendToSnApi dial success\n")
 
     // 初始化客户端
-    c := pb.NewReBuildApiClient(conn)
+    c := pb.NewReBuildApiClient(snApiSerConnFd)
 
     var elkData pb.NodeRebuildRequest
 
@@ -316,7 +333,7 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }
 
     if res != nil {
-        fmt.Println("SendNodeRebuild:", res.Message)
+        fmt.Printf("SendNodeRebuild:%v\n", res.Message)
     }
 }
 
