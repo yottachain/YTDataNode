@@ -712,9 +712,10 @@ func (L *LRCTaskActuator) Free() {
 }
 
 func (L *LRCTaskActuator) isTimeOut() bool {
-	if int32(time.Now().Sub(L.opts.STime).Seconds()) > L.opts.Expired {
-		return true
-	}
+	//暂时不判断超时了
+	//if int32(time.Now().Sub(L.opts.STime).Seconds()) > L.opts.Expired {
+	//	return true
+	//}
 
 	return false
 }

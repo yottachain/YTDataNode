@@ -41,7 +41,7 @@ import (
 const (
 	max_reply_num       = 1000
 	max_task_num        = 1000
-	max_reply_wait_time = time.Second * 60
+	max_reply_wait_time = time.Millisecond* 10
 )
 
 // var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
@@ -626,7 +626,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 	var recoverData []byte
 	var realHash []byte
-	//expiredTime := time.Unix(expired, 0)
+
 	// @TODO 执行恢复任务
 	for _, opts := range []actuator.Options{
 		{
