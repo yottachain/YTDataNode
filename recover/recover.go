@@ -424,8 +424,12 @@ func (re *Engine) MultiReply() error {
 
 	func() {
 		for i := 0; i < max_reply_num; i++ {
-			log.Printf("[recover] reply queue length is %d\n", len(re.replyQueue))
+			if len(re.replyQueue) > 0 {
+				//这个时候可能不大于0， 所以这个打印不准确
+				log.Printf("[recover] reply queue length is %d\n", len(re.replyQueue))
+			}
 			select {
+			//这个时候可能就有数据了
 			case res := <-re.replyQueue:
 				if resmsg[res.BPID] == nil {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
@@ -470,9 +474,11 @@ func (re *Engine) MultiReply() error {
 			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",
 				v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt", replycnt)
 		}
+
+		log.Printf("[recover] [report] reply count %d\n", replycnt)
 	}
 
-	log.Printf("[recover] [report] reply count %d\n", replycnt)
+
 
 	return nil
 }
