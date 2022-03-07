@@ -51,15 +51,18 @@ type syncWriter struct {
 }
 
 func (s syncWriter) Write(p []byte) (n int, err error) {
-	defer func() {
-		select {
-		case <-s.q:
-		default:
-		}
-	}()
+	//defer func() {
+	//	select {
+	//	case <-s.q:
+	//	default:
+	//	}
+	//}()
 
 	select {
 	case s.q <- struct{}{}:
+		defer func() {
+			<-s.q
+		}()
 		return s.dist.Write(p)
 	case <-time.After(time.Second):
 		return 0, fmt.Errorf("time out")
@@ -68,7 +71,7 @@ func (s syncWriter) Write(p []byte) (n int, err error) {
 func NewSyncWriter(dist io.Writer) *syncWriter {
 	return &syncWriter{
 		dist,
-		make(chan struct{}, 0),
+		make(chan struct{}, 1),
 	}
 }
 
