@@ -281,7 +281,7 @@ type TaskMsgResult struct {
 	ID          []byte // 重建任务ID
 	RES         int32  // 重建任务结果 0：success 1：error
 	BPID        int32  // 需要回复的BP的ID
-	ExpriedTime int64  // 任务过期时间
+	ExpiredTime int64  // 任务过期时间
 	SrcNodeID   int32  // 来源节点ID
 	ErrorMsg    error
 }
@@ -347,12 +347,12 @@ func (re *Engine) dispatchTask(ts *Task) {
 			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", taskC, msgID)
 		}
 
-		res = re.execLRCTask(ts.Data[2:], ts.ExpriedTime, ts.StartTime,
+		res = re.execLRCTask(ts.Data[2:], ts.ExpiredTime, ts.StartTime,
 				ts.TaskLife, ts.SrcNodeID)
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
-			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpriedTime, ts.SrcNodeID,
+			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpiredTime, ts.SrcNodeID,
 				ts.TaskLife, ts.StartTime, ts.ExecTimes)
 			if err != nil {
 				goto Reply
@@ -380,7 +380,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		log.Println("[recover] execCPTask, msgId:", msgID)
 		log.Printf("[recover] execCPTask exec_task %d, msgId: %d\n", taskC, msgID)
 
-		res = re.execCPTask(ts.Data[2:], ts.ExpriedTime)
+		res = re.execCPTask(ts.Data[2:], ts.ExpiredTime)
 
 		if res.RES == 0 {
 			log.Printf("[recover] execCPTask success %d, msgId: %d\n", taskC, msgID)
@@ -434,7 +434,7 @@ func (re *Engine) MultiReply() error {
 				//log.Println("[recover_debugtime]  reply taskid=", base58.Encode(res.ID[:]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
-				_r.ExpiredTime = res.ExpriedTime
+				_r.ExpiredTime = res.ExpiredTime
 				_r.SrcNodeID = res.SrcNodeID
 				resmsg[res.BPID] = _r
 				statistics.DefaultRebuildCount.IncReportRbdTask()
@@ -508,9 +508,9 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	return false, nil
 }
 
-func (re *Engine) execRCTask(msgData []byte, expried int64) *TaskMsgResult {
+func (re *Engine) execRCTask(msgData []byte, expired int64) *TaskMsgResult {
 	var res TaskMsgResult
-	res.ExpriedTime = expried
+	res.ExpiredTime = expired
 	var msg message.TaskDescription
 	if err := proto.Unmarshal(msgData, &msg); err != nil {
 		log.Printf("[recover]proto解析错误%s", err)
@@ -609,7 +609,7 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @Description: 执行lrc 重建任务
  * @receiver re
  * @param msgData 单个重建消息
- * @param expried 过期时间
+ * @param expired 过期时间
  * @param pkgstart 任务包开始时间
  * @param tasklife 任务存活周期
  * @return *TaskMsgResult 任务执行结果
@@ -619,7 +619,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
 
-	res.ExpriedTime = expired
+	res.ExpiredTime = expired
 	res.RES = 1
 	taskActuator := actuator.New(re.DefaultDownloader)
 	defer taskActuator.Free()
@@ -764,10 +764,10 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 }
 
 // 副本集任务
-func (re *Engine) execCPTask(msgData []byte, expried int64) *TaskMsgResult {
+func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 	var msg message.TaskDescriptionCP
 	var result TaskMsgResult
-	result.ExpriedTime = expried
+	result.ExpiredTime = expired
 	err := proto.UnmarshalMerge(msgData, &msg)
 	if err != nil {
 		log.Printf("[recover] execCPTask 解析错误%s\n", err.Error())

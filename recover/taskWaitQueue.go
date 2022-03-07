@@ -15,21 +15,21 @@ type TaskWaitQueue struct {
 }
 
 func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
-	expried int64, srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
+	expired int64, srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
 	//twq.Lck.Lock()
 	//defer twq.Lck.Unlock()
 
 	t := &Task{
 		SnID:        snid,
 		Data:        task,
-		ExpriedTime: expried,
+		ExpiredTime: expired,
 		TaskLife:    tasklife,
 		SrcNodeID:   srcNodeId,
 		StartTime:   start,
 		ExecTimes: 	 execTimes,
 	}
 
-	log.Printf("[recover] task ExpriedTime is %d, taskLife is %d\n", expried, tasklife)
+	log.Printf("[recover] task ExpiredTime is %d, taskLife is %d\n", expired, tasklife)
 
 	if twq.BaseMessageQueue.Len() >= twq.Max {
 		return fmt.Errorf("task queue full")
