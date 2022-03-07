@@ -68,7 +68,7 @@ func (s syncWriter) Write(p []byte) (n int, err error) {
 func NewSyncWriter(dist io.Writer) *syncWriter {
 	return &syncWriter{
 		dist,
-		make(chan struct{}, 1),
+		make(chan struct{}, 0),
 	}
 }
 

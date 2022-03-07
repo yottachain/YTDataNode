@@ -398,8 +398,9 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
-	case re.replyQueue <- res:
-	//default:
+		case re.replyQueue <- res:
+			log.Printf("[recover] reply queue enqueue task=%d\n", binary.BigEndian.Uint64(res.ID[:8]))
+		//default:
 	}
 }
 
@@ -430,8 +431,7 @@ func (re *Engine) MultiReply() error {
 					resmsg[res.BPID] = &message.MultiTaskOpResult{}
 				}
 				_r := resmsg[res.BPID]
-				log.Println("[recover_debugtime]  reply taskid=", binary.BigEndian.Uint64(res.ID[:8]))
-				//log.Println("[recover_debugtime]  reply taskid=", base58.Encode(res.ID[:]))
+				log.Println("[recover_debugtime]  reply task=", binary.BigEndian.Uint64(res.ID[:8]))
 				_r.Id = append(_r.Id, res.ID)
 				_r.RES = append(_r.RES, res.RES)
 				_r.ExpiredTime = res.ExpiredTime
@@ -439,7 +439,7 @@ func (re *Engine) MultiReply() error {
 				resmsg[res.BPID] = _r
 				statistics.DefaultRebuildCount.IncReportRbdTask()
 			case <-time.After(max_reply_wait_time):
-				return
+				continue
 			}
 		}
 	}()
@@ -461,6 +461,7 @@ func (re *Engine) MultiReply() error {
 					continue
 				}
 			} else {
+				log.Printf("[recover][report] tryReply success, report nums %d\n", len(v.RES))
 			}
 			// 如果不报错退出循环
 			break
