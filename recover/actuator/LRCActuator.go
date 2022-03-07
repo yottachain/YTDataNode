@@ -352,15 +352,19 @@ start:
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
 
-		if L.shards.Len() < len(L.needIndexes) {
+		if len(L.needDownloadIndexMap) > 0 {
 			goto start
 		}
-		if ok := L.checkNeedShardsExist(); !ok {
-			log.Println("[recover_debugtime] E4 checkNeedShardsExist taskid=",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), "errcount:", errCount)
-			// @TODO 如果检查分片不足跳回开头继续下载
-			goto start
-		}
+
+		//if L.shards.Len() < len(L.needIndexes) {
+		//	goto start
+		//}
+		//if ok := L.checkNeedShardsExist(); !ok {
+		//	log.Println("[recover_debugtime] E4 checkNeedShardsExist taskid=",
+		//		binary.BigEndian.Uint64(L.msg.Id[:8]), "errcount:", errCount)
+		//	// @TODO 如果检查分片不足跳回开头继续下载
+		//	goto start
+		//}
 		//log.Println("[recover_debugtime] E5 addDownloadTask taskid=",
 		//	base58.Encode(L.msg.Id[:]),"errcount:",errCount)
 	}
