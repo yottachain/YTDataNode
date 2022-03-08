@@ -397,6 +397,7 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 	//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 
 	//var onLineShardIndexes = make([]int16, 0)
+	startTime := time.Now()
 	for _, index := range indexes {
 		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); !ok {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
@@ -418,6 +419,8 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 			//}
 		}
 	}
+	log.Printf("[recover] 任务 %d 阶段 %d online miner judge use time %d\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//// 如果是全局校验填充假数据，尝试校验
 	//if L.opts.Stage >= 3 {
@@ -645,19 +648,25 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	}
 
 	// @TODO 初始化LRC句柄
+	startTime := time.Now()
 	err = L.initLRCHandler(opts.Stage)
 	//log.Println("[recover_debugtime] C taskid=", binary.BigEndian.Uint64(msgID[:8]))
 	if err != nil {
 		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
 	}
+	log.Printf("[recover] task=%d stage=%d init lrc use times %dms",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	// @TODO 预判
+	startTime = time.Now()
 	if ok := L.preJudge(); !ok {
 		err = fmt.Errorf("预判失败 阶段 %d 任务 %d", L.opts.Stage, binary.BigEndian.Uint64(msgID[:8]))
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
+	log.Printf("[recover] task=%d stage=%d preJudge use times %dms",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 	//log.Println("[recover_debugtime] D preJudge taskid=", binary.BigEndian.Uint64(msgID[:8]))
 
 	// 成功预判计数加一
@@ -668,7 +677,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
 
-	startTime := time.Now()
+	startTime = time.Now()
 	err = L.downloadLoop(ctx)
 	log.Printf("[recover] task=%d stage=%d download loop use times %dms",
 		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
@@ -694,11 +703,14 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	//log.Println("[recover_debugtime] F end taskid=", base58.Encode(msgID[:]))
 	// @TODO 验证数据
+	startTime = time.Now()
 	if err = L.verifyLRCRecoveredData(recoverData); err != nil {
 		log.Printf("[recover] task=%d stage=%d verify Recovered Data err:%s\n",
 			binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, err.Error())
 		return
 	}
+	log.Printf("[recover] task=%d stage=%d recover verify Shard use times %dms",
+		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//log.Println("[recover_debugtime] G end taskid=", base58.Encode(msgID[:]))
 	data = recoverData
