@@ -37,6 +37,7 @@ import (
 	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	yhservice "github.com/yottachain/YTHost/service"
 )
 
@@ -52,6 +53,7 @@ func (sn *storageNode) Service() {
 	randDownload.Sn = sn
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute)
+	go activeNodeList.UpdateTimer()
 	go randDownload.Run()
 	go capProof.TimerRun(sn.ytfs)
 

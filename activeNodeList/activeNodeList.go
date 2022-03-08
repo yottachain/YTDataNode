@@ -9,11 +9,8 @@ import (
 	log "github.com/yottachain/YTDataNode/logger"
 	"math"
 	"net/http"
-	"sync"
 	"time"
 )
-
-var locker = sync.RWMutex{}
 
 func getUrl() string {
 	var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
@@ -46,6 +43,7 @@ func getUrl() string {
 }
 
 var nodeList []*Data
+var nodeListMap map[string]*Data
 var updateTime = time.Time{}
 
 type Data struct {
@@ -57,7 +55,7 @@ type Data struct {
 	Group  byte
 }
 
-func Update() {
+func update() {
 	url := getUrl()
 
 	fmt.Printf("[activeNodeList] current active node url is %s\n", url)
@@ -70,12 +68,24 @@ func Update() {
 
 	defer res.Body.Close()
 
+	var nl []*Data
 	dc := json.NewDecoder(res.Body)
-	err = dc.Decode(&nodeList)
+	err = dc.Decode(&nl)
 	if err != nil {
 		log.Println("[activeNodeList] Decode error:", err.Error())
 		return
 	}
+
+	nlMap := make(map[string]*Data)
+
+	for _, v := range  nl {
+		if _, ok := nlMap[v.NodeID]; !ok {
+			nlMap[v.NodeID] = v
+		}
+	}
+
+	nodeList = nl
+	nodeListMap = nlMap
 
 	buf, _ := json.Marshal(nodeList)
 	md5Buf := md5.Sum(buf)
@@ -84,24 +94,29 @@ func Update() {
 	updateTime = time.Now()
 }
 
-func GetNodeList() []*Data {
-	ttl := 300
-	if config.Gconfig.ActiveNodeTTL > 0 {
-		ttl = config.Gconfig.ActiveNodeTTL
-	}
-	locker.Lock()
-	if time.Now().Sub(updateTime) > time.Duration(ttl)*time.Second {
-		Update()
-		log.Printf("[activeNodeList] update interval is %d\n", ttl)
-	}
-	locker.Unlock()
+func UpdateTimer() {
+	for {
+		ttl := 300
+		if config.Gconfig.ActiveNodeTTL > 0 {
+			ttl = config.Gconfig.ActiveNodeTTL
+		}
 
+		if time.Now().Sub(updateTime) > time.Duration(ttl)*time.Second {
+			update()
+			log.Printf("[activeNodeList] update success interval is %d\n", ttl)
+		}
+		<-time.After(time.Second*10)
+	}
+
+}
+
+func GetNodeList() []*Data {
 	for k, v := range nodeList {
 		buf := []byte(v.NodeID)
 		nodeList[k].Group = buf[len(buf)-1]
 	}
 
-	log.Println("[activeNodeList] list len=",len(nodeList))
+	log.Println("[activeNodeList] list len=", len(nodeList))
 
 	return nodeList
 }
@@ -199,29 +214,21 @@ func GetNoIPNodeList(data []*Data, ip string) []*Data {
 }
 
 func HasNodeid(id string) bool {
-	ttl := 300
-	if config.Gconfig.ActiveNodeTTL > 0 {
-		ttl = config.Gconfig.ActiveNodeTTL
-	}
-	if time.Now().Sub(updateTime).Seconds() > time.Duration(ttl).Seconds() {
-		//Should be updated regularly
-		locker.Lock()
-		Update()
-		locker.Unlock()
-		log.Printf("[recover][hasNodeid] activeNodeList update time %v\n", updateTime)
-	}
-
 	log.Printf("[recover][hasNodeid] online nodes %d\n", len(nodeList))
 
-	temNodeList := nodeList
-
-	for _, v := range temNodeList {
-		//test
-		//log.Println("[recover][hasNodeid] online_dnid=", v.NodeID, "request_dnid=", id)
-		if v.NodeID == id {
-			log.Println("[recover][hasNodeid] found: online dnid=",v.NodeID,"request_dnid=",id)
-			return true
-		}
+	if _, ok := nodeListMap[id]; ok {
+		log.Println("[recover][hasNodeid] found: online dnid=", id)
+		return true
 	}
+
+	//temNodeList := nodeList
+	//for _, v := range temNodeList {
+	//	//test
+	//	//log.Println("[recover][hasNodeid] online_dnid=", v.NodeID, "request_dnid=", id)
+	//	if v.NodeID == id {
+	//		log.Println("[recover][hasNodeid] found: online dnid=",v.NodeID,"request_dnid=",id)
+	//		return true
+	//	}
+	//}
 	return false
 }

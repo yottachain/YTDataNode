@@ -347,7 +347,7 @@ start:
 		useTime := time.Now().Sub(startTime).Milliseconds()
 		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download use time %dms\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
-			len(L.needDownloadIndexes), errCount, useTime)
+			len(indexs), errCount, useTime)
 
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
