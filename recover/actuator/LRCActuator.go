@@ -387,17 +387,20 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		return false
 	}
 
+	startTime := time.Now()
 	indexes, err := L.getNeedShardList()
 	if err != nil {
 		log.Printf("[recover] 任务 %d 阶段 %d getNeedShardList err %s\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, err.Error())
 		return false
 	}
+	log.Printf("[recover] 任务 %d 阶段 %d get Need Shard List use time %d\n",
+		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
 
 	//var onLineShardIndexes = make([]int16, 0)
-	startTime := time.Now()
+	startTime = time.Now()
 	for _, index := range indexes {
 		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); !ok {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
