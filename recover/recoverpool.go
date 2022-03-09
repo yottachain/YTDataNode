@@ -23,6 +23,7 @@ func (re *Engine) processRequests() {
 	var  k  uint64
 	var  n  uint64
 	var  m  uint64
+	var updateTime = time.Time{}
 	for{
 		for {
 			requestT := re.waitQueue.GetTask()
@@ -36,6 +37,13 @@ func (re *Engine) processRequests() {
 				continue
 			}
 			n++
+			if config.Gconfig.RebuildMaxCc > 0 && time.Now().Sub(updateTime).Seconds() > 300 {
+				totalCap = config.Gconfig.RebuildMaxCc
+				log.Printf("[recover] max concurrent is %d\n", totalCap)
+				statistics.RunningCount.SetMax(int32(totalCap))
+				updateTime = time.Now()
+			}
+
 			statistics.RunningCount.Add()
 			statistics.DefaultRebuildCount.IncRbdTask()
 			if n % 100 == 0 {
@@ -47,10 +55,6 @@ func (re *Engine) processRequests() {
 }
 
 func (re *Engine) RunPool() {
-	if config.Gconfig.RebuildMaxCc > 0 {
-		totalCap = config.Gconfig.RebuildMaxCc
-		log.Printf("[recover] max concurrent is %d\n", totalCap)
-	}
 	statistics.RunningCount = statistics.NewWaitCount(int32(totalCap))
 	statistics.DownloadCount = statistics.NewWaitCount(1000)
 
