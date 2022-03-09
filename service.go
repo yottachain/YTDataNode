@@ -196,6 +196,7 @@ func (sn *storageNode) Service() {
 	rcv, err := rc.New(sn)
 	if err != nil {
 		log.Printf("[recover]init error %s\n", err.Error())
+		return
 	}
 
 	go rcv.RunPool()

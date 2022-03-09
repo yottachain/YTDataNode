@@ -724,7 +724,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	//ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.Expired)*time.Second)
 	defer cancel()
-	
+
 	startTime = time.Now()
 	recoverData, err := L.downloadLoop(ctx)
 	log.Printf("[recover] task=%d stage=%d download loop use times %dms",
