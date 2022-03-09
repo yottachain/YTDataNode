@@ -58,6 +58,7 @@ type Gcfg struct {
 	ActiveNodeTTL		  int		`json:"ActiveNodeTTL"`	//second
 	VerifyReportMaxNum	  uint64	`json:"VerifyReportMaxNum"`
 	SnApiServerUrl		  string
+	RebuildMaxCc		  int
  }
 
 

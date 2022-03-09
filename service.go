@@ -34,10 +34,10 @@ import (
 	rc "github.com/yottachain/YTDataNode/recover"
 	"github.com/yottachain/YTDataNode/remoteDebug"
 
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/service"
-	"github.com/yottachain/YTDataNode/activeNodeList"
 	yhservice "github.com/yottachain/YTHost/service"
 )
 

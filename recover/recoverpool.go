@@ -1,6 +1,7 @@
 package recover
 
 import (
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/statistics"
 	"time"
@@ -8,7 +9,7 @@ import (
 	//"sync"
 )
 
-var totalCap int32 = 50
+var totalCap = 50
 var realConCurrent uint16 = 1 //can be changed by write-weight and config
 
 func (re *Engine) doRequest(task *Task) {
@@ -46,7 +47,11 @@ func (re *Engine) processRequests() {
 }
 
 func (re *Engine) RunPool() {
-	statistics.RunningCount = statistics.NewWaitCount(totalCap)
+	if config.Gconfig.RebuildMaxCc > 0 {
+		totalCap = config.Gconfig.RebuildMaxCc
+		log.Printf("[recover] max concurrent is %d\n", totalCap)
+	}
+	statistics.RunningCount = statistics.NewWaitCount(int32(totalCap))
 	statistics.DownloadCount = statistics.NewWaitCount(1000)
 
 	go re.processRequests()
