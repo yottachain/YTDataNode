@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/mr-tron/base58"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
+	encrypt "github.com/yottachain/YTHost/encrypt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"time"
@@ -68,9 +71,32 @@ func update() {
 
 	defer res.Body.Close()
 
+	var key string
+	if config.Gconfig.ActiveNodeKey != "" {
+		key = config.Gconfig.ActiveNodeKey
+		log.Printf("[activeNodeList] key is %s\n", key)
+	}else {
+		key = "4XZF1WWmpuLS1KDxpU587Lqc9ETTTKobLioLBBzUDEipU8pKt"
+	}
+
+	bKey, _ := base58.Decode(key)
+	enBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("[activeNodeList] ReadAll res body err:%s\n", err.Error())
+		return
+	}
+
+	log.Printf("[activeNodeList] after encrypt is %s\n", string(enBody))
+
+	sBody, err := encrypt.Decrypt(string(enBody), bKey)
+	log.Printf("[activeNodeList] active node is %s\n", sBody)
+
 	var nl []*Data
-	dc := json.NewDecoder(res.Body)
-	err = dc.Decode(&nl)
+
+	err = json.Unmarshal([]byte(sBody), &nl)
+
+	//dc := json.NewDecoder(res.Body)
+	//err = dc.Decode(&nl)
 	if err != nil {
 		log.Println("[activeNodeList] Decode error:", err.Error())
 		return
