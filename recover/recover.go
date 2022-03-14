@@ -347,8 +347,10 @@ func (re *Engine) dispatchTask(ts *Task) {
 			log.Printf("[recover] execLRCTask exec_task %d, msgId: %d\n", taskC, msgID)
 		}
 
+		startTime := time.Now()
 		res = re.execLRCTask(ts.Data[2:], ts.ExpiredTime, ts.StartTime,
 				ts.TaskLife, ts.SrcNodeID)
+		log.Printf("[recover] execLRCTask use time is %d ms\n", time.Now().Sub(startTime).Milliseconds())
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
@@ -674,8 +676,23 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 
 		res.ID = resID
 
-		log.Printf("[recover]  task=%d stage=%d ExecTask used time %dms\n",
+		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d ms\n",
 			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Milliseconds())
+
+		var downloads = 0
+		sMap := taskActuator.GetdownloadShards()
+		if sMap != nil {
+			for _, v := range sMap.GetMap() {
+				if v.Data != nil {
+					downloads++
+				}
+			}
+
+			if downloads != 0 {
+				log.Printf("[recover] task=%d stage=%d real_downloads=%d\n",
+					binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, downloads)
+			}
+		}
 
 		realHash = srcHash
 

@@ -82,6 +82,7 @@ type LRCTaskActuator struct {
 	needIndexes []int16
 	needDownloadIndexes []int16
 	needDownloadIndexMap  map[int16] struct{}
+	downloadSuccs int
 	isInitHand	bool
 	lck *sync.Mutex		//来自引擎的全局锁
 }
@@ -142,6 +143,7 @@ func (L *LRCTaskActuator) getNeedShardList() ([]int16, error) {
 	//重置一下
 	L.needIndexes = nil
 	L.needDownloadIndexMap = make(map[int16]struct{})
+	L.downloadSuccs = 0
 
 	indexMap := make(map[int16]struct{})
 
@@ -255,6 +257,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 				L.lck.Lock()
 				//删除已经下载成功的 下一轮就下载没有下载成功的
 				delete(L.needDownloadIndexMap, index)
+				L.downloadSuccs++
 
 				if recoverData == nil {
 					recoverData, err = L.recoverShard(shard, index)
@@ -348,15 +351,16 @@ start:
 		}
 
 		startTime := time.Now()
+		L.downloadSuccs = 0	//init at before download
 		recover := L.addDownloadTask(time.Minute*1, indexs...)
 		if recover != nil {
 			return recover, nil
 		}
 
 		useTime := time.Now().Sub(startTime).Milliseconds()
-		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download use time %dms\n",
+		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download_succs %d download_use_time %d ms\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
-			len(indexs), errCount, useTime)
+			len(indexs), errCount, L.downloadSuccs, useTime)
 
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
@@ -703,7 +707,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 		log.Println("[recover] initLRCHandler error:",err.Error())
 		return
 	}
-	log.Printf("[recover] task=%d stage=%d init lrc use times %dms",
+	log.Printf("[recover] task=%d stage=%d init lrc use times %d ms",
 		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	// @TODO 预判
@@ -713,7 +717,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 		log.Println("[recover] preJudge error:", err.Error())
 		return
 	}
-	log.Printf("[recover] task=%d stage=%d preJudge use times %dms",
+	log.Printf("[recover] task=%d stage=%d preJudge use times %d ms",
 		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 	//log.Println("[recover_debugtime] D preJudge taskid=", binary.BigEndian.Uint64(msgID[:8]))
 
@@ -727,7 +731,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	startTime = time.Now()
 	recoverData, err := L.downloadLoop(ctx)
-	log.Printf("[recover] task=%d stage=%d download loop use times %dms",
+	log.Printf("[recover] task=%d stage=%d download loop use times %d ms",
 		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//log.Println("[recover_debugtime] E downloadloop taskid=", base58.Encode(msgID[:]))
@@ -757,7 +761,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 			binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, err.Error())
 		return
 	}
-	log.Printf("[recover] task=%d stage=%d recover verify Shard use times %dms",
+	log.Printf("[recover] task=%d stage=%d recover verify Shard use times %d ms",
 		binary.BigEndian.Uint64(msgID[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
 	//log.Println("[recover_debugtime] G end taskid=", base58.Encode(msgID[:]))
