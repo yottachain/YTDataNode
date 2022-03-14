@@ -89,7 +89,7 @@ func update() {
 	log.Printf("[activeNodeList] after encrypt is %s\n", string(enBody))
 
 	sBody, err := encrypt.Decrypt(string(enBody), bKey)
-	log.Printf("[activeNodeList] active node is %s\n", sBody)
+	log.Printf("[activeNodeList] decrypt active node is %s\n", sBody)
 
 	var nl []*Data
 
