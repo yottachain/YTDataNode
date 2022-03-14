@@ -76,7 +76,7 @@ func update() {
 		key = config.Gconfig.ActiveNodeKey
 		log.Printf("[activeNodeList] key is %s\n", key)
 	}else {
-		key = "4XZF1WWmpuLS1KDxpU587Lqc9ETTTKobLioLBBzUDEipU8pKt"
+		key = "YG6PtW66ekow4YaQ4LvyPYMG8eqHieR15kjYfhLM15n"
 	}
 
 	bKey, _ := base58.Decode(key)
@@ -85,11 +85,14 @@ func update() {
 		log.Printf("[activeNodeList] ReadAll res body err:%s\n", err.Error())
 		return
 	}
-
-	log.Printf("[activeNodeList] after encrypt is %s\n", string(enBody))
+	//log.Printf("[activeNodeList] after encrypt is %s\n", string(enBody))
 
 	sBody, err := encrypt.Decrypt(string(enBody), bKey)
-	log.Printf("[activeNodeList] decrypt active node is %s\n", sBody)
+	if err != nil {
+		log.Printf("[activeNodeList] decrypt err:%s\n", err.Error())
+		return
+	}
+	//log.Printf("[activeNodeList] decrypt active node is %s\n", sBody)
 
 	var nl []*Data
 
