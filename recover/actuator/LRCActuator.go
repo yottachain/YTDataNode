@@ -353,14 +353,14 @@ start:
 		startTime := time.Now()
 		L.downloadSuccs = 0	//init at before download
 		recover := L.addDownloadTask(time.Minute*1, indexs...)
-		if recover != nil {
-			return recover, nil
-		}
-
 		useTime := time.Now().Sub(startTime).Milliseconds()
 		log.Printf("任务:%d 阶段:%d 需要下载的分片数:%d 尝试:%d download_succs %d download_use_time %d ms\n",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage,
 			len(indexs), errCount, L.downloadSuccs, useTime)
+
+		if recover != nil {
+			return recover, nil
+		}
 
 		//log.Println("[recover_debugtime] E3 Wait taskid=", base58.Encode(L.msg.Id[:]),
 		//	"errcount:",errCount)
