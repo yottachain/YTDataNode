@@ -32,7 +32,8 @@ func getUrl() string {
 		url = "http://192.168.1.146:8080/readable_nodes"
 		//url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes_dev"
 	}else if config.IsDev == 3 {
-		url = "https://yottachain-sn-dy-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
+		url = config.Gconfig.ActiveNodeUrl
+		fmt.Printf("Gconfig active node url is %s\n", url)
 	}
 	return url
 }
