@@ -8,7 +8,7 @@ import (
 	"github.com/mr-tron/base58"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
-	encrypt "github.com/yottachain/YTHost/encrypt"
+	"github.com/yottachain/YTHost/encrypt"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -18,16 +18,16 @@ import (
 func getUrl() string {
 	var url = "https://yottachain-sn-intf-cache.oss-cn-beijing.aliyuncs.com/readable_nodes"
 
-	if config.Gconfig.ActiveNodeUrl != nil && len(config.Gconfig.ActiveNodeUrl) > 0 {
-		if config.Gconfig.ActiveNodeUrl[0] != "" {
-			url = config.Gconfig.ActiveNodeUrl[0]
+	if config.Gconfig.ActiveNodeUrlNew != nil && len(config.Gconfig.ActiveNodeUrlNew) > 0 {
+		if config.Gconfig.ActiveNodeUrlNew[0] != "" {
+			url = config.Gconfig.ActiveNodeUrlNew[0]
 		}
 	}
 
 	if config.IsDev > 0 {
-		if config.Gconfig.ActiveNodeUrl != nil && len(config.Gconfig.ActiveNodeUrl) >= config.IsDev {
-			if config.Gconfig.ActiveNodeUrl[config.IsDev-1] != "" {
-				url = config.Gconfig.ActiveNodeUrl[config.IsDev-1]
+		if config.Gconfig.ActiveNodeUrlNew != nil && len(config.Gconfig.ActiveNodeUrlNew) >= config.IsDev {
+			if config.Gconfig.ActiveNodeUrlNew[config.IsDev-1] != "" {
+				url = config.Gconfig.ActiveNodeUrlNew[config.IsDev-1]
 			}
 		}
 	}
