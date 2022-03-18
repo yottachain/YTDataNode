@@ -121,7 +121,7 @@ func (pf *PerformanceStat)TaskPfStat() {
 	log.Printf("[recover] pf stat task=%d exec time %d, download shard nums %d," +
 		" avg download time of per shard %d, variance is %.2f" +
 		" suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
-		pf.TaskId, pf.ExecTimes, dlShards, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
+		pf.TaskId, pf.ExecTimes, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 }
 
 func TimerStatTaskPf() {
@@ -205,7 +205,7 @@ func TimerStatTaskPf() {
 
 			log.Printf("[recover] task nums %d, total download shards is %d, avg download time of per shard %d, " +
 				"variance is %.2f, suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
-				1000, dlShards, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
+				1000, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 		}
 
 		<-time.After(time.Second*1)
