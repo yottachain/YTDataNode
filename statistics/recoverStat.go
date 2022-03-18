@@ -72,7 +72,7 @@ func (pf *PerformanceStat)TaskPfStat() {
 	var variance = float64(0)
 	var powSum = float64(0)
 	var dlSucRate = float64(0)
-	var dlNumsPerShard = 0
+	var dlNumsPerShard = float64(0)
 
 	//求平均每分片下载时间
 	for _, shard := range pf.DlShards {
@@ -101,23 +101,27 @@ func (pf *PerformanceStat)TaskPfStat() {
 			}
 
 			if shard.DlSuc == true {
-				powSum += math.Pow(math.Abs(float64(shard.DlUseTime-dlTimePerShard)), 2)
+				pow := math.Pow(math.Abs(float64(shard.DlUseTime-dlTimePerShard)), 2)
+				log.Printf("[recover] task=%d, shard=%s, download_use_time=%d, download_avg_times=%d pow=%.2f\n",
+					pf.TaskId, shard.Hash, shard.DlUseTime, dlTimePerShard, pow)
+				powSum += pow
 			}
 		}
 	}
 
 	if dlShards != 0 {
 		variance = powSum / float64(dlShards)
-		dlNumsPerShard = dlShardTotalTimes / dlShards
+		dlNumsPerShard = float64(dlShardTotalTimes) / float64(dlShards)
 	}
 
 	if dlShardTotalTimes != 0 {
 		dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
 	}
 
-	log.Printf("[recover] pf stat task=%d exec time %d, avg download time of per shard %d, variance is %.2f" +
-		"suc rate of download per shard %.2f, avg download times of per shard %d\n",
-		pf.TaskId, pf.ExecTimes, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
+	log.Printf("[recover] pf stat task=%d exec time %d, download shard nums %d," +
+		" avg download time of per shard %d, variance is %.2f" +
+		" suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
+		pf.TaskId, pf.ExecTimes, dlShards, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
 }
 
 func TimerStatTaskPf() {
@@ -154,7 +158,7 @@ func TimerStatTaskPf() {
 			var powSumShard = float64(0)
 			var variance = float64(0)
 			var dlSucRate = float64(0)
-			var dlNumsPerShard = 0
+			var dlNumsPerShard = float64(0)
 
 			for _, taskPf := range arrPfstat {
 				//求平均每分片下载时间
@@ -192,7 +196,7 @@ func TimerStatTaskPf() {
 
 			if dlShards != 0 {
 				variance = powSumShard / float64(dlShards)
-				dlNumsPerShard = dlShardTotalTimes / dlShards
+				dlNumsPerShard = float64(dlShardTotalTimes) / float64(dlShards)
 			}
 
 			if dlShardTotalTimes != 0 {
@@ -200,7 +204,7 @@ func TimerStatTaskPf() {
 			}
 
 			log.Printf("[recover] task nums %d, total download shards is %d, avg download time of per shard %d, " +
-				"variance is %.2f, suc rate of download per shard %.2f, avg download times of per shard %d\n",
+				"variance is %.2f, suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
 				1000, dlShards, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
 		}
 
