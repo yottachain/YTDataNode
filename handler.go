@@ -444,7 +444,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("[download_debugtime] C1 Get data Slice fail:", base58.Encode(msg.VHF), pid.Pretty(), err)
 	}
-	log.Println("[download_debugtime] D Get data  VHF=", base58.Encode(msg.VHF))
+	log.Println("[download_debugtime] D Get data VHF=", base58.Encode(msg.VHF))
 	if !msg.VerifyVHF(resData) {
 		log.Println("[download_debugtime] D0 data verify failed: VHF=", base58.Encode(msg.VHF), "resData_Hash=", base58.Encode(message.CaculateHash(resData)))
 		if msg.AllocId != "" {

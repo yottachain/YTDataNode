@@ -139,8 +139,7 @@ func (sn *storageNode) Service() {
         })
     }
 
-    var slcLock sync.Mutex
-	slc := &slicecompare.SliceComparer{sn,slcLock}
+	slc := &slicecompare.SliceComparer{Sn:sn, Lock:sync.Mutex{}}
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
 		log.Println("[slicecompare] recieve compare request!")
 		res, _ := slc.CompareMsgChkHdl(data)

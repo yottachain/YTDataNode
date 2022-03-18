@@ -1,5 +1,15 @@
 package statistics
 
+import (
+	log "github.com/yottachain/YTDataNode/logger"
+	"math"
+	"time"
+)
+
+const SHARD_NUMS  = 164
+
+var PfStatChan = make(chan *PerformanceStat, 2000)
+
 type RecoverStat struct {
 	RebuildTask        uint64 `json:"RebuildTask"`       //下发重建的任务总数
 	ConcurrentTask     uint64 `json:"ConcurrentTask"`    //并发进行的重建任务数
@@ -33,4 +43,167 @@ type RecoverStat struct {
 	RowRebuildCount    uint64
 	ColRebuildCount    uint64
 	GlobalRebuildCount uint64
+}
+
+type ShardPerformanceStat struct {
+	Hash		string
+	DlSuc		bool	//是否下载成功
+	DlTimes 	int		//下载的次数
+	DlStartTime time.Time
+	DlUseTime 	int64	//下载用时
+}
+
+type PerformanceStat struct {
+	TaskId		uint64
+	ExecTimes	int64
+	DlShards	[SHARD_NUMS] *ShardPerformanceStat
+}
+
+
+func (pf *PerformanceStat)TaskPfStat() {
+	if pf == nil {
+		return
+	}
+
+	var dlShards = 0
+	var dlTotalTime = int64(0)
+	var dlShardTotalTimes = 0
+	var dlTimePerShard = int64(0)
+	var variance = float64(0)
+	var powSum = float64(0)
+	var dlSucRate = float64(0)
+	var dlNumsPerShard = 0
+
+	//求平均每分片下载时间
+	for _, shard := range pf.DlShards {
+		if shard == nil {
+			continue
+		}
+
+		if shard.DlSuc == true {
+			dlShards++
+			dlTotalTime += shard.DlUseTime
+			dlShardTotalTimes += shard.DlTimes
+			log.Printf("[recover] task=%d, shard=%s, download_use_time=%d, download_times=%d\n",
+				pf.TaskId, shard.Hash, shard.DlUseTime, shard.DlTimes)
+		}
+	}
+
+	if dlShards != 0 {
+		dlTimePerShard = dlTotalTime / int64(dlShards)
+	}
+
+	//求方差
+	if dlTimePerShard != 0 {
+		for _, shard := range pf.DlShards {
+			if shard == nil {
+				continue
+			}
+
+			if shard.DlSuc == true {
+				powSum += math.Pow(math.Abs(float64(shard.DlUseTime-dlTimePerShard)), 2)
+			}
+		}
+	}
+
+	if dlShards != 0 {
+		variance = powSum / float64(dlShards)
+		dlNumsPerShard = dlShardTotalTimes / dlShards
+	}
+
+	if dlShardTotalTimes != 0 {
+		dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
+	}
+
+	log.Printf("[recover] pf stat task=%d exec time %d, avg download time of per shard %d, variance is %.2f" +
+		"suc rate of download per shard %.2f, avg download times of per shard %d\n",
+		pf.TaskId, pf.ExecTimes, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
+}
+
+func TimerStatTaskPf() {
+	for {
+		if len(PfStatChan) >= 1000 {
+			var timePerTask = int64(0)
+			var allTaskTotalTime = int64(0)
+			var powSumTask = float64(0)
+			var taskVariance = float64(0)
+
+			var arrPfstat []*PerformanceStat
+
+			for i := 0; i < 1000; i++ {
+				pfstat := <- PfStatChan
+				allTaskTotalTime += pfstat.ExecTimes
+				arrPfstat = append(arrPfstat, pfstat)
+			}
+
+			timePerTask = allTaskTotalTime / 1000
+
+			for _, pf := range arrPfstat {
+				powSumTask += math.Pow(math.Abs(float64(pf.ExecTimes-timePerTask)), 2)
+			}
+
+			taskVariance = powSumTask / 1000
+
+			log.Printf("[recover] task nums %d, avg exec time of per task %d, variance is %.2f\n",
+				1000, timePerTask, taskVariance)
+
+			var dlShards = 0
+			var dlTotalTime = int64(0)
+			var dlShardTotalTimes = 0
+			var dlTimePerShard = int64(0)
+			var powSumShard = float64(0)
+			var variance = float64(0)
+			var dlSucRate = float64(0)
+			var dlNumsPerShard = 0
+
+			for _, taskPf := range arrPfstat {
+				//求平均每分片下载时间
+				for _, shard := range taskPf.DlShards {
+					if shard == nil {
+						continue
+					}
+
+					if shard.DlSuc == true {
+						dlShards++
+						dlTotalTime += shard.DlUseTime
+						dlShardTotalTimes += shard.DlTimes
+					}
+				}
+			}
+
+			if dlShards != 0 {
+				dlTimePerShard = dlTotalTime / int64(dlShards)
+			}
+
+			//求方差
+			if dlTimePerShard != 0 {
+				for _, taskPf := range arrPfstat {
+					for _, shard := range taskPf.DlShards {
+						if shard == nil {
+							continue
+						}
+
+						if shard.DlSuc == true {
+							powSumShard += math.Pow(math.Abs(float64(shard.DlUseTime-dlTimePerShard)), 2)
+						}
+					}
+				}
+			}
+
+			if dlShards != 0 {
+				variance = powSumShard / float64(dlShards)
+				dlNumsPerShard = dlShardTotalTimes / dlShards
+			}
+
+			if dlShardTotalTimes != 0 {
+				dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
+			}
+
+			log.Printf("[recover] task nums %d, total download shards is %d, avg download time of per shard %d, " +
+				"variance is %.2f, suc rate of download per shard %.2f, avg download times of per shard %d\n",
+				1000, dlShards, dlTimePerShard, variance, dlSucRate, dlNumsPerShard)
+		}
+
+		<-time.After(time.Second*1)
+	}
 }

@@ -78,8 +78,8 @@ func (gc *GConfig) Get() error {
 	gurl, ok := os.LookupEnv("gconfig_url")
 	if ok {
 		update_url = gurl
-		log.Println("[gurl]", update_url)
 	}
+	log.Println("[gurl] GConfig url:", update_url)
 
 	request, err := http.NewRequest("GET", update_url, nil)
 	if err != nil {
@@ -211,7 +211,7 @@ var Gconfig = NewGConfig()
 func init() {
 	if isDev := os.Getenv("ytfs_dev"); isDev != "" {
 		update_url = "http://dnapi.yottachain.net/config/dnconfig_dev.json"
-		//log.Println("dev mode")
+		log.Println("update_url:", update_url)
 		if isDev == "1" {
 			IsDev = 1
 		}

@@ -85,6 +85,7 @@ type LRCTaskActuator struct {
 	downloadSuccs int
 	isInitHand	bool
 	lck *sync.Mutex		//来自引擎的全局锁
+	pfStat *statistics.PerformanceStat
 }
 
 /**
@@ -209,6 +210,16 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask start taskid=",
 			binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
 			"hash=", base58.Encode(hash))
+		if nil == L.pfStat.DlShards[shardIndex] {
+			L.pfStat.DlShards[shardIndex] = &statistics.ShardPerformanceStat{
+				Hash:base58.Encode(hash),
+				DlSuc:false}
+		}
+
+		//index 不应该>=164
+		L.pfStat.DlShards[shardIndex].DlStartTime = time.Now()
+		L.pfStat.DlShards[shardIndex].DlTimes++
+
 		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
 			binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 		if err != nil {
@@ -254,6 +265,9 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			})
 
 			if shard != nil {
+				L.pfStat.DlShards[index].DlSuc = true
+				L.pfStat.DlShards[index].DlUseTime = time.Now().Sub(L.pfStat.DlShards[index].DlStartTime).Milliseconds()
+
 				L.lck.Lock()
 				//删除已经下载成功的 下一轮就下载没有下载成功的
 				delete(L.needDownloadIndexMap, index)
@@ -790,6 +804,10 @@ func (L *LRCTaskActuator) isTimeOut() bool {
 
 func (L *LRCTaskActuator) GetdownloadShards() *shardsMap {
 	return L.shards
+}
+
+func (L *LRCTaskActuator) SetPfStat(pfstat *statistics.PerformanceStat) {
+	L.pfStat = pfstat
 }
 
 func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {

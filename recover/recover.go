@@ -348,9 +348,19 @@ func (re *Engine) dispatchTask(ts *Task) {
 		}
 
 		startTime := time.Now()
+		taskPf := new(statistics.PerformanceStat)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpiredTime, ts.StartTime,
-				ts.TaskLife, ts.SrcNodeID)
-		log.Printf("[recover] execLRCTask use time is %d ms\n", time.Now().Sub(startTime).Milliseconds())
+				ts.TaskLife, ts.SrcNodeID, taskPf)
+		useTime := time.Now().Sub(startTime).Milliseconds()
+		log.Printf("[recover] execLRCTask use time is %d ms\n", useTime)
+		taskPf.ExecTimes = useTime
+		taskPf.TaskPfStat()
+
+		select {
+		case statistics.PfStatChan <- taskPf:
+		default:
+			log.Printf("[recover] task=%d performance stat info is discarded\n", taskPf.TaskId)
+		}
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
@@ -624,13 +634,17 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @return *TaskMsgResult 任务执行结果
  */
 func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time,
-			taskLife int32, srcNodeid int32) (res *TaskMsgResult) {
+			taskLife int32, srcNodeid int32, taskPf *statistics.PerformanceStat) (res *TaskMsgResult) {
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
 
 	res.ExpiredTime = expired
 	res.RES = 1
+
+	//taskPf := new(statistics.PerformanceStat)
 	taskActuator := actuator.New(re.DefaultDownloader)
+	taskActuator.SetPfStat(taskPf)
+
 	defer taskActuator.Free()
 
 	var recoverData []byte
@@ -673,9 +687,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			msgData,
 			opts,
 		)
-
 		res.ID = resID
-
 		log.Printf("[recover]  task=%d stage=%d ExecTask used time %d ms\n",
 			binary.BigEndian.Uint64(res.ID[:8]), opts.Stage, time.Now().Sub(st).Milliseconds())
 
@@ -716,6 +728,10 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 			}
 			break
 		}
+	}
+
+	if taskPf != nil {
+		taskPf.TaskId = binary.BigEndian.Uint64(res.ID[:8])
 	}
 
 	if recoverData == nil {

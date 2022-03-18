@@ -57,6 +57,7 @@ func (re *Engine) processRequests() {
 func (re *Engine) RunPool() {
 	statistics.RunningCount = statistics.NewWaitCount(int32(totalCap))
 	statistics.DownloadCount = statistics.NewWaitCount(1000)
+	go statistics.TimerStatTaskPf()
 
 	go re.processRequests()
 
