@@ -102,7 +102,7 @@ func (pf *PerformanceStat)TaskPfStat() {
 
 			if shard.DlSuc == true {
 				pow := math.Pow(math.Abs(float64(shard.DlUseTime-dlTimePerShard)), 2)
-				log.Printf("[recover] task=%d, shard=%s, download_use_time=%d, download_avg_times=%d pow=%.2f\n",
+				log.Printf("[recover] task=%d, shard=%s, download_use_time=%d, download_avg_time=%d pow=%.2f\n",
 					pf.TaskId, shard.Hash, shard.DlUseTime, dlTimePerShard, pow)
 				powSum += pow
 			}
@@ -118,9 +118,9 @@ func (pf *PerformanceStat)TaskPfStat() {
 		dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
 	}
 
-	log.Printf("[recover] pf stat task=%d exec time %d, download shard nums %d," +
-		" avg download time of per shard %d, variance is %.2f" +
-		" suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
+	log.Printf("[recover] pf_stat task=%d exec_time=%d download_shard_nums=%d" +
+		" avg_download_time_of_per_shard=%d variance_is=%.2f" +
+		" suc_rate_of_download_per_shard=%.2f, avg_download_times_of_per_shard=%.2f\n",
 		pf.TaskId, pf.ExecTimes, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 }
 
@@ -148,8 +148,8 @@ func TimerStatTaskPf() {
 
 			taskVariance = powSumTask / 1000
 
-			log.Printf("[recover] task nums %d, avg exec time of per task %d, variance is %.2f\n",
-				1000, timePerTask, taskVariance)
+			log.Printf("[recover] task_nums=%d, avg_exec_time_of_per_task=%d, variance_is=%.2f\n",
+				1000, timePerTask, math.Sqrt(taskVariance))
 
 			var dlShards = 0
 			var dlTotalTime = int64(0)
@@ -203,8 +203,8 @@ func TimerStatTaskPf() {
 				dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
 			}
 
-			log.Printf("[recover] task nums %d, total download shards is %d, avg download time of per shard %d, " +
-				"variance is %.2f, suc rate of download per shard %.2f, avg download times of per shard %.2f\n",
+			log.Printf("[recover] task_nums=%d total_download_shards_is=%d avg_download_time_of_per_shard=%d " +
+				"variance_is=%.2f suc_rate_of_download_per_shard=%.2f avg_download_times_of_per_shard=%.2f\n",
 				1000, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 		}
 
