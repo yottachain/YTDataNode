@@ -69,6 +69,7 @@ func (pf *PerformanceStat)TaskPfStat() {
 	var dlTotalTime = int64(0)
 	var dlShardTotalTimes = 0
 	var dlTimePerShard = int64(0)
+	var dlMaxUseTime = int64(0)
 	var variance = float64(0)
 	var powSum = float64(0)
 	var dlSucRate = float64(0)
@@ -84,6 +85,9 @@ func (pf *PerformanceStat)TaskPfStat() {
 			dlShards++
 			dlTotalTime += shard.DlUseTime
 			dlShardTotalTimes += shard.DlTimes
+			if shard.DlUseTime > dlMaxUseTime {
+				dlMaxUseTime = shard.DlUseTime
+			}
 			log.Printf("[recover] task=%d, shard=%s, download_use_time=%d, download_times=%d\n",
 				pf.TaskId, shard.Hash, shard.DlUseTime, shard.DlTimes)
 		}
@@ -119,9 +123,10 @@ func (pf *PerformanceStat)TaskPfStat() {
 	}
 
 	log.Printf("[recover] pf_stat task=%d exec_time=%d download_shard_nums=%d" +
-		" avg_download_time_of_per_shard=%d variance_is=%.2f" +
+		" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d variance_is=%.2f" +
 		" suc_rate_of_download_per_shard=%.2f, avg_download_times_of_per_shard=%.2f\n",
-		pf.TaskId, pf.ExecTimes, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
+		pf.TaskId, pf.ExecTimes, dlShards, dlMaxUseTime, dlTimePerShard,
+		math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 }
 
 func TimerStatTaskPf() {
@@ -155,6 +160,7 @@ func TimerStatTaskPf() {
 			var dlTotalTime = int64(0)
 			var dlShardTotalTimes = 0
 			var dlTimePerShard = int64(0)
+			var dlMaxUseTime = int64(0)
 			var powSumShard = float64(0)
 			var variance = float64(0)
 			var dlSucRate = float64(0)
@@ -171,6 +177,9 @@ func TimerStatTaskPf() {
 						dlShards++
 						dlTotalTime += shard.DlUseTime
 						dlShardTotalTimes += shard.DlTimes
+						if shard.DlUseTime > dlMaxUseTime {
+							dlMaxUseTime = shard.DlUseTime
+						}
 					}
 				}
 			}
@@ -203,9 +212,10 @@ func TimerStatTaskPf() {
 				dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
 			}
 
-			log.Printf("[recover] task_nums=%d total_download_shards_is=%d avg_download_time_of_per_shard=%d " +
-				"variance_is=%.2f suc_rate_of_download_per_shard=%.2f avg_download_times_of_per_shard=%.2f\n",
-				1000, dlShards, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
+			log.Printf("[recover] task_nums=%d total_download_shards_is=%d " +
+				" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d" +
+				" variance_is=%.2f suc_rate_of_download_per_shard=%.2f avg_download_times_of_per_shard=%.2f\n",
+				1000, dlShards, dlMaxUseTime, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 		}
 
 		<-time.After(time.Second*1)
