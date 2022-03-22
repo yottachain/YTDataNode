@@ -633,7 +633,7 @@ func main () {
     RootCommand.AddCommand(checkCmd)
     RootCommand.AddCommand(daemonCmd)
     RootCommand.AddCommand(truncatCmd)
-    //RootCommand.AddCommand(clsHdbCmd)
+    RootCommand.AddCommand(clsHdbCmd)
     RootCommand.AddCommand(configCmd)
     configCmd.AddCommand(configCheck)
 
