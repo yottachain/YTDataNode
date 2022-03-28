@@ -111,7 +111,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 			rq.ytres.seq = wh.seq
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
-			hashkey[i] = rq.Key[:]
+			hashkey[i] = rq.Key.Hsh[:]
 			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
 			if err != nil{
 				log.Println("[slicecompare] put to compare_db error:", err.Error(),
@@ -359,10 +359,14 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	}
 
 	// 3. 将数据写入YTFS-disk
-	var indexKey [16]byte
+	var indexKey common.Hash
 	copy(indexKey[:], msg.VHF[0:16])
+	var IKey common.IndexTableKey
+	IKey.Hsh = indexKey
+	IKey.Id = 0
+
 	putStartTime := time.Now()
-	ytres, err = wh.push(ctx, indexKey, msg.DAT)
+	ytres, err = wh.push(ctx, IKey, msg.DAT)
 	if err != nil {
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 			return 102, ytres
@@ -405,7 +409,8 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	var resData []byte
 	res := message.DownloadShardResponse{}
 
-	var indexKey [16]byte
+	//var indexKey [16]byte
+	var indexKey common.IndexTableKey
 	err = proto.Unmarshal(msgData, &msg)
 	if err != nil {
 		fmt.Println("Unmarshal error:", err)
@@ -424,7 +429,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 		if k >= 16 {
 			break
 		}
-		indexKey[k] = v
+		indexKey.Hsh[k] = v
 	}
 
 	log.Println("[download_debugtime] B get vhf:", base58.Encode(msg.VHF))
