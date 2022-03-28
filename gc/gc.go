@@ -184,8 +184,8 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
         return err
     }
 
-    copy(key[:],k)
-    fmt.Println("[gcdel] GcHashProcess key=",base58.Encode(key[:]))
+    copy(key.Hsh[:],k)
+    fmt.Println("[gcdel] GcHashProcess key=",base58.Encode(key.Hsh[:]))
     err = gc.Sn.YTFS().GcProcess(key)
     if err != nil{
         log.Println("[gcdel] gc error:",err)

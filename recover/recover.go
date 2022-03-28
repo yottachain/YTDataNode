@@ -118,7 +118,7 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 	log.Printf("[recover:%s]datas recover success\n", base58.Encode(description.Id))
 	var vhf [16]byte
 	copy(vhf[:], description.Hashs[description.RecoverId])
-	_, err = re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(vhf): shards[int(description.RecoverId)]})
+	_, err = re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey{Hsh:vhf, Id:0}: shards[int(description.RecoverId)]})
 	if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 		log.Printf("[recover:%s]YTFS Put error %s\n", base58.Encode(description.Id), err.Error())
 		return err
@@ -617,7 +617,7 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
 	var key [common.HashLength]byte
 	copy(key[:], hash)
 
-	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey(key): recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
+	if _, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey{Hsh:key, Id:0}: recoverData}); err != nil && err.Error() != "YTFS: hash key conflict happens" {
 		statistics.DefaultRebuildCount.IncFailRbd()
 		return fmt.Errorf("[recover]LRC recover shard saved failed%s\n", err)
 	}
@@ -766,7 +766,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	hash := hashBytes[:]
 	var key [common.HashLength]byte
 	copy(key[:], hash)
-	_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{key : recoverData})
+	_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey{Hsh:key, Id:0}: recoverData})
 	if err != nil {
 		log.Printf("[recover] fail task=%d src node id %d recover hash key %s, source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
@@ -834,7 +834,7 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 			log.Printf("[recover:%s] execCPTask--, get shard DataHash %s shard len %d, remote miner NodeId:%s Addr:%s\n",
 				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
 
-			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
+			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey{Hsh:vhf, Id:0}:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
 				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
