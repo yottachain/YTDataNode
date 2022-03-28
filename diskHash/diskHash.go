@@ -23,7 +23,7 @@ func randShard(n int) map[common.IndexTableKey][]byte {
 		buf := make([]byte, 16*1024)
 		rand.Read(buf)
 		key := md5.Sum(buf)
-		res[key] = buf
+		res[common.IndexTableKey{Hsh:key, Id:0}] = buf
 		log.Println("[diskHash] write_base58_key:",base58.Encode(key[:]))
 	}
 	return res

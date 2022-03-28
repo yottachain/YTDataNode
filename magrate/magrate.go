@@ -117,7 +117,7 @@ func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	ytfs.YtfsDB().TravelDB(func(key, value []byte) error {
 		dataPos := binary.LittleEndian.Uint32(value)
 		curPos := ytfs.PosIdx()
-		Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(key))
+		Hkey := ydcommon.BytesToHash(key)
 		base58Key := base58.Encode(key)
 		//in sn database? yes magrate, else del
 		if _, ok := snShardMap[base58Key]; ok {
@@ -125,14 +125,14 @@ func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 				base58Key, dataPos, curPos)
 
 			if uint64(dataPos) > curPos {
-				shard, err := ytfs.Get(Hkey)
+				shard, err := ytfs.Get(ydcommon.IndexTableKey{Hsh:Hkey, Id:0})
 				if err != nil {
 					log.Printf("[magrate] get hash err:%s, key:%s\n",
 						err.Error(), base58.Encode(key))
 					return err
 				}
 
-				kvMap :=  map[ydcommon.IndexTableKey][]byte{Hkey:shard}
+				kvMap :=  map[ydcommon.IndexTableKey][]byte{ydcommon.IndexTableKey{Hsh:Hkey, Id:0}:shard}
 				_, err = ytfs.BatchPutNormal(kvMap)
 				//err = ytfs.Put(Hkey, shard)
 				hash := md5.Sum(shard)
@@ -156,7 +156,7 @@ func (mr *Mr)RunRocksdb(ytfs *ytfs.YTFS, minerId uint32) error {
 				log.Printf("[magrate] del key %s\n", base58Key)
 			}
 			//log.Printf("[magrate] del key %s\n", base58Key)
-			_ = ytfs.YtfsDB().Delete(Hkey)
+			_ = ytfs.YtfsDB().Delete(ydcommon.IndexTableKey{Hsh:Hkey, Id:0})
 		}
 		return nil
 	})
@@ -224,8 +224,8 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 	batchIndexes := make([]ydcommon.IndexItem, len(snShardMap))
 	i := 0
 	for key := range snShardMap {
-		Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(base58.Decode(key)))
-		shard, err := ytfs.Get(Hkey)
+		Hkey := ydcommon.BytesToHash(base58.Decode(key))
+		shard, err := ytfs.Get(ydcommon.IndexTableKey{Hsh:Hkey, Id:0})
 		if err != nil {
 			log.Printf("[magrate] get shard %s fail\n", key)
 			continue
@@ -236,7 +236,7 @@ func (mr *Mr)RunIndexdb(ytfs *ytfs.YTFS, minerId uint32) error {
 		}
 
 		batchIndexes[i] = ydcommon.IndexItem{
-			Hash:      Hkey,
+			Hash:      ydcommon.IndexTableKey{Hsh:Hkey, Id:0},
 			OffsetIdx: ydcommon.IndexTableValue(curWritePos)}
 		i++
 		curWritePos++
