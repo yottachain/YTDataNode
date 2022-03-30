@@ -34,7 +34,6 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "YTFS storage node running daemon",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if isDaemon {
 			commander.DaemonWithBackground()
 		} else {
