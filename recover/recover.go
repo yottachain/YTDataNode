@@ -147,15 +147,18 @@ func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs
 
 	if err != nil {
 		if strings.Contains(err.Error(), "Get data Slice fail") {
-			log.Printf("[recover:%d] failShard[%v] get shard [%s] error[%d] %s addr %v\n", base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+			log.Printf("[recover:%s]  error %s addr %v\n",
+				base58.Encode(hash), err.Error(), addrs)
 		} else {
-			log.Printf("[recover:%d] failSendShard[%v] get shard [%s] error[%d] %s addr %v\n",  base64.StdEncoding.EncodeToString(hash), *n, err.Error(), addrs)
+			log.Printf("[recover:%s]  error %s addr %v\n",
+				base58.Encode(hash), err.Error(), addrs)
 		}
 		return nil, err
 	}
 
 	if len(shardBuf) < 3 {
-		log.Printf("[recover:%d] error: shard empty!! failSendShard[%v] get shard [%s] error[%d] addr %v\n",taskID, base64.StdEncoding.EncodeToString(hash), *n, addrs)
+		log.Printf("[recover:%s] error: shard empty! addr %v\n",
+			base58.Encode(hash), addrs)
 		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
 	}
 
@@ -816,12 +819,12 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 
 	result.ID = msg.Id
 	result.RES = 1
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	var number int
+	var number int	//这他妈是干啥的？？？？？？服了
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
+		cancel()
 
 		// 如果没有发生错误，分片下载成功，就存储分片
 		if err == nil {
@@ -836,16 +839,20 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
-			if err != nil && (err.Error() != "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value") {
-				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n", base58.Encode(vhf[:]), err.Error())
+			if err != nil && (err.Error() != "YTFS: hash key conflict happens" ||
+				err.Error() == "YTFS: conflict hash value") {
+				log.Printf("[recover:%s] execCPTask, YTFS Put error %s\n",
+					base58.Encode(vhf[:]), err.Error())
 				result.RES = 1
 			} else {
-				log.Printf("[recover:%s] execCPTask success\n", base58.Encode(msg.DataHash))
+				log.Printf("[recover:%s] execCPTask success\n",
+					base58.Encode(msg.DataHash))
 				result.RES = 0
 				break
 			}
 		}else{
-			log.Printf("[recover:%s] execCPTask error %s\n", base58.Encode(msg.DataHash), err.Error())
+			log.Printf("[recover:%s] execCPTask error %s\n",
+				base58.Encode(msg.DataHash), err.Error())
 		}
 	}
 	return &result

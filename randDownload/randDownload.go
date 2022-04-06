@@ -386,8 +386,8 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 		wg := sync.WaitGroup{}
 
 		start := time.Now()
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 
 			var Duration = 3600
@@ -404,8 +404,8 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 			}
 		}()
 
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 
 			var Duration = 3600

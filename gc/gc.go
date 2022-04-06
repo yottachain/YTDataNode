@@ -178,7 +178,7 @@ func (gc *GcWorker)GcHashProcess(ent []byte) error{
     var err error
     var key ydcommon.IndexTableKey
     entstr := string(ent)
-    k,err := base58.Decode(entstr)
+    k, err := base58.Decode(entstr)
     if err != nil{
         fmt.Println("[gcdel] decode hashstr error:",err)
         return err

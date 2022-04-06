@@ -115,7 +115,7 @@ func (wh *WriteHandler) batchWrite(number int) {
 			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
 			if err != nil{
 				log.Println("[slicecompare] put to compare_db error:", err.Error(),
-					"compare_seq:",wh.seq, "hash:", base58.Encode(hashkey[i]))
+					"compare_seq:", wh.seq, "hash:", base58.Encode(hashkey[i]))
 			    goto OUT
 			}
 		default:
