@@ -24,6 +24,8 @@ import (
 	"time"
 )
 
+const dlTryCount  = 6
+
 type Shard struct {
 	Index int16
 	Data  []byte
@@ -220,14 +222,21 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		L.pfStat.DlShards[shardIndex].DlStartTime = time.Now()
 		L.pfStat.DlShards[shardIndex].DlTimes++
 
-		d, err := L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
-			binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
-		if err != nil {
+		var d shardDownloader.DownloaderWait
+
+		if activeNodeList.HasNodeid(addrInfo.NodeId) {
+			d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+		}else if activeNodeList.HasNodeid(addrInfo.NodeId2) {
+			d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
+				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+		}else {
 			log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask fail taskid=",
 				binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
-				"hash=", base58.Encode(hash), "err=", err.Error())
+				"hash=", base58.Encode(hash), "err=all node offline")
 			continue
 		}
+
 
 		log.Println("[recover_debugtime]  E2_1 addDownloadTask_addTask end taskid=",
 			binary.BigEndian.Uint64(L.msg.Id[:8]),"stage=", L.opts.Stage,  "addrinfo=",addrInfo,
@@ -328,11 +337,11 @@ start:
 	if L.isTimeOut() {
 		return nil, fmt.Errorf("lrc task time out")
 	}
-	if errCount > 5 {
+	errCount++
+	if errCount > dlTryCount {
 		//Although download shards no enough, also into rebuild process
 		return nil, fmt.Errorf("try download times too many")
 	}
-	errCount++
 
 	//log.Println("[recover_debugtime] E0  taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]),"errcount:",errCount)
 
@@ -421,49 +430,26 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 			binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, err.Error())
 		return false
 	}
+
 	log.Printf("[recover] 任务 %d 阶段 %d get Need Shard List use time %d\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
 
-	//_, stage, _ := L.lrcHandler.GetHandleParam(L.lrcHandler.Handle)
-
-	//var onLineShardIndexes = make([]int16, 0)
 	startTime = time.Now()
 	for _, index := range indexes {
-		if ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId); !ok {
+		ok := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId)
+		ok1 := activeNodeList.HasNodeid(L.msg.Locations[index].NodeId2)
+		if  !ok && !ok1 {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
 
-			log.Printf("[recover] 任务 %d 阶段 %d offline miner node_id %s adds %v",
+			log.Printf("[recover] 任务 %d 阶段 %d offline miner (1) node_id %s adds %v (2) node_id %s adds %v",
 				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.msg.Locations[index].NodeId,
-				L.msg.Locations[index].Addrs)
-			//不在线的矿机就不下载了
+				L.msg.Locations[index].Addrs, L.msg.Locations[index].NodeId2, L.msg.Locations[index].Addrs2)
+			//不在线的矿机就不下载了, 两个地址都不在线
 			delete(L.needDownloadIndexMap, index)
-		} else {
-			// 如果是行列校验，所需分片必须都在线
-			//if L.opts.Stage < 3 {
-
-			//无论如何都进入下一轮
-			//if stage < 3 {
-			//	fmt.Printf("任务 %d 阶段 %d real stage %d 离线节点%v\n",
-			//		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, stage, L.msg.Locations[index].Addrs)
-			//	return false
-			//}
 		}
 	}
 	log.Printf("[recover] 任务 %d 阶段 %d online miner judge use time %d\n",
 		binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, time.Now().Sub(startTime).Milliseconds())
-
-	//// 如果是全局校验填充假数据，尝试校验
-	//if L.opts.Stage >= 3 {
-	//	for _, index := range onLineShardIndexes {
-	//		// 填充假数据
-	//		L.lrcHandler.ShardExist[index] = 1
-	//
-	//		if status, _ := L.lrcHandler.AddShardData(L.lrcHandler.Handle, TestData[index][:]); status > 0 {
-	//			return true
-	//		}
-	//	}
-	//	return false
-	//}
 
 	return true
 }

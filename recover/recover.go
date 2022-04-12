@@ -644,7 +644,6 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	res.ExpiredTime = expired
 	res.RES = 1
 
-	//taskPf := new(statistics.PerformanceStat)
 	taskActuator := actuator.New(re.DefaultDownloader)
 	taskActuator.SetPfStat(taskPf)
 
