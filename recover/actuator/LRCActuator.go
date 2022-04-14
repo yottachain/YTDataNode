@@ -228,9 +228,15 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		if activeNodeList.HasNodeid(addrInfo.NodeId) {
 			d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
 				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+			log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
+				"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+				shardIndex, addrInfo.NodeId, addrInfo.Addrs)
 		}else if activeNodeList.HasNodeid(addrInfo.NodeId2) {
 			d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
 				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+			log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
+				"index %d use node(2) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+				shardIndex, addrInfo.NodeId2, addrInfo.Addrs2)
 		}else {
 			log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask fail taskid=",
 				binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
@@ -442,11 +448,23 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		if  !ok && !ok1 {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
 
-			log.Printf("[recover] 任务 %d 阶段 %d offline miner (1) node_id %s adds %v (2) node_id %s adds %v",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, L.msg.Locations[index].NodeId,
+			log.Printf("[recover] 任务 %d 阶段 %d offline miner index %d (1) node_id %s adds %v (2) node_id %s adds %v",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId,
 				L.msg.Locations[index].Addrs, L.msg.Locations[index].NodeId2, L.msg.Locations[index].Addrs2)
 			//不在线的矿机就不下载了, 两个地址都不在线
 			delete(L.needDownloadIndexMap, index)
+		}
+
+		if ok {
+			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (1) node_id %s adds %v",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId,
+				L.msg.Locations[index].Addrs)
+		}
+
+		if ok1 {
+			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (2) node_id %s adds %v",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId2,
+				L.msg.Locations[index].Addrs2)
 		}
 	}
 	log.Printf("[recover] 任务 %d 阶段 %d online miner judge use time %d\n",
