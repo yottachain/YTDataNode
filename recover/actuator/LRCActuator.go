@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/mr-tron/base58/base58"
 	"github.com/yottachain/YTDataNode/activeNodeList"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
@@ -683,7 +684,7 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 			binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
 
 	// @TODO 如果是备份恢复阶段，直接执行备份恢复
-	if L.opts.Stage == 0 {
+	if L.opts.Stage == 0 && !config.Gconfig.Lrc2BackUpOff {
 		data, err = L.backupTask()
 		//log.Println("[recover_debugtime] B end taskid=",
 		//	binary.BigEndian.Uint64(msgID[:8]))
