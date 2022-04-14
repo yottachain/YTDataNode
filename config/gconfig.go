@@ -61,6 +61,7 @@ type Gcfg struct {
 	VerifyReportMaxNum	  uint64	`json:"VerifyReportMaxNum"`
 	SnApiServerUrl		  string
 	RebuildMaxCc		  int
+	Lrc2BackUpOff    	  bool
  }
 
 
