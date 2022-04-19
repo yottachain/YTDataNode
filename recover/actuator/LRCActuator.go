@@ -89,6 +89,7 @@ type LRCTaskActuator struct {
 	isInitHand	bool
 	lck *sync.Mutex		//来自引擎的全局锁
 	pfStat *statistics.PerformanceStat
+	hashAddrMap  map[string] *[2]int	//下载分片hash对应的两个地址使用计数
 }
 
 /**
@@ -206,6 +207,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 	for _, shardIndex := range indexes {
 		addrInfo := L.msg.Locations[shardIndex]
 		hash := L.msg.Hashs[shardIndex]
+		strHash := base58.Encode(hash)
 
 		//下载分片计数加一
 		statistics.DefaultRebuildCount.IncShardForRbd()
@@ -215,7 +217,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 			"hash=", base58.Encode(hash))
 		if nil == L.pfStat.DlShards[shardIndex] {
 			L.pfStat.DlShards[shardIndex] = &statistics.ShardPerformanceStat{
-				Hash:base58.Encode(hash),
+				Hash:strHash,
 				DlSuc:false}
 		}
 
@@ -226,17 +228,37 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 		var d shardDownloader.DownloaderWait
 
 		if activeNodeList.HasNodeid(addrInfo.NodeId) {
-			d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
-				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
-			log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
-				"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
-				shardIndex, addrInfo.NodeId, addrInfo.Addrs)
+			if L.hashAddrMap[strHash][0]/2 > 0 && L.hashAddrMap[strHash][1] < L.hashAddrMap[strHash][0] {
+				if activeNodeList.HasNodeid(addrInfo.NodeId2) {
+					d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
+						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+					log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
+						"index %d use node(2) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+						shardIndex, addrInfo.NodeId2, addrInfo.Addrs2)
+					L.hashAddrMap[strHash][1]++
+				}else {
+					d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+					log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
+						"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+						shardIndex, addrInfo.NodeId, addrInfo.Addrs)
+					L.hashAddrMap[strHash][0]++
+				}
+			}else {
+				d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+					binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
+				log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
+					"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
+					shardIndex, addrInfo.NodeId, addrInfo.Addrs)
+				L.hashAddrMap[strHash][0]++
+			}
 		}else if activeNodeList.HasNodeid(addrInfo.NodeId2) {
 			d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
 				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 			log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d " +
 				"index %d use node(2) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
 				shardIndex, addrInfo.NodeId2, addrInfo.Addrs2)
+			L.hashAddrMap[strHash][1]++
 		}else {
 			log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask fail taskid=",
 				binary.BigEndian.Uint64(L.msg.Id[:8]), "stage=", L.opts.Stage, "addrinfo=", addrInfo,
@@ -698,6 +720,13 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 	L.needDownloadIndexes = nil
 	L.needDownloadIndexMap = nil
 
+	//初始化一下
+	for _, v := range L.msg.Hashs {
+		if _, ok := L.hashAddrMap[base58.Encode(v)]; !ok {
+			L.hashAddrMap[base58.Encode(v)] = new([2]int)
+		}
+	}
+
 	log.Println("[recover_debugtime] A  ExecTask start taskid=",
 			binary.BigEndian.Uint64(msgID[:8]), "stage:", opts.Stage)
 
@@ -821,5 +850,6 @@ func New(downloader shardDownloader.ShardDownloader) *LRCTaskActuator {
 		lrcHandler: nil,
 		msg:        message.TaskDescription{},
 		lck: 		&sync.Mutex{},
+		hashAddrMap: make(map[string] *[2]int, 0),
 	}
 }
