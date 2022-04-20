@@ -414,7 +414,7 @@ func deleteHdbKeys() {
     }
 
     vfer.TravelHDB(func(key, value []byte) error {
-        Hkey := ydcommon.IndexTableKey(ydcommon.BytesToHash(key))
+        Hkey := ydcommon.BytesToHash(key)
         _ = vfer.Hdb.DB.Delete(vfer.Hdb.Wo, Hkey[:])
         return nil
     })
