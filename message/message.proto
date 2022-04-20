@@ -24,6 +24,7 @@ message UploadShardRequest  {
    bytes VHF=6;
    bytes USERSIGN=7;
    string allocId=8;
+   int64 HASHID=9;
 }
 
 

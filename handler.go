@@ -363,7 +363,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	copy(indexKey[:], msg.VHF[0:16])
 	var IKey common.IndexTableKey
 	IKey.Hsh = indexKey
-	IKey.Id = 0
+	IKey.Id = common.HashId(msg.HASHID)
 
 	putStartTime := time.Now()
 	ytres, err = wh.push(ctx, IKey, msg.DAT)
