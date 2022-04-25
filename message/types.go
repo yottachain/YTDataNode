@@ -18,8 +18,8 @@ const (
 	MsgIDSliceCompareResp      msgType = 0x1819
 	MsgIDSliceCompareStatusReq msgType = 0x1820
 	MsgIDSliceCompareStatusResp msgType = 0x1821
-	MsgIDCpDelStatusfileReq    msgType =0x1822
-	MsgIDCpDelStatusfileResp   msgType =0x1823
+	MsgIDCpDelStatusfileReq    msgType = 0x1822
+	MsgIDCpDelStatusfileResp   msgType = 0x1823
 	MsgIDNodeRegReq            msgType = 0x12aa
 	MsgIDNodeRegResp           msgType = 0xfb92
 	MsgIDStatusRepReq          msgType = 0xc9a9

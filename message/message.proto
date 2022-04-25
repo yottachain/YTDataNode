@@ -213,6 +213,8 @@ message TaskDescriptionCP{
 message P2PLocation{
     string nodeId=1;
     repeated string addrs=2;
+    string nodeId2=3;
+    repeated string addrs2=4;
 }
 
 //矿机收到任务请回复VoidResp

@@ -24,7 +24,7 @@ func (re *Engine) processRequests() {
 	var  n  uint64
 	var  m  uint64
 	var updateTime = time.Time{}
-	for{
+	for {
 		for {
 			requestT := re.waitQueue.GetTask()
 			k++
