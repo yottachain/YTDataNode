@@ -415,7 +415,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 			BKey := make([]byte, 8)
 
 			hash := base58.Encode(seqtohash.Hash)
-			data, err := sc.Sn.YTFS().Get(ydcommon.IndexTableKey(ydcommon.BytesToHash(seqtohash.Hash)))
+			data, err := sc.Sn.YTFS().Get(ydcommon.IndexTableKey{Hsh:ydcommon.BytesToHash(seqtohash.Hash), Id:0})
 			if err != nil {
 				log.Printf("[slicecompare] task=%s error hash %s get data from disk fail %s\n",
 					msg.TaskId, hash, err.Error())
