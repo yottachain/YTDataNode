@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	//"log"
 	"os"
@@ -113,8 +114,9 @@ func (wh *WriteHandler) batchWrite(number int) {
 			rqs[i] = rq
 			hashkey[i] = rq.Key.Hsh[:]
 
-			log.Printf("[test] recive shard %s  shard id %d\n", base58.Encode(hashkey[i]), int64(rq.Key.Id))
-			
+			log.Printf("[test] recive shard %s  shard id %d\n",
+				base64.StdEncoding.EncodeToString(hashkey[i]), int64(rq.Key.Id))
+
 			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
 			if err != nil{
 				log.Println("[slicecompare] put to compare_db error:", err.Error(),
