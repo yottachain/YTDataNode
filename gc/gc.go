@@ -177,15 +177,15 @@ func (gc *GcWorker) GcTestSysSpace(msg message.GcReq) error {
 func (gc *GcWorker)GcHashProcess(ent []byte) error{
     var err error
     var key ydcommon.IndexTableKey
-    entstr := string(ent)
-    k, err := base58.Decode(entstr)
-    if err != nil{
-        fmt.Println("[gcdel] decode hashstr error:",err)
-        return err
-    }
+    //entstr := string(ent)
+    //k, err := base58.Decode(entstr)
+    //if err != nil{
+    //    fmt.Println("[gcdel] decode hashstr error:",err)
+    //    return err
+    //}
 
-    copy(key.Hsh[:],k)
-    fmt.Println("[gcdel] GcHashProcess key=",base58.Encode(key.Hsh[:]))
+    copy(key.Hsh[:], ent)
+    fmt.Println("[gcdel] GcHashProcess key=", base58.Encode(key.Hsh[:]))
     err = gc.Sn.YTFS().GcProcess(key)
     if err != nil{
         log.Println("[gcdel] gc error:",err)
