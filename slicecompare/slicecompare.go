@@ -426,9 +426,10 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 				return
 			}
 
-			mdFive := md5.New()
-			dataHash := mdFive.Sum(data)
-			strDataHash := base58.Encode(dataHash)
+			//mdFive := md5.New()
+			//dataHash := mdFive.Sum(data)
+			dataHash := md5.Sum(data)
+			strDataHash := base58.Encode(dataHash[:])
 			if strDataHash != hash {
 				fmt.Printf("[slicecompare] task=%s error hash not consistent , dnhash:%s snhash:%s\n",
 					msg.TaskId, strDataHash, hash)
