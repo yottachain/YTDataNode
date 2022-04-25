@@ -112,6 +112,9 @@ func (wh *WriteHandler) batchWrite(number int) {
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key.Hsh[:]
+
+			log.Printf("[test] recive shard %s  shard id %d\n", base58.Encode(hashkey[i]), int64(rq.Key.Id))
+			
 			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
 			if err != nil{
 				log.Println("[slicecompare] put to compare_db error:", err.Error(),
