@@ -53,7 +53,7 @@ type KvDB struct {
     PosIdx ydcommon.IndexTableValue
 }
 
-var snApiSerConnFd *grpc.ClientConn
+var SnApiSerConnFd *grpc.ClientConn
 
 func ConnRetry(maAddr multiaddr.Multiaddr, times int) (mnet.Conn, error){
     n := 0
@@ -265,8 +265,8 @@ func SendToElk(resp *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }
 }
 
-func snApiConnInit() *grpc.ClientConn {
-    if snApiSerConnFd == nil {
+func SnApiConnInit() *grpc.ClientConn {
+    if SnApiSerConnFd == nil {
         var url = "10.0.26.177:30909"
         if config.Gconfig.SnApiServerUrl != "" {
             url = config.Gconfig.SnApiServerUrl
@@ -276,12 +276,13 @@ func snApiConnInit() *grpc.ClientConn {
 
         // 连接
         var err error
-        snApiSerConnFd, err = grpc.Dial(url, grpc.WithInsecure())
+        SnApiSerConnFd, err = grpc.Dial(url, grpc.WithInsecure())
         if err != nil {
             log.Printf("sn api server dial error %s\n", err.Error())
+            return nil
         }
     }
-    return snApiSerConnFd
+    return SnApiSerConnFd
 }
 
 func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
@@ -292,7 +293,7 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     }()
 
     // 连接
-    if nil == snApiConnInit() {
+    if nil == SnApiConnInit() {
         log.Printf("sn api server dial fail!\n")
         return
     }
@@ -300,7 +301,7 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     log.Printf("SendToSnApi dial success\n")
 
     // 初始化客户端
-    c := pb.NewReBuildApiClient(snApiSerConnFd)
+    c := pb.NewReBuildApiClient(SnApiSerConnFd)
 
     var elkData pb.NodeRebuildRequest
 
