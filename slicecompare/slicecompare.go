@@ -8,10 +8,10 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tecbot/gorocksdb"
+	"github.com/yottachain/YTDataNode/snapi"
 	"sync"
 
 	pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
-	verifyTool "github.com/yottachain/YTDataNode/verifySlice/tool"
 	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/gc"
@@ -478,7 +478,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 		elkData.ErrShards = append(elkData.ErrShards, &errShard)
 	}
 
-	verifyTool.SendRebuildShardToSnApi(&elkData)
+	snapi.SendRebuildShardToSnApi(&elkData)
 
 	return res, err
 }
