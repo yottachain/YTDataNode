@@ -285,9 +285,29 @@ func SnApiConnInit() *grpc.ClientConn {
     return SnApiSerConnFd
 }
 
-func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
-    wg.Add(1)
+func SendRebuildShardToSnApi(elkData *pb.NodeRebuildRequest) {
+    // 连接
+    if nil == SnApiConnInit() {
+        log.Printf("sn api server dial fail!\n")
+        return
+    }
 
+    log.Printf("SendRebuildShardToSnApi dial success\n")
+
+    // 初始化客户端
+    c := pb.NewReBuildApiClient(SnApiSerConnFd)
+
+    res, err := c.SendNodeRebuild(context.Background(), elkData)
+    if err != nil {
+        log.Printf("SendRebuildShardToSnApi send data to sn api err %s\n", err.Error())
+    }
+
+    if res != nil {
+        fmt.Printf("SendRebuildShardToSnApi:%v\n", res.Message)
+    }
+}
+
+func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
     defer func() {
         wg.Done()
     }()
@@ -480,6 +500,7 @@ func Start() {
             if errNum > 0 {
                 log.Printf("verify report err shards %d\n", errNum)
                 //go SendToElk(resp, wg)
+                wg.Add(1)
                 go SendToSnApi(resp, wg)
                 reportTotalErrs += uint64(errNum)
             }

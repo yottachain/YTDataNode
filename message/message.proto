@@ -49,6 +49,7 @@ message UploadShard2CResponse {
 message SeqToHash{
     uint64 Seq=1;
     bytes Hash=2;
+    int64 Hid=3;
 }
 
 //msgid = 0x1818   矿机对账请求

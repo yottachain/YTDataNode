@@ -10,6 +10,8 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"sync"
 
+	pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
+	verifyTool "github.com/yottachain/YTDataNode/verifySlice/tool"
 	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/gc"
@@ -358,6 +360,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr 
 
 func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.CompDB) (message.SliceCompareStatusResp, error){
 	var res message.SliceCompareStatusResp
+	rebuildShard := make([]message.SeqToHash, 0)
 
 	res.NodeId = msg.NodeId
 	res.TaskId = msg.TaskId
@@ -421,6 +424,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 					msg.TaskId, hash, err.Error())
 				lck.Lock()
 				res.DnMissList = append(res.DnMissList, seqtohash.Hash)
+				rebuildShard = append(rebuildShard, *seqtohash)
 				lck.Unlock()
 				atomic.AddUint32(&res.DnMissNum,1)
 				return
@@ -435,6 +439,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 					msg.TaskId, strDataHash, hash)
 				lck.Lock()
 				res.DnMissList = append(res.DnMissList, seqtohash.Hash)
+				rebuildShard = append(rebuildShard, *seqtohash)
 				lck.Unlock()
 				atomic.AddUint32(&res.DnMissNum,1)
 				return
@@ -457,6 +462,23 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 
 	log.Printf("[slicecompare] task=%s compare count=%d, success count=%d\n",
 		msg.TaskId, res.CompareNum, res.CompareNum - res.DnMissNum)
+
+
+	//sn有矿机没有的上报elk, 先放到这里吧
+	var elkData pb.NodeRebuildRequest
+
+	elkData.MinerId = int64(msg.NodeId)
+	elkData.ErrNums = int32(len(rebuildShard))
+
+	for _, v :=range rebuildShard {
+		var errShard pb.ErrShard
+		errShard.RebuildStatus = 0
+		errShard.Shard = base58.Encode(v.Hash)
+		errShard.ShardId = v.Hid
+		elkData.ErrShards = append(elkData.ErrShards, &errShard)
+	}
+
+	verifyTool.SendRebuildShardToSnApi(&elkData)
 
 	return res, err
 }
