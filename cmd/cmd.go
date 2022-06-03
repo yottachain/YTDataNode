@@ -3,8 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/diskHash"
-
+	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
+	ytfsutil "github.com/yottachain/YTFS/util"
 	"net"
 	"os"
 	"os/exec"
@@ -14,13 +17,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/cmd/account"
 	registerCmd "github.com/yottachain/YTDataNode/cmd/register"
-	repoCmd "github.com/yottachain/YTDataNode/cmd/repo"
 	"github.com/yottachain/YTDataNode/cmd/update"
 	"github.com/yottachain/YTDataNode/commander"
-	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/util"
-	ytfs "github.com/yottachain/YTFS"
+	"github.com/yottachain/YTDataNode/slicecompare"
 )
 
 var size uint64
@@ -63,8 +63,27 @@ var startCmd = &cobra.Command{
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Init YTFS storage node",
+	Short: "Init or reInit YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+var confirmInit = &cobra.Command{
+	Use:   "--yes-init",
+	Short: "confirm init YTFS storage node",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+var confirmYesInit = &cobra.Command{
+	Use:   "--yes-init--yes",
+	Short: "again confirm init YTFS storage node",
+	Run: func(cmd *cobra.Command, args []string) {
+		//first del slicecompare directory
+		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
+
 		cfg, err := config.ReadConfig()
 		if err != nil {
 			log.Println("YTFS init failed err:", err)
@@ -129,12 +148,14 @@ func main() {
 	}
 	RootCommand.AddCommand(daemonCmd)
 	RootCommand.AddCommand(registerCmd.RegisterCmd)
-	RootCommand.AddCommand(repoCmd.RepoCmd)
+	//RootCommand.AddCommand(repoCmd.RepoCmd)
 	RootCommand.AddCommand(update.UpdateCMD)
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
 	RootCommand.AddCommand(regTemplateCmd)
 	RootCommand.AddCommand(initCmd)
+	initCmd.AddCommand(confirmInit)
+	confirmInit.AddCommand(confirmYesInit)
 
 	RootCommand.Execute()
 }

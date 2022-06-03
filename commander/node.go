@@ -90,7 +90,7 @@ func setLimits() {
 	if runtime.GOOS == "linux" {
 		cmd := exec.Command("bash", "-c", "ulimit -n 60000")
 		stdin, _ := cmd.StdinPipe()
-		fmt.Fprint(stdin, `
+		_,  _ = fmt.Fprint(stdin, `
 echo "* soft nofile 655350" > /etc/security/limits.conf
 echo "* hard nofile 655350" >> /etc/security/limits.conf
 echo "* soft nproc 655350" >> /etc/security/limits.conf
@@ -98,7 +98,7 @@ echo "* hard nproc 655350" >> /etc/security/limits.conf
 echo "* soft core unlimited" >> /etc/security/limits.conf
 echo "* hard core unlimited" >> /etc/security/limits.conf
 `)
-		cmd.Output()
+		_, _ = cmd.Output()
 	}
 }
 
@@ -113,6 +113,7 @@ func Daemon() {
 	}
 
 	log.Println("YTFS daemon success:", sn.Config().Version())
+
 	for k, v := range sn.Addrs() {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())
 	}

@@ -193,9 +193,13 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	}
 
 	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
-	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()), option.ListenAddr(ma), option.OpenPProf(":10000"), option.Version(int32(cfg.Version())))
+	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()),
+					option.ListenAddr(ma),
+					option.OpenPProf(":10000"),
+					option.Version(int32(cfg.Version())))
 	if err != nil {
-		panic(err)
+		log.Printf("host new fail! err:%s\n", err.Error())
+		return nil, err
 	}
 	sn.host = hst
 
@@ -203,14 +207,14 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	ys, err := ytfs.Open(yp, cfg.Options, cfg.IndexID)
 	if err != nil {
 		log.Println(err.Error())
-		panic(fmt.Errorf("YTFS storage init failed"))
+		return nil , fmt.Errorf("YTFS storage init failed, err:%s", err.Error())
 	}
 	sn.ytfs = ys
 
 	sn.TmpDB, err = slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
 	if err != nil{
 		log.Println("[slicecompare] open compare_db error")
-		panic(err)
+		return nil , fmt.Errorf("open compare_db error:%s", err.Error())
 	}
 	return sn, nil
 }

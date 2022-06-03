@@ -185,7 +185,7 @@ func NewConfig() *Config {
 
 func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	if opts == nil {
-		fmt.Println("[error] opts is nil")
+		fmt.Println("[error] new config opts is nil")
 		return nil
 	}
 	cfg := new(Config)
@@ -334,7 +334,7 @@ func getBPList() []peerInfo {
 	]
 `
 	buf := bytes.NewBufferString(jsdata)
-	json.Unmarshal(buf.Bytes(), &bplist)
+	_ = json.Unmarshal(buf.Bytes(), &bplist)
 	return bplist
 }
 
@@ -342,7 +342,7 @@ func getBPList() []peerInfo {
 func (cfg *Config) Save() error {
 	yp := util.GetYTFSPath()
 	if ok, err := util.PathExists(yp); ok != true || err != nil {
-		os.Mkdir(yp, os.ModePerm)
+		_ = os.Mkdir(yp, os.ModePerm)
 	}
 
 	cfgPath := util.GetConfigPath()
@@ -351,7 +351,8 @@ func (cfg *Config) Save() error {
 	if err != nil {
 		log.Println("配置保存失败", err)
 	}
-	ioutil.WriteFile(fmt.Sprintf("%s/swarm.key", yp), keyBytes, os.ModePerm)
+
+	_ = ioutil.WriteFile(fmt.Sprintf("%s/swarm.key", yp), keyBytes, os.ModePerm)
 	peerID, err := util.IdFromPublicKey(cfg.PubKey)
 	if err != nil {
 		return err
@@ -408,21 +409,18 @@ func ReadConfig() (*Config, error) {
 	}
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("配置文件格式错误:%s", err)
 	}
 	keyBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/swarm.key", util.GetYTFSPath()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read swarm.key error:%s", err)
 	}
 	privk, err := ci.UnmarshalSecp256k1PrivateKey(keyBytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("private key error:%s", err)
 	}
-	cfg.privKey = privk
 
-	// if cfg.AllocSpace == 0 {
-	// 	cfg.AllocSpace = cfg.Options.TotalVolumn
-	// }
+	cfg.privKey = privk
 
 	return &cfg, nil
 }

@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	pb "git.yottachain.net/snteam/yt-api-server/proto/rebuildapi/rebuildapi.pb.go"
-	//"github.com/tecbot/gorocksdb"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/gc"
 	"github.com/yottachain/YTDataNode/logger"

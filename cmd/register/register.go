@@ -4,27 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
-	"math"
-	"path"
-
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
-
 	"github.com/yottachain/YTDataNode/commander"
 	"github.com/yottachain/YTDataNode/config"
-
-	//"github.com/yottachain/YTDataNode/util"
-	//comm "github.com/yottachain/YTFS/common"
-
 	"gopkg.in/yaml.v2"
-
-
-	//"github.com/eoscanada/eos-go/ecc"
 	"io/ioutil"
+	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -33,7 +24,6 @@ import (
 const GB = 1 << 30
 
 var baseNodeUrl = "http://dnapi1.yottachain.net:8888" //正式
-// var baseNodeUrl = "http://117.161.159.11:8888" //测试
 
 var api *eos.API
 var formPath string
@@ -46,23 +36,26 @@ var RegisterCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		initConfig, err := readCfg()
 		if err == nil && initConfig.IndexID != 0 {
-			fmt.Println("矿机已经注册，若要重新注册请备份或删除旧矿机")
+			fmt.Println("矿机已经注册，若要重新注册请备份或删除旧矿机(ytfs_path下相关文件)")
 			return
 		}
 		var form RegForm
 		if formPath != "" {
 			file, err := os.OpenFile(formPath, os.O_RDONLY, 0644)
 			if err != nil {
-				log.Println(err)
+				log.Printf("the register form file open err:%s", err)
 				return
 			}
 			defer file.Close()
 			dd := yaml.NewDecoder(file)
 			err = dd.Decode(&form)
 			if err != nil {
-				log.Println(err)
+				log.Printf("the register form file err:%s", err)
 				return
 			}
+		}else {
+			log.Printf("the register form file does not exist")
+			return
 		}
 
 		if form.BaseUrl != "" {
@@ -72,11 +65,13 @@ var RegisterCmd = &cobra.Command{
 		err = kb.ImportPrivateKey(form.PoolOwnerKey)
 		if err != nil {
 			fmt.Println("矿池私钥输入错误:", err.Error())
+			return
 		}
 		if form.PoolOwnerKey != form.DepAccKey {
 			err = kb.ImportPrivateKey(form.DepAccKey)
 			if err != nil {
 				fmt.Println("抵押私钥输入错误:", err.Error())
+				return
 			}
 		}
 
@@ -226,22 +221,28 @@ func step1(form *RegForm) {
 	sigedTx, packedTx, err := api.SignTransaction(tx, txOpts.ChainID, eos.CompressionZlib)
 
 	if err != nil {
-		fmt.Println("注册失败！", err)
+		fmt.Printf("register fail！ err:%s\n", err.Error())
 		return
 	}
-	fmt.Println("正在注册")
-	fmt.Println("poolID", actionData.PoolID, "minerID", actionData.MinerID, "depAmount", actionData.DepAmount.Amount, "maxSpace", actionData.MaxSpace)
-	fmt.Println("currBP", currBP)
+	fmt.Println("registering... ",
+		"poolID", actionData.PoolID,
+		"minerID", actionData.MinerID,
+		"depAmount", actionData.DepAmount.Amount,
+		"maxSpace", actionData.MaxSpace,
+		"currBP", currBP)
 	err = Register(sigedTx, packedTx, currBP)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("register fail! err:%s\n", err.Error())
 		return
+	}else {
+		fmt.Printf("miner register success!\n")
 	}
 
 	initConfig.Adminacc = form.AdminAcc
 	initConfig.PoolID = form.PoolId
 	initConfig.Save()
 }
+
 func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl string) error {
 
 	buf, err := json.Marshal(packedtx)
@@ -256,7 +257,6 @@ func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl 
 		res, err := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
 	}
-	log.Println("注册完成")
 	return nil
 }
 

@@ -35,15 +35,26 @@ func GetRegisterUrl(url string) string {
 func GetFormTemplate() string {
 	var form = RegForm{}
 
-	for index := 0; index < 21; index++ {
-		url := fmt.Sprintf("sn%02d.yottachain.net", index)
-		form.BPList = append(form.BPList, fmt.Sprintf("%s:8082", url))
-	}
+	//for index := 0; index < 21; index++ {
+	//	url := fmt.Sprintf("sn%02d.yottachain.net", index)
+	//	form.BPList = append(form.BPList, fmt.Sprintf("%s:8082", url))
+	//}
+
+	form.BPList = append(form.BPList, "sn.yottachain.net:8082")
 	form.BaseUrl = "http://dnapi1.yottachain.net:8888"
 	form.M = 2048
 	form.MaxSpace = 1024
 	form.IsCalc = true
 	form.DepAmount = 1024
+	form.AdminAcc = "管理账户"
+	form.DepAcc = "抵押账户"
+	form.DepAccKey = "抵押账户私钥"
+	form.PoolId = "所要加入的矿池id"
+	form.PoolOwner = "矿池管理员账号"
+	form.PoolOwnerKey = "矿池管理员账号私钥"
+	form.MinerOwner = "指定的矿机收益账户"
+	form.ISBlockDev = true
+	form.StoragePath = "/dev/vdb"
 
 	template, _ := yaml.Marshal(form)
 
