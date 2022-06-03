@@ -65,6 +65,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init or reInit YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("use --yes-init to init")
 	},
 }
 
@@ -72,6 +73,10 @@ var confirmInit = &cobra.Command{
 	Use:   "--yes-init",
 	Short: "confirm init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("delete compare db...")
+		//first del slicecompare directory
+		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
+		fmt.Printf("use --yes-init--yes to final init")
 	},
 }
 
