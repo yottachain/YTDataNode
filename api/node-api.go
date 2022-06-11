@@ -30,7 +30,8 @@ func init() {
 	})
 	// addres
 	handler.HandleAPI("node/address", func(rw *ResponseWriter, rq *http.Request) {
-		rw.WriteJSON(srv.sn.Addrs())
+		adds, _ := srv.sn.Addrs()
+		rw.WriteJSON(adds)
 	})
 	// 查询硬盘使用状况
 	handler.HandleAPI("ytfs/state", func(rw *ResponseWriter, rq *http.Request) {

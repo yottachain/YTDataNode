@@ -114,7 +114,9 @@ func Daemon() {
 
 	log.Println("YTFS daemon success:", sn.Config().Version())
 
-	for k, v := range sn.Addrs() {
+	adds, addsCmd := sn.Addrs()
+	adds = append(adds, addsCmd...)
+	for k, v := range adds {
 		log.Printf("node addr [%d]:%s/p2p/%s\n", k, v, sn.Host().Config().ID.Pretty())
 	}
 	srv := api.NewHTTPServer(sn)
