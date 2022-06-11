@@ -23,7 +23,7 @@ type CompDB struct {
 
 // StorageNode 存储节点接口
 type StorageNode interface {
-	Addrs() []string
+	Addrs() ([]string, []string)
 	Host() Host
 	YTFS() *ytfs.YTFS
 	GetBP() int

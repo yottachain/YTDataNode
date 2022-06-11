@@ -345,11 +345,12 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	}
 
 	bp := sn.Config().BPList[sn.GetBP()]
-	msg.Addrs = sn.Addrs()
+	msg.Addrs, msg.AddrsCmd = sn.Addrs()
 	if rms.Addr() != "" && first == false {
-		msg.Addrs = append(sn.Addrs(), rms.Addr())
+		msg.Addrs = append(msg.Addrs, rms.Addr())
+		msg.AddrsCmd = append(msg.AddrsCmd, rms.Addr())
 	} else {
-		msg.Addrs = sn.Addrs()
+		msg.Addrs, msg.AddrsCmd = sn.Addrs()
 		if first == true {
 			first = false
 		}

@@ -56,6 +56,7 @@ type Config struct {
 	Adminacc      string        `json:"Adminacc"`
 	Relay         bool          `json:"Relay"`
 	ListenAddr    string        `json:"ListenAddr"`
+	ListenAddrCmd string        `json:"ListenAddrCmd"`
 	APIListen     string        `json:"APIListen"`
 	IndexID       uint32        `json:"IndexID"`
 	PoolID        string        `json:"PoolID"`

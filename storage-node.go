@@ -42,6 +42,7 @@ type Service interface {
 // AddrsManager 地址管理器
 type AddrsManager struct {
 	addrs      []multiaddr.Multiaddr
+	addrsCmd     []multiaddr.Multiaddr
 	updateTime time.Time
 	ttl        time.Duration
 	sn         StorageNode
@@ -49,14 +50,17 @@ type AddrsManager struct {
 
 // UpdateAddrs 更新地址列表
 func (am *AddrsManager) UpdateAddrs() {
-	am.addrs = am.sn.Host().Addrs()
-	//resp, err := http.Get("http://123.57.81.177/self-ip")
+	ls, lsCmd := am.sn.Host().Listenner()
+	var port string
+	var portCmd string
+	am.addrs, port = am.sn.Host().Addrs(ls)
+	am.addrsCmd, portCmd = am.sn.Host().Addrs(lsCmd)
 	url := "http://dnapi.yottachain.net/self-ip"
 	resp, err := http.Get(url)
 	if err != nil {
-		port, ok := os.LookupEnv("nat_port")
-		if ok == false {
-			port = "9001"
+		pt, ok := os.LookupEnv("nat_port")
+		if ok {
+			port = pt
 		}
 		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
 			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
@@ -74,9 +78,9 @@ func (am *AddrsManager) UpdateAddrs() {
 		defer resp.Body.Close()
 
 		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
-			port, ok := os.LookupEnv("nat_port")
-			if ok == false {
-				port = "9001"
+			pt, ok := os.LookupEnv("nat_port")
+			if ok {
+				port = pt
 			}
 			addr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
 			addr = strings.Replace(addr, "\n", "", -1)
@@ -91,18 +95,29 @@ func (am *AddrsManager) UpdateAddrs() {
 			if err != nil {
 				log.Println("get public ip fail:", err)
 			}
-			port, ok := os.LookupEnv("nat_port")
-			if ok == false {
-				port = "9001"
+			pt, ok1 := os.LookupEnv("nat_port")
+			ptCmd, ok2 := os.LookupEnv("nat_port_1")
+			if ok1 {
+				port = pt
+				addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
+				addr = strings.Replace(addr, "\n", "", -1)
+				pubma, err := multiaddr.NewMultiaddr(addr)
+				if err != nil {
+					log.Println("fomate public ip fail:", err, addr)
+				} else {
+					am.addrs = append(am.addrs, pubma)
+				}
 			}
-			addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
-			addr = strings.Replace(addr, "\n", "", -1)
-			pubma, err := multiaddr.NewMultiaddr(addr)
-			if err != nil {
-				log.Println("fomate public ip fail:", err, addr)
-			} else {
-				am.addrs = append(am.addrs, pubma)
-				am.updateTime = time.Now()
+			if ok2 {
+				portCmd = ptCmd
+				addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, portCmd)
+				addr = strings.Replace(addr, "\n", "", -1)
+				pubma, err := multiaddr.NewMultiaddr(addr)
+				if err != nil {
+					log.Println("fomate public ip fail:", err, addr)
+				} else {
+					am.addrsCmd = append(am.addrsCmd, pubma)
+				}
 			}
 		}
 
@@ -111,21 +126,26 @@ func (am *AddrsManager) UpdateAddrs() {
 }
 
 // GetAddrs 获取地址列表
-func (am *AddrsManager) GetAddrs() []multiaddr.Multiaddr {
+func (am *AddrsManager) GetAddrs() ([]multiaddr.Multiaddr, []multiaddr.Multiaddr) {
 	if am.addrs == nil || am.ttl < time.Now().Sub(am.updateTime) {
 		am.UpdateAddrs()
 	}
-	return am.addrs
+	return am.addrs, am.addrsCmd
 }
 
 // GetAddStrings 获取地址看列表字符串数组
-func (am *AddrsManager) GetAddStrings() []string {
-	addrs := am.GetAddrs()
-	addrstrings := make([]string, len(addrs))
-	for k, v := range addrs {
-		addrstrings[k] = v.String()
+func (am *AddrsManager) GetAddStrings() ([]string, []string) {
+	addr, addrCmd := am.GetAddrs()
+	addrs := make([]string, len(addr))
+	for k, v := range addr {
+		addrs[k] = v.String()
 	}
-	return addrstrings
+
+	addrsCmd := make([]string, len(addrCmd))
+	for k, v := range addrCmd {
+		addrsCmd[k] = v.String()
+	}
+	return addrs, addrsCmd
 }
 
 type storageNode struct {
@@ -160,7 +180,7 @@ func (sn *storageNode) YTFS() *ytfs.YTFS {
 func (sn *storageNode) GetBP() int {
 	return sn.Config().GetBPIndex()
 }
-func (sn *storageNode) Addrs() []string {
+func (sn *storageNode) Addrs() ([]string, []string){
 	return sn.addrsmanager.GetAddStrings()
 }
 
@@ -187,14 +207,30 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.owner = new(Owner)
 	sn.addrsmanager = &AddrsManager{
 		nil,
+		nil,
 		time.Now(),
 		time.Minute * 60,
 		sn,
 	}
 
-	ma, _ := multiaddr.NewMultiaddr(cfg.ListenAddr)
+	ma, err := multiaddr.NewMultiaddr(cfg.ListenAddr)
+	if err != nil {
+		return nil, fmt.Errorf("ListenAddr: %s", err.Error())
+	}
+
+	var maCmd multiaddr.Multiaddr
+
+	if cfg.ListenAddrCmd != "" {
+		maCmd, err = multiaddr.NewMultiaddr(cfg.ListenAddrCmd)
+		if err != nil {
+			return nil, fmt.Errorf("ListenAddrCmd: %s", err.Error())
+		}
+	}
+
+
 	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()),
 					option.ListenAddr(ma),
+					option.ListenAddrCmd(maCmd),
 					option.OpenPProf(":10000"),
 					option.Version(int32(cfg.Version())))
 	if err != nil {

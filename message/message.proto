@@ -144,6 +144,7 @@ message StatusRepReq {
     string hash=16;
     uint64 allocSpace=17;
     uint32 AvailableSpace=18;
+    repeated string addrsCmd=19;
 }
 
 message StatusRepResp {
