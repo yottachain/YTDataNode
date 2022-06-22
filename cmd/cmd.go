@@ -23,11 +23,6 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare"
 )
 
-var size uint64
-var mc uint32
-var db string
-var stortype uint32
-var devname string
 var isDaemon bool = false
 
 var daemonCmd = &cobra.Command{
@@ -137,12 +132,6 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
-	//initCmd.Flags().Uint64VarP(&size, "size", "s", 4398046511104, "存储空间大小")
-	//initCmd.Flags().Uint32VarP(&mc, "order", "k", 14, "N = (1<<k), 其中k的值（8-20）")
-	//initCmd.Flags().StringVar(&db, "db", "indexdb", "数据库选择, indexdb or rocksdb")
-	//initCmd.Flags().Uint32VarP(&stortype,"type","t",0,"选择存储类型,0-文件(默认),1-块设备")
-	//initCmd.Flags().StringVarP(&devname,"name","n","storage","存储设备的名称:storage(默认)")
-
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{

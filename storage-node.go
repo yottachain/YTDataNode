@@ -54,7 +54,14 @@ func (am *AddrsManager) UpdateAddrs() {
 	var port string
 	var portCmd string
 	am.addrs, port = am.sn.Host().Addrs(ls)
-	am.addrsCmd, portCmd = am.sn.Host().Addrs(lsCmd)
+
+	if lsCmd == nil {
+		am.addrsCmd = am.addrs
+		portCmd = port
+	} else {
+		am.addrsCmd, portCmd = am.sn.Host().Addrs(lsCmd)
+	}
+
 	url := "http://dnapi.yottachain.net/self-ip"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -220,7 +227,7 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 
 	var maCmd multiaddr.Multiaddr
 
-	if cfg.ListenAddrCmd != "" {
+	if cfg.ListenAddrCmd != "" && cfg.ListenAddr != cfg.ListenAddrCmd {
 		maCmd, err = multiaddr.NewMultiaddr(cfg.ListenAddrCmd)
 		if err != nil {
 			return nil, fmt.Errorf("ListenAddrCmd: %s", err.Error())
