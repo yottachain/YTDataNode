@@ -9,12 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/logBuffer"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/message"
-	"github.com/yottachain/YTDataNode/util"
 	"io"
 	"net"
 	"net/http"
@@ -22,13 +16,20 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/logBuffer"
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/message"
+	"github.com/yottachain/YTDataNode/util"
 )
 
 const pubKeyPem = `
 -----BEGIN RSA PUBLIC KEY-----
-MIGJAoGBAZEz5xZs8ip2cGy8L06mMwxLZNFD7RRqpp3pJy3zCWui6bO2O667+Fwn
-j2VxGbwgUALuKgbY+woxJ3jaSURC+g8IyW8LqUPnz8fqnivGjlIRqN/JLEKgKr8+
-YhWPZHSVvcAh1ZKY3f3U0iTN2vMHdFwgC/zbp6FLxb3CNJolc5J5AgMBAAE=
+MIGJAoGBAKRzahYDOl2d+Wjc+ZHHnF29aMC7MebpMxzWrEAfo+jzb4TVWug0Z8ks
+OXYeBGm8Baa3UIRo+osVRp815qDGu4iDlKw1zJuVu69KMOFM+G4n434m5cSdCXjv
+GAlxeXbP0+l5uFZGI35nvqLl+gWY31176ifqAWKsIaOafwsPz44fAgMBAAE=
 -----END RSA PUBLIC KEY-----
 `
 
@@ -124,7 +125,7 @@ func Handle(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if !verify(msg.Sig) {
+	if !verify(msg.Sig, msg.ServerUrl) {
 		return fmt.Errorf("403")
 	}
 	switch msg.Name {
@@ -142,7 +143,7 @@ func Handle2(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if !verify(msg.Sig) {
+	if !verify(msg.Sig, msg.ServerUrl) {
 		return fmt.Errorf("403")
 	}
 	conn, err := net.Dial("tcp4", msg.ServerUrl)
@@ -184,10 +185,14 @@ func Handle2(data []byte) error {
 	return nil
 }
 
-func verify(sig []byte) bool {
+func verify(sig []byte, serverUrl string) bool {
+	if len(serverUrl) < 7 {
+		return false
+	}
+
 	m5 := md5.New()
 	m5.Reset()
-	m5.Write([]byte("yotta debug"))
+	m5.Write([]byte(serverUrl))
 	hash := m5.Sum(nil)
 
 	pp, _ := pem.Decode([]byte(pubKeyPem))
