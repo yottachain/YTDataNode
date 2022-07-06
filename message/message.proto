@@ -146,7 +146,8 @@ message StatusRepReq {
 
 message StatusRepResp {
     int64 productiveSpace=1;
-    string relayUrl=2;                 
+    string relayUrl=2;   
+    int32 dnStatus= 3;
 }
 
 message ErrorMessage{

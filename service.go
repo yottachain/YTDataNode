@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/yottachain/YTDataNode/Perf"
 	"github.com/yottachain/YTDataNode/TokenPool"
 	"github.com/yottachain/YTDataNode/capProof"
@@ -45,7 +46,7 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 var disableReport = false
 var stopUp = false
-
+var g_dn_status int32 = 0
 
 func (sn *storageNode) Service() {
 	setRLimit.SetRLimit()
@@ -64,7 +65,7 @@ func (sn *storageNode) Service() {
 		var err error
 		if sn.config.UseKvDb {
 			err = magrate.NewMr().RunRocksdb(sn.ytfs, sn.config.IndexID)
-		}else {
+		} else {
 			err = magrate.NewMr().RunIndexdb(sn.ytfs, sn.config.IndexID)
 		}
 		if err != nil {
@@ -72,7 +73,6 @@ func (sn *storageNode) Service() {
 		}
 		stopUp = false
 	}()
-
 
 	// 初始化统计
 	statistics.InitDefaultStat()
@@ -125,39 +125,43 @@ func (sn *storageNode) Service() {
 		return res, nil
 	})
 
-    // 如果进程没有被禁止写入注册上传处理器
-    if sn.Config().DisableWrite == false {
-        _ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-            if stopUp {
-            	log.Println("miner stop upload")
-            	return nil, fmt.Errorf("miner stop upload")
+	// 如果进程没有被禁止写入注册上传处理器
+	if sn.Config().DisableWrite == false {
+		_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+			if stopUp {
+				log.Println("miner stop upload")
+				return nil, fmt.Errorf("miner stop upload")
+			}
+			if g_dn_status != 1 {
+				log.Println("miner can not upload shard")
+				return nil, fmt.Errorf("miner reject upload")
 			}
 			log.Println("miner start upload")
-        	statistics.AddCounnectCount(head.RemotePeerID)
-            defer statistics.SubCounnectCount(head.RemotePeerID)
-            return wh.Handle(data, head), nil
-        })
-    }
+			statistics.AddCounnectCount(head.RemotePeerID)
+			defer statistics.SubCounnectCount(head.RemotePeerID)
+			return wh.Handle(data, head), nil
+		})
+	}
 
-	slc := &slicecompare.SliceComparer{Sn:sn, Lock:sync.Mutex{}}
-	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+	slc := &slicecompare.SliceComparer{Sn: sn, Lock: sync.Mutex{}}
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		log.Println("[slicecompare] receive compare request!")
 		res, _ := slc.CompareMsgChkHdl(data)
 		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		log.Println("[slicecompare] receive get compare status request!")
 		res, err := slc.CompareMsgStatusChkHdl(data)
 		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
 	})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(),func(data []byte, head yhservice.Head)([]byte,error){
+	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		log.Println("[slicecompare] receive delete compare_status request!")
-		res,_ := slc.CompareMsgDelfileHdl(data)
-		resp,err := proto.Marshal(&res)
+		res, _ := slc.CompareMsgDelfileHdl(data)
+		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
 	})
 
@@ -230,7 +234,7 @@ func (sn *storageNode) Service() {
 
 	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		GcW := gc.GcWorker{sn}
-		res,_ := GcW.GcDelStatusFileHdl(data)
+		res, _ := GcW.GcDelStatusFileHdl(data)
 		resp, err := proto.Marshal(&res)
 		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
 	})
@@ -461,6 +465,7 @@ func Report(sn *storageNode, rce *rc.Engine) {
 			}
 		}
 		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
+		g_dn_status = resMsg.DnStatus
 		if resMsg.RelayUrl != "" {
 			if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err == nil {
 				rms.UpdateAddr(resMsg.RelayUrl)
