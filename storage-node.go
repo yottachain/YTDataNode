@@ -50,9 +50,10 @@ type AddrsManager struct {
 
 // UpdateAddrs 更新地址列表
 func (am *AddrsManager) UpdateAddrs() {
-	ls, lsCmd := am.sn.Host().Listenner()
 	var port string
 	var portCmd string
+
+	ls, lsCmd := am.sn.Host().Listenner()
 	am.addrs, port = am.sn.Host().Addrs(ls)
 
 	if lsCmd == nil {
@@ -62,74 +63,59 @@ func (am *AddrsManager) UpdateAddrs() {
 		am.addrsCmd, portCmd = am.sn.Host().Addrs(lsCmd)
 	}
 
+	var realIP string;
+
 	url := "http://dnapi.yottachain.net/self-ip"
 	resp, err := http.Get(url)
 	if err != nil {
-		pt, ok := os.LookupEnv("nat_port")
-		if ok {
-			port = pt
-		}
 		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
-			laddr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
-			laddr = strings.Replace(laddr, "\n", "", -1)
-			lma, err := multiaddr.NewMultiaddr(laddr)
-			if err != nil {
-				log.Println("fomate local ip fail:", err, laddr)
-			} else {
-				am.addrs = append(am.addrs, lma)
-				return
-			}
+			realIP = ip
+		} else {
+			log.Printf("get public ip fail, url:%s\n", url)
+			return
 		}
-		log.Printf("get public ip fail, url:%s\n", url)
 	} else {
 		defer resp.Body.Close()
 
 		if ip, ok := os.LookupEnv("local_host_ip"); ok && ip != "" {
-			pt, ok := os.LookupEnv("nat_port")
-			if ok {
-				port = pt
-			}
-			addr := fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
-			addr = strings.Replace(addr, "\n", "", -1)
-			pubma, err := multiaddr.NewMultiaddr(addr)
-			if err != nil {
-				log.Println("fomate public ip fail:", err, addr)
-			} else {
-				am.addrs = append(am.addrs, pubma)
-			}
+			realIP = ip
 		} else {
 			pubip, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				log.Println("get public ip fail:", err)
+				return
 			}
-			pt, ok1 := os.LookupEnv("nat_port")
-			ptCmd, ok2 := os.LookupEnv("nat_port_1")
-			if ok1 {
-				port = pt
-				addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, port)
-				addr = strings.Replace(addr, "\n", "", -1)
-				pubma, err := multiaddr.NewMultiaddr(addr)
-				if err != nil {
-					log.Println("fomate public ip fail:", err, addr)
-				} else {
-					am.addrs = append(am.addrs, pubma)
-				}
-			}
-			if ok2 {
-				portCmd = ptCmd
-				addr := fmt.Sprintf("/ip4/%s/tcp/%s", pubip, portCmd)
-				addr = strings.Replace(addr, "\n", "", -1)
-				pubma, err := multiaddr.NewMultiaddr(addr)
-				if err != nil {
-					log.Println("fomate public ip fail:", err, addr)
-				} else {
-					am.addrsCmd = append(am.addrsCmd, pubma)
-				}
-			}
+			realIP = string(pubip)
 		}
-
-		am.updateTime = time.Now()
 	}
+
+	pt, ok1 := os.LookupEnv("nat_port")
+	ptCmd, ok2 := os.LookupEnv("nat_port_1")
+	if ok1 {
+		port = pt
+		addr := fmt.Sprintf("/ip4/%s/tcp/%s", realIP, port)
+		addr = strings.Replace(addr, "\n", "", -1)
+		pubma, err := multiaddr.NewMultiaddr(addr)
+		if err != nil {
+			log.Println("format public ip fail:", err, addr)
+		} else {
+			am.addrs = append(am.addrs, pubma)
+		}
+	}
+
+	if ok2 {
+		portCmd = ptCmd
+		addr := fmt.Sprintf("/ip4/%s/tcp/%s", realIP, portCmd)
+		addr = strings.Replace(addr, "\n", "", -1)
+		pubma, err := multiaddr.NewMultiaddr(addr)
+		if err != nil {
+			log.Println("format public ip fail:", err, addr)
+		} else {
+			am.addrsCmd = append(am.addrsCmd, pubma)
+		}
+	}
+
+	am.updateTime = time.Now()
 }
 
 // GetAddrs 获取地址列表
