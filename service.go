@@ -418,6 +418,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	msg.Other = fmt.Sprintf("[%s]", statistics.DefaultStat.String())
 	log.Println("[report] other:", msg.Other)
 
+	log.Printf("[report] msg.addr [%v]   msg.addrsCmd [%v]\n", msg.Addrs, msg.AddrsCmd)
+
 	msg.Rebuilding = rce.Len()
 
 	resData, err := proto.Marshal(&msg)
