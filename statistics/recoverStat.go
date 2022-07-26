@@ -1,12 +1,13 @@
 package statistics
 
 import (
-	log "github.com/yottachain/YTDataNode/logger"
 	"math"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
 )
 
-const SHARD_NUMS  = 164
+const SHARD_NUMS = 164
 
 var PfStatChan = make(chan *PerformanceStat, 2000)
 
@@ -43,24 +44,24 @@ type RecoverStat struct {
 	RowRebuildCount    uint64
 	ColRebuildCount    uint64
 	GlobalRebuildCount uint64
+	NotAllExist        uint64
 }
 
 type ShardPerformanceStat struct {
-	Hash		string
-	DlSuc		bool	//是否下载成功
-	DlTimes 	int		//下载的次数
+	Hash        string
+	DlSuc       bool //是否下载成功
+	DlTimes     int  //下载的次数
 	DlStartTime time.Time
-	DlUseTime 	int64	//下载用时
+	DlUseTime   int64 //下载用时
 }
 
 type PerformanceStat struct {
-	TaskId		uint64
-	ExecTimes	int64
-	DlShards	[SHARD_NUMS] *ShardPerformanceStat
+	TaskId    uint64
+	ExecTimes int64
+	DlShards  [SHARD_NUMS]*ShardPerformanceStat
 }
 
-
-func (pf *PerformanceStat)TaskPfStat() {
+func (pf *PerformanceStat) TaskPfStat() {
 	if pf == nil {
 		return
 	}
@@ -119,11 +120,11 @@ func (pf *PerformanceStat)TaskPfStat() {
 	}
 
 	if dlShardTotalTimes != 0 {
-		dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
+		dlSucRate = float64(dlShards) / float64(dlShardTotalTimes)
 	}
 
-	log.Printf("[recover] pf_stat task=%d exec_time=%d download_shard_nums=%d" +
-		" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d variance_is=%.2f" +
+	log.Printf("[recover] pf_stat task=%d exec_time=%d download_shard_nums=%d"+
+		" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d variance_is=%.2f"+
 		" suc_rate_of_download_per_shard=%.2f, avg_download_times_of_per_shard=%.2f\n",
 		pf.TaskId, pf.ExecTimes, dlShards, dlMaxUseTime, dlTimePerShard,
 		math.Sqrt(variance), dlSucRate, dlNumsPerShard)
@@ -140,7 +141,7 @@ func TimerStatTaskPf() {
 			var arrPfstat []*PerformanceStat
 
 			for i := 0; i < 1000; i++ {
-				pfstat := <- PfStatChan
+				pfstat := <-PfStatChan
 				allTaskTotalTime += pfstat.ExecTimes
 				arrPfstat = append(arrPfstat, pfstat)
 			}
@@ -209,15 +210,15 @@ func TimerStatTaskPf() {
 			}
 
 			if dlShardTotalTimes != 0 {
-				dlSucRate = float64(dlShards)/float64(dlShardTotalTimes)
+				dlSucRate = float64(dlShards) / float64(dlShardTotalTimes)
 			}
 
-			log.Printf("[recover] task_nums=%d total_download_shards_is=%d " +
-				" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d" +
+			log.Printf("[recover] task_nums=%d total_download_shards_is=%d "+
+				" max_download_time_of_all_shard=%d avg_download_time_of_per_shard=%d"+
 				" variance_is=%.2f suc_rate_of_download_per_shard=%.2f avg_download_times_of_per_shard=%.2f\n",
 				1000, dlShards, dlMaxUseTime, dlTimePerShard, math.Sqrt(variance), dlSucRate, dlNumsPerShard)
 		}
 
-		<-time.After(time.Second*1)
+		<-time.After(time.Second * 1)
 	}
 }
