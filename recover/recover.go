@@ -107,7 +107,7 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 					shards[k] = shard
 				} else {
 					log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), peerNode.IP, v.NodeId)
-				}	
+				}
 			} else {
 				log.Printf("[recover:%s]error:%s, %s\n", base58.Encode(description.Id), err.Error(), v.NodeId)
 			}
@@ -827,11 +827,12 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
 		peerNode := activeNodeList.GetActiveNodeData(v.NodeId)
-		if peerNode == nil
+		if peerNode == nil {
 			continue
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), peerNode.IP , msg.DataHash, &number)
+		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), peerNode.IP, msg.DataHash, &number)
 		cancel()
 
 		// 如果没有发生错误，分片下载成功，就存储分片
