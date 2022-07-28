@@ -8,10 +8,11 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	//"github.com/yottachain/YTDataNode/activeNodeList"
+
 	"sync/atomic"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/recover/actuator"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
@@ -41,7 +42,7 @@ import (
 const (
 	max_reply_num       = 1000
 	max_task_num        = 1000
-	max_reply_wait_time = time.Millisecond* 10
+	max_reply_wait_time = time.Millisecond * 10
 )
 
 // var elkClt = util.NewElkClient("rebuild_reply", &config.Gconfig.ElkReport2)
@@ -59,7 +60,7 @@ type Engine struct {
 	Upt               *TokenPool.TokenPool
 	startTskTmCtl     uint8
 	DefaultDownloader shardDownloader.ShardDownloader
-	lck 	*sync.Mutex		//引擎的全局锁  cgo调用的时候使用
+	lck               *sync.Mutex //引擎的全局锁  cgo调用的时候使用
 }
 
 func New(sn node.StorageNode) (*Engine, error) {
@@ -100,11 +101,15 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(description.Id), v.Addrs, description.Hashs[k], &number)
-			if err == nil {
-				shards[k] = shard
+			if peerNode := activeNodeList.GetActiveNodeData(v.NodeId); peerNode != nil {
+				shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(description.Id), peerNode.IP, description.Hashs[k], &number)
+				if err == nil {
+					shards[k] = shard
+				} else {
+					log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), peerNode.IP, v.NodeId)
+				}	
 			} else {
-				log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), v.Addrs, v.NodeId)
+				log.Printf("[recover:%s]error:%s, %s\n", base58.Encode(description.Id), err.Error(), v.NodeId)
 			}
 		}(k, v)
 	}
@@ -298,8 +303,8 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 
 	//要先判断一下队列的剩余长度是否能容纳当前任务不能的话不接收，返回错误
 	queueLen := re.waitQueue.Len()
-	if re.waitQueue.Max - queueLen < len(mtdMsg.Tasklist) {
-		log.Printf("[recover] queue space is not enough, max len is %d, " +
+	if re.waitQueue.Max-queueLen < len(mtdMsg.Tasklist) {
+		log.Printf("[recover] queue space is not enough, max len is %d, "+
 			"current len is %d, tasks is %d\n",
 			re.waitQueue.Max, queueLen, len(mtdMsg.Tasklist))
 		return fmt.Errorf("queue space is not enough\n")
@@ -315,7 +320,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		_ = binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
-				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
+			mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
 			log.Printf("[recover] put recover task error: %s\n", err.Error())
 		}
 	}
@@ -330,6 +335,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
  */
 
 var tskcnt uint64
+
 func (re *Engine) dispatchTask(ts *Task) {
 	var msgID uint16
 	err := binary.Read(bytes.NewBuffer(ts.Data[:2]), binary.BigEndian, &msgID)
@@ -353,7 +359,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		startTime := time.Now()
 		taskPf := new(statistics.PerformanceStat)
 		res = re.execLRCTask(ts.Data[2:], ts.ExpiredTime, ts.StartTime,
-				ts.TaskLife, ts.SrcNodeID, taskPf)
+			ts.TaskLife, ts.SrcNodeID, taskPf)
 		useTime := time.Now().Sub(startTime).Milliseconds()
 		log.Printf("[recover] execLRCTask use time is %d ms\n", useTime)
 		taskPf.ExecTimes = useTime
@@ -366,18 +372,18 @@ func (re *Engine) dispatchTask(ts *Task) {
 		}
 
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
-			res.RES == 1 &&  ts.ExecTimes < 2 {
+			res.RES == 1 && ts.ExecTimes < 2 {
 			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpiredTime, ts.SrcNodeID,
 				ts.TaskLife, ts.StartTime, ts.ExecTimes)
 			if err != nil {
 				goto Reply
-			}else {
+			} else {
 				break
 			}
 		}
 	Reply:
 		if res.ErrorMsg != nil {
-			log.Println("[recover] error:", res.ErrorMsg,)
+			log.Println("[recover] error:", res.ErrorMsg)
 			res.RES = 1
 		}
 		res.BPID = ts.SnID
@@ -386,7 +392,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		if res.RES == 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
 			log.Printf("[recover] execLRCTask success %d, msgId: %d\n", taskC, msgID)
-		}else {
+		} else {
 			log.Printf("[recover] execLRCTask fail %d, msgId: %d\n", taskC, msgID)
 		}
 
@@ -399,7 +405,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 		if res.RES == 0 {
 			log.Printf("[recover] execCPTask success %d, msgId: %d\n", taskC, msgID)
-		}else {
+		} else {
 			log.Printf("[recover] execCPTask fail %d, msgId: %d\n", taskC, msgID)
 		}
 
@@ -413,8 +419,8 @@ func (re *Engine) dispatchTask(ts *Task) {
 
 func (re *Engine) PutReplyQueue(res *TaskMsgResult) {
 	select {
-		case re.replyQueue <- res:
-			log.Printf("[recover] reply queue enqueue task=%d\n", binary.BigEndian.Uint64(res.ID[:8]))
+	case re.replyQueue <- res:
+		log.Printf("[recover] reply queue enqueue task=%d\n", binary.BigEndian.Uint64(res.ID[:8]))
 		//default:
 	}
 }
@@ -433,6 +439,7 @@ func (re *Engine) reply(res *TaskMsgResult) error {
 }
 
 var replycnt uint64
+
 //
 func (re *Engine) MultiReply() error {
 	var resmsg = make(map[int32]*message.MultiTaskOpResult)
@@ -485,15 +492,13 @@ func (re *Engine) MultiReply() error {
 			// 如果不报错退出循环
 			break
 		}
-		if replycnt % 100 == 0 {
-			log.Println("[recover][report]MultiReply,NodeID=",v.NodeID,"srcnodeid=",
-				v.SrcNodeID,"id=",v.Id,"res=",v.RES,"replycnt", replycnt)
+		if replycnt%100 == 0 {
+			log.Println("[recover][report]MultiReply,NodeID=", v.NodeID, "srcnodeid=",
+				v.SrcNodeID, "id=", v.Id, "res=", v.RES, "replycnt", replycnt)
 		}
 
 		log.Printf("[recover] [report] reply count %d\n", replycnt)
 	}
-
-
 
 	return nil
 }
@@ -521,7 +526,7 @@ func (re *Engine) tryReply(index int, data []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Println("[recover][report] tryreply resErrcode=",res.ErrCode,"res.SuccNum",res.SuccNum)
+	log.Println("[recover][report] tryreply resErrcode=", res.ErrCode, "res.SuccNum", res.SuccNum)
 	if 0 == res.ErrCode {
 		statistics.DefaultRebuildCount.IncAckSuccRebuild(uint64(res.SuccNum))
 	} else {
@@ -637,7 +642,7 @@ func (re *Engine) verifyLRCRecoveredDataAndSave(recoverData []byte, msg message.
  * @return *TaskMsgResult 任务执行结果
  */
 func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time,
-			taskLife int32, srcNodeid int32, taskPf *statistics.PerformanceStat) (res *TaskMsgResult) {
+	taskLife int32, srcNodeid int32, taskPf *statistics.PerformanceStat) (res *TaskMsgResult) {
 	// @TODO 初始化返回
 	res = &TaskMsgResult{}
 
@@ -768,7 +773,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 	hash := hashBytes[:]
 	var key [common.HashLength]byte
 	copy(key[:], hash)
-	_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{key : recoverData})
+	_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{key: recoverData})
 	if err != nil {
 		log.Printf("[recover] fail task=%d src node id %d recover hash key %s, source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
@@ -778,7 +783,7 @@ func (re *Engine) execLRCTask(msgData []byte, expired int64, StartTime time.Time
 		}
 
 		return
-	}else {
+	} else {
 		log.Printf("[recover] success task=%d src node id %d recover hash key %s, source hash key is %s\n",
 			binary.BigEndian.Uint64(res.ID[:8]), srcNodeid, base58.Encode(key[:]), base58.Encode(realHash))
 	}
@@ -818,11 +823,15 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 
 	result.ID = msg.Id
 	result.RES = 1
-	var number int	//这他妈是干啥的？？？？？？服了
+	var number int //这他妈是干啥的？？？？？？服了
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
+		peerNode := activeNodeList.GetActiveNodeData(v.NodeId)
+		if peerNode == nil
+			continue
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
+		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), peerNode.IP , msg.DataHash, &number)
 		cancel()
 
 		// 如果没有发生错误，分片下载成功，就存储分片
@@ -834,9 +843,9 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
 			log.Printf("[recover:%s] execCPTask--, get shard DataHash %s shard len %d, remote miner NodeId:%s Addr:%s\n",
-				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
+				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, peerNode.IP)
 
-			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf:shard})
+			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{vhf: shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功
 			if err != nil && (err.Error() != "YTFS: hash key conflict happens" ||
 				err.Error() == "YTFS: conflict hash value") {
@@ -849,7 +858,7 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 				result.RES = 0
 				break
 			}
-		}else{
+		} else {
 			log.Printf("[recover:%s] execCPTask error %s\n",
 				base58.Encode(msg.DataHash), err.Error())
 		}

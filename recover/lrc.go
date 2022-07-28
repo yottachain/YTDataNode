@@ -2,13 +2,16 @@ package recover
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
-	"strings"
-	"time"
 )
 
 type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
@@ -129,9 +132,11 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 	for _, idx := range indexs {
 		peer := td.Locations[idx]
 		for r := 1; r < 6; r++ {
-			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], num, sw, tasklife)
-			if err == nil && len(shard) == 16384 {
-				break
+			if peerNode := activeNodeList.GetActiveNodeData(peer.NodeId); peerNode != nil {
+				shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peerNode.IP, td.Hashs[idx], num, sw, tasklife)
+				if err == nil && len(shard) == 16384 {
+					break
+				}
 			}
 
 			if 5 == r {
@@ -235,7 +240,11 @@ effortwk:
 				return nil, fmt.Errorf("rebuild data failed, time expired")
 			}
 
-			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], &number, &sw, tasklife)
+			if peerNode := activeNodeList.GetActiveNodeData(peer.NodeId); peerNode != nil {
+				shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peerNode.IP, td.Hashs[idx], &number, &sw, tasklife)
+			} else {
+				err = errors.New("Node offline")
+			}
 
 			if err != nil {
 				log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())

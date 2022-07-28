@@ -5,14 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/mr-tron/base58"
-	"github.com/yottachain/YTDataNode/config"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTHost/encrypt"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTHost/encrypt"
 )
 
 func getUrl() string {
@@ -75,7 +76,7 @@ func update() {
 	if config.Gconfig.ActiveNodeKey != "" {
 		key = config.Gconfig.ActiveNodeKey
 		log.Printf("[activeNodeList] key is %s\n", key)
-	}else {
+	} else {
 		key = "YG6PtW66ekow4YaQ4LvyPYMG8eqHieR15kjYfhLM15n"
 	}
 
@@ -107,7 +108,7 @@ func update() {
 
 	nlMap := make(map[string]*Data)
 
-	for _, v := range  nl {
+	for _, v := range nl {
 		if _, ok := nlMap[v.NodeID]; !ok {
 			nlMap[v.NodeID] = v
 		}
@@ -134,7 +135,7 @@ func UpdateTimer() {
 			update()
 			log.Printf("[activeNodeList] update success interval is %d\n", ttl)
 		}
-		<-time.After(time.Second*10)
+		<-time.After(time.Second * 10)
 	}
 
 }
@@ -260,4 +261,13 @@ func HasNodeid(id string) bool {
 	//	}
 	//}
 	return false
+}
+
+func GetActiveNodeData(id string) *Data {
+
+	if _, ok := nodeListMap[id]; ok {
+		return nodeListMap[id]
+	}
+
+	return nil
 }

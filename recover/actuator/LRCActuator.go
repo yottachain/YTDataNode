@@ -230,37 +230,37 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 		var d shardDownloader.DownloaderWait
 
-		if activeNodeList.HasNodeid(addrInfo.NodeId) {
+		if peerNode := activeNodeList.GetActiveNodeData(addrInfo.NodeId); peerNode != nil {
 			if L.hashAddrMap[strHash][0]/2 > 0 && L.hashAddrMap[strHash][1] < L.hashAddrMap[strHash][0] {
-				if activeNodeList.HasNodeid(addrInfo.NodeId2) {
-					d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
+				if peerNode2 := activeNodeList.GetActiveNodeData(addrInfo.NodeId); peerNode2 != nil {
+					d, _ = L.downloader.AddTask(addrInfo.NodeId2, peerNode2.IP, hash,
 						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 					log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d "+
 						"index %d use node(2) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
-						shardIndex, addrInfo.NodeId2, addrInfo.Addrs2)
+						shardIndex, addrInfo.NodeId2, peerNode2.IP)
 					L.hashAddrMap[strHash][1]++
 				} else {
-					d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+					d, _ = L.downloader.AddTask(addrInfo.NodeId, peerNode.IP, hash,
 						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 					log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d "+
 						"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
-						shardIndex, addrInfo.NodeId, addrInfo.Addrs)
+						shardIndex, addrInfo.NodeId, peerNode.IP)
 					L.hashAddrMap[strHash][0]++
 				}
 			} else {
-				d, _ = L.downloader.AddTask(addrInfo.NodeId, addrInfo.Addrs, hash,
+				d, _ = L.downloader.AddTask(addrInfo.NodeId, peerNode.IP, hash,
 					binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 				log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d "+
 					"index %d use node(1) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
-					shardIndex, addrInfo.NodeId, addrInfo.Addrs)
+					shardIndex, addrInfo.NodeId, peerNode.IP)
 				L.hashAddrMap[strHash][0]++
 			}
-		} else if activeNodeList.HasNodeid(addrInfo.NodeId2) {
-			d, _ = L.downloader.AddTask(addrInfo.NodeId2, addrInfo.Addrs2, hash,
+		} else if peerNode2 := activeNodeList.GetActiveNodeData(addrInfo.NodeId); peerNode2 != nil {
+			d, _ = L.downloader.AddTask(addrInfo.NodeId2, peerNode2.IP, hash,
 				binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 			log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d "+
 				"index %d use node(2) nodeid %s addrinfo %v\n", binary.BigEndian.Uint64(L.msg.Id[:8]),
-				shardIndex, addrInfo.NodeId2, addrInfo.Addrs2)
+				shardIndex, addrInfo.NodeId2, peerNode2.IP)
 			L.hashAddrMap[strHash][1]++
 		} else {
 			log.Println("[recover_debugtime] E2_1 addDownloadTask_addtask fail taskid=",
@@ -472,9 +472,9 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		if !ok && !ok1 {
 			//onLineShardIndexes = append(onLineShardIndexes, index)
 
-			log.Printf("[recover] 任务 %d 阶段 %d offline miner index %d (1) node_id %s adds %v (2) node_id %s adds %v",
+			log.Printf("[recover] 任务 %d 阶段 %d offline miner index %d (1) node_id %s (2) node_id %s",
 				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId,
-				L.msg.Locations[index].Addrs, L.msg.Locations[index].NodeId2, L.msg.Locations[index].Addrs2)
+				L.msg.Locations[index].NodeId2)
 			//不在线的矿机就不下载了, 两个地址都不在线
 			delete(L.needDownloadIndexMap, index)
 			if L.opts.Stage == RECOVER_STAGE_ROW {
@@ -483,15 +483,13 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 		}
 
 		if ok {
-			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (1) node_id %s adds %v",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId,
-				L.msg.Locations[index].Addrs)
+			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (1) node_id %s",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId)
 		}
 
 		if ok1 {
-			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (2) node_id %s adds %v",
-				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId2,
-				L.msg.Locations[index].Addrs2)
+			log.Printf("[recover] 任务 %d 阶段 %d online miner index %d (2) node_id %s",
+				binary.BigEndian.Uint64(L.msg.Id[:8]), L.opts.Stage, index, L.msg.Locations[index].NodeId2)
 		}
 	}
 	log.Printf("[recover] 任务 %d 阶段 %d online miner judge use time %d\n",
@@ -510,14 +508,19 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 	}
 
 	log.Println("[recover_debugtime] B0  backupTask taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
-	if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
+	/*
+		if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
+			return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
+		}*/
+	var peerNode *activeNodeList.Data
+	if peerNode = activeNodeList.GetActiveNodeData(L.msg.BackupLocation.NodeId); peerNode == nil {
 		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
 	}
 	log.Println("[recover_debugtime] B1  HasNodeid taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
 
 	for i := 0; i < 5; i++ {
 		dw, err := L.downloader.AddTask(L.msg.BackupLocation.NodeId,
-			L.msg.BackupLocation.Addrs, L.msg.Hashs[L.msg.RecoverId],
+			peerNode.IP, L.msg.Hashs[L.msg.RecoverId],
 			binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 		if err != nil {
 			return nil, err
