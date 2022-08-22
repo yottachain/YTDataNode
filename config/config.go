@@ -1,27 +1,27 @@
 package config
 
 import (
-    "bytes"
-    "crypto/md5"
-    "encoding/json"
-    "fmt"
+	"bytes"
+	"crypto/md5"
+	"encoding/json"
+	"fmt"
 
-    "io/ioutil"
-    "log"
-    "os"
-    "path"
-    "runtime"
-    "strings"
-    "time"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+	"time"
 
-    "github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
-    "github.com/libp2p/go-libp2p-core/peer"
-    "github.com/multiformats/go-multiaddr"
-    "github.com/spf13/viper"
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 
-    ci "github.com/libp2p/go-libp2p-core/crypto"
-    "github.com/yottachain/YTDataNode/util"
-    ytfsOpts "github.com/yottachain/YTFS/opt"
+	ci "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/yottachain/YTDataNode/util"
+	ytfsOpts "github.com/yottachain/YTFS/opt"
 )
 
 type peerInfo struct {
@@ -30,6 +30,7 @@ type peerInfo struct {
 }
 
 var isDebug = false
+var Global_Shard_Size = (uint64)(16)
 
 func init() {
 	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
@@ -46,6 +47,11 @@ func init() {
 		fmt.Println("---------DEBUG MODE------")
 	}
 }
+
+type ShardConfig struct {
+	ShardSize       int           `json:"ShardSize"`
+}
+
 
 // Config 配置
 type Config struct {
@@ -113,7 +119,7 @@ func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
 func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
     yp := util.GetYTFSPath()
-    var d uint32 = 16384
+    var d uint32 = (uint32)(Global_Shard_Size * 1024)
     n := size / uint64(d) / uint64(m)
 
     for {
@@ -133,7 +139,7 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
                 ReadOnly:      false,
                 SyncPeriod:    1,
                 StorageVolume: size,
-                DataBlockSize: 16384,
+                DataBlockSize: (uint32)(Global_Shard_Size * 1024),
             },
         },
         ReadOnly:       false,
@@ -394,6 +400,21 @@ func (cfg *Config) GetBPIndex() int {
 	//log.Printf("len bplist:%d ,id %d, bpindex %d\n", bpnum, id, bpindex)
 	return int(bpindex)
 }
+
+func ReadShardConfig() {
+	var cfg ShardConfig
+	data, err := ioutil.ReadFile(util.GetShardConfigPath())
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		return
+	}
+
+	Global_Shard_Size = (uint64)(cfg.ShardSize)
+}
+
 
 // ReadConfig 读配置
 func ReadConfig() (*Config, error) {

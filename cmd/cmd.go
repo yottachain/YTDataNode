@@ -3,16 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/diskHash"
-	"github.com/yottachain/YTDataNode/util"
-	ytfs "github.com/yottachain/YTFS"
-	ytfsutil "github.com/yottachain/YTFS/util"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
+	ytfsutil "github.com/yottachain/YTFS/util"
 
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/cmd/account"
@@ -132,6 +133,9 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
+	config.ReadShardConfig()
+	fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
+	
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{

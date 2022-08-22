@@ -1,15 +1,16 @@
 package main
 
-import(
-    "crypto/md5"
-    //"encoding/binary"
-    "flag"
-    "fmt"
-    "github.com/mr-tron/base58"
-    "github.com/yottachain/YTDataNode/instance"
-    ydcommon "github.com/yottachain/YTFS/common"
+import (
+	"crypto/md5"
+	//"encoding/binary"
+	"flag"
+	"fmt"
 
-    //"github.com/yottachain/YTDataNode/verifySlice"
+	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/instance"
+	ydcommon "github.com/yottachain/YTFS/common"
+	//"github.com/yottachain/YTDataNode/verifySlice"
 )
 
 var StartPosIndex uint
@@ -62,7 +63,7 @@ func main(){
             continue
         }
 
-        if len(data) != 16384{
+        if len(data) != (int)(config.Global_Shard_Size * 1024){
             fmt.Println("get data error, len(data)=", len(data))
             continue
         }

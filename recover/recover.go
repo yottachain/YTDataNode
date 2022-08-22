@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+
 	//"github.com/yottachain/YTDataNode/activeNodeList"
 	"sync/atomic"
 
@@ -159,7 +160,7 @@ func (re *Engine) getShard2(ctx context.Context, id string, taskID string, addrs
 	if len(shardBuf) < 3 {
 		log.Printf("[recover:%s] error: shard empty! addr %v\n",
 			base58.Encode(hash), addrs)
-		return nil, fmt.Errorf("error: shard less then 16384, len=", len(shardBuf))
+		return nil, fmt.Errorf("error: shard less then 3, len=", len(shardBuf))
 	}
 
 	var resMsg message.DownloadShardResponse

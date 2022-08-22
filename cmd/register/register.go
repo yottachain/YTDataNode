@@ -4,11 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/eoscanada/eos-go"
-	"github.com/eoscanada/eos-go/ecc"
-	"github.com/yottachain/YTDataNode/commander"
-	"github.com/yottachain/YTDataNode/config"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"math"
@@ -17,6 +12,12 @@ import (
 	"os"
 	"path"
 	"time"
+
+	"github.com/eoscanada/eos-go"
+	"github.com/eoscanada/eos-go/ecc"
+	"github.com/yottachain/YTDataNode/commander"
+	"github.com/yottachain/YTDataNode/config"
+	"gopkg.in/yaml.v2"
 
 	"github.com/spf13/cobra"
 )
@@ -193,7 +194,7 @@ func step1(form *RegForm) {
 		IsCalc:     form.IsCalc,
 		PoolID:     eos.AN(form.PoolId),
 		MinerOwner: eos.AN(form.MinerOwner),
-		MaxSpace:   form.MaxSpace * GB / 16384,
+		MaxSpace:   form.MaxSpace * GB / (config.Global_Shard_Size * 1024),
 		Extra:      initConfig.PubKey,
 	}
 	action := &eos.Action{

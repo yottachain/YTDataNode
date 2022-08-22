@@ -2,7 +2,7 @@ package repoCmd
 
 import (
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
+	"log"
 	"os"
 	"path"
 
@@ -77,6 +77,8 @@ func backData(cfg *config.Config) error {
 	}
 	os.Rename(path.Join(util.GetYTFSPath(), "index.db"), path.Join(backdir, "index.db"))
 	os.Rename(path.Join(util.GetYTFSPath(), "config.json"), path.Join(backdir, "config.json"))
+	os.Rename(path.Join(util.GetYTFSPath(), "shardinfo.json"), path.Join(backdir, "shardinfo.json"))
+
 	for k, v := range cfg.Storages {
 		newPath := path.Join(backdir, path.Base(v.StorageName))
 		os.Rename(v.StorageName, newPath)

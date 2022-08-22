@@ -33,6 +33,11 @@ func GetConfigPath() string {
 	return GetYTFSPath() + "/config.json"
 }
 
+func GetShardConfigPath() string {
+	return GetYTFSPath() + "/shardinfo.json"
+}
+
+
 // PathExists 判断文件是否存在
 func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)

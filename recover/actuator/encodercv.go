@@ -6,7 +6,6 @@ import (
 	lrcpkg "github.com/yottachain/YTLRC"
 )
 
-type ShardData [16384]byte
 
 var TestData [164]lrcpkg.Shard
 

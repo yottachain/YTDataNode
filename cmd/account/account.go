@@ -444,7 +444,7 @@ var infoCmd = &cobra.Command{
 			fmt.Println("矿机ID", v.MinerID)
 			fmt.Println("矿机管理员", v.Admin)
 			fmt.Println("矿池ID", v.PoolID)
-			fmt.Printf("最大采购空间 %d Block(=%dGB)\n", v.MaxSpace, v.MaxSpace*16/1024/1024)
+			fmt.Printf("最大采购空间 %d Block(=%dGB)\n", v.MaxSpace, v.MaxSpace*config.Global_Shard_Size/1024/1024)
 		}
 		getDepInfo()
 	},
