@@ -3,18 +3,19 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/tecbot/gorocksdb"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/util"
-	ytfs "github.com/yottachain/YTFS"
-	ydcommon "github.com/yottachain/YTFS/common"
-	"github.com/yottachain/YTFS/storage"
 	"log"
 	"os"
 	"os/exec"
 	"path"
 	"sync/atomic"
 	"time"
+
+	"github.com/tecbot/gorocksdb"
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
+	ydcommon "github.com/yottachain/YTFS/common"
+	"github.com/yottachain/YTFS/storage"
 )
 
 var num uint64
@@ -117,6 +118,7 @@ func openKVDB(DBPath string) (kvdb *KvDB, err error) {
 	// 创建输入输出流
 	ro := gorocksdb.NewDefaultReadOptions()
 	wo := gorocksdb.NewDefaultWriteOptions()
+	wo.DisableWAL(config.Global_Disable_WAL)
 
 	return &KvDB{
 		Rdb   :  db,

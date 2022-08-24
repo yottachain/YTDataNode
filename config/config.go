@@ -31,6 +31,7 @@ type peerInfo struct {
 
 var isDebug = false
 var Global_Shard_Size = (uint64)(16)
+var Global_Disable_WAL = false
 
 func init() {
 	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
@@ -50,6 +51,7 @@ func init() {
 
 type ShardConfig struct {
 	ShardSize       int           `json:"ShardSize"`
+	DisableWAL 	bool		  `json:"DisableWAL"`	
 }
 
 
@@ -413,6 +415,7 @@ func ReadShardConfig() {
 	}
 
 	Global_Shard_Size = (uint64)(cfg.ShardSize)
+	Global_Disable_WAL = cfg.DisableWAL
 }
 
 
