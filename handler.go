@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
+
 	//"log"
 	"os"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
+
 	//"github.com/tecbot/gorocksdb"
 
 	//"github.com/tecbot/gorocksdb"
@@ -22,9 +25,6 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
-
-
-	"github.com/yottachain/YTDataNode/logger"
 
 	"github.com/yottachain/YTDataNode/spotCheck"
 
@@ -322,6 +322,11 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
 	var ytres YTres
+	/*
+	atomic.AddUint64(&wh.seq,1)
+	ytres.seq = wh.seq
+	return 0, ytres
+	*/
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		// buys
