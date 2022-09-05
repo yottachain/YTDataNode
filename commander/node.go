@@ -90,7 +90,7 @@ func setLimits() {
 	if runtime.GOOS == "linux" {
 		cmd := exec.Command("bash", "-c", "ulimit -n 60000")
 		stdin, _ := cmd.StdinPipe()
-		_,  _ = fmt.Fprint(stdin, `
+		_, _ = fmt.Fprint(stdin, `
 echo "* soft nofile 655350" > /etc/security/limits.conf
 echo "* hard nofile 655350" >> /etc/security/limits.conf
 echo "* soft nproc 655350" >> /etc/security/limits.conf

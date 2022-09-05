@@ -53,6 +53,12 @@ func (am *AddrsManager) UpdateAddrs() {
 	var port string
 	var portCmd string
 
+	var oldAddrs []multiaddr.Multiaddr
+	var oldAddrsCmd []multiaddr.Multiaddr
+
+	oldAddrs = am.addrs
+	oldAddrsCmd = am.addrsCmd
+
 	ls, lsCmd := am.sn.Host().Listenner()
 	am.addrs, port = am.sn.Host().Addrs(ls)
 
@@ -63,7 +69,7 @@ func (am *AddrsManager) UpdateAddrs() {
 		am.addrsCmd, portCmd = am.sn.Host().Addrs(lsCmd)
 	}
 
-	var realIP string;
+	var realIP string
 
 	url := "http://dnapi.yottachain.net/self-ip"
 	resp, err := http.Get(url)
@@ -72,6 +78,10 @@ func (am *AddrsManager) UpdateAddrs() {
 			realIP = ip
 		} else {
 			log.Printf("get public ip fail, url:%s\n", url)
+			if oldAddrs != nil && oldAddrsCmd != nil {
+				am.addrs = oldAddrs
+				am.addrsCmd = oldAddrsCmd
+			}
 			return
 		}
 	} else {
