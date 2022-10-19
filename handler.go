@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
+
 	//"log"
 	"os"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/mr-tron/base58/base58"
 	"github.com/multiformats/go-multiaddr"
+
 	//"github.com/tecbot/gorocksdb"
 
 	//"github.com/tecbot/gorocksdb"
@@ -22,9 +25,6 @@ import (
 	"github.com/yottachain/YTDataNode/slicecompare"
 	"github.com/yottachain/YTDataNode/statistics"
 	yhservice "github.com/yottachain/YTHost/service"
-
-
-	"github.com/yottachain/YTDataNode/logger"
 
 	"github.com/yottachain/YTDataNode/spotCheck"
 
@@ -322,11 +322,13 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
 	var ytres YTres
+	var needCheckTk = true
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
-		// buys
-		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
-		return 105, ytres
+		//return 105, ytres
+		msg.AllocId = TokenPool.NewToken().String()
+		needCheckTk = false
+		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)	
 	}
 	tk, err := TokenPool.NewTokenFromString(msg.AllocId)
 	if err != nil {
@@ -339,7 +341,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		recover()
 		return 105, ytres
 	}
-	if !TokenPool.Utp().Check(tk) {
+	if needCheckTk && !TokenPool.Utp().Check(tk) {
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 		log.Println("token check fail：", time.Now().Sub(tk.Tm).Milliseconds())
 		return 105, ytres
