@@ -42,9 +42,10 @@ var disableWrite = false
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	RequestQueue chan *wRequest
-	TmpDB        *CompDB
-	seq           uint64
+	RequestQueue 	chan *wRequest
+	TmpDB        	*CompDB
+	seq           	uint64
+	isWriteSleep	bool
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
@@ -61,6 +62,8 @@ func NewWriteHandler(sn StorageNode) *WriteHandler {
 		make(chan *wRequest, 1000),
 		TDB,
 		seq,
+		//false,
+		//time.Now(),
 	}
 }
 
@@ -177,6 +180,47 @@ func (wh *WriteHandler) Run() {
 
 func (wh *WriteHandler) GetMaxSpace() uint64 {
 	return wh.Config().AllocSpace/uint64(wh.YTFS().Meta().DataBlockSize) - 10
+}
+
+func (wh *WriteHandler) GenAllocID(id peer.ID) (string,int) {
+	var xtp = TokenPool.Utp()
+	var level int32 = 0
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Gconfig.TokenWait)*time.Millisecond)
+	if config.Gconfig.TokenWait == 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	}
+	defer cancel()
+
+	tk, err := xtp.Get(ctx, id, level)
+
+	allocID := ""
+	res := 0
+
+	// 如果 剩余空间不足10个分片停止发放token
+	if wh.GetMaxSpace() <= (wh.YTFS().Len()) {
+		tk = nil
+		res = 1
+		err = fmt.Errorf("YTFS： space is not enough")
+	}
+
+	if err != nil {
+		if res == 0 {
+			res = 2
+		}
+	} else {
+		allocID = tk.String()
+	}
+	// 如果token为空 返回 假
+	if res.AllocId == "" {
+		//time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
+	} else {
+		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
+		atomic.AddInt64(&statistics.DefaultStat.RXToken, 1)
+	}
+
+	return allocID, res 
+
 }
 
 func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiaddr) []byte {
@@ -323,10 +367,24 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
 	var ytres YTres
 	var needCheckTk = true
+	sleepTimes := 0
+    for {
+    	if !wh.isWriteSleep {
+        	break
+        }
+		sleepTimes++
+		time.Sleep(time.Millisecond * 100)
+		if sleepTimes >= 50 {
+			break
+		}
+    }
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		//return 105, ytres
-		msg.AllocId = TokenPool.NewToken().String()
+		tk := TokenPool.NewToken()
+		pid := ctx.Value("pid").(peer.ID)
+		tk.PID = pid
+		msg.AllocId = tk.String()
 		needCheckTk = false
 		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)	
 	}
@@ -378,7 +436,10 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 			return 102, ytres
 		}
-		log.Println("数据写入错误error:", err.Error())
+		if strings.Contains(err.Error(), "ytfs put time out") {
+			wh.isWriteSleep = true
+			return 112, ytres
+		}
 		if strings.Contains(err.Error(), "no space") {
 			atomic.AddInt64(&statistics.DefaultStat.NoSpaceError, 1)
 		}
@@ -391,7 +452,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 101, ytres
 	}
 	log.Println("return msg", 0)
-
+	wh.isWriteSleep = false
 	diskltc := time.Now().Sub(putStartTime)
 	// 成功计数
 	TokenPool.Utp().DiskLatency.Add(diskltc)
