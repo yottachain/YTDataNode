@@ -436,6 +436,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if err.Error() == "YTFS: hash key conflict happens" || err.Error() == "YTFS: conflict hash value" {
 			return 102, ytres
 		}
+		log.Println("数据写入错误error:", err.Error())
 		if strings.Contains(err.Error(), "ytfs put time out") {
 			wh.isWriteSleep = true
 			return 112, ytres
