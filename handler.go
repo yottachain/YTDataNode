@@ -62,8 +62,7 @@ func NewWriteHandler(sn StorageNode) *WriteHandler {
 		make(chan *wRequest, 1000),
 		TDB,
 		seq,
-		//false,
-		//time.Now(),
+		false,
 	}
 }
 
@@ -212,7 +211,7 @@ func (wh *WriteHandler) GenAllocID(id peer.ID) (string,int) {
 		allocID = tk.String()
 	}
 	// 如果token为空 返回 假
-	if res.AllocId == "" {
+	if allocID == "" {
 		//time.Sleep(time.Duration(config.Gconfig.TokenReturnWait) * time.Millisecond)
 	} else {
 		atomic.AddInt64(&statistics.DefaultStat.SentTokenNum, 1)
@@ -299,7 +298,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 }
 
 // Handle 获取回调处理函数
-func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
+func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {	
 	var ytres YTres
 	startTime := time.Now()
 	var msg message.UploadShardRequest
