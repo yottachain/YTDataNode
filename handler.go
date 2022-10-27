@@ -438,6 +438,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		log.Println("数据写入错误error:", err.Error())
 		if strings.Contains(err.Error(), "ytfs put time out") {
 			wh.isWriteSleep = true
+			log.Println("流控开启模式进入---")
 			return 112, ytres
 		}
 		if strings.Contains(err.Error(), "no space") {
