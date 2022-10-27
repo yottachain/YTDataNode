@@ -366,7 +366,13 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 	var success = make(chan map[common.IndexTableKey]byte)
 
 	go func() {
+		var firstShardHash []byte
+		for key, _ := range batch {
+			firstShardHash = key.Hsh[:]
+		}
+		startTime := time.Now()					
 		res, err := wh.YTFS().BatchPut(batch)
+		log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard-YTFS().BatchPut use [%f]\n", base58.Encode(firstShardHash), len(batch), time.Now().Sub(startTime).Seconds())
 		if err != nil {
 			errorC <- err
 		}
@@ -386,6 +392,7 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
 	var ytres YTres
 	var needCheckTk = true
+	/*
 	sleepTimes := 0
     for {
     	if !wh.isWriteSleep {
@@ -396,7 +403,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		if sleepTimes >= 50 {
 			break
 		}
-    }
+    }*/
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		//return 105, ytres
