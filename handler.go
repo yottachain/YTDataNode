@@ -102,10 +102,15 @@ func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data
 }
 
 func (wh *WriteHandler) batchWrite(number int) {
+	totalTime := time.Now()
+	var firstShardHash []byte
+
 	var err, err2 error
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
+	
+	startTime := time.Now()
 
 	for i := 0; i < number; i++ {
 		select {
@@ -130,8 +135,16 @@ func (wh *WriteHandler) batchWrite(number int) {
 		}
 	}
 
+	for key, _ := range rqmap {
+		firstShardHash = key.Hsh[:]
+	}
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-slicecompare.PutKSeqToDb use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
+
+
 	log.Printf("[ytfs]flush start:%d\n", number)
+	startTime = time.Now()
 	_, err = wh.putShard(rqmap)
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d\n", number,"wh.seq",wh.seq)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
@@ -147,11 +160,15 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 
 	//wh.seq = wh.seq + uint64(number)
+	startTime = time.Now()
 	err2 = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-slicecompare.PutVSeqToDb use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
+
 	if err2 != nil{
 		fmt.Println("[slicecompare] PutVSeqToDb error:",err)
 	}
 OUT:
+	startTime = time.Now()
 	for _, rq := range rqs {
 		select {
 		case rq.err <- err:
@@ -159,6 +176,9 @@ OUT:
 			continue
 		}
 	}
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-notify use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite total use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(totalTime).Seconds())
+
 }
 
 func (wh *WriteHandler) Run() {
