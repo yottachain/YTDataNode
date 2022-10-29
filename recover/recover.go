@@ -70,7 +70,7 @@ func New(sn node.StorageNode) (*Engine, error) {
 	re.replyQueue = make(chan *TaskMsgResult, max_reply_num)
 	re.sn = sn
 	re.DefaultDownloader = shardDownloader.New(sn.Host().ClientStore(), 20)
-	re.le = NewLRCEngine(statistics.DefaultRebuildCount.IncRbdSucc)
+	re.le = NewLRCEngine(sn, statistics.DefaultRebuildCount.IncRbdSucc)
 	re.Upt = TokenPool.Utp()
 	re.lck = &sync.Mutex{}
 
