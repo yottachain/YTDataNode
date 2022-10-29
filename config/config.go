@@ -1,27 +1,27 @@
 package config
 
 import (
-    "bytes"
-    "crypto/md5"
-    "encoding/json"
-    "fmt"
+	"bytes"
+	"crypto/md5"
+	"encoding/json"
+	"fmt"
 
-    "io/ioutil"
-    "log"
-    "os"
-    "path"
-    "runtime"
-    "strings"
-    "time"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+	"time"
 
-    "github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
-    "github.com/libp2p/go-libp2p-core/peer"
-    "github.com/multiformats/go-multiaddr"
-    "github.com/spf13/viper"
+	"github.com/eoscanada/eos-go/btcsuite/btcutil/base58"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/multiformats/go-multiaddr"
+	"github.com/spf13/viper"
 
-    ci "github.com/libp2p/go-libp2p-core/crypto"
-    "github.com/yottachain/YTDataNode/util"
-    ytfsOpts "github.com/yottachain/YTFS/opt"
+	ci "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/yottachain/YTDataNode/util"
+	ytfsOpts "github.com/yottachain/YTFS/opt"
 )
 
 type peerInfo struct {
@@ -30,6 +30,7 @@ type peerInfo struct {
 }
 
 var isDebug = false
+var Global_Shard_Size = (uint64)(16)
 
 func init() {
 	filename := path.Join(util.GetYTFSPath(), "debug.yaml")
@@ -45,6 +46,10 @@ func init() {
 		isDebug = true
 		fmt.Println("---------DEBUG MODE------")
 	}
+}
+
+type ShardConfig struct {
+	ShardSize       int           `json:"ShardSize"`
 }
 
 // Config 配置
@@ -69,51 +74,10 @@ type Config struct {
 	AllocSpace   uint64
 }
 
-// DefaultYTFSOptions default config
-func DefaultYTFSOptions() *ytfsOpts.Options {
-	yp := util.GetYTFSPath()
-	opts := ytfsOpts.DefaultOptions()
-	for index, storage := range opts.Storages {
-		storage.StorageName = fmt.Sprintf("%s/storage-%d", yp, index)
-		storage.StorageVolume = 2 << 40
-		storage.DataBlockSize = 1 << 14
-		opts.Storages[index] = storage
-	}
-	opts.DataBlockSize = 1 << 14
-	opts.TotalVolumn = 2 << 41
-	opts.IndexTableCols = 1 << 14
-	opts.IndexTableRows = 1 << 28
-	if runtime.GOOS == "linux" {
-		opts.UseKvDb = true
-	}
-	return opts
-}
-
-func InitRowsCols(size uint64, n uint32, db string)(uint64, uint64, error){
-	var d uint32 = 1 << 14
-	var m uint64
-
-	//expendRatioM = 1.2 = 12 / 10
-	m = size / uint64(d) / uint64(n)
-	if db == "rocksdb"{
-		return m, uint64(n), nil
-	}
-
-	fmt.Println("InitRowsCols,M=",m)
-	// IndexTableCols(M) = m * expendRatioM,  expendRatioM = 1.2  (512 <= IndexTableCols(M) <= 2048)
-	if m < 420 || m > 1700{
-		err := fmt.Errorf("IndexTableCols not suitable,M=",m)
-		fmt.Println("[error]init failed, IndexTableCols not suitable,M=",m)
-		return 0, 0, err
-	}
-
-	return m, uint64(n), nil
-}
-
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
 func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
     yp := util.GetYTFSPath()
-    var d uint32 = 16384
+    var d uint32 = (uint32)(Global_Shard_Size * 1024)
     n := size / uint64(d) / uint64(m)
 
     for {
@@ -133,7 +97,7 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
                 ReadOnly:      false,
                 SyncPeriod:    1,
                 StorageVolume: size,
-                DataBlockSize: 16384,
+                DataBlockSize: d,
             },
         },
         ReadOnly:       false,
@@ -152,37 +116,6 @@ func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
     return opts
 }
 
-// GetYTFSOptionsByParams2 通过参数生成YTFS配置, 多storage配置
-func GetYTFSOptionsByParams2(totalSize uint64, storageSize uint64, m uint32) *ytfsOpts.Options {
-	yp := util.GetYTFSPath()
-	n := totalSize / uint64(m)
-	opts := &ytfsOpts.Options{
-		YTFSTag: "ytfs",
-		Storages: []ytfsOpts.StorageOptions{
-			{
-				StorageName:   path.Join(yp, "storage"),
-				StorageType:   0,
-				ReadOnly:      false,
-				SyncPeriod:    1,
-				StorageVolume: storageSize,
-				DataBlockSize: 1 << 14,
-			},
-		},
-		ReadOnly:       false,
-		SyncPeriod:     1,
-		IndexTableCols: m,
-		IndexTableRows: uint32(n),
-		DataBlockSize:  1 << 14,
-		TotalVolumn:    totalSize,
-	}
-	return opts
-}
-
-// NewConfig ..
-func NewConfig() *Config {
-	cfg := NewConfigByYTFSOptions(DefaultYTFSOptions())
-	return cfg
-}
 
 func NewConfigByYTFSOptions(opts *ytfsOpts.Options) *Config {
 	if opts == nil {
@@ -393,6 +326,20 @@ func (cfg *Config) GetBPIndex() int {
 
 	//log.Printf("len bplist:%d ,id %d, bpindex %d\n", bpnum, id, bpindex)
 	return int(bpindex)
+}
+
+func ReadShardConfig() {
+	var cfg ShardConfig
+	data, err := ioutil.ReadFile(util.GetShardConfigPath())
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &cfg)
+	if err != nil {
+		return
+	}
+
+	Global_Shard_Size = (uint64)(cfg.ShardSize)
 }
 
 // ReadConfig 读配置

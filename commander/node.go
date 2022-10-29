@@ -30,20 +30,6 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 )
 
-// Init 初始化
-func Init() error {
-
-	cfg := config.NewConfig()
-	cfg.Save()
-
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
-	if err != nil {
-		return err
-	}
-	defer yt.Close()
-	return nil
-}
-
 func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *config.Config {
 	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
 	if cfg == nil {

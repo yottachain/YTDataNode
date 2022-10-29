@@ -5,14 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
+	"path"
+
 	"github.com/mr-tron/base58"
 	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/util"
 	ytfs "github.com/yottachain/YTFS"
 	"github.com/yottachain/YTFS/common"
-	"os"
-	"path"
 )
 
 const CheckBlockSize = 64 + 16*1024
@@ -41,7 +42,7 @@ func RandWrite(ytfs *ytfs.YTFS, l uint) error {
 
 func GetHash(ytfs *ytfs.YTFS) (string, error) {
 	buf, err := ytfs.GetData(0)
-	if err != nil || len(buf) != 16384{
+	if err != nil || len(buf) != int(ytfs.Meta().DataBlockSize){
 		err = fmt.Errorf("GetDiskHashError")
 		return "diskHasherror", err
 	}

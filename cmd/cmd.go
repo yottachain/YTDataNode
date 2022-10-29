@@ -133,6 +133,9 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
+	config.ReadShardConfig()
+	fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
+		
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{

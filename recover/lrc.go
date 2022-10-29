@@ -3,12 +3,14 @@ package recover
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/instance"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	lrcpkg "github.com/yottachain/YTLRC"
-	"strings"
-	"time"
 )
 
 type GetShardFunc func(ctx context.Context, id string, taskID string, addrs []string, hash []byte, n *int) ([]byte, error)
@@ -125,12 +127,13 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 	}
 
 	log.Println("[recover] missrecover need shard list", indexs, len(indexs))
+	sn := instance.GetStorageNode()
 
 	for _, idx := range indexs {
 		peer := td.Locations[idx]
 		for r := 1; r < 6; r++ {
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], num, sw, tasklife)
-			if err == nil && len(shard) == 16384 {
+			if err == nil && len(shard) == sn.YTFS.Meta().DataBlockSize {
 				break
 			}
 
@@ -141,7 +144,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 			<-time.After(time.Millisecond * 50)
 		}
 
-		if len(shard) != 16384 {
+		if len(shard) != sn.YTFS.Meta().DataBlockSize  {
 			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
 			continue
 		}
@@ -258,7 +261,7 @@ effortwk:
 			}
 		}
 
-		if len(shard) < 16384 {
+		if len(shard) < sn.YTFS.Meta().DataBlockSize  {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue
