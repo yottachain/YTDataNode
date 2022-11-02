@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/instance"
 	ydcommon "github.com/yottachain/YTFS/common"
 	//"github.com/yottachain/YTDataNode/verifySlice"
@@ -62,7 +63,7 @@ func main(){
             continue
         }
 
-        if len(data) != sn.YTFS.Meta().DataBlockSize(){
+        if len(data) != (int)(config.Global_Shard_Size * 1024){
             fmt.Println("get data error, len(data)=", len(data))
             continue
         }

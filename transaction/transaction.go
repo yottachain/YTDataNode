@@ -15,6 +15,7 @@ import (
 
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/ecc"
+	"github.com/yottachain/YTDataNode/config"
 )
 
 var Api *eos.API
@@ -105,7 +106,7 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 		case "Block":
 			var value uint64
 			fmt.Sscanln(text, &value)
-			v.Field(i).SetUint(value * 1024 * 1024 / 16)
+			v.Field(i).SetUint(value * 1024 * 1024 / config.Global_Shard_Size)
 		default:
 			fmt.Println("未定义类型", t.Field(i).Type.Name())
 		}

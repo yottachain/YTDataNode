@@ -16,12 +16,10 @@ import (
 	"github.com/yottachain/YTFS/common"
 )
 
-const CheckBlockSize = 64 + 16*1024
-
 func randShard(n int) map[common.IndexTableKey][]byte {
 	var res = make(map[common.IndexTableKey][]byte, n)
 	for i := 0; i < n; i++ {
-		buf := make([]byte, 16*1024)
+		buf := make([]byte, config.Global_Shard_Size*1024)
 		rand.Read(buf)
 		key := md5.Sum(buf)
 		res[common.IndexTableKey{Hsh:key, Id:0}] = buf
@@ -42,7 +40,7 @@ func RandWrite(ytfs *ytfs.YTFS, l uint) error {
 
 func GetHash(ytfs *ytfs.YTFS) (string, error) {
 	buf, err := ytfs.GetData(0)
-	if err != nil || len(buf) != int(ytfs.Meta().DataBlockSize){
+	if err != nil || len(buf) != int(config.Global_Shard_Size * 1024){
 		err = fmt.Errorf("GetDiskHashError")
 		return "diskHasherror", err
 	}
@@ -60,7 +58,7 @@ func GetHead() []byte {
 	}
 	defer fl.Close()
 
-	buf := make([]byte, CheckBlockSize)
+	buf := make([]byte, 64 + config.Global_Shard_Size*1024)
 	fl.Read(buf)
 	return buf
 }

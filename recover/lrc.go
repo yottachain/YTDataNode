@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	node "github.com/yottachain/YTDataNode/storageNodeInterface"
@@ -136,7 +137,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 		peer := td.Locations[idx]
 		for r := 1; r < 6; r++ {
 			shard, err = lrch.le.GetShard(peer.NodeId, base58.Encode(td.Id), peer.Addrs, td.Hashs[idx], num, sw, tasklife)
-			if err == nil && len(shard) == (int)(lrch.le.sn.YTFS().Meta().DataBlockSize) {
+			if err == nil && len(shard) == (int)(config.Global_Shard_Size * 1024) {
 				break
 			}
 
@@ -147,7 +148,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 			<-time.After(time.Millisecond * 50)
 		}
 
-		if len(shard) != (int)(lrch.le.sn.YTFS().Meta().DataBlockSize)  {
+		if len(shard) != (int)(config.Global_Shard_Size * 1024)  {
 			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
 			continue
 		}
@@ -265,7 +266,7 @@ effortwk:
 			}
 		}
 
-		if len(shard) < (int)(lrch.le.sn.YTFS().Meta().DataBlockSize)  {
+		if len(shard) < (int)(config.Global_Shard_Size * 1024)  {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue

@@ -3,20 +3,21 @@ package Perf
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/yottachain/YTDataNode/TokenPool"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
 	"github.com/yottachain/YTDataNode/statistics"
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTHost/client"
-	"math/rand"
-	"time"
 )
 
-const testBlockSize = 16 * 1024
 const MSG_DOWNLOAD = "download"
 const MSG_CHECKOUT = "checkout"
 const MSG_UPLOAD = "upload"
@@ -138,7 +139,7 @@ func GetBlock(data []byte) (res []byte, err error) {
 	var resMsg message.TestGetBlockRes
 	switch msg.Msg {
 	case MSG_DOWNLOAD:
-		resMsg.Msg = make([]byte, testBlockSize)
+		resMsg.Msg = make([]byte, config.Global_Shard_Size * 1024)
 		rand.Read(resMsg.Msg)
 	case MSG_CHECKOUT:
 		statistics.DefaultStat.TXTest.AddSuccess()
