@@ -194,7 +194,8 @@ func step1(form *RegForm) {
 		IsCalc:     form.IsCalc,
 		PoolID:     eos.AN(form.PoolId),
 		MinerOwner: eos.AN(form.MinerOwner),
-		MaxSpace:   form.MaxSpace * GB / (config.Global_Shard_Size * 1024),
+		//MaxSpace:   form.MaxSpace * GB / (config.Global_Shard_Size * 1024),
+		MaxSpace:   form.MaxSpace * GB / (16 * 1024),
 		Extra:      initConfig.PubKey,
 	}
 	action := &eos.Action{
