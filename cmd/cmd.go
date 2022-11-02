@@ -135,8 +135,8 @@ var regTemplateCmd = &cobra.Command{
 func main() {
 	//config.ReadShardConfig()
 	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
-	config.Global_Shard_Size = 256
-	fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
+	//config.Global_Shard_Size = 16
+	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
 		
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
