@@ -1,9 +1,10 @@
 package capProof
 
 import (
-	Ytfs "github.com/yottachain/YTFS"
 	"sync/atomic"
 	"time"
+
+	Ytfs "github.com/yottachain/YTFS"
 )
 
 var AvailableShards uint32
@@ -27,7 +28,8 @@ func getCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
 
 func GetCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
 	if atomic.LoadUint32(&AvailableShards) == 0 {
-		AvailableShards = getCapProofSpace(ytfs)
+		//AvailableShards = getCapProofSpace(ytfs)
+		AvailableShards = 8388608
 	}
 	return  AvailableShards
 }
