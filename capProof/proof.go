@@ -11,7 +11,8 @@ var AvailableShards uint32
 
 func TimerRun(ytfs *Ytfs.YTFS){
 	for {
-		AvailableShards = getCapProofSpace(ytfs)
+		//AvailableShards = getCapProofSpace(ytfs)
+		AvailableShards = 8388608
 		<-time.After(time.Minute*10)
 	}
 }
