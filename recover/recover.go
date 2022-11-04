@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/yottachain/YTDataNode/activeNodeList"
 	"github.com/yottachain/YTDataNode/config"
 	"github.com/yottachain/YTDataNode/recover/actuator"
 	"github.com/yottachain/YTDataNode/recover/shardDownloader"
@@ -101,11 +102,15 @@ func (re *Engine) recoverShard(description *message.TaskDescription) error {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(description.Id), v.Addrs, description.Hashs[k], &number)
-			if err == nil {
-				shards[k] = shard
+			if peerNode := activeNodeList.GetActiveNodeData(v.NodeId); peerNode != nil {
+				shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(description.Id), peerNode.IP, description.Hashs[k], &number)
+				if err == nil {
+					shards[k] = shard
+				} else {
+					log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), peerNode.IP, v.NodeId)
+				}	
 			} else {
-				log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), v.Addrs, v.NodeId)
+				log.Printf("[recover:%s]error:%s, %v, %s\n", base58.Encode(description.Id), err.Error(), v.NodeId)
 			}
 		}(k, v)
 	}
@@ -822,8 +827,13 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 	var number int	//这他妈是干啥的？？？？？？服了
 	// 循环从副本节点获取分片，只要有一个成功就返回
 	for _, v := range msg.Locations {
+		peerNode := activeNodeList.GetActiveNodeData(v.NodeId)
+		if peerNode == nil {
+			continue
+		}
+			
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), v.Addrs, msg.DataHash, &number)
+		shard, err := re.getShard2(ctx, v.NodeId, base58.Encode(msg.Id), peerNode.IP, msg.DataHash, &number)
 		cancel()
 
 		// 如果没有发生错误，分片下载成功，就存储分片
@@ -835,7 +845,7 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 			var vhf [16]byte
 			copy(vhf[:], msg.DataHash)
 			log.Printf("[recover:%s] execCPTask--, get shard DataHash %s shard len %d, remote miner NodeId:%s Addr:%s\n",
-				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, v.Addrs)
+				base58.Encode(msg.DataHash), base58.Encode(key[:]), len(shard), v.NodeId, peerNode.IP)
 
 			_, err := re.sn.YTFS().BatchPut(map[common.IndexTableKey][]byte{common.IndexTableKey{Hsh:vhf, Id:0}:shard})
 			// 存储分片没有错误，或者分片已存在返回0，代表成功

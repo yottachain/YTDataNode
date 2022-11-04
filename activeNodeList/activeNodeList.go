@@ -5,14 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/mr-tron/base58"
-	"github.com/yottachain/YTDataNode/config"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTHost/encrypt"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/mr-tron/base58"
+	"github.com/yottachain/YTDataNode/config"
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTHost/encrypt"
 )
 
 func getUrl() string {
@@ -260,4 +261,13 @@ func HasNodeid(id string) bool {
 	//	}
 	//}
 	return false
+}
+
+func GetActiveNodeData(id string) *Data {
+
+	if _, ok := nodeListMap[id]; ok {
+		return nodeListMap[id]
+	}
+
+	return nil
 }
