@@ -392,6 +392,9 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRequest) (int32, YTres) {
 	var ytres YTres
 	var needCheckTk = true
+	if config.Gconfig.NullWrite {
+		return 0, ytres
+	}
 	/*
 	sleepTimes := 0
     for {
