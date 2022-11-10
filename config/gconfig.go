@@ -64,6 +64,8 @@ type Gcfg struct {
 	RebuildMaxCc		  int
 	Lrc2BackUpOff    	  bool
 	NullWrite    	  	  bool
+	NeedToken    	  	  bool
+	NeedCapProof    	  bool
  }
 
 
@@ -202,6 +204,8 @@ func NewGConfig() *GConfig {
 			GcOpen:                true,
 			SliceCompareOpen:      true,
 			NullWrite:			   false,	
+			NeedToken:			   false,
+			NeedCapProof: 		   false,					
 		},
 		OnUpdate: nil,
 	}

@@ -409,7 +409,9 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
     }*/
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
-		//return 105, ytres
+		if config.Gconfig.NeedToken {
+			return 105, ytres
+		}
 		tk := TokenPool.NewToken()
 		pid := ctx.Value("pid").(peer.ID)
 		tk.PID = pid
