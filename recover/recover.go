@@ -321,7 +321,7 @@ func (re *Engine) HandleMuilteTaskMsg(msgData []byte) error {
 		_ = binary.Read(bytebuff, binary.BigEndian, &snID)
 
 		if err := re.waitQueue.PutTask(task, int32(snID), mtdMsg.ExpiredTime,
-				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, time.Now(), 0); err != nil {
+				mtdMsg.SrcNodeID, mtdMsg.ExpiredTimeGap, mtdMsg.Type, time.Now(), 0); err != nil {
 			log.Printf("[recover] put recover task error: %s\n", err.Error())
 		}
 	}
@@ -374,7 +374,7 @@ func (re *Engine) dispatchTask(ts *Task) {
 		if int32(time.Now().Sub(ts.StartTime)) < ts.TaskLife &&
 			res.RES == 1 &&  ts.ExecTimes < 2 {
 			err := re.waitQueue.PutTask(ts.Data, ts.SnID, ts.ExpiredTime, ts.SrcNodeID,
-				ts.TaskLife, ts.StartTime, ts.ExecTimes)
+				ts.TaskLife, ts.Type, ts.StartTime, ts.ExecTimes)
 			if err != nil {
 				goto Reply
 			}else {
@@ -387,7 +387,11 @@ func (re *Engine) dispatchTask(ts *Task) {
 			res.RES = 1
 		}
 		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
+		if ts.Type == 1 {
+			res.SrcNodeID = 0
+		} else {
+			res.SrcNodeID = ts.SrcNodeID
+		}
 
 		if res.RES == 0 {
 			atomic.AddUint64(&statistics.DefaultStatusCount.Error, 1)
@@ -410,7 +414,11 @@ func (re *Engine) dispatchTask(ts *Task) {
 		}
 
 		res.BPID = ts.SnID
-		res.SrcNodeID = ts.SrcNodeID
+		if ts.Type == 1 {
+			res.SrcNodeID = 0
+		} else {
+			res.SrcNodeID = ts.SrcNodeID
+		}
 		re.PutReplyQueue(res)
 	default:
 		log.Println("[recover] unknown msgID:", msgID)
