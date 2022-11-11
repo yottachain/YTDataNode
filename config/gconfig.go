@@ -204,8 +204,8 @@ func NewGConfig() *GConfig {
 			GcOpen:                true,
 			SliceCompareOpen:      true,
 			NullWrite:			   false,	
-			NeedToken:			   false,
-			NeedCapProof: 		   false,					
+			NeedToken:			   true,
+			NeedCapProof: 		   true,					
 		},
 		OnUpdate: nil,
 	}
