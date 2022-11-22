@@ -193,6 +193,10 @@ func (sn *storageNode) GetCompareDb() *CompDB{
 }
 
 func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, error) {
+	bpnum := len(sn.config.BPList)
+	if index >= bpnum {
+		index = 0
+	}
 	bp := sn.config.BPList[index]
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

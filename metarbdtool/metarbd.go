@@ -118,7 +118,7 @@ func openKVDB(DBPath string) (kvdb *KvDB, err error) {
 	// 创建输入输出流
 	ro := gorocksdb.NewDefaultReadOptions()
 	wo := gorocksdb.NewDefaultWriteOptions()
-	wo.DisableWAL(false)
+	//wo.DisableWAL(false)
 
 	return &KvDB{
 		Rdb   :  db,
