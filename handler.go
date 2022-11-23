@@ -37,15 +37,13 @@ import (
 
 var disableWrite = false
 
-
-
 // WriteHandler 写入处理器
 type WriteHandler struct {
 	StorageNode
-	RequestQueue 	chan *wRequest
-	TmpDB        	*CompDB
-	seq           	uint64
-	isWriteSleep	bool
+	RequestQueue chan *wRequest
+	TmpDB        *CompDB
+	seq          uint64
+	isWriteSleep bool
 }
 
 func NewWriteHandler(sn StorageNode) *WriteHandler {
@@ -66,7 +64,7 @@ func NewWriteHandler(sn StorageNode) *WriteHandler {
 	}
 }
 
-type YTres struct{
+type YTres struct {
 	seq uint64
 	//hash []byte
 }
@@ -80,9 +78,9 @@ type wRequest struct {
 
 func (wh *WriteHandler) push(ctx context.Context, key common.IndexTableKey, data []byte) (YTres, error) {
 	rq := &wRequest{
-		Key:key,
-		Data:data,
-		err:make(chan error),
+		Key:  key,
+		Data: data,
+		err:  make(chan error),
 	}
 
 	select {
@@ -109,26 +107,27 @@ func (wh *WriteHandler) batchWrite(number int) {
 	rqmap := make(map[common.IndexTableKey][]byte, number)
 	rqs := make([]*wRequest, number)
 	hashkey := make([][]byte, number)
-	
+
 	startTime := time.Now()
 
 	for i := 0; i < number; i++ {
 		select {
 		case rq := <-wh.RequestQueue:
-			atomic.AddUint64(&wh.seq,1)
+			atomic.AddUint64(&wh.seq, 1)
 			rq.ytres.seq = wh.seq
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key.Hsh[:]
 
-			log.Printf("[test] recive shard %s  shard id %d\n",
-				base64.StdEncoding.EncodeToString(hashkey[i]), int64(rq.Key.Id))
+			log.Printf("[test] recive shard %s  shard id %d seq %d\n",
+				base64.StdEncoding.EncodeToString(hashkey[i]), int64(rq.Key.Id),
+				rq.ytres.seq)
 
 			err = slicecompare.PutKSeqToDb(wh.seq, hashkey[i], wh.TmpDB)
-			if err != nil{
+			if err != nil {
 				log.Println("[slicecompare] put to compare_db error:", err.Error(),
 					"compare_seq:", wh.seq, "hash:", base58.Encode(hashkey[i]))
-			    goto OUT
+				goto OUT
 			}
 		default:
 			continue
@@ -140,13 +139,12 @@ func (wh *WriteHandler) batchWrite(number int) {
 	}
 	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-slicecompare.PutKSeqToDb use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 
-
 	log.Printf("[ytfs]flush start:%d\n", number)
 	startTime = time.Now()
 	_, err = wh.putShard(rqmap)
 	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 	if err == nil {
-		log.Printf("[ytfs]flush sucess:%d\n", number,"wh.seq",wh.seq)
+		log.Printf("[ytfs]flush sucess:%d wh.seq: %d\n", number, wh.seq)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
 		if _, ok := os.LookupEnv("ytfs_dev"); !ok {
 			log.Printf("[ytfs]flush failure:%s\n", err.Error())
@@ -164,8 +162,8 @@ func (wh *WriteHandler) batchWrite(number int) {
 	err2 = slicecompare.PutVSeqToDb(wh.seq, []byte(slicecompare.Seqkey), wh.TmpDB)
 	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-slicecompare.PutVSeqToDb use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 
-	if err2 != nil{
-		fmt.Println("[slicecompare] PutVSeqToDb error:",err)
+	if err2 != nil {
+		fmt.Println("[slicecompare] PutVSeqToDb error:", err)
 	}
 OUT:
 	startTime = time.Now()
@@ -201,7 +199,7 @@ func (wh *WriteHandler) GetMaxSpace() uint64 {
 	return wh.Config().AllocSpace/uint64(wh.YTFS().Meta().DataBlockSize) - 10
 }
 
-func (wh *WriteHandler) GenAllocID(id peer.ID) (string,int) {
+func (wh *WriteHandler) GenAllocID(id peer.ID) (string, int) {
 	var xtp = TokenPool.Utp()
 	var level int32 = 0
 
@@ -238,7 +236,7 @@ func (wh *WriteHandler) GenAllocID(id peer.ID) (string,int) {
 		atomic.AddInt64(&statistics.DefaultStat.RXToken, 1)
 	}
 
-	return allocID, res 
+	return allocID, res
 
 }
 
@@ -318,7 +316,7 @@ func (wh *WriteHandler) GetToken(data []byte, id peer.ID, ip []multiaddr.Multiad
 }
 
 // Handle 获取回调处理函数
-func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {	
+func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	var ytres YTres
 	startTime := time.Now()
 	var msg message.UploadShardRequest
@@ -334,7 +332,7 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	var resCode int32
 	// 判断剩余空间
 	if wh.GetMaxSpace() >= (wh.YTFS().Len()) {
-		resCode, ytres  = wh.saveSlice(ctx, msg)
+		resCode, ytres = wh.saveSlice(ctx, msg)
 	} else {
 		// 剩余空间不足
 		resCode = 106
@@ -370,7 +368,7 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 		for key, _ := range batch {
 			firstShardHash = key.Hsh[:]
 		}
-		startTime := time.Now()					
+		startTime := time.Now()
 		res, err := wh.YTFS().BatchPut(batch)
 		log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard-YTFS().BatchPut use [%f]\n", base58.Encode(firstShardHash), len(batch), time.Now().Sub(startTime).Seconds())
 		if err != nil {
@@ -396,17 +394,17 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 0, ytres
 	}
 	/*
-	sleepTimes := 0
-    for {
-    	if !wh.isWriteSleep {
-        	break
-        }
-		sleepTimes++
-		time.Sleep(time.Millisecond * 100)
-		if sleepTimes >= 50 {
-			break
-		}
-    }*/
+			sleepTimes := 0
+		    for {
+		    	if !wh.isWriteSleep {
+		        	break
+		        }
+				sleepTimes++
+				time.Sleep(time.Millisecond * 100)
+				if sleepTimes >= 50 {
+					break
+				}
+		    }*/
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		if config.Gconfig.NeedToken {
@@ -417,7 +415,7 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		tk.PID = pid
 		msg.AllocId = tk.String()
 		needCheckTk = false
-		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)	
+		log.Printf("[task pool][%s]task bus[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	}
 	tk, err := TokenPool.NewTokenFromString(msg.AllocId)
 	if err != nil {
@@ -519,7 +517,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	}
 
 	log.Println("[download_debugtime] A start get vhf:",
-			base58.Encode(msg.VHF), "peer id:", pid.Pretty())
+		base58.Encode(msg.VHF), "peer id:", pid.Pretty())
 	if len(msg.VHF) == 0 {
 		log.Println("[download_debugtime] error: msg.VHF is empty!")
 		resData = []byte(strconv.Itoa(200))
@@ -564,7 +562,7 @@ func (dh *DownloadHandler) Handle(msgData []byte, pid peer.ID) ([]byte, error) {
 	res.Data = resData
 	resp, err := proto.Marshal(&res)
 	if err != nil {
-		log.Println("[download_debugtime] E0 Marshar response data fail:", err,"vhf:",base58.Encode(msg.VHF))
+		log.Println("[download_debugtime] E0 Marshar response data fail:", err, "vhf:", base58.Encode(msg.VHF))
 		if msg.AllocId != "" {
 			atomic.AddInt64(&statistics.DefaultStat.DownloadData404, 1)
 		}
