@@ -121,6 +121,13 @@ func update() {
 	md5Buf := md5.Sum(buf)
 	log.Println("[activeNodeList] update success ",
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
+	lennodelist := len(nodeList)
+	log.Printf("[activeNodeList] update success info %d:", lennodelist)
+	for ii := 0 ; ii < lennodelist; ii++ {
+		log.Printf("{ID:%s,IP:%s}",nodeList[ii].NodeID, nodeList[ii].IP[0])
+	}
+	log.Printf("\n")
+
 	updateTime = time.Now()
 }
 
@@ -264,10 +271,13 @@ func HasNodeid(id string) bool {
 }
 
 func GetActiveNodeData(id string) *Data {
+	log.Printf("[recover][GetActiveNodeData] online nodes %d\n", len(nodeList))
 
 	if _, ok := nodeListMap[id]; ok {
+		log.Println("[recover][GetActiveNodeData] found: online dnid=", id, "  IP=", nodeListMap[id].IP)
 		return nodeListMap[id]
 	}
 
+	log.Println("[recover][GetActiveNodeData] not found: online dnid=", id)
 	return nil
 }
