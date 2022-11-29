@@ -264,10 +264,13 @@ func HasNodeid(id string) bool {
 }
 
 func GetActiveNodeData(id string) *Data {
+	log.Printf("[recover][GetActiveNodeData] online nodes %d\n", len(nodeList))
 
 	if _, ok := nodeListMap[id]; ok {
+		log.Println("[recover][GetActiveNodeData] found: online dnid=", id, "  IP=", nodeListMap[id].IP)
 		return nodeListMap[id]
 	}
 
+	log.Println("[recover][GetActiveNodeData] not found: online dnid=", id)
 	return nil
 }
