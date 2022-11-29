@@ -121,6 +121,9 @@ func update() {
 	md5Buf := md5.Sum(buf)
 	log.Println("[activeNodeList] update success ",
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
+
+	log.Println("[activeNodeList] update success info :", nodeList)
+	
 	updateTime = time.Now()
 }
 
