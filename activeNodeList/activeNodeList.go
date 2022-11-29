@@ -121,10 +121,10 @@ func update() {
 	md5Buf := md5.Sum(buf)
 	log.Println("[activeNodeList] update success ",
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
-
-	log.Printf("[activeNodeList] update success info")
-	for ii := 0 ; ii < len(nodeList); ii++ {
-		log.Printf("{ID:%s,IP:%s}",nodeList[ii].ID, nodeList[ii].IP[0])
+	lennodelist := len(nodeList)
+	log.Printf("[activeNodeList] update success info %d:", lennodelist)
+	for ii := 0 ; ii < lennodelist; ii++ {
+		log.Printf("{ID:%s,IP:%s}",nodeList[ii].NodeID, nodeList[ii].IP[0])
 	}
 	log.Printf("\n")
 
