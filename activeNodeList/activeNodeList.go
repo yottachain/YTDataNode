@@ -122,8 +122,12 @@ func update() {
 	log.Println("[activeNodeList] update success ",
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
 
-	log.Println("[activeNodeList] update success info :", nodeList)
-	
+	log.Printf("[activeNodeList] update success info")
+	for ii := 0 ; i < len(nodeList); ii++ {
+		log.Printf("{ID:%s,IP:%s}",nodeList[ii].ID, nodeList[ii].IP[0])
+	}
+	log.Printf("\n")
+
 	updateTime = time.Now()
 }
 
