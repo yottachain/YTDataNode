@@ -496,6 +496,28 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 	return 0, ytres
 }
 
+func (wh *WriteHandler) GetCurSeq(msgData []byte) ([]byte, error) {
+	var msg message.ShardCurrentSeqReq
+	var res message.ShardCurrentSeqResp
+
+	err := proto.Unmarshal(msgData, &msg)
+	if err != nil {
+		fmt.Println("Unmarshal error:", err)
+		return nil, err
+	}
+
+	if msg.NodeId != wh.Config().IndexID {
+		return nil, fmt.Errorf("node id mismatch!")
+	}
+
+	res.NodeId = wh.Config().IndexID
+	res.Seq = wh.seq
+
+	resp, err := proto.Marshal(&res)
+
+	return append(message.MsgIDGetShardCurSeqResp.Bytes(), resp...), err
+}
+
 // DownloadHandler 下载处理器
 type DownloadHandler struct {
 	StorageNode
