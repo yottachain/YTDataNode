@@ -123,10 +123,11 @@ func update() {
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
 	lennodelist := len(nodeList)
 	log.Printf("[activeNodeList] update success info %d:", lennodelist)
+	/*
 	for ii := 0 ; ii < lennodelist; ii++ {
 		log.Printf("{ID:%s,IP:%s}",nodeList[ii].NodeID, nodeList[ii].IP[0])
 	}
-	log.Printf("\n")
+	log.Printf("\n")*/
 
 	updateTime = time.Now()
 }
