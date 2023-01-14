@@ -38,7 +38,7 @@ func NewLRCEngine(sn node.StorageNode, incrbdsucc IncRbdSuccCnt) *LRCEngine {
 
 	le.IncRbdSucc = incrbdsucc
 
-	le.lrc.LRCinit(13)
+	le.lrc.LRCinit(config.GlobalParityShardNum)
 
 	return &le
 }
@@ -152,7 +152,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 			<-time.After(time.Millisecond * 50)
 		}
 
-		if len(shard) != (int)(config.Global_Shard_Size * 1024)  {
+		if len(shard) != (int)(config.Global_Shard_Size*1024) {
 			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
 			continue
 		}
@@ -273,7 +273,7 @@ effortwk:
 			}
 		}
 
-		if len(shard) < (int)(config.Global_Shard_Size * 1024)  {
+		if len(shard) < (int)(config.Global_Shard_Size*1024) {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue
