@@ -76,7 +76,7 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
 	var elkData pb.NodeRebuildRequest
 
 	//var elkData VerifyErrShards
-	id , _ := strconv.ParseInt(data.Id, 10, 64)
+	id, _ := strconv.ParseInt(data.Id, 10, 64)
 	ErrNums, _ := strconv.ParseInt(data.ErrNum, 10, 32)
 	elkData.MinerId = id
 	elkData.ErrNums = int32(ErrNums)
@@ -86,6 +86,8 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
 		errShard.Shard = base58.Encode(v.DBhash)
 		errShard.ShardId = v.Hid
 		elkData.ErrShards = append(elkData.ErrShards, &errShard)
+
+		log.Printf("[ErrShard]] ShardId: %d, RebuildStatus:%d\n", v.Hid, errShard.RebuildStatus)
 	}
 
 	res, err := c.SendNodeRebuild(context.Background(), &elkData)
