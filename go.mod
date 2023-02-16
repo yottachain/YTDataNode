@@ -3,7 +3,7 @@ module github.com/yottachain/YTDataNode
 go 1.13
 
 require (
-	git.yottachain.net/snteam/yt-api-server v0.0.0-20220425021609-740f034f6961
+	git.yottachain.net/snteam/yt-api-server v0.0.0-20230209011558-1192a1f0e662
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20201104130540-2e1f801663c6
 	github.com/eoscanada/eos-go v0.9.0
