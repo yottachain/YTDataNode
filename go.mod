@@ -29,8 +29,7 @@ require (
 	github.com/yottachain/YTFS v0.0.0-20220704130005-2680ed03ab77
 	github.com/yottachain/YTHost v1.0.2-0.20220622141524-bf38cc48d5a5
 	github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	google.golang.org/grpc v1.41.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	gopkg.in/yaml.v2 v2.2.3
+	gopkg.in/yaml.v2 v2.2.8
 )
