@@ -296,6 +296,7 @@ message HashToHash{
     bytes Datahash=2;
     uint32 Pos=3;
     int64  Hid=4;
+    bool    hdbExist=5;
 }
 
 //id:矿机id，数字形式（比如：12398）

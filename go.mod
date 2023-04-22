@@ -31,5 +31,6 @@ require (
 	github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	google.golang.org/grpc v1.41.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.2.8
 )
