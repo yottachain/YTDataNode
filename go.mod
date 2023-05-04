@@ -27,10 +27,9 @@ require (
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.8
 	github.com/yottachain/YTFS v0.0.0-20230217131926-a387a377ef85
-	github.com/yottachain/YTHost v1.0.2-0.20220622141524-bf38cc48d5a5
+	github.com/yottachain/YTHost v1.0.2-0.20230429150756-001cfa4e694e
 	github.com/yottachain/YTLRC v0.0.0-20220217103812-b1f9d2e85756
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	google.golang.org/grpc v1.41.0
-	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.2.8
 )
