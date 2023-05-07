@@ -114,7 +114,7 @@ func setLimits() {
 		if err != nil {
 			return
 		}
-		log.Printf("[setLimits] Ulimit -a,return %d\n", rLimit.Cur)
+		log.Printf("[setLimits] rLimit.Cur, return %d\n", rLimit.Cur)
 	}
 }
 
