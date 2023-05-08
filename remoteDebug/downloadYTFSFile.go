@@ -132,7 +132,11 @@ func Handle(data []byte) error {
 	case "index.db", "config.json", "output.log":
 		return UploadYTFSFile(msg.Name, msg.ServerUrl, msg.Gzip)
 	default:
-		return fmt.Errorf("403")
+		if len(msg.Name) > 6 && msg.Name[len(msg.Name)-4:len(msg.Name)] == ".log" {
+			return UploadYTFSFile(msg.Name, msg.ServerUrl, msg.Gzip)
+		} else {
+			return fmt.Errorf("403")
+		}	
 	}
 }
 
