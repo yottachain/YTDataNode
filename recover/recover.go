@@ -826,6 +826,7 @@ func (re *Engine) execCPTask(msgData []byte, expired int64) *TaskMsgResult {
 	for _, v := range msg.Locations {
 		peerNode := activeNodeList.GetActiveNodeData(v.NodeId)
 		if peerNode == nil {
+			log.Printf("[recover] execCPTask--, Node offline, remote miner NodeId:%s Addr:%s\n", v.NodeId, v.Addrs)
 			continue
 		}
 
