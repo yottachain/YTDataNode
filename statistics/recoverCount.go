@@ -45,6 +45,7 @@ type RebuildCount struct {
 	RowRebuildCount    uint64
 	ColRebuildCount    uint64
 	GlobalRebuildCount uint64
+	NotAllExist        uint64
 }
 
 func (rc *RebuildCount) IncSuccVersion() {
@@ -234,5 +235,6 @@ func (rc *RebuildCount) GetStat() *RecoverStat {
 		rc.RowRebuildCount,
 		rc.ColRebuildCount,
 		rc.GlobalRebuildCount,
+		rc.NotAllExist,
 	}
 }
