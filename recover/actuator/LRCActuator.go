@@ -508,10 +508,7 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 	}
 
 	log.Println("[recover_debugtime] B0  backupTask taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
-	/*
-		if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
-			return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
-		}*/
+
 	var peerNode *activeNodeList.Data
 	if peerNode = activeNodeList.GetActiveNodeData(L.msg.BackupLocation.NodeId); peerNode == nil {
 		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
