@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-option go_package = "./;message";
-
 package message;
 
 //msgid=0xc487
