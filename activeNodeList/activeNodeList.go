@@ -76,7 +76,7 @@ func update() {
 	if config.Gconfig.ActiveNodeKey != "" {
 		key = config.Gconfig.ActiveNodeKey
 		log.Printf("[activeNodeList] key is %s\n", key)
-	}else {
+	} else {
 		key = "YG6PtW66ekow4YaQ4LvyPYMG8eqHieR15kjYfhLM15n"
 	}
 
@@ -108,7 +108,7 @@ func update() {
 
 	nlMap := make(map[string]*Data)
 
-	for _, v := range  nl {
+	for _, v := range nl {
 		if _, ok := nlMap[v.NodeID]; !ok {
 			nlMap[v.NodeID] = v
 		}
@@ -121,14 +121,6 @@ func update() {
 	md5Buf := md5.Sum(buf)
 	log.Println("[activeNodeList] update success ",
 		"list len=", len(nodeList), "hash=", hex.EncodeToString(md5Buf[:]))
-	lennodelist := len(nodeList)
-	log.Printf("[activeNodeList] update success info %d:", lennodelist)
-	/*
-	for ii := 0 ; ii < lennodelist; ii++ {
-		log.Printf("{ID:%s,IP:%s}",nodeList[ii].NodeID, nodeList[ii].IP[0])
-	}
-	log.Printf("\n")*/
-
 	updateTime = time.Now()
 }
 
@@ -143,7 +135,7 @@ func UpdateTimer() {
 			update()
 			log.Printf("[activeNodeList] update success interval is %d\n", ttl)
 		}
-		<-time.After(time.Second*10)
+		<-time.After(time.Second * 10)
 	}
 
 }
@@ -272,13 +264,10 @@ func HasNodeid(id string) bool {
 }
 
 func GetActiveNodeData(id string) *Data {
-	log.Printf("[recover][GetActiveNodeData] online nodes %d\n", len(nodeList))
 
 	if _, ok := nodeListMap[id]; ok {
-		log.Println("[recover][GetActiveNodeData] found: online dnid=", id, "  IP=", nodeListMap[id].IP)
 		return nodeListMap[id]
 	}
 
-	log.Println("[recover][GetActiveNodeData] not found: online dnid=", id)
 	return nil
 }

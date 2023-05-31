@@ -81,6 +81,9 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
 	elkData.MinerId = id
 	elkData.ErrNums = int32(ErrNums)
 	for _, v := range data.ErrShard {
+		if v.HdbExist {
+			continue
+		}
 		var errShard pb.ErrShard
 		errShard.RebuildStatus = 0
 		errShard.Shard = base58.Encode(v.DBhash)

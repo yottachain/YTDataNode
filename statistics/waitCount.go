@@ -3,6 +3,7 @@ package statistics
 import (
 	"fmt"
 	"sync/atomic"
+	"time"
 )
 
 type WaitCount struct {
@@ -32,6 +33,19 @@ func (wc *WaitCount) Remove() {
 	}
 }
 
+func (wc *WaitCount) Check() {
+	for {
+		<-time.After(time.Millisecond * 100)
+
+		if atomic.LoadInt32(&wc.curr) <= 0 {
+			select {
+			case <-wc.q:
+			default:
+			}
+		}
+	}
+}
+
 func (wc *WaitCount) SetMax(n int32) {
 	if n <= 0 {
 		n = 1
@@ -44,11 +58,15 @@ func (wc *WaitCount) Len() int {
 }
 
 func NewWaitCount(max int32) *WaitCount {
-	return &WaitCount{
+	wc := &WaitCount{
 		max:  max,
 		curr: 0,
 		q:    make(chan struct{}, 1),
 	}
+
+	go wc.Check()
+
+	return wc
 }
 
 func (wc *WaitCount) MarshalJSON() ([]byte, error) {

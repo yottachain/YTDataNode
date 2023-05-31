@@ -45,6 +45,7 @@ var rms *service.RelayManager
 var lt = (&statistics.LastUpTime{}).Read()
 var disableReport = false
 var stopUp = false
+var dnStatus = int32(0)
 
 func (sn *storageNode) Service() {
 	setRLimit.SetRLimit()
@@ -130,7 +131,13 @@ func (sn *storageNode) Service() {
 				log.Println("miner stop upload")
 				return nil, fmt.Errorf("miner stop upload")
 			}
-			log.Println("miner start upload")
+
+			if dnStatus >= 2 {
+				log.Printf("miner stop upload, dn status %d\n", dnStatus)
+				return nil, fmt.Errorf("miner stop upload, dn status %d\n", dnStatus)
+			}
+
+			//log.Println("miner start upload")
 			statistics.AddCounnectCount(head.RemotePeerID)
 			defer statistics.SubCounnectCount(head.RemotePeerID)
 			return wh.Handle(data, head), nil
@@ -393,6 +400,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	statistics.DefaultStat.TXTokenFillRate = TokenPool.Dtp().GetTFillTKSpeed()
 	//statistics.DefaultStat.SentToken, statistics.DefaultStat.RXSuccess = TokenPool.Utp().GetParams()
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
+	log.Printf("client connections is %d, server connections is %d\n",
+		sn.Host().ConnStat().GetCliconnCount(), sn.Host().ConnStat().GetSerconnCount())
 	statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount()
 	//statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount()
 	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
@@ -466,7 +475,10 @@ func Report(sn *storageNode, rce *rc.Engine) {
 				log.Printf("采购空间出错\n")
 			}
 		}
-		log.Printf("report info success: %d, relay:%s\n", resMsg.ProductiveSpace, resMsg.RelayUrl)
+		log.Printf("report info success: %d, relay:%s, dn status:%d\n", resMsg.ProductiveSpace, resMsg.RelayUrl, resMsg.DnStatus)
+
+		dnStatus = resMsg.DnStatus
+
 		if resMsg.RelayUrl != "" {
 			if _, err := multiaddr.NewMultiaddr(resMsg.RelayUrl); err == nil {
 				rms.UpdateAddr(resMsg.RelayUrl)
