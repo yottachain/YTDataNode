@@ -114,7 +114,12 @@ func Daemon() {
 		return
 	}
 
-	log.Println("YTFS daemon success:", sn.Config().Version())
+	if sn.Config().ShardSize > 0 {
+		config.Global_Shard_Size = uint64(sn.Config().ShardSize)
+	}
+
+	log.Printf("YTFS daemon success, version:%d, shard size is %d\n",
+		sn.Config().Version(), config.Global_Shard_Size)
 
 	adds, addsCmd := sn.Addrs()
 	adds = append(adds, addsCmd...)

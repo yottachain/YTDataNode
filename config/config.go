@@ -68,6 +68,7 @@ type Config struct {
 	IndexID       uint32        `json:"IndexID"`
 	PoolID        string        `json:"PoolID"`
 	MaxConn       int           `json:"MaxConn"`
+	ShardSize     int32         `json:"ShardSize"`
 	TokenInterval time.Duration `json:"TokenInterval"`
 	*ytfsOpts.Options
 	UpdateURL    string `json:"update_url"`

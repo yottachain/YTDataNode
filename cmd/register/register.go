@@ -54,7 +54,7 @@ var RegisterCmd = &cobra.Command{
 				log.Printf("the register form file err:%s", err)
 				return
 			}
-		}else {
+		} else {
 			log.Printf("the register form file does not exist")
 			return
 		}
@@ -145,7 +145,7 @@ func newCfg(form *RegForm) (*config.Config, error) {
 		M = form.M
 	}
 
-	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M, form.ISBlockDev, form.StoragePath )
+	cfg := commander.InitBySignleStorage(form.MaxSpace*GB, M, form.ISBlockDev, form.StoragePath)
 	if cfg == nil {
 		return nil, fmt.Errorf("new config error cfg is nil")
 	}
@@ -195,8 +195,8 @@ func step1(form *RegForm) {
 		PoolID:     eos.AN(form.PoolId),
 		MinerOwner: eos.AN(form.MinerOwner),
 		//MaxSpace:   form.MaxSpace * GB / (config.Global_Shard_Size * 1024),
-		MaxSpace:   form.MaxSpace * GB / (16 * 1024),
-		Extra:      initConfig.PubKey,
+		MaxSpace: form.MaxSpace * GB / (16 * 1024),
+		Extra:    initConfig.PubKey,
 	}
 	action := &eos.Action{
 		Account:       eos.AN("hddpool12345"),
@@ -232,34 +232,48 @@ func step1(form *RegForm) {
 		"depAmount", actionData.DepAmount.Amount,
 		"maxSpace", actionData.MaxSpace,
 		"currBP", currBP)
-	err = Register(sigedTx, packedTx, currBP)
+	ShardSize, err := Register(sigedTx, packedTx, currBP)
 	if err != nil {
 		fmt.Printf("register fail! err:%s\n", err.Error())
 		return
-	}else {
+	} else {
 		fmt.Printf("miner register success!\n")
 	}
 
+	initConfig.ShardSize = ShardSize
 	initConfig.Adminacc = form.AdminAcc
 	initConfig.PoolID = form.PoolId
 	initConfig.Save()
 }
 
-func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl string) error {
-
+func Register(tx *eos.SignedTransaction, packedtx *eos.PackedTransaction, bpUrl string) (int32, error) {
+	var ShardSize = int32(0)
 	buf, err := json.Marshal(packedtx)
 	if err != nil {
 		log.Println(err)
 	}
 	resp, err := http.Post(GetRegisterUrl(bpUrl), "applaction/json", bytes.NewBuffer(buf))
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if resp.StatusCode != 200 {
 		res, err := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("%s,%s,%v", resp.Status, res, err)
+		return 0, fmt.Errorf("%s,%s,%v", resp.Status, res, err)
+	} else {
+		var resData struct {
+			ShardSize int32 `json:"shardsize"`
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return 0, fmt.Errorf("get shard size error %v", err)
+		}
+		err = json.Unmarshal(body, &resData)
+		if err != nil {
+			return 0, fmt.Errorf("get shard size error %v", err)
+		}
+		ShardSize = resData.ShardSize
 	}
-	return nil
+	return ShardSize, nil
 }
 
 func getNodeList() []string {
