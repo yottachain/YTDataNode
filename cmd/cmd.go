@@ -137,11 +137,11 @@ func main() {
 	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
 	//config.Global_Shard_Size = 16
 	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
-		
+
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%s", "1.0.18d_te24"),
+		Version: fmt.Sprintf("%s", "1.0.18d_te25"),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(daemonCmd)
