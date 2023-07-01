@@ -20,16 +20,15 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
 	//twq.Lck.Lock()
 	//defer twq.Lck.Unlock()
 
-	t := &Task{
-		SnID:        snid,
-		Data:        task,
-		ExpiredTime: expired,
-		TaskLife:    tasklife,
-		SrcNodeID:   srcNodeId,
-		StartTime:   start,
-		ExecTimes: 	 execTimes,
-		Type: 		 Type,
-	}
+	t := new(Task)
+
+	t.SnID = snid
+	t.Data = task
+	t.ExecTimes = execTimes
+	t.TaskLife = tasklife
+	t.ExpiredTime = expired
+	t.StartTime = start
+	t.SrcNodeID = srcNodeId
 
 	log.Printf("[recover] task ExpiredTime is %d, taskLife is %d\n", expired, tasklife)
 
