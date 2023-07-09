@@ -42,7 +42,7 @@ func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *c
 	if devPath != "" {
 		cfg.Storages[0].StorageName = devPath
 	}
-	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options)
+	yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options, 0xFFFFFFFF)
 	if err != nil {
 		fmt.Printf("ytfs open init err %s\n", err.Error())
 		return nil
