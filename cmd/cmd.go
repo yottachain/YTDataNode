@@ -151,9 +151,9 @@ func main() {
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
 	RootCommand.AddCommand(regTemplateCmd)
-	RootCommand.AddCommand(initCmd)
-	initCmd.AddCommand(confirmInit)
 	confirmInit.AddCommand(confirmYesInit)
+	initCmd.AddCommand(confirmInit)
+	RootCommand.AddCommand(initCmd)
 
 	RootCommand.Execute()
 }
