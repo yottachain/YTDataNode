@@ -66,7 +66,7 @@ var initCmd = &cobra.Command{
 }
 
 var confirmInit = &cobra.Command{
-	Use:   "--yes-init",
+	Use:   "yes-init",
 	Short: "confirm init YTFS storage node",
 	//Run: func(cmd *cobra.Command, args []string) {
 	//	fmt.Printf("delete compare db...\n")
@@ -77,7 +77,7 @@ var confirmInit = &cobra.Command{
 }
 
 var confirmYesInit = &cobra.Command{
-	Use:   "--yes-init--yes",
+	Use:   "yes-init--yes",
 	Short: "again confirm init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
 		//first del slicecompare directory
