@@ -95,12 +95,16 @@ func (vfs *VerifySler) VerifySlicekvdb(traveEntries uint32, startItem string) me
 	var resp message.SelfVerifyResp
 	resp.Id = strconv.FormatUint(uint64(vfs.Sn.Config().IndexID), 10)
 
-	startkey, err := slicecompare.GetValueFromFile(VerifyedKvFile)
-	if err != nil {
-		startkey = ""
-	}
-	if len(startItem) > 0 {
-		startkey = startItem
+	var startkey = ""
+	var err error
+	if startItem != "start_anew" {
+		startkey, err = slicecompare.GetValueFromFile(VerifyedKvFile)
+		if err != nil {
+			startkey = ""
+		}
+		if len(startItem) > 0 {
+			startkey = startItem
+		}
 	}
 
 	log.Printf("[verify] VerifySlicekvdb start key %s\n", startkey)
@@ -111,13 +115,6 @@ func (vfs *VerifySler) VerifySlicekvdb(traveEntries uint32, startItem string) me
 		resp.ErrCode = "200"
 		resp.Entryth = startkey
 		log.Println("[verify] error:", err)
-		return resp
-	}
-
-	if beginKey == "0" {
-		resp.ErrCode = "404"
-		resp.Entryth = startkey
-		log.Println("[verify] maybe it's over")
 		return resp
 	}
 
@@ -141,7 +138,14 @@ func (vfs *VerifySler) VerifySlicekvdb(traveEntries uint32, startItem string) me
 	}
 
 	resp.ErrNum = strconv.FormatUint(uint64(len(resp.ErrShard)), 10)
+	resp.Num = strconv.FormatUint(uint64(len(hashTab)), 10)
 	resp.Entryth = startkey
 	resp.ErrCode = "000"
+
+	if beginKey == "0" {
+		resp.ErrCode = "404"
+		log.Println("[verify] maybe it's over")
+	}
+
 	return resp
 }

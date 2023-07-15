@@ -375,6 +375,7 @@ func Start() {
 	}
 
 	reportTotalErrs := uint64(0)
+	verifyTotalShards := uint64(0)
 
 	log.Printf("loop is %x, bchCnt is %d\n", Loop, BatchCnt)
 
@@ -398,20 +399,25 @@ func Start() {
 			} else {
 				if vfer == nil {
 					log.Println("verify error verifySlice is nil")
-					return
+					goto exit
 				} else {
 					resp = vfer.VerifySlice(CntPerBatch, StartItem)
 				}
 			}
 
+			realVerifyNum, _ := strconv.Atoi(resp.Num)
+			verifyTotalShards += uint64(realVerifyNum)
+
 			if resp.ErrCode == "404" {
 				log.Printf("verify not found, start %s\n", resp.Entryth)
-				return
+				goto exit
+			} else if resp.ErrCode != "000" {
+				log.Printf("this round verify happen error %s\n", resp.ErrCode)
 			}
 
 			errNum := len(resp.ErrShard)
 			if errNum > 0 {
-				log.Printf("verify report err shards %d\n", errNum)
+				log.Printf("this round verify report err shards %d\n", errNum)
 				//go SendToElk(resp, wg)
 				wg.Add(1)
 				go snapi.SendToSnApi(resp, wg)
@@ -432,6 +438,9 @@ func Start() {
 			break
 		}
 	}
+
+exit:
+	log.Printf("verify report total shards %d, err shards %d\n", verifyTotalShards, reportTotalErrs)
 
 	wg.Wait()
 }
@@ -540,8 +549,8 @@ var clsHdbCmd = &cobra.Command{
 }
 
 func main() {
-	startCmd.Flags().StringVarP(&StartItem, "start", "s", "",
-		"start items to verify")
+	startCmd.Flags().StringVarP(&StartItem, "start", "s", "start_anew",
+		"assign start hash to verify")
 	startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,
 		"verify items for one batch")
 	startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b", 1000,
