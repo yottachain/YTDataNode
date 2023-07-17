@@ -90,7 +90,7 @@ var confirmYesInit = &cobra.Command{
 		}
 		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 		if err != nil {
-			log.Println("YTFS init failed")
+			log.Printf("YTFS init failed err %s\n", err.Error())
 			return
 		}
 		defer yt.Close()
