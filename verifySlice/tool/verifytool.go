@@ -450,8 +450,8 @@ func Start() {
 exit:
 	log.Printf("verify total shards %d, report error shards %d\n", verifyTotalShards, reportTotalErrs)
 
-	//shard numbers in rocks db ==  verifyTotalShards && reportTotalErrs == 0
-	if !Online && verifyTotalShards == dbTotalKeys && reportTotalErrs == 0 {
+	//shard numbers in rocks db <=  verifyTotalShards && reportTotalErrs == 0
+	if !Online && verifyTotalShards <= dbTotalKeys && reportTotalErrs == 0 {
 		err := sn.YTFS().InitStoragesHeader(sn.Config().IndexID)
 		if err != nil {
 			log.Printf("ytfs init storage header error %s\n", err.Error())

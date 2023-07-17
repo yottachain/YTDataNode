@@ -109,7 +109,7 @@ func (vfs *VerifySler) VerifySlicekvdb(traveEntries uint32, startItem string) me
 
 	log.Printf("[verify] VerifySlicekvdb start key %s\n", startkey)
 
-	hashTab, beginKey, err := vfs.Sn.YTFS().VerifySlice(startkey, uint64(traveEntries))
+	hashTab, beginKey, n, err := vfs.Sn.YTFS().VerifySlice(startkey, uint64(traveEntries))
 	_ = slicecompare.SaveValueToFile(beginKey, VerifyedKvFile)
 	if err != nil {
 		resp.ErrCode = "200"
@@ -138,7 +138,7 @@ func (vfs *VerifySler) VerifySlicekvdb(traveEntries uint32, startItem string) me
 	}
 
 	resp.ErrNum = strconv.FormatUint(uint64(len(resp.ErrShard)), 10)
-	resp.Num = strconv.FormatUint(uint64(len(hashTab)), 10)
+	resp.Num = strconv.FormatUint(uint64(n), 10)
 	resp.Entryth = startkey
 	resp.ErrCode = "000"
 
