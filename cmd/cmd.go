@@ -84,6 +84,7 @@ var confirmYesInit = &cobra.Command{
 
 		//first del slicecompare directory
 		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
+		ytfsutil.DelPath(util.GetYTFSPath() + ytfs.MdbFileName)
 
 		cfg, err := config.ReadConfig()
 		if err != nil {
