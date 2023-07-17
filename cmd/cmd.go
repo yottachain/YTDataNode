@@ -81,7 +81,7 @@ var confirmYesInit = &cobra.Command{
 	Short: "again confirm init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetFileLog()
-		
+
 		//first del slicecompare directory
 		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
 

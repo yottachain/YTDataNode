@@ -365,9 +365,12 @@ func Start() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute*10)
 
+	dbTotalKeys := uint64(0)
 	var vfer *verifySlice.VerifySler
 	if !Online {
 		sn = instance.GetStorageNode()
+		dbTotalKeys = sn.YTFS().YtfsDB().GetDBKeysNum()
+		log.Printf("cur rocksdb total keys %d\n", dbTotalKeys)
 		if truncat {
 			verifyAndTruncatYtfsStorage(sn.YTFS())
 		}
@@ -380,9 +383,9 @@ func Start() {
 	log.Printf("loop is %x, bchCnt is %d\n", Loop, BatchCnt)
 
 	for {
-		totalErrShards := uint64(100000)
+		maxReportErrShards := uint64(100000)
 		if config.Gconfig.VerifyReportMaxNum != 0 {
-			totalErrShards = config.Gconfig.VerifyReportMaxNum
+			maxReportErrShards = config.Gconfig.VerifyReportMaxNum
 		}
 
 		bchCnt := uint32(0)
@@ -408,10 +411,7 @@ func Start() {
 			realVerifyNum, _ := strconv.Atoi(resp.Num)
 			verifyTotalShards += uint64(realVerifyNum)
 
-			if resp.ErrCode == "404" {
-				log.Printf("verify not found, start %s\n", resp.Entryth)
-				goto exit
-			} else if resp.ErrCode != "000" {
+			if resp.ErrCode != "000" {
 				log.Printf("this round verify happen error %s\n", resp.ErrCode)
 			}
 
@@ -423,27 +423,35 @@ func Start() {
 				go snapi.SendToSnApi(resp, wg)
 				reportTotalErrs += uint64(errNum)
 			}
+
+			if resp.ErrCode == "404" {
+				log.Printf("this round verify happen error %s\n", resp.ErrCode)
+				log.Printf("verify not found, start %s\n", resp.Entryth)
+				goto exit
+			}
+
 			if begin {
 				log.Println("verify start!!")
 				begin = false
 				StartItem = ""
 			}
 			bchCnt++
-			if bchCnt >= BatchCnt || reportTotalErrs >= totalErrShards {
+			if bchCnt >= BatchCnt || reportTotalErrs >= maxReportErrShards {
 				break
 			}
 		}
 
-		if !Loop || reportTotalErrs >= totalErrShards {
+		if !Loop || reportTotalErrs >= maxReportErrShards {
+			log.Printf("reportTotalErrs %d >= maxReportErrShards %d\n", reportTotalErrs, maxReportErrShards)
 			break
 		}
 	}
 
 exit:
-	log.Printf("verify report total shards %d, err shards %d\n", verifyTotalShards, reportTotalErrs)
+	log.Printf("verify total shards %d, report error shards %d\n", verifyTotalShards, reportTotalErrs)
 
 	//shard numbers in rocks db ==  verifyTotalShards && reportTotalErrs == 0
-	if verifyTotalShards > 0 && reportTotalErrs == 0 {
+	if !Online && verifyTotalShards == dbTotalKeys && reportTotalErrs == 0 {
 		err := sn.YTFS().InitStoragesHeader(sn.Config().IndexID)
 		if err != nil {
 			log.Printf("ytfs init storage header error %s\n", err.Error())
