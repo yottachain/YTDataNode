@@ -92,7 +92,9 @@ var confirmYesInit = &cobra.Command{
 			return
 		}
 
-		config.Global_Shard_Size = uint64(cfg.ShardSize)
+		if cfg.ShardSize > 0 {
+			config.Global_Shard_Size = uint64(cfg.ShardSize)
+		}
 
 		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 		if err != nil {
