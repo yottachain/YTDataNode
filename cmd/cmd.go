@@ -92,6 +92,11 @@ var confirmYesInit = &cobra.Command{
 			return
 		}
 
+		if cfg.ShardSize == 0 {
+			log.Printf("error exit, ShardSize not exist or is eq 0 in config!")
+			return
+		}
+
 		config.Global_Shard_Size = uint64(cfg.ShardSize)
 
 		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
