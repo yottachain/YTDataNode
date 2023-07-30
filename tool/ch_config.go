@@ -24,11 +24,14 @@ func main() {
 		return
 	}
 
-	err = decoder.Decode(&cfg.BPList)
+	var bpList = config.BPList{}
+	err = decoder.Decode(&bpList)
 	if err != nil {
 		fmt.Printf("decode bp list fail, error %s\n", err.Error())
 		return
 	}
+
+	cfg.BPList = bpList.BPList
 
 	err = cfg.Save()
 	if err != nil {

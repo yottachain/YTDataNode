@@ -29,6 +29,10 @@ type peerInfo struct {
 	Addrs []string `json:"Addrs"`
 }
 
+type BPList struct {
+	BPList []peerInfo `json:"BPList"`
+}
+
 var isDebug = false
 var Global_Shard_Size = (uint64)(256)
 
