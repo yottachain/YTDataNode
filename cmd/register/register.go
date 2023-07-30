@@ -237,7 +237,7 @@ func step1(form *RegForm) {
 		fmt.Printf("register fail! err:%s\n", err.Error())
 		return
 	} else {
-		fmt.Printf("miner register success!\n")
+		fmt.Printf("miner register success!, shard size %d\n", ShardSize)
 	}
 
 	initConfig.ShardSize = ShardSize

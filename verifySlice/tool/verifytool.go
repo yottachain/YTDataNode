@@ -43,6 +43,7 @@ var VerifyErrKey string
 var Loop = true
 var Online = true
 var truncat = false
+var Init = false
 
 type KvDB struct {
 	Rdb    *gorocksdb.DB
@@ -369,6 +370,10 @@ func Start() {
 	var vfer *verifySlice.VerifySler
 	if !Online {
 		sn = instance.GetStorageNode()
+		if nil == sn {
+			log.Printf("verify, get storage node fail!")
+			return
+		}
 		dbTotalKeys = sn.YTFS().YtfsDB().GetDBKeysNum()
 		log.Printf("cur rocksdb total keys %d\n", dbTotalKeys)
 		if truncat {
@@ -448,13 +453,16 @@ func Start() {
 	}
 
 exit:
-	log.Printf("verify total shards %d, report error shards %d\n", verifyTotalShards, reportTotalErrs)
+	log.Printf("verify total shards %d, db total shards %d, report error shards %d\n",
+		verifyTotalShards, dbTotalKeys, reportTotalErrs)
 
 	//shard numbers in rocks db <=  verifyTotalShards && reportTotalErrs == 0
-	if !Online && verifyTotalShards == dbTotalKeys && reportTotalErrs == 0 {
+	if !Online && Init && verifyTotalShards == dbTotalKeys && reportTotalErrs <= verifyTotalShards/2 {
 		err := sn.YTFS().InitStoragesHeader(sn.Config().IndexID)
 		if err != nil {
 			log.Printf("ytfs init storage header error %s\n", err.Error())
+		} else {
+			log.Printf("verify, ytfs init storage header success!")
 		}
 	}
 
@@ -573,6 +581,8 @@ func main() {
 		"batch count for verify")
 	startCmd.Flags().BoolVarP(&Loop, "loop", "l", true,
 		"verify mode :loop or not")
+	startCmd.Flags().BoolVarP(&Init, "init", "i", false,
+		"verify and init storage, valid when online is false")
 	startCmd.Flags().BoolVarP(&Online, "online", "o", true,
 		"run verifytool while dn online or offline, "+
 			"set false will panic while dn is online")
