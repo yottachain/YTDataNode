@@ -118,7 +118,7 @@ func Daemon() {
 		config.Global_Shard_Size = uint64(sn.Config().ShardSize)
 	}
 
-	if sn.YTFS().YtfsDB().Meta().DataBlockSize != uint32(config.Global_Shard_Size) {
+	if sn.YTFS().YtfsDB().Meta().DataBlockSize != uint32(config.Global_Shard_Size)*1024 {
 		log.Println("error! (global shard size != data block size)")
 		return
 	}
