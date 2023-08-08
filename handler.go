@@ -397,17 +397,18 @@ func (wh *WriteHandler) saveSlice(ctx context.Context, msg message.UploadShardRe
 		return 0, ytres
 	}
 	/*
-			sleepTimes := 0
-		    for {
-		    	if !wh.isWriteSleep {
-		        	break
-		        }
-				sleepTimes++
-				time.Sleep(time.Millisecond * 100)
-				if sleepTimes >= 50 {
-					break
-				}
-		    }*/
+		sleepTimes := 0
+		for {
+			if !wh.isWriteSleep {
+				break
+			}
+			sleepTimes++
+			time.Sleep(time.Millisecond * 100)
+			if sleepTimes >= 50 {
+				break
+			}
+		}
+	*/
 	log.Printf("[task pool][%s]check allocID[%s]\n", base58.Encode(msg.VHF), msg.AllocId)
 	if msg.AllocId == "" {
 		if config.Gconfig.NeedToken {
