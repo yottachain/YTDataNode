@@ -33,6 +33,11 @@ func main() {
 
 	cfg.BPList = bpList.BPList
 
+	disk, ok := os.LookupEnv("DN_DEV")
+	if ok {
+		cfg.Storages[0].StorageName = disk
+	}
+
 	err = cfg.Save()
 	if err != nil {
 		fmt.Printf("config file save fail, error %s\n", err.Error())
