@@ -115,16 +115,18 @@ func getRandBPUrl(BPList []string) string {
 // 获取一个新的矿机ID
 // @params requestUrl string 请求的BP的URL
 // @return minerId uint64 返回可用的矿机ID
-func getNewMinerID(requestUrl string) uint64 {
+func getNewMinerID(requestUrl string) (uint64, error) {
 
 	resp, err := http.Get(requestUrl)
 	if err != nil {
 		fmt.Println("申请账号失败！", err)
+		return 0, err
 	}
 	defer resp.Body.Close()
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("申请账号失败！", err)
+		return 0, err
 	}
 	var resData struct {
 		NodeID uint64 `json:"nodeid"`
@@ -132,8 +134,9 @@ func getNewMinerID(requestUrl string) uint64 {
 	err = json.Unmarshal(buf, &resData)
 	if err != nil {
 		fmt.Println("申请账号失败！", err)
+		return 0, err
 	}
-	return resData.NodeID
+	return resData.NodeID, nil
 }
 
 func newCfg(form *RegForm) (*config.Config, error) {
@@ -183,7 +186,10 @@ func step1(form *RegForm) {
 	}
 
 	currBP := getRandBPUrl(form.BPList)
-	minerid := getNewMinerID(GetNewMinerIDUrl(currBP))
+	minerid, err := getNewMinerID(GetNewMinerIDUrl(currBP))
+	if err != nil {
+		os.Exit(1)
+	}
 	initConfig.IndexID = uint32(minerid)
 
 	actionData := minerData{
