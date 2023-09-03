@@ -152,7 +152,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 			<-time.After(time.Millisecond * 50)
 		}
 
-		if len(shard) != (int)(config.Global_Shard_Size*1024) {
+		if len(shard) != (int)(config.GlobalShardSize*1024) {
 			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
 			continue
 		}
@@ -273,7 +273,7 @@ effortwk:
 			}
 		}
 
-		if len(shard) < (int)(config.Global_Shard_Size*1024) {
+		if len(shard) < (int)(config.GlobalShardSize*1024) {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue

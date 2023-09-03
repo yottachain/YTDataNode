@@ -115,16 +115,16 @@ func Daemon() {
 	}
 
 	if sn.Config().ShardSize > 0 {
-		config.Global_Shard_Size = uint64(sn.Config().ShardSize)
+		config.GlobalShardSize = uint64(sn.Config().ShardSize)
 	}
 
-	if sn.YTFS().YtfsDB().Meta().DataBlockSize != uint32(config.Global_Shard_Size)*1024 {
+	if sn.YTFS().YtfsDB().Meta().DataBlockSize != uint32(config.GlobalShardSize)*1024 {
 		log.Println("error! (global shard size != data block size)")
 		return
 	}
 
 	log.Printf("YTFS daemon success, version:%d, shard size is %d\n",
-		sn.Config().Version(), config.Global_Shard_Size)
+		sn.Config().Version(), config.GlobalShardSize)
 
 	adds, addsCmd := sn.Addrs()
 	adds = append(adds, addsCmd...)

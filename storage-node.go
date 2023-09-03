@@ -43,7 +43,7 @@ type Service interface {
 // AddrsManager 地址管理器
 type AddrsManager struct {
 	addrs      []multiaddr.Multiaddr
-	addrsCmd     []multiaddr.Multiaddr
+	addrsCmd   []multiaddr.Multiaddr
 	updateTime time.Time
 	ttl        time.Duration
 	sn         StorageNode
@@ -159,7 +159,7 @@ type storageNode struct {
 	addrsmanager  *AddrsManager
 	runtimeStatus RuntimeStatus
 	owner         *Owner
-	TmpDB        *CompDB
+	TmpDB         *CompDB
 }
 
 func (sn *storageNode) Owner() *Owner {
@@ -184,11 +184,11 @@ func (sn *storageNode) YTFS() *ytfs.YTFS {
 func (sn *storageNode) GetBP() int {
 	return sn.Config().GetBPIndex()
 }
-func (sn *storageNode) Addrs() ([]string, []string){
+func (sn *storageNode) Addrs() ([]string, []string) {
 	return sn.addrsmanager.GetAddStrings()
 }
 
-func (sn *storageNode) GetCompareDb() *CompDB{
+func (sn *storageNode) GetCompareDb() *CompDB {
 	return sn.TmpDB
 }
 
@@ -235,12 +235,11 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 		}
 	}
 
-
 	hst, err := host.NewHost(option.Identity(sn.config.PrivKey()),
-					option.ListenAddr(ma),
-					option.ListenAddrCmd(maCmd),
-					option.OpenPProf(":10000"),
-					option.Version(int32(cfg.Version())))
+		option.ListenAddr(ma),
+		option.ListenAddrCmd(maCmd),
+		option.OpenPProf(":10000"),
+		option.Version(int32(cfg.Version())))
 	if err != nil {
 		log.Printf("host new fail! err:%s\n", err.Error())
 		return nil, err
@@ -248,21 +247,22 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 	sn.host = hst
 
 	for _, storageOpt := range cfg.Options.Storages {
-		log.Println("[init] GetStorageNode NewStorageNode info: ", storageOpt.StorageName, "--", storageOpt.DataBlockSize, "--", cfg.Options.DataBlockSize)		
+		log.Println("[init] GetStorageNode NewStorageNode info: ",
+			storageOpt.StorageName, "--", storageOpt.DataBlockSize, "--", cfg.Options.DataBlockSize)
 	}
 
 	yp := util.GetYTFSPath()
 	ys, err := ytfs.Open(yp, cfg.Options, cfg.IndexID)
 	if err != nil {
 		log.Println(err.Error())
-		return nil , fmt.Errorf("YTFS storage init failed, err:%s", err.Error())
+		return nil, fmt.Errorf("YTFS storage init failed, err:%s", err.Error())
 	}
 	sn.ytfs = ys
 
 	sn.TmpDB, err = slicecompare.OpenTmpRocksDB(slicecompare.Comparedb)
-	if err != nil{
+	if err != nil {
 		log.Println("[slicecompare] open compare_db error")
-		return nil , fmt.Errorf("open compare_db error:%s", err.Error())
+		return nil, fmt.Errorf("open compare_db error:%s", err.Error())
 	}
 	return sn, nil
 }

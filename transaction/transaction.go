@@ -106,7 +106,7 @@ func GetActionData(ad interface{}) (*eos.ActionData, error) {
 		case "Block":
 			var value uint64
 			fmt.Sscanln(text, &value)
-			v.Field(i).SetUint(value * 1024 * 1024 / config.Global_Shard_Size)
+			v.Field(i).SetUint(value * 1024 * 1024 / config.GlobalShardSize)
 		default:
 			fmt.Println("未定义类型", t.Field(i).Type.Name())
 		}

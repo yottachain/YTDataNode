@@ -34,7 +34,7 @@ type BPList struct {
 }
 
 var isDebug = false
-var Global_Shard_Size = (uint64)(256)
+var GlobalShardSize = (uint64)(256)
 
 const GlobalParityShardNum = 4
 
@@ -84,7 +84,7 @@ type Config struct {
 // GetYTFSOptionsByParams 通过参数生成YTFS配置
 func GetYTFSOptionsByParams(size uint64, m uint32) *ytfsOpts.Options {
 	yp := util.GetYTFSPath()
-	var d uint32 = (uint32)(Global_Shard_Size * 1024)
+	var d uint32 = (uint32)(GlobalShardSize * 1024)
 	n := size / uint64(d) / uint64(m)
 
 	for {
@@ -345,7 +345,7 @@ func ReadShardConfig() {
 		return
 	}
 
-	Global_Shard_Size = (uint64)(cfg.ShardSize)
+	GlobalShardSize = (uint64)(cfg.ShardSize)
 }
 
 // ReadConfig 读配置

@@ -139,7 +139,7 @@ func GetBlock(data []byte) (res []byte, err error) {
 	var resMsg message.TestGetBlockRes
 	switch msg.Msg {
 	case MSG_DOWNLOAD:
-		resMsg.Msg = make([]byte, config.Global_Shard_Size * 1024)
+		resMsg.Msg = make([]byte, config.GlobalShardSize*1024)
 		rand.Read(resMsg.Msg)
 	case MSG_CHECKOUT:
 		statistics.DefaultStat.TXTest.AddSuccess()

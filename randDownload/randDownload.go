@@ -128,7 +128,7 @@ func UploadFromRandNode(ctx context.Context) error {
 
 	// 第一次发送消息模拟上传
 	testMsg.Msg = Perf.MSG_UPLOAD
-	testMsg.Pld = make([]byte, config.Global_Shard_Size * 1024)
+	testMsg.Pld = make([]byte, config.GlobalShardSize*1024)
 	rand.Read(testMsg.Pld)
 	testMsg.AllocID = tk
 
@@ -228,7 +228,7 @@ func RunTX(TxCtl chan struct{}) {
 
 	//to local node, upload be equal to use download token
 	c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
-				float64(config.Gconfig.RXTestNum))))
+		float64(config.Gconfig.RXTestNum))))
 	execChan = &c
 
 	go func() {
@@ -236,7 +236,7 @@ func RunTX(TxCtl chan struct{}) {
 			//log.Printf("[randUpload] test num1 %d test num2 %d\n", TokenPool.Utp().GetTFillTKSpeed(), config.Gconfig.TXTestNum)
 			<-time.After(5 * time.Minute)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Dtp().GetTFillTKSpeed())/4,
-						float64(config.Gconfig.RXTestNum))))
+				float64(config.Gconfig.RXTestNum))))
 			//log.Println("[randUpload] chan cap:", cap(c))
 			execChan = &c
 		}
@@ -245,15 +245,15 @@ func RunTX(TxCtl chan struct{}) {
 	times := uint64(0)
 	// rx
 	for {
-		<- TxCtl
-		if times % 2000 == 0{
-			log.Println("[randUpload] RunTX start nowtime:",time.Now())
+		<-TxCtl
+		if times%2000 == 0 {
+			log.Println("[randUpload] RunTX start nowtime:", time.Now())
 		}
 		times++
 		//log.Printf("[randUpload] times1 is %d\n", times)
 
 		if stop {
-			log.Println("[randUpload] RunTX stop nowtime:",time.Now())
+			log.Println("[randUpload] RunTX stop nowtime:", time.Now())
 			<-time.After(time.Minute * 60)
 			continue
 		}
@@ -269,7 +269,7 @@ func RunTX(TxCtl chan struct{}) {
 			}()
 
 			ctx, cancle := context.WithTimeout(context.Background(),
-								time.Second*time.Duration(config.Gconfig.TTL))
+				time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
@@ -279,7 +279,7 @@ func RunTX(TxCtl chan struct{}) {
 				logBuffer.ErrorLogger.Println("[randUpload]", err.Error())
 				if err.Error() == errNoTK.Error() {
 					atomic.AddUint64(&notokenErrorCount, 1)
-				}else {
+				} else {
 					atomic.AddUint64(&errorCount, 1)
 				}
 			} else {
@@ -304,21 +304,21 @@ func RunRX(RxCtl chan struct{}) {
 		for {
 			<-time.After(time.Minute)
 			log.Println("[randDownload] success", successCount,
-					"error", errorCount, "noToken", notokenErrorCount, "exec", len(*execChan),
-					"execCap", cap(*execChan), "count", count)
+				"error", errorCount, "noToken", notokenErrorCount, "exec", len(*execChan),
+				"execCap", cap(*execChan), "count", count)
 		}
 	}()
 
 	//to local node, download be equal to use upload token
 	c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
-								float64(config.Gconfig.TXTestNum))))
+		float64(config.Gconfig.TXTestNum))))
 	execChan = &c
 
 	go func() {
 		for {
 			//log.Printf("[randDownload] test num1 %d test num2 %d\n", TokenPool.Dtp().GetTFillTKSpeed(), config.Gconfig.RXTestNum)
 			c := make(chan struct{}, int(math.Min(float64(TokenPool.Utp().GetTFillTKSpeed())/4,
-								float64(config.Gconfig.TXTestNum))))
+				float64(config.Gconfig.TXTestNum))))
 			//log.Println("[randDownload] chan cap:", cap(c))
 			execChan = &c
 			<-time.After(5 * time.Minute)
@@ -328,10 +328,10 @@ func RunRX(RxCtl chan struct{}) {
 	times := uint64(0)
 	// tx
 	for {
-		<- RxCtl
+		<-RxCtl
 		times++
-		if times % 2000 == 0{
-			log.Println("[randDownload] RunRX start nowtime:",time.Now())
+		if times%2000 == 0 {
+			log.Println("[randDownload] RunRX start nowtime:", time.Now())
 		}
 		if stop {
 			<-time.After(time.Minute * 60)
@@ -347,16 +347,16 @@ func RunRX(RxCtl chan struct{}) {
 			}()
 
 			ctx, cancle := context.WithTimeout(context.Background(),
-								time.Second*time.Duration(config.Gconfig.TTL))
+				time.Second*time.Duration(config.Gconfig.TTL))
 			defer cancle()
 
 			atomic.AddUint64(&count, 1)
 			err := DownloadFromRandNode(ctx)
-			if err != nil  {
+			if err != nil {
 				logBuffer.ErrorLogger.Println("[randDownload]", err.Error())
 				if err.Error() == errNoTK.Error() {
 					atomic.AddUint64(&notokenErrorCount, 1)
-				}else {
+				} else {
 					atomic.AddUint64(&errorCount, 1)
 				}
 			} else {
@@ -377,8 +377,8 @@ func Run() {
 	go RunTX(TxCtl)
 }
 
-func RunCtl(RxCtl, TxCtl chan struct{}){
-	for{
+func RunCtl(RxCtl, TxCtl chan struct{}) {
+	for {
 		var interval = 720
 		if config.Gconfig.TestInterval > 0 {
 			interval = config.Gconfig.TestInterval
@@ -396,7 +396,7 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 				Duration = config.Gconfig.RXTestDuration
 			}
 			log.Printf("[randUpDownload] Rx test duration %d seconds\n", Duration)
-			for{
+			for {
 				RxCtl <- struct{}{}
 				if time.Now().Sub(start) >= time.Duration(Duration)*time.Second {
 					log.Println("[randUpDownload] Download stop")
@@ -414,7 +414,7 @@ func RunCtl(RxCtl, TxCtl chan struct{}){
 				Duration = config.Gconfig.TXTestDuration
 			}
 			log.Printf("[randUpDownload] Tx test duration %d seconds\n", Duration)
-			for{
+			for {
 				TxCtl <- struct{}{}
 				if time.Now().Sub(start) >= time.Duration(Duration)*time.Second {
 					log.Println("[randUpDownload] Upload stop")
@@ -432,6 +432,6 @@ func Stop() {
 	stop = true
 }
 
-func Start(){
+func Start() {
 	stop = false
 }

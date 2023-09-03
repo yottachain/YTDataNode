@@ -108,7 +108,7 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
 	l.RecoverNum = config.GlobalParityShardNum
 	l.Lostindex = uint16(L.msg.RecoverId)
-	l.ShardSize = uint32(config.Global_Shard_Size * 1024)
+	l.ShardSize = uint32(config.GlobalShardSize * 1024)
 
 	L.lck.Lock()
 	handle := l.GetRCHandle(l)

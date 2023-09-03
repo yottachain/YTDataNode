@@ -19,11 +19,11 @@ import (
 func randShard(n int) map[common.IndexTableKey][]byte {
 	var res = make(map[common.IndexTableKey][]byte, n)
 	for i := 0; i < n; i++ {
-		buf := make([]byte, config.Global_Shard_Size*1024)
+		buf := make([]byte, config.GlobalShardSize*1024)
 		rand.Read(buf)
 		key := md5.Sum(buf)
-		res[common.IndexTableKey{Hsh:key, Id:0}] = buf
-		log.Println("[diskHash] write_base58_key:",base58.Encode(key[:]))
+		res[common.IndexTableKey{Hsh: key, Id: 0}] = buf
+		log.Println("[diskHash] write_base58_key:", base58.Encode(key[:]))
 	}
 	return res
 }
@@ -40,12 +40,12 @@ func RandWrite(ytfs *ytfs.YTFS, l uint) error {
 
 func GetHash(ytfs *ytfs.YTFS) (string, error) {
 	buf, err := ytfs.GetData(0)
-	if err != nil || len(buf) != int(config.Global_Shard_Size * 1024){
+	if err != nil || len(buf) != int(config.GlobalShardSize*1024) {
 		err = fmt.Errorf("GetDiskHashError")
 		return "diskHasherror", err
 	}
 	md5buf := md5.Sum(buf)
-	log.Println("[diskHash] get_base58_key:",base58.Encode(md5buf[:]),"hex_string",hex.EncodeToString(md5buf[:]))
+	log.Println("[diskHash] get_base58_key:", base58.Encode(md5buf[:]), "hex_string", hex.EncodeToString(md5buf[:]))
 	return hex.EncodeToString(md5buf[:]), nil
 }
 
@@ -58,7 +58,7 @@ func GetHead() []byte {
 	}
 	defer fl.Close()
 
-	buf := make([]byte, 64 + config.Global_Shard_Size*1024)
+	buf := make([]byte, 64+config.GlobalShardSize*1024)
 	fl.Read(buf)
 	return buf
 }
@@ -70,7 +70,7 @@ func CopyHead() {
 
 		head := GetHead()
 		fl.Write(head)
-	}else{
+	} else {
 		log.Println("[diskHash] copyHead openfile error:", err)
 	}
 }
