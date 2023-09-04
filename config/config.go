@@ -34,7 +34,7 @@ type BPList struct {
 }
 
 var isDebug = false
-var Global_Shard_Size = (uint64)(256)
+var Global_Shard_Size = (uint64)(16)
 
 const GlobalParityShardNum = 4
 
