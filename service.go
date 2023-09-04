@@ -144,6 +144,11 @@ func (sn *storageNode) Service() {
 		})
 	}
 
+	_ = sn.Host().RegisterHandler(message.MsgIDGetShardCurSeqReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
+		log.Println("get current seq......")
+		return wh.GetCurSeq(data)
+	})
+
 	slc := &slicecompare.SliceComparer{Sn: sn, Lock: sync.Mutex{}}
 	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
 		log.Println("[slicecompare] receive compare request!")

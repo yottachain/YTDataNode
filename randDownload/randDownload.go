@@ -3,6 +3,13 @@ package randDownload
 import (
 	"context"
 	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
@@ -17,12 +24,6 @@ import (
 	"github.com/yottachain/YTDataNode/storageNodeInterface"
 	"github.com/yottachain/YTDataNode/util"
 	"github.com/yottachain/YTHost/client"
-	"math"
-	"math/rand"
-	"os"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 //var ctl chan struct{}
@@ -127,7 +128,7 @@ func UploadFromRandNode(ctx context.Context) error {
 
 	// 第一次发送消息模拟上传
 	testMsg.Msg = Perf.MSG_UPLOAD
-	testMsg.Pld = make([]byte, 1024*16)
+	testMsg.Pld = make([]byte, config.Global_Shard_Size * 1024)
 	rand.Read(testMsg.Pld)
 	testMsg.AllocID = tk
 

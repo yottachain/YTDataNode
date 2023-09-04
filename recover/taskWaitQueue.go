@@ -2,10 +2,11 @@ package recover
 
 import (
 	"fmt"
-	"github.com/yottachain/YTDataNode/mq"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/yottachain/YTDataNode/mq"
 )
 
 type TaskWaitQueue struct {
@@ -15,7 +16,7 @@ type TaskWaitQueue struct {
 }
 
 func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
-	expired int64, srcNodeId int32, tasklife int32, start time.Time, execTimes uint) error {
+	expired int64, srcNodeId int32, tasklife int32, Type int32, start time.Time, execTimes uint) error {
 	//twq.Lck.Lock()
 	//defer twq.Lck.Unlock()
 
@@ -28,16 +29,6 @@ func (twq *TaskWaitQueue) PutTask(task []byte, snid int32,
 	t.ExpiredTime = expired
 	t.StartTime = start
 	t.SrcNodeID = srcNodeId
-
-	//t := &Task{
-	//	SnID:        snid,
-	//	Data:        task,
-	//	ExpiredTime: expired,
-	//	TaskLife:    tasklife,
-	//	SrcNodeID:   srcNodeId,
-	//	StartTime:   start,
-	//	ExecTimes:   execTimes,
-	//}
 
 	log.Printf("[recover] task ExpiredTime is %d, taskLife is %d\n", expired, tasklife)
 

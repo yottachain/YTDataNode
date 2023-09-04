@@ -8,14 +8,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	log "github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/util"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"reflect"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/util"
 )
 
 var update_url = "http://dnapi.yottachain.net/config/dnconfig.json"
@@ -62,6 +63,9 @@ type Gcfg struct {
 	SnApiServerUrl		  string
 	RebuildMaxCc		  int
 	Lrc2BackUpOff    	  bool
+	NullWrite    	  	  bool
+	NeedToken    	  	  bool
+	NeedCapProof    	  bool
  }
 
 
@@ -199,6 +203,9 @@ func NewGConfig() *GConfig {
 			TXTestSleep:           100,
 			GcOpen:                true,
 			SliceCompareOpen:      true,
+			NullWrite:			   false,	
+			NeedToken:			   true,
+			NeedCapProof: 		   true,					
 		},
 		OnUpdate: nil,
 	}

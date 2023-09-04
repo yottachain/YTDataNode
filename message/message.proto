@@ -42,6 +42,16 @@ message UploadShard2CResponse {
    uint64 seq =3;
 }
 
+//msgType = 0x7a57
+message ShardCurrentSeqReq {
+    uint32 NodeId = 1;
+}
+
+//msgType = 0x7a58
+message ShardCurrentSeqResp {
+    uint32 NodeId = 1;
+    uint64 seq = 2;
+}
 
 //用于sn发送对账列表
 //seq：哈希对应的序列号
@@ -241,7 +251,7 @@ message MultiTaskDescription{
     int64 expiredTime = 2;
     int32 srcNodeID=3;
     int32 expiredTimeGap=4;
-    string allocId=5;
+    int32 type=5;
 }
 
 //MessageID:1b31

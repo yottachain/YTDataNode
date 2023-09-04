@@ -30,30 +30,30 @@ import (
 
 type VrDB struct {
 	DB *gorocksdb.DB
-	Ro  *gorocksdb.ReadOptions
-	Wo  *gorocksdb.WriteOptions
+	Ro *gorocksdb.ReadOptions
+	Wo *gorocksdb.WriteOptions
 }
 
 type VerifySler struct {
-	Sn         sni.StorageNode
-	Hdb        *VrDB
-	Bdb        *VrDB
+	Sn  sni.StorageNode
+	Hdb *VrDB
+	Bdb *VrDB
 }
 
-func NewVerifySler(sn sni.StorageNode) (*VerifySler){
+func NewVerifySler(sn sni.StorageNode) *VerifySler {
 	Hdb, err := OpenKVDB(Verifyhashdb)
 	if err != nil {
-		fmt.Println("[verify] Open hashdb error:",err)
+		fmt.Println("[verify] Open hashdb error:", err)
 		return nil
 	}
 
 	Bdb, err := OpenKVDB(Batchdb)
-	if err != nil{
-		fmt.Println("[verify] Open Batchdb error:",err)
+	if err != nil {
+		fmt.Println("[verify] Open Batchdb error:", err)
 		return nil
 	}
 
-	return &VerifySler{sn,Hdb,Bdb,}
+	return &VerifySler{sn, Hdb, Bdb}
 }
 
 func compressStr(str string) string {
@@ -65,17 +65,17 @@ func compressStr(str string) string {
 	return reg.ReplaceAllString(str, "")
 }
 
-func Date() string{
+func Date() string {
 	NowTime := time.Now()
 	//NowHour := time.Now().Hour()
 	year := strconv.Itoa(NowTime.Year())
 	month := strconv.Itoa(int(NowTime.Month()))
 	day := strconv.Itoa(NowTime.Day())
-	date := year+"-"+month+"-"+day
+	date := year + "-" + month + "-" + day
 	return date
 }
 
-func SavetoFile(dir, file string, value []byte) error{
+func SavetoFile(dir, file string, value []byte) error {
 	var err error
 	status_exist, _ := util.PathExists(dir)
 	if !status_exist {
@@ -83,20 +83,20 @@ func SavetoFile(dir, file string, value []byte) error{
 	}
 
 	filePath := dir + file
-	err = ioutil.WriteFile(filePath, value,0666)
-	if err != nil{
-		fmt.Println("[gcdel] save value to file error",err,"filepath:",filePath)
+	err = ioutil.WriteFile(filePath, value, 0666)
+	if err != nil {
+		fmt.Println("[gcdel] save value to file error", err, "filepath:", filePath)
 		err = fmt.Errorf("SaveFileErr")
 		return err
 	}
 	return nil
 }
 
-func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
+func (vfs *VerifySler) SaveVerifyToDb(resp message.SelfVerifyResp) error {
 	Bbch := make([]byte, 8)
-	UIbch, err := strconv.ParseUint(resp.VrfBatch,10,64)
+	UIbch, err := strconv.ParseUint(resp.VrfBatch, 10, 64)
 	if err != nil {
-		return  err
+		return err
 	}
 	binary.LittleEndian.PutUint64(Bbch, UIbch)
 	err = vfs.Hdb.DB.Put(vfs.Hdb.Wo, []byte(VerifyBchKey), Bbch)
@@ -108,7 +108,7 @@ func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
 		return nil
 	}
 
-	for _,v := range resp.ErrShard {
+	for _, v := range resp.ErrShard {
 		DBhash := v.DBhash
 		log.Printf("verify hdb put shard:%s\n", base58.Encode(DBhash))
 		err = vfs.Hdb.DB.Put(vfs.Hdb.Wo, DBhash, Bbch)
@@ -121,12 +121,12 @@ func (vfs *VerifySler)SaveVerifyToDb(resp message.SelfVerifyResp) error {
 	return nil
 }
 
-func (vfs *VerifySler)VerifySliceReal(verifyNum uint32, startItem string) (message.SelfVerifyResp){
+func (vfs *VerifySler) VerifySliceReal(verifyNum uint32, startItem string) message.SelfVerifyResp {
 	var resp message.SelfVerifyResp
 
 	config, err := config.ReadConfig()
-	if err != nil{
-		log.Println("[verifyslice] [error] read datanode config error:",err)
+	if err != nil {
+		log.Println("[verifyslice] [error] read datanode config error:", err)
 		resp.ErrCode = "101"
 		return resp
 	}
@@ -142,25 +142,25 @@ func (vfs *VerifySler)VerifySliceReal(verifyNum uint32, startItem string) (messa
 	return resp
 }
 
-func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
+func (vfs *VerifySler) MissSliceQuery(Skey string) message.SelfVerifyQueryResp {
 	var resp message.SelfVerifyQueryResp
 	resp.Key = Skey
 	resp.ErrCode = "Succ"
 	HKey, err := base58.Decode(Skey)
 	if err != nil {
 		resp.ErrCode = "ErrDecodeKey"
-		fmt.Println("Decode key error:",err)
+		fmt.Println("Decode key error:", err)
 		return resp
 	}
 
 	VrfBch, err := vfs.Hdb.DB.Get(vfs.Hdb.Ro, HKey)
 	if err != nil {
 		resp.ErrCode = "ErrGetBatchNum"
-		fmt.Println("Get BatchNum of ", Skey," error",err.Error())
+		fmt.Println("Get BatchNum of ", Skey, " error", err.Error())
 		return resp
 	}
 
-	if !VrfBch.Exists(){
+	if !VrfBch.Exists() {
 		resp.ErrCode = "ErrNoHashKey"
 		fmt.Println("error, hash not exist, key:", Skey, "vrfbch", VrfBch)
 		return resp
@@ -176,9 +176,9 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 		return resp
 	}
 
-	if !VrfTm.Exists(){
+	if !VrfTm.Exists() {
 		resp.ErrCode = "ErrNoBatchTm"
-		fmt.Println("error, batchnum not exist, batchnum:",UIBch)
+		fmt.Println("error, batchnum not exist, batchnum:", UIBch)
 		return resp
 	}
 
@@ -189,15 +189,15 @@ func (vfs *VerifySler)MissSliceQuery(Skey string)(message.SelfVerifyQueryResp){
 	return resp
 }
 
-//func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (*message.SelfVerifyResp) {
-func (vfs *VerifySler)VerifySlice(verifyNum uint32, startItem string) (*message.SelfVerifyResp) {
+// func (vfs *VerifySler)VerifySlice(verifyNum string, startItem string) (*message.SelfVerifyResp) {
+func (vfs *VerifySler) VerifySlice(verifyNum uint32, startItem string) *message.SelfVerifyResp {
 	resp := new(message.SelfVerifyResp)
 	var err error
 
 	rstdir := util.GetYTFSPath() + Verifyrstdir
 	err = ChkRsvSpace(rstdir, 1048576)
-	if err != nil{
-		log.Println("[verify] ChkRsvSpace error:",err.Error())
+	if err != nil {
+		log.Println("[verify] ChkRsvSpace error:", err.Error())
 		resp.ErrCode = "ErrChkRsvSpace"
 		return resp
 	}
@@ -214,32 +214,32 @@ func (vfs *VerifySler)VerifySlice(verifyNum uint32, startItem string) (*message.
 
 	log.Printf("[verify] VerifySlice verify num %d, start key %s\n", verifyNum, startItem)
 	*resp = vfs.VerifySliceReal(verifyNum, startItem)
-	if resp.ErrCode != "000" {
+	if resp.ErrCode != "000" && resp.ErrCode != "404" {
 		return resp
 	}
 
 	//save result to file and verify db
 	var UIbtch uint32
 	Bbtch, _ := vfs.Hdb.DB.Get(vfs.Hdb.Ro, []byte(VerifyBchKey))
-	if ! Bbtch.Exists() {
+	if !Bbtch.Exists() {
 		UIbtch = 1
-	}else{
+	} else {
 		UIbtch = binary.LittleEndian.Uint32(Bbtch.Data()) + 1
 	}
 
-	Sbtch := strconv.FormatUint(uint64(UIbtch),10)
+	Sbtch := strconv.FormatUint(uint64(UIbtch), 10)
 	Date := Date()
 	resp.VrfBatch = Sbtch
 	resp.VrfTime = Date
-	resp.Num = strconv.FormatUint(uint64(verifyNum), 10)
+	//resp.Num = strconv.FormatUint(uint64(verifyNum), 10)
 	_ = vfs.SaveVerifyToDb(*resp)
-	rstfile := "rst" + Date + "_"+ Sbtch
+	rstfile := "rst" + Date + "_" + Sbtch
 	res, _ := proto.Marshal(resp)
 	_ = SavetoFile(rstdir, rstfile, res)
 	return resp
 }
 
-func (vfs *VerifySler) TravelHDB(fn func(key, value []byte) error) int64{
+func (vfs *VerifySler) TravelHDB(fn func(key, value []byte) error) int64 {
 	iter := vfs.Hdb.DB.NewIterator(vfs.Hdb.Ro)
 	succ := 0
 	for iter.SeekToFirst(); iter.Valid(); iter.Next() {

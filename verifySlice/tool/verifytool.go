@@ -43,6 +43,7 @@ var VerifyErrKey string
 var Loop = true
 var Online = true
 var truncat = false
+var Init = false
 
 type KvDB struct {
 	Rdb    *gorocksdb.DB
@@ -365,9 +366,16 @@ func Start() {
 
 	go config.Gconfig.UpdateService(context.Background(), time.Minute*10)
 
+	dbTotalKeys := uint64(0)
 	var vfer *verifySlice.VerifySler
 	if !Online {
 		sn = instance.GetStorageNode()
+		if nil == sn {
+			log.Printf("verify, get storage node fail!")
+			return
+		}
+		dbTotalKeys = sn.YTFS().YtfsDB().GetDBKeysNum()
+		log.Printf("cur rocksdb total keys %d\n", dbTotalKeys)
 		if truncat {
 			verifyAndTruncatYtfsStorage(sn.YTFS())
 		}
@@ -375,13 +383,14 @@ func Start() {
 	}
 
 	reportTotalErrs := uint64(0)
+	verifyTotalShards := uint64(0)
 
 	log.Printf("loop is %x, bchCnt is %d\n", Loop, BatchCnt)
 
 	for {
-		totalErrShards := uint64(100000)
+		maxReportErrShards := uint64(100000)
 		if config.Gconfig.VerifyReportMaxNum != 0 {
-			totalErrShards = config.Gconfig.VerifyReportMaxNum
+			maxReportErrShards = config.Gconfig.VerifyReportMaxNum
 		}
 
 		bchCnt := uint32(0)
@@ -398,38 +407,62 @@ func Start() {
 			} else {
 				if vfer == nil {
 					log.Println("verify error verifySlice is nil")
-					return
+					goto exit
 				} else {
 					resp = vfer.VerifySlice(CntPerBatch, StartItem)
 				}
 			}
 
-			if resp.ErrCode == "404" {
-				log.Printf("verify not found, start %s\n", resp.Entryth)
-				return
+			realVerifyNum, _ := strconv.Atoi(resp.Num)
+			verifyTotalShards += uint64(realVerifyNum)
+
+			if resp.ErrCode != "000" {
+				log.Printf("this round verify happen error %s\n", resp.ErrCode)
 			}
 
 			errNum := len(resp.ErrShard)
 			if errNum > 0 {
-				log.Printf("verify report err shards %d\n", errNum)
+				log.Printf("this round verify report err shards %d\n", errNum)
 				//go SendToElk(resp, wg)
 				wg.Add(1)
 				go snapi.SendToSnApi(resp, wg)
 				reportTotalErrs += uint64(errNum)
 			}
+
+			if resp.ErrCode == "404" {
+				log.Printf("this round verify happen error %s\n", resp.ErrCode)
+				log.Printf("verify not found, start %s\n", resp.Entryth)
+				goto exit
+			}
+
 			if begin {
 				log.Println("verify start!!")
 				begin = false
 				StartItem = ""
 			}
 			bchCnt++
-			if bchCnt >= BatchCnt || reportTotalErrs >= totalErrShards {
+			if bchCnt >= BatchCnt || reportTotalErrs >= maxReportErrShards {
 				break
 			}
 		}
 
-		if !Loop || reportTotalErrs >= totalErrShards {
+		if !Loop || reportTotalErrs >= maxReportErrShards {
+			log.Printf("reportTotalErrs %d >= maxReportErrShards %d\n", reportTotalErrs, maxReportErrShards)
 			break
+		}
+	}
+
+exit:
+	log.Printf("verify total shards %d, db total shards %d, report error shards %d\n",
+		verifyTotalShards, dbTotalKeys, reportTotalErrs)
+
+	//shard numbers in rocks db <=  verifyTotalShards && reportTotalErrs == 0
+	if !Online && Init && verifyTotalShards == dbTotalKeys && reportTotalErrs <= verifyTotalShards/2 {
+		err := sn.YTFS().InitStoragesHeader(sn.Config().IndexID)
+		if err != nil {
+			log.Printf("ytfs init storage header error %s\n", err.Error())
+		} else {
+			log.Printf("verify, ytfs init storage header success!")
 		}
 	}
 
@@ -540,14 +573,16 @@ var clsHdbCmd = &cobra.Command{
 }
 
 func main() {
-	startCmd.Flags().StringVarP(&StartItem, "start", "s", "",
-		"start items to verify")
+	startCmd.Flags().StringVarP(&StartItem, "start", "s", "start_anew",
+		"assign start hash to verify")
 	startCmd.Flags().Uint32VarP(&CntPerBatch, "count", "c", 1000,
 		"verify items for one batch")
 	startCmd.Flags().Uint32VarP(&BatchCnt, "batch", "b", 1000,
 		"batch count for verify")
 	startCmd.Flags().BoolVarP(&Loop, "loop", "l", true,
 		"verify mode :loop or not")
+	startCmd.Flags().BoolVarP(&Init, "init", "i", false,
+		"verify and init storage, valid when online is false")
 	startCmd.Flags().BoolVarP(&Online, "online", "o", true,
 		"run verifytool while dn online or offline, "+
 			"set false will panic while dn is online")

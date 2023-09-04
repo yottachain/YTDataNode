@@ -9,8 +9,10 @@ import (
 
 	"github.com/mr-tron/base58"
 	"github.com/yottachain/YTDataNode/activeNodeList"
+	"github.com/yottachain/YTDataNode/config"
 	log "github.com/yottachain/YTDataNode/logger"
 	"github.com/yottachain/YTDataNode/message"
+	node "github.com/yottachain/YTDataNode/storageNodeInterface"
 	lrcpkg "github.com/yottachain/YTLRC"
 )
 
@@ -21,18 +23,22 @@ type GetShardFuncLrc func(id string, taskID string, addrs []string, hash []byte,
 type IncRbdSuccCnt func(n uint16)
 
 type LRCEngine struct {
+	sn         node.StorageNode
 	lrc        lrcpkg.Shardsinfo
 	GetShard   GetShardFuncLrc
 	IncRbdSucc IncRbdSuccCnt
 }
 
-func NewLRCEngine(incrbdsucc IncRbdSuccCnt) *LRCEngine {
+func NewLRCEngine(sn node.StorageNode, incrbdsucc IncRbdSuccCnt) *LRCEngine {
 	var le LRCEngine
+
+	le.sn = sn
+
 	le.lrc = lrcpkg.Shardsinfo{}
 
 	le.IncRbdSucc = incrbdsucc
 
-	le.lrc.LRCinit(13)
+	le.lrc.LRCinit(config.GlobalParityShardNum)
 
 	return &le
 }
@@ -146,7 +152,7 @@ func (lrch *LRCHandler) RecoverShardStage(shdinfo *lrcpkg.Shardsinfo, td message
 			<-time.After(time.Millisecond * 50)
 		}
 
-		if len(shard) != 16384 {
+		if len(shard) != (int)(config.Global_Shard_Size*1024) {
 			log.Println("[recover] error: shard lenth != 16K, missidx=", idx)
 			continue
 		}
@@ -213,6 +219,7 @@ effortwk:
 	}
 
 	//log.Println("[recover]need shard list", indexs, len(indexs))
+	//sn := instance.GetStorageNode()
 
 	//k := 0
 	for _, idx := range indexs {
@@ -245,7 +252,6 @@ effortwk:
 			} else {
 				err = errors.New("Node offline")
 			}
-
 			if err != nil {
 				log.Println("[recover][optimize] Get data Slice fail,idx=", idx, err.Error())
 
@@ -267,7 +273,7 @@ effortwk:
 			}
 		}
 
-		if len(shard) < 16384 {
+		if len(shard) < (int)(config.Global_Shard_Size*1024) {
 			log.Println("[recover][ytlrc] shard is empty or get error!! idx=", idx)
 			indexs2 = append(indexs2, idx)
 			continue

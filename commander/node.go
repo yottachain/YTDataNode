@@ -29,20 +29,6 @@ import (
 	"github.com/yottachain/YTDataNode/util"
 )
 
-// Init 初始化
-func Init() error {
-
-	cfg := config.NewConfig()
-	cfg.Save()
-
-	yt, err := ytfs.Open(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
-	if err != nil {
-		return err
-	}
-	defer yt.Close()
-	return nil
-}
-
 func InitBySignleStorage(size uint64, m uint32, isBlock bool, devPath string) *config.Config {
 	cfg := config.NewConfigByYTFSOptions(config.GetYTFSOptionsByParams(size, m))
 	if cfg == nil {
@@ -116,7 +102,17 @@ func Daemon() {
 		return
 	}
 
-	log.Println("YTFS daemon success:", sn.Config().Version())
+	if sn.Config().ShardSize > 0 {
+		config.Global_Shard_Size = uint64(sn.Config().ShardSize)
+	}
+
+	if sn.YTFS().YtfsDB().Meta().DataBlockSize != uint32(config.Global_Shard_Size)*1024 {
+		log.Println("error! (global shard size != data block size)")
+		return
+	}
+
+	log.Printf("YTFS daemon success, version:%d, shard size is %d\n",
+		sn.Config().Version(), config.Global_Shard_Size)
 
 	adds, addsCmd := sn.Addrs()
 	adds = append(adds, addsCmd...)

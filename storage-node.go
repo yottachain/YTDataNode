@@ -3,13 +3,14 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/yottachain/YTDataNode/logger"
-	"github.com/yottachain/YTDataNode/slicecompare"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/yottachain/YTDataNode/logger"
+	"github.com/yottachain/YTDataNode/slicecompare"
 
 	"github.com/yottachain/YTDataNode/util"
 
@@ -19,7 +20,7 @@ import (
 
 	. "github.com/yottachain/YTDataNode/runtimeStatus"
 	. "github.com/yottachain/YTDataNode/storageNodeInterface"
-	"github.com/yottachain/YTHost"
+	host "github.com/yottachain/YTHost"
 	. "github.com/yottachain/YTHost/interface"
 	"github.com/yottachain/YTHost/option"
 
@@ -192,6 +193,10 @@ func (sn *storageNode) GetCompareDb() *CompDB{
 }
 
 func (sn *storageNode) SendBPMsg(index int, id int32, data []byte) ([]byte, error) {
+	bpnum := len(sn.config.BPList)
+	if index >= bpnum {
+		index = 0
+	}
 	bp := sn.config.BPList[index]
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -241,6 +246,10 @@ func NewStorageNode(cfg *config.Config) (StorageNode, error) {
 		return nil, err
 	}
 	sn.host = hst
+
+	for _, storageOpt := range cfg.Options.Storages {
+		log.Println("[init] GetStorageNode NewStorageNode info: ", storageOpt.StorageName, "--", storageOpt.DataBlockSize, "--", cfg.Options.DataBlockSize)		
+	}
 
 	yp := util.GetYTFSPath()
 	ys, err := ytfs.Open(yp, cfg.Options, cfg.IndexID)

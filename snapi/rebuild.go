@@ -89,6 +89,8 @@ func SendToSnApi(data *message.SelfVerifyResp, wg *sync.WaitGroup) {
 		errShard.Shard = base58.Encode(v.DBhash)
 		errShard.ShardId = v.Hid
 		elkData.ErrShards = append(elkData.ErrShards, &errShard)
+
+		log.Printf("[ErrShard]] ShardId: %d, RebuildStatus:%d\n", v.Hid, errShard.RebuildStatus)
 	}
 
 	res, err := c.SendNodeRebuild(context.Background(), &elkData)

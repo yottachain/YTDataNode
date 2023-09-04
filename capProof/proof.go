@@ -1,9 +1,11 @@
 package capProof
 
 import (
-	Ytfs "github.com/yottachain/YTFS"
 	"sync/atomic"
 	"time"
+
+	"github.com/yottachain/YTDataNode/config"
+	Ytfs "github.com/yottachain/YTFS"
 )
 
 var AvailableShards uint32
@@ -16,11 +18,15 @@ func TimerRun(ytfs *Ytfs.YTFS){
 }
 
 func getCapProofSpace(ytfs *Ytfs.YTFS) (realCap uint32) {
-	availableShards := ytfs.GetCapProofSpace()
-	if (availableShards % 65536) != 0 {
-		realCap = (availableShards / 65536 + 1) * 65536
-	}else {
-		realCap = availableShards
+	if config.Gconfig.NeedCapProof {
+		availableShards := ytfs.GetCapProofSpace()
+		if (availableShards % 65536) != 0 {
+			realCap = (availableShards / 65536 + 1) * 65536
+		}else {
+			realCap = availableShards
+		}	
+	} else {
+		realCap = 8388608
 	}
 	return
 }

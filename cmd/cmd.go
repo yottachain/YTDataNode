@@ -3,16 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/yottachain/YTDataNode/config"
-	"github.com/yottachain/YTDataNode/diskHash"
-	"github.com/yottachain/YTDataNode/util"
-	ytfs "github.com/yottachain/YTFS"
-	ytfsutil "github.com/yottachain/YTFS/util"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/yottachain/YTDataNode/config"
+	"github.com/yottachain/YTDataNode/diskHash"
+	"github.com/yottachain/YTDataNode/util"
+	ytfs "github.com/yottachain/YTFS"
+	ytfsutil "github.com/yottachain/YTFS/util"
 
 	"github.com/spf13/cobra"
 	"github.com/yottachain/YTDataNode/cmd/account"
@@ -59,37 +60,48 @@ var startCmd = &cobra.Command{
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Init or reInit YTFS storage node",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("use --yes-init to init")
-	},
+	//Run: func(cmd *cobra.Command, args []string) {
+	//	fmt.Printf("use --yes-init to init\n")
+	//},
 }
 
 var confirmInit = &cobra.Command{
-	Use:   "--yes-init",
+	Use:   "yes-init",
 	Short: "confirm init YTFS storage node",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("delete compare db...")
-		//first del slicecompare directory
-		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
-		fmt.Printf("use --yes-init--yes to final init")
-	},
+	//Run: func(cmd *cobra.Command, args []string) {
+	//	fmt.Printf("delete compare db...\n")
+	//	//first del slicecompare directory
+	//	ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
+	//	fmt.Printf("use --yes-init--yes to final init")
+	//},
 }
 
 var confirmYesInit = &cobra.Command{
-	Use:   "--yes-init--yes",
+	Use:   "yes-init--yes",
 	Short: "again confirm init YTFS storage node",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.SetFileLog()
+
 		//first del slicecompare directory
 		ytfsutil.DelPath(util.GetYTFSPath() + slicecompare.Comparedb)
+		ytfsutil.DelPath(util.GetYTFSPath() + ytfs.MdbFileName)
 
 		cfg, err := config.ReadConfig()
 		if err != nil {
 			log.Println("YTFS init failed err:", err)
 			return
 		}
+
+		if cfg.ShardSize <= 0 {
+			log.Printf("error exit, ShardSize not exist or is le 0 in config!")
+			return
+		}
+
+		config.Global_Shard_Size = uint64(cfg.ShardSize)
+
 		yt, err := ytfs.OpenInit(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 		if err != nil {
-			log.Println("YTFS init failed")
+			log.Printf("YTFS init failed err %s\n", err.Error())
 			return
 		}
 		defer yt.Close()
@@ -132,10 +144,15 @@ var regTemplateCmd = &cobra.Command{
 }
 
 func main() {
+	//config.ReadShardConfig()
+	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
+	//config.Global_Shard_Size = 16
+	//fmt.Println("current_shard_size is : ", config.Global_Shard_Size)
+
 	daemonCmd.Flags().BoolVarP(&isDaemon, "d", "d", false, "是否在后台运行")
 
 	RootCommand := &cobra.Command{
-		Version: fmt.Sprintf("%s", "1.0.16e"),
+		Version: fmt.Sprintf("%s", "1.0.18d_te25"),
 		Short:   "ytfs storage node",
 	}
 	RootCommand.AddCommand(daemonCmd)
@@ -145,9 +162,9 @@ func main() {
 	RootCommand.AddCommand(logCmd)
 	RootCommand.AddCommand(account.AccountCmd)
 	RootCommand.AddCommand(regTemplateCmd)
-	RootCommand.AddCommand(initCmd)
-	initCmd.AddCommand(confirmInit)
 	confirmInit.AddCommand(confirmYesInit)
+	initCmd.AddCommand(confirmInit)
+	RootCommand.AddCommand(initCmd)
 
 	RootCommand.Execute()
 }

@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -89,7 +88,6 @@ type LRCTaskActuator struct {
 	needDownloadIndexMap map[int16]struct{}
 	downloadSuccs        int
 	isInitHand           bool
-	isAllExist           bool
 	lck                  *sync.Mutex //来自引擎的全局锁
 	pfStat               *statistics.PerformanceStat
 	hashAddrMap          map[string]*[2]int //下载分片hash对应的两个地址使用计数
@@ -108,8 +106,9 @@ func (L *LRCTaskActuator) initLRCHandler(stage RecoverStage) error {
 	l := &lrc.Shardsinfo{}
 
 	l.OriginalCount = uint16(len(L.msg.Hashs) - int(L.msg.ParityShardCount))
-	l.RecoverNum = 13
+	l.RecoverNum = config.GlobalParityShardNum
 	l.Lostindex = uint16(L.msg.RecoverId)
+	l.ShardSize = uint32(config.Global_Shard_Size * 1024)
 
 	L.lck.Lock()
 	handle := l.GetRCHandle(l)
@@ -232,7 +231,7 @@ func (L *LRCTaskActuator) addDownloadTask(duration time.Duration, indexes ...int
 
 		if peerNode := activeNodeList.GetActiveNodeData(addrInfo.NodeId); peerNode != nil {
 			if L.hashAddrMap[strHash][0]/2 > 0 && L.hashAddrMap[strHash][1] < L.hashAddrMap[strHash][0] {
-				if peerNode2 := activeNodeList.GetActiveNodeData(addrInfo.NodeId); peerNode2 != nil {
+				if peerNode2 := activeNodeList.GetActiveNodeData(addrInfo.NodeId2); peerNode2 != nil {
 					d, _ = L.downloader.AddTask(addrInfo.NodeId2, peerNode2.IP, hash,
 						binary.BigEndian.Uint64(L.msg.Id[:8]), int(L.opts.Stage))
 					log.Printf("[recover_debugtime] E2_1 addDownloadTask_addTask taskid=%d "+
@@ -477,9 +476,6 @@ func (L *LRCTaskActuator) preJudge() (ok bool) {
 				L.msg.Locations[index].NodeId2)
 			//不在线的矿机就不下载了, 两个地址都不在线
 			delete(L.needDownloadIndexMap, index)
-			if L.opts.Stage == RECOVER_STAGE_ROW {
-				L.isAllExist = false
-			}
 		}
 
 		if ok {
@@ -508,7 +504,10 @@ func (L *LRCTaskActuator) backupTask() ([]byte, error) {
 	}
 
 	log.Println("[recover_debugtime] B0  backupTask taskid=", binary.BigEndian.Uint64(L.msg.Id[:8]))
-
+	/*
+		if !activeNodeList.HasNodeid(L.msg.BackupLocation.NodeId) {
+			return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
+		}*/
 	var peerNode *activeNodeList.Data
 	if peerNode = activeNodeList.GetActiveNodeData(L.msg.BackupLocation.NodeId); peerNode == nil {
 		return nil, fmt.Errorf("backup is offline, backup nodeid is %s", L.msg.BackupLocation.NodeId)
@@ -763,7 +762,6 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// @TODO 预判
 	startTime = time.Now()
-	L.isAllExist = true
 	if ok := L.preJudge(); !ok {
 		err = fmt.Errorf("预判失败 阶段 %d 任务 %d", L.opts.Stage, binary.BigEndian.Uint64(msgID[:8]))
 		log.Println("[recover] preJudge error:", err.Error())
@@ -775,10 +773,6 @@ func (L *LRCTaskActuator) ExecTask(msgData []byte, opts Options) (data []byte,
 
 	// 成功预判计数加一
 	statistics.DefaultRebuildCount.IncPassJudge()
-
-	if !L.isAllExist {
-		atomic.AddUint64(&statistics.DefaultRebuildCount.NotAllExist, 1)
-	}
 
 	// @TODO 下载分片
 	//ctx, cancel := context.WithDeadline(context.Background(), opts.Expired)

@@ -10,7 +10,7 @@ import (
 	ytfs "github.com/yottachain/YTFS"
 )
 
-//主网bp
+// 主网bp
 var bplist = `
     [
 		{
@@ -20,7 +20,8 @@ var bplist = `
 	]`
 
 var formPath = ""
-//主网改成一个sn后 修改矿机的snlist和清空矿机的数据
+
+// 主网改成一个sn后 修改矿机的snlist和清空矿机的数据
 func main() {
 	flag.StringVar(&formPath, "f", "", "sn列表")
 
@@ -29,7 +30,7 @@ func main() {
 		log.Println("change read config fail")
 		return
 	}
-	fs, err := ytfs.OpenGet(util.GetYTFSPath(), cfg.Options)
+	fs, err := ytfs.OpenGet(util.GetYTFSPath(), cfg.Options, cfg.IndexID)
 	if err != nil {
 		log.Printf("change open ytfs err:%s\n", err.Error())
 	}
@@ -39,7 +40,7 @@ func main() {
 			log.Printf("change ytfs pos err:%s\n", err.Error())
 		}
 		fs.Close()
-	}else {
+	} else {
 		log.Printf("change open ytfs nil\n")
 		return
 	}

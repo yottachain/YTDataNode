@@ -136,7 +136,7 @@ func Handle(data []byte) error {
 			return UploadYTFSFile(msg.Name, msg.ServerUrl, msg.Gzip)
 		} else {
 			return fmt.Errorf("403")
-		}
+		}	
 	}
 }
 
