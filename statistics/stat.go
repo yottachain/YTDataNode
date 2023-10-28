@@ -106,7 +106,7 @@ var DefaultStat Stat
 var ConnectCountMap = make(map[peer.ID]int)
 var ConnectMapMux = &sync.Mutex{}
 
-func AddCounnectCount(id peer.ID) {
+func AddConnectCount(id peer.ID) {
 	ConnectMapMux.Lock()
 	defer ConnectMapMux.Unlock()
 
@@ -117,7 +117,7 @@ func AddCounnectCount(id peer.ID) {
 	}
 }
 
-func SubCounnectCount(id peer.ID) {
+func SubConnectCount(id peer.ID) {
 	ConnectMapMux.Lock()
 	defer ConnectMapMux.Unlock()
 

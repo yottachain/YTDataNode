@@ -114,13 +114,10 @@ func (wh *WriteHandler) batchWrite(number int) {
 		case rq := <-wh.RequestQueue:
 			atomic.AddUint64(&wh.seq, 1)
 			rq.ytres.seq = wh.seq
+			rq.Key.Seq = common.HashSeq(wh.seq)
 			rqmap[rq.Key] = rq.Data
 			rqs[i] = rq
 			hashkey[i] = rq.Key.Hsh[:]
-
-			//log.Printf("[test] recive shard %s  shard id %d seq %d\n",
-			//	base64.StdEncoding.EncodeToString(hashkey[i]), int64(rq.Key.Id),
-			//	rq.ytres.seq)
 
 			log.Printf("[test] recive shard %s  shard id %d seq %d\n",
 				base58.Encode(hashkey[i]), int64(rq.Key.Id),
@@ -140,12 +137,16 @@ func (wh *WriteHandler) batchWrite(number int) {
 	for key, _ := range rqmap {
 		firstShardHash = key.Hsh[:]
 	}
-	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-slicecompare.PutKSeqToDb use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, "+
+		"batchWrite-slicecompare.PutKSeqToDb use [%f]\n",
+		base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 
 	log.Printf("[ytfs]flush start:%d\n", number)
 	startTime = time.Now()
 	_, err = wh.putShard(rqmap)
-	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard use [%f]\n", base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
+	log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, "+
+		"batchWrite-wh.putShard use [%f]\n",
+		base58.Encode(firstShardHash), len(rqmap), time.Now().Sub(startTime).Seconds())
 	if err == nil {
 		log.Printf("[ytfs]flush sucess:%d wh.seq: %d\n", number, wh.seq)
 	} else if !strings.Contains(err.Error(), "read ytfs time out") {
@@ -359,8 +360,10 @@ func (wh *WriteHandler) Handle(msgData []byte, head yhservice.Head) []byte {
 	return res2client
 }
 
-func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[common.IndexTableKey]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
+func (wh *WriteHandler) putShard(
+	batch map[common.IndexTableKey][]byte) (map[common.IndexTableKey]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(),
+		time.Millisecond*time.Duration(config.Gconfig.DiskTimeout))
 	defer cancel()
 
 	var errorC = make(chan error)
@@ -373,7 +376,9 @@ func (wh *WriteHandler) putShard(batch map[common.IndexTableKey][]byte) (map[com
 		}
 		startTime := time.Now()
 		res, err := wh.YTFS().BatchPut(batch)
-		log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, batchWrite-wh.putShard-YTFS().BatchPut use [%f]\n", base58.Encode(firstShardHash), len(batch), time.Now().Sub(startTime).Seconds())
+		log.Printf("[YTFSPERF] first_shard_hash %s , batch len: %d, "+
+			"batchWrite-wh.putShard-YTFS().BatchPut use [%f]\n",
+			base58.Encode(firstShardHash), len(batch), time.Now().Sub(startTime).Seconds())
 		if err != nil {
 			errorC <- err
 		}

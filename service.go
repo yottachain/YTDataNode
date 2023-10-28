@@ -116,91 +116,111 @@ func (sn *storageNode) Service() {
 	}
 
 	wh.Run()
-	_ = sn.Host().RegisterHandler(message.MsgIDNodeCapacityRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
-		if res == nil || len(res) < 3 || disableReport || stopUp {
-			return nil, fmt.Errorf("no token")
-		}
-		return res, nil
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDNodeCapacityRequest.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			res := wh.GetToken(data, head.RemotePeerID, head.RemoteAddrs)
+			if res == nil || len(res) < 3 || disableReport || stopUp {
+				return nil, fmt.Errorf("no token")
+			}
+			return res, nil
+		})
 
 	// 如果进程没有被禁止写入注册上传处理器
 	if sn.Config().DisableWrite == false {
-		_ = sn.Host().RegisterHandler(message.MsgIDUploadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-			if stopUp {
-				log.Println("miner stop upload")
-				return nil, fmt.Errorf("miner stop upload")
-			}
+		_ = sn.Host().RegisterHandler(
+			message.MsgIDUploadShardRequest.Value(),
+			func(data []byte, head yhservice.Head) ([]byte, error) {
+				if stopUp {
+					log.Println("miner stop upload")
+					return nil, fmt.Errorf("miner stop upload")
+				}
 
-			if dnStatus >= 2 {
-				log.Printf("miner stop upload, dn status %d\n", dnStatus)
-				return nil, fmt.Errorf("miner stop upload, dn status %d\n", dnStatus)
-			}
+				if dnStatus >= 2 {
+					log.Printf("miner stop upload, dn status %d\n", dnStatus)
+					return nil, fmt.Errorf("miner stop upload, dn status %d\n", dnStatus)
+				}
 
-			//log.Println("miner start upload")
-			statistics.AddCounnectCount(head.RemotePeerID)
-			defer statistics.SubCounnectCount(head.RemotePeerID)
-			return wh.Handle(data, head), nil
-		})
+				//log.Println("miner start upload")
+				statistics.AddConnectCount(head.RemotePeerID)
+				defer statistics.SubConnectCount(head.RemotePeerID)
+				return wh.Handle(data, head), nil
+			})
 	}
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGetShardCurSeqReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		log.Println("get current seq......")
-		return wh.GetCurSeq(data)
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDGetShardCurSeqReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			log.Println("get current seq......")
+			return wh.GetCurSeq(data)
+		})
 
 	slc := &slicecompare.SliceComparer{Sn: sn, Lock: sync.Mutex{}}
-	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		log.Println("[slicecompare] receive compare request!")
-		res, _ := slc.CompareMsgChkHdl(data)
-		resp, err := proto.Marshal(&res)
-		return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSliceCompareReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			log.Println("[slicecompare] receive compare request!")
+			res, _ := slc.CompareMsgChkHdl(data)
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDSliceCompareResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSliceCompareStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		log.Println("[slicecompare] receive get compare status request!")
-		res, err := slc.CompareMsgStatusChkHdl(data)
-		resp, err := proto.Marshal(&res)
-		return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSliceCompareStatusReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			log.Println("[slicecompare] receive get compare status request!")
+			res, err := slc.CompareMsgStatusChkHdl(data)
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDSliceCompareStatusResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDCpDelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		log.Println("[slicecompare] receive delete compare_status request!")
-		res, _ := slc.CompareMsgDelfileHdl(data)
-		resp, err := proto.Marshal(&res)
-		return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDCpDelStatusfileReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			log.Println("[slicecompare] receive delete compare_status request!")
+			res, _ := slc.CompareMsgDelfileHdl(data)
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDCpDelStatusfileResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDDownloadShardRequest.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		dh := DownloadHandler{sn}
-		log.Printf("[download] get shard request from %s  adds %v\n request buf %s\n",
-			head.RemotePeerID.Pretty(), head.RemoteAddrs, hex.EncodeToString(data))
-		return dh.Handle(data, head.RemotePeerID)
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDDownloadShardRequest.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			dh := DownloadHandler{sn}
+			log.Printf("[download] get shard request from %s  adds %v\n request buf %s\n",
+				head.RemotePeerID.Pretty(), head.RemoteAddrs, hex.EncodeToString(data))
+			return dh.Handle(data, head.RemotePeerID)
+		})
 	// 下载回执
-	_ = sn.Host().RegisterHandler(message.MsgIDDownloadTKCheck.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.DownloadTKCheck
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			return nil, err
-		}
-		var tk TokenPool.Token
-		tk.FillFromString(msg.Tk)
-		lat := time.Now().Sub(tk.Tm)
-		if !TokenPool.Dtp().Check(&tk) {
-			tmstr := tk.Tm.Format("20060102030405")
-			return nil, fmt.Errorf("token time out , token time %s", tmstr)
-		}
-		TokenPool.Dtp().NetLatency.Add(lat)
-		TokenPool.Dtp().Delete(&tk)
-		return nil, nil
-	})
-	_ = sn.Host().RegisterHandler(message.MsgIDString.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
-	})
-	_ = sn.Host().RegisterHandler(message.MsgIDSpotCheckTaskList.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		sch := SpotCheckHandler{sn}
-		return sch.Handle(data), nil
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDDownloadTKCheck.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			var msg message.DownloadTKCheck
+			if err := proto.Unmarshal(data, &msg); err != nil {
+				return nil, err
+			}
+			var tk TokenPool.Token
+			tk.FillFromString(msg.Tk)
+			lat := time.Now().Sub(tk.Tm)
+			if !TokenPool.Dtp().Check(&tk) {
+				tmstr := tk.Tm.Format("20060102030405")
+				return nil, fmt.Errorf("token time out , token time %s", tmstr)
+			}
+			TokenPool.Dtp().NetLatency.Add(lat)
+			TokenPool.Dtp().Delete(&tk)
+			return nil, nil
+		})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDString.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			return append(message.MsgIDString.Bytes(), []byte("pong")...), nil
+		})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSpotCheckTaskList.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			sch := SpotCheckHandler{sn}
+			return sch.Handle(data), nil
+		})
 
 	rcv, err := rc.New(sn)
 	if err != nil {
@@ -210,124 +230,146 @@ func (sn *storageNode) Service() {
 
 	go rcv.RunPool()
 
-	_ = sn.Host().RegisterHandler(message.MsgIDMultiTaskDescription.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		err := rcv.HandleMuilteTaskMsg(data)
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDMultiTaskDescription.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			err := rcv.HandleMuilteTaskMsg(data)
 
-		//记录上次数据
-		//go func() {
-		//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		//	defer fd.Close()
-		//	fd.Write(data)
-		//}()
-		return message.MsgIDVoidResponse.Bytes(), err
-	})
+			//记录上次数据
+			//go func() {
+			//	fd, _ := os.OpenFile(path.Join(util.GetYTFSPath(), fmt.Sprintf("rcpackage.data")), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+			//	defer fd.Close()
+			//	fd.Write(data)
+			//}()
+			return message.MsgIDVoidResponse.Bytes(), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGcReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var resp []byte
-		GcW := gc.GcWorker{sn}
-		res, err := GcW.GcMsgChkHdl(data)
-		resp, _ = proto.Marshal(&res)
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDGcReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			var resp []byte
+			GcW := gc.GcWorker{sn}
+			res, err := GcW.GcMsgChkHdl(data)
+			resp, _ = proto.Marshal(&res)
 
-		return append(message.MsgIDGcResp.Bytes(), resp...), err
-	})
+			return append(message.MsgIDGcResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGcStatusReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		GcW := gc.GcWorker{sn}
-		res, _ := GcW.GetGcStatusHdl(data)
-		resp, err := proto.Marshal(&res)
-		return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDGcStatusReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			GcW := gc.GcWorker{sn}
+			res, _ := GcW.GetGcStatusHdl(data)
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcStatusResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDGcdelStatusfileReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		GcW := gc.GcWorker{sn}
-		res, _ := GcW.GcDelStatusFileHdl(data)
-		resp, err := proto.Marshal(&res)
-		return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDGcdelStatusfileReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			GcW := gc.GcWorker{sn}
+			res, _ := GcW.GcDelStatusFileHdl(data)
+			resp, err := proto.Marshal(&res)
+			return append(message.MsgIDGcdelStatusfileResp.Bytes(), resp...), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDDownloadYTFSFile.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		err := remoteDebug.Handle(data)
-		if err != nil {
-			log.Println("[debug]", err)
-		}
-		return message.MsgIDVoidResponse.Bytes(), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDDownloadYTFSFile.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			err := remoteDebug.Handle(data)
+			if err != nil {
+				log.Println("[debug]", err)
+			}
+			return message.MsgIDVoidResponse.Bytes(), err
+		})
 
-	_ = sn.Host().RegisterHandler(message.MsgIDDebug.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		err := remoteDebug.Handle2(data)
-		if err != nil {
-			log.Println("[debug]", err)
-		}
-		return message.MsgIDVoidResponse.Bytes(), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDDebug.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			err := remoteDebug.Handle2(data)
+			if err != nil {
+				log.Println("[debug]", err)
+			}
+			return message.MsgIDVoidResponse.Bytes(), err
+		})
 
 	vfs := verifySlice.NewVerifySler(sn)
-	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.SelfVerifyReq
-		var res message.SelfVerifyResp
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[verify] message.SelfVerifyReq error:", err)
-			res.ErrCode = "100"
-			resp, err := proto.Marshal(&res)
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSelfVerifyReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			var msg message.SelfVerifyReq
+			var res message.SelfVerifyResp
+			if err := proto.Unmarshal(data, &msg); err != nil {
+				log.Println("[verify] message.SelfVerifyReq error:", err)
+				res.ErrCode = "100"
+				resp, err := proto.Marshal(&res)
+				return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
+			}
+
+			verifynum, _ := strconv.ParseUint(msg.Num, 10, 32)
+			startItem := msg.StartItem
+			result := vfs.VerifySlice(uint32(verifynum), startItem)
+			resp, err := proto.Marshal(result)
+			if err != nil {
+				log.Println("[verify] Marshal resp error:", err)
+			}
 			return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
-		}
+		})
 
-		verifynum, _ := strconv.ParseUint(msg.Num, 10, 32)
-		startItem := msg.StartItem
-		result := vfs.VerifySlice(uint32(verifynum), startItem)
-		resp, err := proto.Marshal(result)
-		if err != nil {
-			log.Println("[verify] Marshal resp error:", err)
-		}
-		return append(message.MsgIDSelfVerifyResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSelfVerifyQueryReq.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			var msg message.SelfVerifyQueryReq
+			var res message.SelfVerifyQueryResp
+			if err := proto.Unmarshal(data, &msg); err != nil {
+				log.Println("[verify] message.SelfVerifyReq error:", err)
+				res.ErrCode = "ErrUnmarshal"
+				//res.ErrCode = "100"
+				resp, err := proto.Marshal(&res)
+				return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
+			}
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSelfVerifyQueryReq.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.SelfVerifyQueryReq
-		var res message.SelfVerifyQueryResp
-		if err := proto.Unmarshal(data, &msg); err != nil {
-			log.Println("[verify] message.SelfVerifyReq error:", err)
-			res.ErrCode = "ErrUnmarshal"
-			//res.ErrCode = "100"
-			resp, err := proto.Marshal(&res)
+			result := vfs.MissSliceQuery(msg.Key)
+			resp, err := proto.Marshal(&result)
+			if err != nil {
+				log.Println("[debug]", err)
+			}
 			return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
-		}
+		})
 
-		result := vfs.MissSliceQuery(msg.Key)
-		resp, err := proto.Marshal(&result)
-		if err != nil {
-			log.Println("[debug]", err)
-		}
-		return append(message.MsgIDSelfVerifyQueryResp.Bytes(), resp...), err
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDSleepReturn.Value(),
+		func(data []byte, head yhservice.Head) ([]byte, error) {
+			var msg message.UploadShardRequestTest
+			if err := proto.Unmarshal(data, &msg); err == nil {
+				log.Println("[sleep]", msg.Sleep)
+				<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
+			} else {
+				log.Println("[sleep]", err)
+			}
+			var res message.UploadShard2CResponse
+			res.RES = 0
 
-	_ = sn.Host().RegisterHandler(message.MsgIDSleepReturn.Value(), func(data []byte, head yhservice.Head) ([]byte, error) {
-		var msg message.UploadShardRequestTest
-		if err := proto.Unmarshal(data, &msg); err == nil {
-			log.Println("[sleep]", msg.Sleep)
-			<-time.After(time.Duration(msg.Sleep) * time.Millisecond)
-		} else {
-			log.Println("[sleep]", err)
-		}
-		var res message.UploadShard2CResponse
-		res.RES = 0
-
-		buf, err := proto.Marshal(&res)
-		tk := TokenPool.NewToken()
-		tk.FillFromString(msg.AllocId)
-		atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
-		TokenPool.Utp().Delete(tk)
-		log.Println("test upload return", head.RemotePeerID)
-		return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
-	})
+			buf, err := proto.Marshal(&res)
+			tk := TokenPool.NewToken()
+			tk.FillFromString(msg.AllocId)
+			atomic.AddInt64(&statistics.DefaultStat.TXSuccess, 1)
+			TokenPool.Utp().Delete(tk)
+			log.Println("test upload return", head.RemotePeerID)
+			return append(message.MsgIDUploadShard2CResponse.Bytes(), buf...), err
+		})
 
 	// 测试矿机性能
-	_ = sn.Host().RegisterHandler(message.MsgIDTestMinerPerfTask.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
-		return Perf.TestMinerPerfHandler(requestData)
-	})
-	_ = sn.Host().RegisterHandler(message.MsgIDTestGetBlock.Value(), func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
-		return Perf.GetBlock(requestData)
-	})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDTestMinerPerfTask.Value(),
+		func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+			return Perf.TestMinerPerfHandler(requestData)
+		})
+	_ = sn.Host().RegisterHandler(
+		message.MsgIDTestGetBlock.Value(),
+		func(requestData []byte, head yhservice.Head) (bytes []byte, err error) {
+			return Perf.GetBlock(requestData)
+		})
 
 	go sn.Host().Accept()
 	//Register(sn)
@@ -402,7 +444,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	//statistics.DefaultStat.TXToken, statistics.DefaultStat.TXSuccess = TokenPool.Dtp().GetParams()
 	log.Printf("client connections is %d, server connections is %d\n",
 		sn.Host().ConnStat().GetCliconnCount(), sn.Host().ConnStat().GetSerconnCount())
-	statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount() + sn.Host().ConnStat().GetCliconnCount()
+	statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount() +
+		sn.Host().ConnStat().GetCliconnCount()
 	//statistics.DefaultStat.Connection = sn.Host().ConnStat().GetSerconnCount()
 	statistics.DefaultStat.RXNetLatency = TokenPool.Utp().NetLatency.Avg()
 	statistics.DefaultStat.RXDiskLatency = TokenPool.Utp().DiskLatency.Avg()
@@ -423,7 +466,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 	//statistics.DefaultStat.RebuildShardStat.RunningCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
 	//statistics.DefaultStat.RebuildShardStat.DownloadingCount.SetMax(int32(statistics.DefaultStat.RXTokenFillRate / 4))
 
-	log.Println("距离上次启动", time.Now().Sub(lt), time.Duration(config.Gconfig.BanTime)*time.Second)
+	log.Println("距离上次启动", time.Now().Sub(lt),
+		time.Duration(config.Gconfig.BanTime)*time.Second)
 
 	TokenPool.Utp().Save()
 	TokenPool.Dtp().Save()
@@ -436,7 +480,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 
 	resData, err := proto.Marshal(&msg)
 	log.Printf("RX:%d,TX:%d\n", msg.Rx, msg.Tx)
-	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n", msg.Cpu, msg.Memory, msg.MaxDataSpace)
+	log.Printf("cpu:%d%% mem:%d%% max-space: %d block\n",
+		msg.Cpu, msg.Memory, msg.MaxDataSpace)
 	log.Printf("data Hash %s\n", msg.Hash)
 	if err != nil {
 		log.Println("send report msg fail:", err)
@@ -475,7 +520,8 @@ func Report(sn *storageNode, rce *rc.Engine) {
 				log.Printf("采购空间出错\n")
 			}
 		}
-		log.Printf("report info success: %d, relay:%s, dn status:%d\n", resMsg.ProductiveSpace, resMsg.RelayUrl, resMsg.DnStatus)
+		log.Printf("report info success: %d, relay:%s, dn status:%d\n",
+			resMsg.ProductiveSpace, resMsg.RelayUrl, resMsg.DnStatus)
 
 		dnStatus = resMsg.DnStatus
 
