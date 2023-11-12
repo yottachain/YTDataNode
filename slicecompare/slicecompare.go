@@ -27,12 +27,12 @@ import (
 )
 
 const FinishKey = "key_finishcompareseq"
-const Seqkey  = "seqkey_forcompare"
-const Comparedb  = "/compare_db/"
+const Seqkey = "seqkey_forcompare"
+const Comparedb = "/compare_db/"
 
 const CpStatusDir = "/compare_status/"
 
-var SliceCompareDir string =  CpStatusDir
+var SliceCompareDir string = CpStatusDir
 
 var Entrycountdownld int32 = 1000
 
@@ -44,47 +44,47 @@ var Entrycountdownld int32 = 1000
 
 //type CompDB sni.CompDB
 
-func init(){
+func init() {
 	InitDir(Comparedb)
-    InitDir(CpStatusDir)
+	InitDir(CpStatusDir)
 }
 
-func ForInit(fileName string, value string){
+func ForInit(fileName string, value string) {
 	filePath := util.GetYTFSPath() + fileName
-	status_exist,_ := util.PathExists(filePath)
+	status_exist, _ := util.PathExists(filePath)
 	if status_exist == false {
 		content := []byte(value)
-		err := ioutil.WriteFile(filePath,content,0666)
-		if err != nil{
+		err := ioutil.WriteFile(filePath, content, 0666)
+		if err != nil {
 			fmt.Println(err)
 		}
 	}
 }
 
-func OpenTmpRocksDB(DBName string) (*sni.CompDB, error){
+func OpenTmpRocksDB(DBName string) (*sni.CompDB, error) {
 	var tmp sni.CompDB
 	DBPath := util.GetYTFSPath() + DBName
 	opt := gorocksdb.NewDefaultOptions()
 	opt.SetCreateIfMissing(true)
 	db, err := gorocksdb.OpenDb(opt, DBPath)
-	if err != nil{
-		fmt.Printf("[slicecompare]open DB:%s error %s",DBPath,err.Error())
-		return nil,err
+	if err != nil {
+		fmt.Printf("[slicecompare]open DB:%s error %s", DBPath, err.Error())
+		return nil, err
 	}
 
 	tmp.Db = db
 	tmp.Ro = gorocksdb.NewDefaultReadOptions()
 	tmp.Wo = gorocksdb.NewDefaultWriteOptions()
 
-	return &tmp ,nil
+	return &tmp, nil
 }
 
 func GetSeqFromDb(Tdb *sni.CompDB, key string) (uint64, error) {
 	var seq uint64
-	Slc,err := Tdb.Db.Get(Tdb.Ro, []byte(key))
+	Slc, err := Tdb.Db.Get(Tdb.Ro, []byte(key))
 	if err != nil || Slc.Data() == nil {
 		bval := make([]byte, 8)
-		binary.LittleEndian.PutUint64(bval,0)
+		binary.LittleEndian.PutUint64(bval, 0)
 		err = Tdb.Db.Put(Tdb.Wo, []byte(key), bval)
 		return 0, err
 	}
@@ -92,25 +92,30 @@ func GetSeqFromDb(Tdb *sni.CompDB, key string) (uint64, error) {
 	return seq, nil
 }
 
-func PutKSeqToDb(seq uint64, hash []byte, Tdb *sni.CompDB) error{
+func PutKSeqToDb(seq uint64, hash []byte, Tdb *sni.CompDB) error {
 	var err error
-	Kseq := make([]byte,8)
+	Kseq := make([]byte, 8)
 	binary.LittleEndian.PutUint64(Kseq, seq)
 	err = Tdb.Db.Put(Tdb.Wo, Kseq, hash)
 	return err
 }
 
-func PutVSeqToDb(seq uint64, hash []byte, Tdb *sni.CompDB) error{
+func PutVSeqToDb(seq uint64, hash []byte, Tdb *sni.CompDB) error {
 	var err error
-	Vseq := make([]byte,8)
+	Vseq := make([]byte, 8)
 	binary.LittleEndian.PutUint64(Vseq, seq)
 	err = Tdb.Db.Put(Tdb.Wo, hash, Vseq)
 	return err
 }
 
-func InitDir(dirName string){
+func PutKeyToDb(key []byte, value []byte, Tdb *sni.CompDB) (err error) {
+	err = Tdb.Db.Put(Tdb.Wo, key, value)
+	return
+}
+
+func InitDir(dirName string) {
 	filePath := util.GetYTFSPath() + dirName
-	status_exist,_ := util.PathExists(filePath)
+	status_exist, _ := util.PathExists(filePath)
 	if status_exist == false {
 		err := os.Mkdir(filePath, os.ModePerm)
 		if err != nil {
@@ -124,28 +129,28 @@ func InitDir(dirName string){
 //type SliceCompareHandler func(dataFromSn *message.ListDNIResp) bool
 
 type SliceComparer struct {
-	Sn sni.StorageNode
-	Lock  sync.Mutex
+	Sn   sni.StorageNode
+	Lock sync.Mutex
 }
 
-func (sc *SliceComparer) ChkStatusFile(msg message.SliceCompareReq) error{
+func (sc *SliceComparer) ChkStatusFile(msg message.SliceCompareReq) error {
 	var status message.SliceCompareStatusResp
 	var err error
 
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 
 	status.ErrCode = "Running"
-	stus,_ := proto.Marshal(&status)
-	err = SavetoFile(filePath,stus)
-	if err != nil{
-		fmt.Println("Save start compare status to file, error:",err)
+	stus, _ := proto.Marshal(&status)
+	err = SavetoFile(filePath, stus)
+	if err != nil {
+		fmt.Println("Save start compare status to file, error:", err)
 		return err
 	}
 
 	return nil
 }
 
-func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp, error) {
+func (sc *SliceComparer) CompareMsgChkHdl(data []byte) (message.SliceCompareResp, error) {
 	var msg message.SliceCompareReq
 	var res message.SliceCompareResp
 	var err error
@@ -182,29 +187,29 @@ func (sc *SliceComparer)CompareMsgChkHdl(data []byte) (message.SliceCompareResp,
 	return res, err
 }
 
-func SavetoFile(filePath string,value []byte) error{
+func SavetoFile(filePath string, value []byte) error {
 	var status message.SliceCompareStatusResp
 	var err error
-	status_exist,_ := util.PathExists(filePath)
+	status_exist, _ := util.PathExists(filePath)
 	if status_exist {
-		value,_ := ioutil.ReadFile(filePath)
-		_ = proto.Unmarshal(value,&status)
+		value, _ := ioutil.ReadFile(filePath)
+		_ = proto.Unmarshal(value, &status)
 		if status.ErrCode != "Running" {
 			err = fmt.Errorf("TaskRunned")
 			return err
 		}
 	}
 
-	err = ioutil.WriteFile(filePath, value,0666)
-	if err != nil{
-		fmt.Println("[gcdel] save value to file error",err,"filepath:",filePath)
+	err = ioutil.WriteFile(filePath, value, 0666)
+	if err != nil {
+		fmt.Println("[gcdel] save value to file error", err, "filepath:", filePath)
 		err = fmt.Errorf("SaveFileErr")
 		return err
 	}
 	return nil
 }
 
-func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *sni.CompDB){
+func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *sni.CompDB) {
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
 	res, _ := sc.CompareHashFromSn(msg, Tdb)
 	sc.RedundencySliceGc(msg, &res, Tdb)
@@ -212,36 +217,36 @@ func (sc *SliceComparer) RunRealCompare(msg message.SliceCompareReq, Tdb *sni.Co
 	_ = SavetoFile(filePath, stus)
 }
 
-func (sc *SliceComparer)GetCompareStatus(msg message.SliceCompareStatusReq) (message.SliceCompareStatusResp){
+func (sc *SliceComparer) GetCompareStatus(msg message.SliceCompareStatusReq) message.SliceCompareStatusResp {
 	var res message.SliceCompareStatusResp
 	res.ErrCode = "succ"
 	res.TaskId = msg.TaskId
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
-	log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
+	log.Println("[gcdel] getGcStatus, taskid:", msg.TaskId)
 
-	statusExist,_ := util.PathExists(filePath)
-	if ! statusExist {
+	statusExist, _ := util.PathExists(filePath)
+	if !statusExist {
 		fmt.Println("[gcdel] statusfile not exist, filepath:", filePath)
 		res.ErrCode = "Nofile"
 		return res
 	}
 
 	value, err := ioutil.ReadFile(filePath)
-	if err != nil{
+	if err != nil {
 		fmt.Println("[gcdel] read status file error:", err, "filepath:", filePath)
 		res.ErrCode = "fileRdErr"
 		return res
 	}
 
 	err = proto.Unmarshal(value, &res)
-	if err != nil{
+	if err != nil {
 		fmt.Println("[gcdel] unmarshal statusfile to resp error:", err, "filepath:", filePath)
 		res.ErrCode = "fileUnmarshalErr"
 	}
 	return res
 }
 
-func (sc *SliceComparer)CompareMsgStatusChkHdl(data []byte)(message.SliceCompareStatusResp, error){
+func (sc *SliceComparer) CompareMsgStatusChkHdl(data []byte) (message.SliceCompareStatusResp, error) {
 	var res message.SliceCompareStatusResp
 	var msg message.SliceCompareStatusReq
 	var err error
@@ -271,15 +276,15 @@ func (sc *SliceComparer)CompareMsgStatusChkHdl(data []byte)(message.SliceCompare
 	return res, err
 }
 
-func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr *message.SliceCompareStatusResp,Tdb *sni.CompDB){
+func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr *message.SliceCompareStatusResp, Tdb *sni.CompDB) {
 	GcW := &gc.GcWorker{sc.Sn}
 	snmissseq := make([]uint64, 1)
 
-    if !sc.Sn.Config().UseKvDb {
-	    resaddr.ErrCode = "ErrDbForGc"
-    	log.Println("[slicecompare][error] use indexdb, gc failed")
-	    return
-    }
+	if !sc.Sn.Config().UseKvDb {
+		resaddr.ErrCode = "ErrDbForGc"
+		log.Println("[slicecompare][error] use indexdb, gc failed")
+		return
+	}
 
 	//comparedseq, err := GetSeqFromDb(Tdb, FinishKey)
 	//if err != nil{
@@ -288,11 +293,11 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr 
 	//}
 
 	//Tdb.Ro.SetFillCache(false)
-    //iter := Tdb.Db.NewIterator(Tdb.Ro)
-    //for iter.SeekToFirst(); iter.Valid(); iter.Next(){
-    //	Bkey := iter.Key().Data()
-    //	if Bkey == nil || len(Bkey) > 8 {
-    //		continue
+	//iter := Tdb.Db.NewIterator(Tdb.Ro)
+	//for iter.SeekToFirst(); iter.Valid(); iter.Next(){
+	//	Bkey := iter.Key().Data()
+	//	if Bkey == nil || len(Bkey) > 8 {
+	//		continue
 	//    }
 	//
 	//    seq := binary.LittleEndian.Uint64(Bkey)
@@ -318,28 +323,28 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr 
 	//    snmissseq = append(snmissseq, seq)
 	//    //(*resaddr).DnMissList = append((*resaddr).DnMissList, GcHash)
 	//    (*resaddr).SnMissNum++
-    //}
+	//}
 
-    for seq := msg.StartSeq; seq <= msg.EndSeq; seq++ {
-		SeqKey := make([]byte,8)
-    	binary.LittleEndian.PutUint64(SeqKey, seq)
-    	GcHash, err := Tdb.Db.Get(Tdb.Ro, SeqKey)
-    	if err != nil {
-    		continue
+	for seq := msg.StartSeq; seq <= msg.EndSeq; seq++ {
+		SeqKey := make([]byte, 8)
+		binary.LittleEndian.PutUint64(SeqKey, seq)
+		GcHash, err := Tdb.Db.Get(Tdb.Ro, SeqKey)
+		if err != nil {
+			continue
 		}
 
 		if len(GcHash.Data()) != 16 {
 			continue
-	   	}
+		}
 
-	   	log.Printf("[slicecompare] task=%s gc hash=%s\n", msg.TaskId, base58.Encode(GcHash.Data()))
+		log.Printf("[slicecompare] task=%s gc hash=%s\n", msg.TaskId, base58.Encode(GcHash.Data()))
 
 		go func(data []byte) {
-		   err = GcW.GcHashProcess(data)
-		   if err != nil{
-			   fmt.Printf("[slicecompare] task=%s gc error=%s hash=%s\n",
-			   		msg.TaskId, err.Error(), base58.Encode(data))
-		   }
+			err = GcW.GcHashProcess(data)
+			if err != nil {
+				fmt.Printf("[slicecompare] task=%s gc error=%s hash=%s\n",
+					msg.TaskId, err.Error(), base58.Encode(data))
+			}
 		}(GcHash.Data())
 
 		_ = Tdb.Db.Delete(Tdb.Wo, SeqKey)
@@ -348,7 +353,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr 
 	}
 
 	err := PutVSeqToDb(msg.EndSeq, []byte(FinishKey), Tdb)
-	if err != nil{
+	if err != nil {
 		log.Println("[slicecompare] ErrPutComparedSeq")
 	}
 
@@ -357,7 +362,7 @@ func (sc *SliceComparer) RedundencySliceGc(msg message.SliceCompareReq, resaddr 
 	}
 }
 
-func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.CompDB) (message.SliceCompareStatusResp, error){
+func (sc *SliceComparer) CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.CompDB) (message.SliceCompareStatusResp, error) {
 	var res message.SliceCompareStatusResp
 	rebuildShard := make([]message.SeqToHash, 0)
 
@@ -367,7 +372,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	res.StartSeq = msg.StartSeq
 	res.EndSeq = msg.EndSeq
 	comparedseq, err := GetSeqFromDb(Tdb, FinishKey)
-	if err != nil{
+	if err != nil {
 		res.ErrCode = "ErrGetComparedSeq"
 		fmt.Println("[slicecompare] error:", res.ErrCode)
 		return res, err
@@ -385,16 +390,16 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 				msg.TaskId, seq, msg.StartSeq, msg.EndSeq, comparedseq)
 			continue
 		}
-		atomic.AddUint32(&res.CompareNum,1)
+		atomic.AddUint32(&res.CompareNum, 1)
 
 		//binary.LittleEndian.PutUint64(BKey, seq)
 		//dnhash, err := Tdb.Db.Get(Tdb.Ro, BKey)
 		//
 		//if err != nil || len(dnhash.Data()) != 16 {
-        //   fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, base58.Encode(seqtohash.Hash), err)
-        //   res.DnMissList = append(res.DnMissList, seqtohash.Hash)
-        //   atomic.AddUint32(&res.DnMissNum,1)
-        //   continue
+		//   fmt.Printf("[slicecompare] get hash of seq %v, hash %v, error %v \n",seq, base58.Encode(seqtohash.Hash), err)
+		//   res.DnMissList = append(res.DnMissList, seqtohash.Hash)
+		//   atomic.AddUint32(&res.DnMissNum,1)
+		//   continue
 		//}
 		//
 		//if len(seqtohash.Hash) != 16 {
@@ -417,7 +422,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 			BKey := make([]byte, 8)
 
 			hash := base58.Encode(seqtohash.Hash)
-			data, err := sc.Sn.YTFS().Get(ydcommon.IndexTableKey{Hsh:ydcommon.BytesToHash(seqtohash.Hash), Id:0})
+			data, err := sc.Sn.YTFS().Get(ydcommon.IndexTableKey{Hsh: ydcommon.BytesToHash(seqtohash.Hash), Id: 0})
 			if err != nil {
 				log.Printf("[slicecompare] task=%s error hash %s get data from disk fail %s\n",
 					msg.TaskId, hash, err.Error())
@@ -425,7 +430,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 				res.DnMissList = append(res.DnMissList, seqtohash.Hash)
 				rebuildShard = append(rebuildShard, *seqtohash)
 				lck.Unlock()
-				atomic.AddUint32(&res.DnMissNum,1)
+				atomic.AddUint32(&res.DnMissNum, 1)
 				return
 			}
 
@@ -440,7 +445,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 				res.DnMissList = append(res.DnMissList, seqtohash.Hash)
 				rebuildShard = append(rebuildShard, *seqtohash)
 				lck.Unlock()
-				atomic.AddUint32(&res.DnMissNum,1)
+				atomic.AddUint32(&res.DnMissNum, 1)
 				return
 			}
 
@@ -460,8 +465,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	wg.Wait()
 
 	log.Printf("[slicecompare] task=%s compare count=%d, success count=%d\n",
-		msg.TaskId, res.CompareNum, res.CompareNum - res.DnMissNum)
-
+		msg.TaskId, res.CompareNum, res.CompareNum-res.DnMissNum)
 
 	//sn有矿机没有的上报elk, 先放到这里吧
 	var elkData pb.NodeRebuildRequest
@@ -469,7 +473,7 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	elkData.MinerId = int64(msg.NodeId)
 	elkData.ErrNums = int32(len(rebuildShard))
 
-	for _, v :=range rebuildShard {
+	for _, v := range rebuildShard {
 		var errShard pb.ErrShard
 		errShard.RebuildStatus = 0
 		errShard.Shard = base58.Encode(v.Hash)
@@ -482,17 +486,17 @@ func (sc *SliceComparer)CompareHashFromSn(msg message.SliceCompareReq, Tdb *sni.
 	return res, err
 }
 
-func (sc *SliceComparer)CompareDelStatusfile(msg message.CpDelStatusfileReq) (message.CpDelStatusfileResp){
+func (sc *SliceComparer) CompareDelStatusfile(msg message.CpDelStatusfileReq) message.CpDelStatusfileResp {
 	var res message.CpDelStatusfileResp
 	res.TaskId = msg.TaskId
 	res.NodeId = msg.NodeId
 	res.ErrCode = "Succ"
 
 	filePath := util.GetYTFSPath() + CpStatusDir + msg.TaskId
-	log.Println("[gcdel] getGcStatus, taskid:",msg.TaskId)
+	log.Println("[gcdel] getGcStatus, taskid:", msg.TaskId)
 
-	status_exist,_ := util.PathExists(filePath)
-	if ! status_exist {
+	status_exist, _ := util.PathExists(filePath)
+	if !status_exist {
 		fmt.Println("[gcdel] statusfile not exist,filepath:", filePath)
 		res.ErrCode = "NoFile"
 		return res
@@ -500,13 +504,13 @@ func (sc *SliceComparer)CompareDelStatusfile(msg message.CpDelStatusfileReq) (me
 
 	err := os.Remove(filePath)
 	if err != nil {
-		fmt.Println("[gcdel] delete status file error:",err)
-		res.ErrCode= "DelErr"
+		fmt.Println("[gcdel] delete status file error:", err)
+		res.ErrCode = "DelErr"
 	}
 	return res
 }
 
-func (sc *SliceComparer)CompareMsgDelfileHdl(data []byte)(message.CpDelStatusfileResp, error){
+func (sc *SliceComparer) CompareMsgDelfileHdl(data []byte) (message.CpDelStatusfileResp, error) {
 	var msg message.CpDelStatusfileReq
 	var res message.CpDelStatusfileResp
 	var err error
@@ -520,13 +524,13 @@ func (sc *SliceComparer)CompareMsgDelfileHdl(data []byte)(message.CpDelStatusfil
 	}
 
 	res.TaskId = msg.TaskId
-	if !config.Gconfig.SliceCompareOpen{
+	if !config.Gconfig.SliceCompareOpen {
 		//res.ErrCode = "errNotOpenGc"
 		//err = fmt.Errorf("errNotOpenGc")
 		//return res, err
 	}
 
-	if msg.NodeId != sc.Sn.Config().IndexID{
+	if msg.NodeId != sc.Sn.Config().IndexID {
 		log.Println("[gcdel] message.GcReq error:", err)
 		res.ErrCode = "errNodeid"
 		err = fmt.Errorf("errNodeid")
@@ -573,23 +577,23 @@ func (sc *SliceComparer)CompareMsgDelfileHdl(data []byte)(message.CpDelStatusfil
 //	return err
 //}
 
-func (sc *SliceComparer)GetAllReordFromDB(fileName string){
+func (sc *SliceComparer) GetAllReordFromDB(fileName string) {
 	DBPath := util.GetYTFSPath() + fileName
 	log.Println(DBPath)
-	db,err := leveldb.OpenFile(DBPath,nil)
-	if err != nil{
-		fmt.Printf("open tmpDB:%s error",DBPath)
+	db, err := leveldb.OpenFile(DBPath, nil)
+	if err != nil {
+		fmt.Printf("open tmpDB:%s error", DBPath)
 		return
 	}
 	defer db.Close()
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
 		value := string(iter.Value())
-		fmt.Printf("key[%s]=[%s]\n",base58.Encode(iter.Key()),value);
+		fmt.Printf("key[%s]=[%s]\n", base58.Encode(iter.Key()), value)
 	}
 }
 
-func GetValueFromFile(fileName string) (string ,error){
+func GetValueFromFile(fileName string) (string, error) {
 	filePath := util.GetYTFSPath() + fileName
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -598,18 +602,18 @@ func GetValueFromFile(fileName string) (string ,error){
 	return string(content), err
 }
 
-func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB string, comparetimes uint8) error {
+func (sc *SliceComparer) SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB string, comparetimes uint8) error {
 	var saveTime string
 	var saveTimeInt int64
 
-	if comparetimes < 3{
+	if comparetimes < 3 {
 		return nil
 	}
 
 	nowTime := time.Now().Unix()
 	toDelDBPath := util.GetYTFSPath() + toDelEntryDB
-	del_db,err := leveldb.OpenFile(toDelDBPath,nil)
-	if err != nil{
+	del_db, err := leveldb.OpenFile(toDelDBPath, nil)
+	if err != nil {
 		log.Println(err)
 		return err
 	}
@@ -618,30 +622,30 @@ func (sc *SliceComparer)SaveEntryInDBToDel(tmp_db *leveldb.DB, toDelEntryDB stri
 	iter := tmp_db.NewIterator(nil, nil)
 	for iter.Next() {
 		saveTime = string(iter.Value())
-		saveTimeInt,_ = strconv.ParseInt(saveTime,10,64)
+		saveTimeInt, _ = strconv.ParseInt(saveTime, 10, 64)
 
-		if nowTime - saveTimeInt >= 1200 {
+		if nowTime-saveTimeInt >= 1200 {
 			key := iter.Key()
 			value := iter.Value()
-           if err := del_db.Put(key,value,nil); err != nil{
-           	   log.Println(err)
-			   return err
-		   }
-		   log.Printf("[slicecompare][dn_slice_error] key=%s saved in datanode, but not found in supernode!!",base58.Encode(key))
-           if err := tmp_db.Delete(key,nil); err != nil{
-           	   log.Println(err)
-           	   return err
-		   }
+			if err := del_db.Put(key, value, nil); err != nil {
+				log.Println(err)
+				return err
+			}
+			log.Printf("[slicecompare][dn_slice_error] key=%s saved in datanode, but not found in supernode!!", base58.Encode(key))
+			if err := tmp_db.Delete(key, nil); err != nil {
+				log.Println(err)
+				return err
+			}
 		}
 	}
 	return err
 }
 
 func SaveValueToFile(Value string, FileName string) error {
-    filePath := util.GetYTFSPath() + FileName
-    fileDir := util.GetDir(filePath)
-    if fileDir == "" {
-    	return fmt.Errorf("filePath %s is error\n", filePath)
+	filePath := util.GetYTFSPath() + FileName
+	fileDir := util.GetDir(filePath)
+	if fileDir == "" {
+		return fmt.Errorf("filePath %s is error\n", filePath)
 	}
 
 	isExist, _ := util.PathExists(fileDir)
@@ -652,24 +656,23 @@ func SaveValueToFile(Value string, FileName string) error {
 		}
 	}
 
-	err := ioutil.WriteFile(filePath, []byte(Value),0666)
+	err := ioutil.WriteFile(filePath, []byte(Value), 0666)
 	if err != nil {
 		fmt.Printf("save %s to %s err %s\n", Value, filePath, err.Error())
 	}
 	return err
 }
 
-func cleanDB(nameOfDB string){
+func cleanDB(nameOfDB string) {
 	needClearDBPath := util.GetYTFSPath() + nameOfDB
-	cle_db,_ := leveldb.OpenFile(needClearDBPath ,nil)
+	cle_db, _ := leveldb.OpenFile(needClearDBPath, nil)
 	defer cle_db.Close()
 
 	iter := cle_db.NewIterator(nil, nil)
 	for iter.Next() {
-		if err := cle_db.Delete(iter.Key(),nil); err != nil{
-				log.Println(err)
-				return
+		if err := cle_db.Delete(iter.Key(), nil); err != nil {
+			log.Println(err)
+			return
 		}
 	}
 }
-
