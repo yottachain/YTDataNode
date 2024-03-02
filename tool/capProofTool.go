@@ -49,8 +49,16 @@ func search() error {
 
 	res, err := sn.YTFS().NewCapProofGetAnswerByChallenge(chalenge, sn.Config().IndexID)
 
+	if err != nil {
+		fmt.Printf("search src data error, err:%s\n", err.Error())
+		return err
+	}
+
 	if bytes.Equal(res, hexSrc) {
-		fmt.Printf("src data: %s writen to disk by cap proof!\n", srcData)
+		fmt.Printf("success! src data: %s writen to disk by cap proof!\n", srcData)
+	} else {
+		return fmt.Errorf("src data: %s writen to disk by cap proof, but data mismatch\n",
+			srcData)
 	}
 
 	return nil
@@ -61,7 +69,7 @@ func main() {
 		"Is src data written into a capacity proof?")
 
 	RootCommand := &cobra.Command{
-		Short: "ytfs verify",
+		Short: "cap proof tool",
 	}
 	RootCommand.AddCommand(searchCmd)
 

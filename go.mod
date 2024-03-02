@@ -26,7 +26,7 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c
 	github.com/yottachain/YTCrypto v0.0.0-20200122165219-0ea35dc29812
 	github.com/yottachain/YTElkProducer v0.0.8
-	github.com/yottachain/YTFS v0.0.0-20240225134607-a7ed8a07b4ae
+	github.com/yottachain/YTFS v0.0.0-20240316140334-f61a4cc1f70c
 	github.com/yottachain/YTHost v1.0.2-0.20220622141524-bf38cc48d5a5
 	github.com/yottachain/YTLRC v0.0.0-20230114025329-3a780ce467d9
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974

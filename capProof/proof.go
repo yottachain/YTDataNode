@@ -1,6 +1,7 @@
 package capProof
 
 import (
+	"fmt"
 	"github.com/yottachain/YTDataNode/config"
 	Ytfs "github.com/yottachain/YTFS"
 	"sync/atomic"
@@ -11,9 +12,19 @@ var AvailableShards uint32
 
 func TimerRun(ytfs *Ytfs.YTFS) {
 	for {
+		err := ytfs.NewCapProofCheckInit()
+		if err == nil {
+			break
+		} else {
+			fmt.Printf("cap proof chech init error:%s\n", err.Error())
+			<-time.After(time.Millisecond * 1)
+		}
+	}
+
+	for {
 		//AvailableShards = getCapProofSpace(ytfs)
 		//<-time.After(time.Minute*10)
-		ytfs.NewCapProofDataFill()
+		_ = ytfs.NewCapProofDataFill()
 		<-time.After(time.Millisecond * 1)
 	}
 }
